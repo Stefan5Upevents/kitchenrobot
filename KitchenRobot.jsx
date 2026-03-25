@@ -1,0 +1,2225 @@
+import React, { useState, useMemo, useEffect } from "react";
+
+const IGOR = "data:image/jpeg;base64,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";
+
+const C = {
+  hot:"#FE424D", night:"#002D41", light:"#DAEDF3", aqua:"#1AA6B7",
+  white:"#FFFFFF", gray:"#F4F6F8", yellow:"#FFFDE7", lgray:"#E8EEF2",
+  muted:"#6B8A9A", green:"#2e7d32", orange:"#e65100",
+};
+
+const SS = {
+  app:    { fontFamily:"'Roboto',-apple-system,sans-serif", background:C.gray, minHeight:"100vh", color:C.night },
+  hdr:    { background:C.night, padding:"0 20px", height:50, display:"flex", alignItems:"center", justifyContent:"space-between", position:"sticky", top:0, zIndex:100, boxShadow:"0 2px 8px rgba(0,45,65,.3)" },
+  wrap:   { padding:"22px 26px", maxWidth:1280, margin:"0 auto" },
+  card:   { background:C.white, borderRadius:10, padding:18, boxShadow:"0 1px 4px rgba(0,45,65,.07)", marginBottom:12 },
+  cT:     { fontWeight:900, fontSize:15, color:C.night, marginBottom:3 },
+  cS:     { fontWeight:700, fontSize:10, color:C.muted, letterSpacing:1, textTransform:"uppercase", marginBottom:8 },
+  pT:     { fontWeight:900, fontSize:20, color:C.night, marginBottom:3 },
+  pD:     { fontSize:12, color:C.muted, marginBottom:16 },
+  tabBar: { display:"flex", gap:1, borderBottom:"2px solid #E8EEF2", marginBottom:16, flexWrap:"wrap" },
+  tbl:    { width:"100%", borderCollapse:"collapse", fontSize:12 },
+  th:     { background:C.night, color:C.light, padding:"8px 11px", textAlign:"left", fontWeight:700, fontSize:10, letterSpacing:1, textTransform:"uppercase" },
+  td:     { padding:"8px 11px", borderBottom:"1px solid #E8EEF2" },
+  tdY:    { padding:"8px 11px", borderBottom:"1px solid #E8EEF2", background:C.yellow },
+  tdG:    { padding:"8px 11px", borderBottom:"1px solid #E8EEF2", background:"#F0F0F0", color:C.muted },
+  inp:    { border:"1.5px solid #E8EEF2", borderRadius:7, padding:"8px 11px", fontFamily:"inherit", fontSize:12, color:C.night, width:"100%", outline:"none", boxSizing:"border-box" },
+  lbl:    { fontWeight:700, fontSize:11, color:C.night, marginBottom:3, display:"block" },
+};
+
+const tabStyle = (a) => ({
+  padding:"8px 15px", fontFamily:"inherit", fontWeight:700, fontSize:12,
+  border:"none", background:"transparent", cursor:"pointer",
+  color: a ? C.hot : C.muted,
+  borderBottom: a ? "3px solid #FE424D" : "3px solid transparent",
+  marginBottom:-2,
+});
+const navStyle = (a) => ({
+  background: a ? C.hot : "transparent",
+  color: a ? C.white : C.light,
+  border:"none", borderRadius:5, padding:"5px 11px",
+  fontFamily:"inherit", fontWeight:700, fontSize:11, cursor:"pointer",
+});
+const btnP = { background:C.hot,  color:C.white, border:"none", borderRadius:7, padding:"8px 16px", fontFamily:"inherit", fontWeight:700, fontSize:12, cursor:"pointer", display:"inline-flex", alignItems:"center", gap:5 };
+const btnA = { background:C.aqua, color:C.white, border:"none", borderRadius:7, padding:"8px 16px", fontFamily:"inherit", fontWeight:700, fontSize:12, cursor:"pointer", display:"inline-flex", alignItems:"center", gap:5 };
+const btnG = { background:C.lgray, color:C.night, border:"none", borderRadius:7, padding:"8px 16px", fontFamily:"inherit", fontWeight:700, fontSize:12, cursor:"pointer", display:"inline-flex", alignItems:"center", gap:5 };
+const btnSP = { background:C.hot,  color:C.white, border:"none", borderRadius:5, padding:"5px 10px", fontFamily:"inherit", fontWeight:700, fontSize:11, cursor:"pointer" };
+const btnSA = { background:C.aqua, color:C.white, border:"none", borderRadius:5, padding:"5px 10px", fontFamily:"inherit", fontWeight:700, fontSize:11, cursor:"pointer" };
+const btnSG = { background:C.lgray, color:C.night, border:"none", borderRadius:5, padding:"5px 10px", fontFamily:"inherit", fontWeight:700, fontSize:11, cursor:"pointer" };
+const alertW = { background:"#FFF8E1", border:"1px solid #FFD54F",   borderRadius:7, padding:"9px 13px", fontSize:12, fontWeight:700, color:C.night, marginBottom:10, display:"flex", alignItems:"center", gap:8 };
+const alertS = { background:"#E8F5E9", border:"1px solid #A5D6A7",   borderRadius:7, padding:"9px 13px", fontSize:12, fontWeight:700, color:C.night, marginBottom:10, display:"flex", alignItems:"center", gap:8 };
+const alertI = { background:C.light,   border:"1px solid #1AA6B7",   borderRadius:7, padding:"9px 13px", fontSize:12, fontWeight:700, color:C.night, marginBottom:10, display:"flex", alignItems:"center", gap:8 };
+
+function tg(c) {
+  return { background:c+"22", color:c, borderRadius:4, padding:"2px 7px", fontSize:10, fontWeight:700, display:"inline-block" };
+}
+
+// ─── DATA ──────────────────────────────────────────────────────────────────────
+
+const PRODUCTGROEPEN = [
+  { id:"pg1", code:"PGen001", naam:"Vlees & Vis",  soorten:[{id:"ps1",code:"PS001",naam:"Gevogelte"},{id:"ps2",code:"PS002",naam:"Rood vlees"},{id:"ps3",code:"PS003",naam:"Vis"}] },
+  { id:"pg2", code:"PGen002", naam:"Groente",      soorten:[{id:"ps4",code:"PS004",naam:"Salade"},{id:"ps5",code:"PS005",naam:"Warme groenten"}] },
+  { id:"pg3", code:"PGen003", naam:"Bakkerij",     soorten:[] },
+  { id:"pg4", code:"PGen004", naam:"Zuivel",       soorten:[{id:"ps6",code:"PS006",naam:"Kaas"}] },
+];
+
+const SLIGRO = [
+  { artnr:"173562", naam:"Unbranded Kipfilet naturel Zak 2 kilo",   merk:"Unbranded",     pgIds:["pg1"], hoev:2,   eenh:"kilo",  prijs:9.85,  ok:true  },
+  { artnr:"508184", naam:"Bresc Chimichurri Emmer 450 gram",         merk:"Bresc",          pgIds:["pg1"], hoev:450, eenh:"gram",  prijs:6.40,  ok:true  },
+  { artnr:"872782", naam:"Unbranded Asperge groen Pakje 200 gram",   merk:"Unbranded",     pgIds:["pg2"], hoev:200, eenh:"gram",  prijs:3.45,  ok:true  },
+  { artnr:"686623", naam:"Unbranded Citroenen Netje 2 stuks",        merk:"Unbranded",     pgIds:[],      hoev:2,   eenh:"stuks", prijs:"",    ok:false },
+  { artnr:"768580", naam:"Baker en Baker Brownie 48 stuks x 60g",    merk:"Baker & Baker", pgIds:[],      hoev:48,  eenh:"stuks", prijs:"",    ok:false },
+  { artnr:"155947", naam:"Cas Kas Bitterballen vegan Doos 54x30g",   merk:"Cas & Kas",     pgIds:["pg1"], hoev:54,  eenh:"stuks", prijs:22.50, ok:true  },
+];
+
+const GERECHTEN = [
+  {
+    code:"GR001", naam:"Kipfilet met chimichurri", pgId:"pg1", psId:"ps1",
+    gn:true, portieEenh:"portie", volgorde:1, prio:true, toonBuffet:false,
+    gnFormaten:[{f:"GN 1/3 laag",p:8,uit:false},{f:"GN 1/3 hoog",p:14,uit:false},{f:"GN 1/2 laag",p:20,uit:false},{f:"GN 1/2 hoog",p:30,uit:false},{f:"GN 1/1 laag",p:40,uit:false},{f:"GN 1/1 hoog",p:55,uit:false}],
+    ingredienten:[{artnr:"173562",naam:"Kipfilet 2kg",verp:2,eenh:"kilo",prijs:9.85,gebruik:0.25,zichtbaar:"ja"},{artnr:"508184",naam:"Chimichurri 450g",verp:450,eenh:"gram",prijs:6.40,gebruik:30,zichtbaar:"nooit"}],
+  },
+  {
+    code:"GR002", naam:"Kipsate met satesaus", pgId:"pg1", psId:"ps1",
+    gn:true, portieEenh:"stuks", volgorde:2, prio:false, toonBuffet:false,
+    gnFormaten:[{f:"GN 1/3 laag",p:8,uit:false},{f:"GN 1/3 hoog",p:14,uit:false},{f:"GN 1/2 laag",p:20,uit:false},{f:"GN 1/2 hoog",p:30,uit:false},{f:"GN 1/1 laag",p:40,uit:false},{f:"GN 1/1 hoog",p:55,uit:false}],
+    ingredienten:[{artnr:"173562",naam:"Kipfilet 2kg",verp:2,eenh:"kilo",prijs:9.85,gebruik:0.15,zichtbaar:"ja"}],
+  },
+  {
+    code:"GR003", naam:"Spareribs van de BBQ", pgId:"pg1", psId:"ps2",
+    gn:true, portieEenh:"portie", volgorde:3, prio:true, toonBuffet:false,
+    gnFormaten:[{f:"GN 1/3 laag",p:8,uit:false},{f:"GN 1/3 hoog",p:14,uit:false},{f:"GN 1/2 laag",p:20,uit:false},{f:"GN 1/2 hoog",p:30,uit:false},{f:"GN 1/1 laag",p:40,uit:false},{f:"GN 1/1 hoog",p:55,uit:false}],
+    ingredienten:[{artnr:"SP001",naam:"Spareribs 2kg",verp:2,eenh:"kilo",prijs:14.50,gebruik:0.35,zichtbaar:"ja"}],
+  },
+  {
+    code:"GR004", naam:"Lamskotelet gegrild", pgId:"pg1", psId:"ps2",
+    gn:true, portieEenh:"portie", volgorde:4, prio:false, toonBuffet:false,
+    gnFormaten:[{f:"GN 1/3 laag",p:8,uit:false},{f:"GN 1/3 hoog",p:14,uit:false},{f:"GN 1/2 laag",p:20,uit:false},{f:"GN 1/2 hoog",p:30,uit:false},{f:"GN 1/1 laag",p:40,uit:false},{f:"GN 1/1 hoog",p:55,uit:false}],
+    ingredienten:[{artnr:"LM001",naam:"Lamskotelet per kg",verp:1,eenh:"kilo",prijs:18.95,gebruik:0.28,zichtbaar:"ja"}],
+  },
+  {
+    code:"GR005", naam:"Worstjes van de BBQ", pgId:"pg1", psId:"ps1",
+    gn:true, portieEenh:"stuks", volgorde:5, prio:false, toonBuffet:false,
+    gnFormaten:[{f:"GN 1/3 laag",p:8,uit:false},{f:"GN 1/3 hoog",p:14,uit:false},{f:"GN 1/2 laag",p:20,uit:false},{f:"GN 1/2 hoog",p:30,uit:false},{f:"GN 1/1 laag",p:40,uit:false},{f:"GN 1/1 hoog",p:55,uit:false}],
+    ingredienten:[{artnr:"WO001",naam:"Worstjes 10st",verp:10,eenh:"stuks",prijs:4.95,gebruik:3,zichtbaar:"ja"}],
+  },
+  {
+    code:"GR006", naam:"Scampi gegrild met knoflook", pgId:"pg1", psId:"ps3",
+    gn:true, portieEenh:"stuks", volgorde:6, prio:true, toonBuffet:false,
+    gnFormaten:[{f:"GN 1/3 laag",p:8,uit:false},{f:"GN 1/3 hoog",p:14,uit:false},{f:"GN 1/2 laag",p:20,uit:false},{f:"GN 1/2 hoog",p:30,uit:false},{f:"GN 1/1 laag",p:40,uit:false},{f:"GN 1/1 hoog",p:55,uit:false}],
+    ingredienten:[{artnr:"SC001",naam:"Scampi 500g",verp:0.5,eenh:"kilo",prijs:9.75,gebruik:0.12,zichtbaar:"ja"}],
+  },
+  {
+    code:"GR007", naam:"Zalm met dille en citroen", pgId:"pg1", psId:"ps3",
+    gn:true, portieEenh:"portie", volgorde:7, prio:false, toonBuffet:false,
+    gnFormaten:[{f:"GN 1/3 laag",p:8,uit:false},{f:"GN 1/3 hoog",p:14,uit:false},{f:"GN 1/2 laag",p:20,uit:false},{f:"GN 1/2 hoog",p:30,uit:false},{f:"GN 1/1 laag",p:40,uit:false},{f:"GN 1/1 hoog",p:55,uit:false}],
+    ingredienten:[{artnr:"ZA001",naam:"Zalmmoot per kg",verp:1,eenh:"kilo",prijs:12.50,gebruik:0.18,zichtbaar:"ja"}],
+  },
+  {
+    code:"GR008", naam:"Groene asperges gegrild", pgId:"pg2", psId:"ps5",
+    gn:false, portieEenh:"portie", volgorde:1, prio:false, toonBuffet:false,
+    schaalFormaten:[{f:"Vierkant klein",p:6,uit:false,isGroot:false},{f:"Schaal midden",p:12,uit:false,isGroot:false},{f:"Schaal groot",p:20,uit:false,isGroot:true}],
+    ingredienten:[{artnr:"872782",naam:"Asperge 200g",verp:200,eenh:"gram",prijs:3.45,gebruik:100,zichtbaar:"ja"}],
+  },
+  {
+    code:"GR009", naam:"Kaasplank assortiment", pgId:"pg4", psId:"ps6",
+    gn:false, portieEenh:"portie", volgorde:1, prio:false, toonBuffet:true,
+    schaalFormaten:[{f:"Vierkant klein",p:8,uit:false,isGroot:false},{f:"Schaal midden",p:15,uit:false,isGroot:false},{f:"Schaal groot",p:25,uit:false,isGroot:true}],
+    ingredienten:[],
+  },
+];
+
+const MENUS = [
+  { code:"MN001", naam:"BBQ Populair",    pgId:"pg1", psId:"ps1", gerechten:[{grCode:"GR001",pp:1.0},{grCode:"GR002",pp:0.5},{grCode:"GR005",pp:0.3}], verkoop:18.35 },
+  { code:"MN002", naam:"BBQ Premium",     pgId:"pg1", psId:"ps1", gerechten:[{grCode:"GR001",pp:1.0},{grCode:"GR002",pp:0.5},{grCode:"GR003",pp:0.7},{grCode:"GR004",pp:0.5},{grCode:"GR005",pp:0.3},{grCode:"GR006",pp:0.4},{grCode:"GR007",pp:0.3}], verkoop:24.50 },
+  { code:"MN003", naam:"BBQ Vegetarisch", pgId:"pg1", psId:"ps1", gerechten:[{grCode:"GR008",pp:1.0},{grCode:"GR009",pp:0.5}], verkoop:14.20 },
+];
+
+const BOEKINGEN = [
+  {
+    id:"10482", naam:"Familie Jansen", deadline:"2026-03-26T17:00", status:"Bevestigd",
+    locatie:"Kasteel Groeneveld", plaats:"Baarn",
+    opmerking:"3 gasten zijn vegan, 1 glutenallergie",
+    regels:[{menuCode:"MN002",aantal:85}],
+  },
+  {
+    id:"10489", naam:"Bedrijf XYZ BV", deadline:"2026-03-28T12:30", status:"Optie",
+    locatie:"UP Events", plaats:"Amsterdam",
+    opmerking:"",
+    regels:[{menuCode:"MN001",aantal:40}],
+  },
+  {
+    id:"10494", naam:"Verjaardag Peters", deadline:"2026-03-31T18:00", status:"Bevestigd",
+    locatie:"Tuin thuis", plaats:"Utrecht",
+    opmerking:"Verjaardagstaart aanwezig",
+    regels:[{menuCode:"MN001",aantal:55},{menuCode:"MN003",aantal:15}],
+  },
+  {
+    id:"10501", naam:"Teamdag Aegon", deadline:"2026-04-02T13:00", status:"Bevestigd",
+    locatie:"Landgoed Biestheuvel", plaats:"Den Bosch",
+    opmerking:"Halal vlees voor 20p",
+    regels:[{menuCode:"MN002",aantal:120}],
+  },
+  {
+    id:"10507", naam:"Bruiloft De Vries", deadline:"2026-04-05T19:00", status:"Optie",
+    locatie:"Kasteel Groeneveld", plaats:"Baarn",
+    opmerking:"",
+    regels:[{menuCode:"MN002",aantal:30}],
+  },
+];
+
+// ─── HELPERS ───────────────────────────────────────────────────────────────────
+
+function fDatum(iso, kort) {
+  var d = new Date(iso);
+  var dg = ["zo","ma","di","wo","do","vr","za"];
+  var mn = ["jan","feb","mrt","apr","mei","jun","jul","aug","sep","okt","nov","dec"];
+  var t = String(d.getHours()).padStart(2,"0") + ":" + String(d.getMinutes()).padStart(2,"0");
+  if (kort) return dg[d.getDay()] + " " + d.getDate() + " " + mn[d.getMonth()];
+  return dg[d.getDay()] + " " + d.getDate() + " " + mn[d.getMonth()] + " " + d.getFullYear() + " \u2014 " + t;
+}
+
+function totPers(b) {
+  return b.regels.reduce(function(s, r) { return s + r.aantal; }, 0);
+}
+
+function opzetPct(n) {
+  if (n <= 10) return 1.0;
+  if (n <= 25) return 0.95;
+  if (n <= 50) return 0.90;
+  return 0.85;
+}
+
+function aantalBuf(n) {
+  if (n <= 100) return 1;
+  if (n <= 200) return 2;
+  return 3;
+}
+
+function berekenVerpakkingen(gerecht, portiesTotal) {
+  var ing = (gerecht.ingredienten || []).find(function(i) { return i.zichtbaar === "ja"; });
+  if (!ing || !portiesTotal) return null;
+  var totaal = portiesTotal * ing.gebruik / ing.verp;
+  return { artnr:ing.artnr, naam:ing.naam, aantal:Math.ceil(totaal), exact:totaal };
+}
+
+function berekenBuffetLayout(gnGerechtenMet, nBuf) {
+  if (!gnGerechtenMet.length) return null;
+
+  function grootteVan(naam) {
+    if (naam.indexOf("1/3") >= 0) return 0;
+    if (naam.indexOf("1/2") >= 0) return 1;
+    return 2;
+  }
+
+  var items = gnGerechtenMet.map(function(g) {
+    var portiesPerBuf = g.ben / nBuf;
+    var formaten = (g.gnFormaten || []).filter(function(f) { return !f.uit; }).slice().sort(function(a,b){return a.p-b.p;});
+    var formaat = formaten.find(function(f){return f.p >= portiesPerBuf;});
+    if (!formaat) formaat = formaten[formaten.length-1];
+    if (!formaat) return null;
+    return {
+      code:g.code, naam:g.naam, prio:!!g.prio,
+      portiesPerBuf:portiesPerBuf,
+      formaat:formaat.f, portiesPerBak:formaat.p,
+      grootte:grootteVan(formaat.f),
+      upgraded:false, gnFormaten:g.gnFormaten,
+    };
+  }).filter(Boolean);
+
+  function getCounts() {
+    var c=[0,0,0];
+    items.forEach(function(x){c[x.grootte]++;});
+    return c;
+  }
+
+  function upgradeEen(vanGrootte) {
+    var naarGrootte = vanGrootte+1;
+    if (naarGrootte>2) return false;
+    var kandidaten = items
+      .map(function(item,idx){return {item:item,idx:idx};})
+      .filter(function(x){return x.item.grootte===vanGrootte;})
+      .sort(function(a,b){return (b.item.prio?1:0)-(a.item.prio?1:0);});
+    for (var ki=0;ki<kandidaten.length;ki++) {
+      var kand=kandidaten[ki];
+      var nfs=(kand.item.gnFormaten||[]).filter(function(f){return !f.uit&&grootteVan(f.f)===naarGrootte;}).sort(function(a,b){return a.p-b.p;});
+      if (nfs.length>0) {
+        items[kand.idx]=Object.assign({},kand.item,{formaat:nfs[0].f,portiesPerBak:nfs[0].p,grootte:naarGrootte,upgraded:true});
+        return true;
+      }
+    }
+    return false;
+  }
+
+  for (var iter=0;iter<30;iter++) {
+    var c=getCounts();
+    if (c[0]%3===0 && c[1]%2===0) break;
+    if (c[0]%3!==0) upgradeEen(0);
+    else if (c[1]%2!==0) upgradeEen(1);
+  }
+
+  var counts=getCounts();
+  var dishesPerBuf=Math.floor(counts[0]/3)+Math.floor(counts[1]/2)+counts[2];
+  return {items:items, counts:counts, dishesPerBuf:dishesPerBuf, totalDishes:dishesPerBuf*nBuf, nBuf:nBuf};
+}
+
+function calcGerecht(boeking, gerecht) {
+  var ben = 0;
+  var pct = opzetPct(totPers(boeking));
+  boeking.regels.forEach(function(r) {
+    var m = MENUS.find(function(m) { return m.code === r.menuCode; });
+    var mg = m && m.gerechten.find(function(mg) { return mg.grCode === gerecht.code; });
+    if (mg) ben += r.aantal * mg.pp * pct;
+  });
+  return ben;
+}
+
+function berekenSligroBestelling() {
+  // Geeft terug: { regels: [{artnr, naam, totaalVerpakkingen, berekening:[{boeking,menu,gerecht,personen,pct,pp,gebruik,verp,verpakkingen}]}] }
+  var perArtnr = {};
+
+  BOEKINGEN.forEach(function(b) {
+    var pct = opzetPct(totPers(b));
+    b.regels.forEach(function(r) {
+      var m = MENUS.find(function(m) { return m.code === r.menuCode; });
+      if (!m) return;
+      m.gerechten.forEach(function(mg) {
+        var g = GERECHTEN.find(function(g) { return g.code === mg.grCode; });
+        if (!g) return;
+        (g.ingredienten || []).filter(function(i) { return i.zichtbaar === "ja"; }).forEach(function(ing) {
+          var portiesEff = r.aantal * mg.pp * pct;
+          var verpakkingen = portiesEff * ing.gebruik / ing.verp;
+          if (!perArtnr[ing.artnr]) {
+            perArtnr[ing.artnr] = { artnr: ing.artnr, naam: ing.naam, verp: ing.verp, eenh: ing.eenh, totaalRauw: 0, berekening: [] };
+          }
+          perArtnr[ing.artnr].totaalRauw += verpakkingen;
+          perArtnr[ing.artnr].berekening.push({
+            boeking: b.naam,
+            menu: m.naam,
+            gerecht: g.naam,
+            personen: r.aantal,
+            pct: Math.round(pct * 100),
+            portiesEff: portiesEff,
+            pp: mg.pp,
+            gebruik: ing.gebruik,
+            eenh: ing.eenh,
+            verpakkingen: verpakkingen,
+          });
+        });
+      });
+    });
+  });
+
+  var regels = Object.keys(perArtnr).map(function(artnr) {
+    var item = perArtnr[artnr];
+    return Object.assign({}, item, { totaalVerpakkingen: Math.ceil(item.totaalRauw) });
+  });
+
+  return regels;
+}
+
+function genereerCSV() {
+  var lijstnaam = "sligrobestelling 26-03-2026 05-04-2026";
+  var regels = berekenSligroBestelling();
+  var hdr = "Lijstnaam (Verplicht);Sorteervolgorde (Optioneel);Artikelnummer (Verplicht);Portionering gewicht (Optioneel);Verpakkingscode (Optioneel);Voorkeurs-aantal (Optioneel);(niet gevuld);(niet gevuld);Productinformatie;Productgroepcode;Productgroepnaam;Portionering omschrijving;Verpakking omschrijving";
+  var rows = regels.map(function(r) {
+    return lijstnaam + ";;" + r.artnr + ";;;" + r.totaalVerpakkingen + ";;;;;;;;";
+  });
+  // UTF-8 BOM + Windows regeleindes (\r\n) zoals Sligro vereist
+  return "\uFEFF" + hdr + "\r\n" + rows.join("\r\n");
+}
+
+// ─── SPLASH ────────────────────────────────────────────────────────────────────
+
+function Splash({ onDone }) {
+  var [phase, setPhase] = useState(0);
+  useEffect(function() {
+    var t1 = setTimeout(function() { setPhase(1); }, 600);
+    var t2 = setTimeout(function() { setPhase(2); }, 1050);
+    var t3 = setTimeout(function() { onDone(); }, 1200);
+    return function() { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+  }, []);
+  var scale = phase === 0 ? "scale(1.15)" : phase === 1 ? "scale(0.85)" : "scale(0.6)";
+  var opacity = phase === 2 ? 0 : 1;
+  return (
+    <div style={{ position:"fixed", inset:0, background:C.night, display:"flex", alignItems:"center", justifyContent:"center", zIndex:999, transition:"opacity .15s", opacity:opacity }}>
+      <div style={{ transition:"transform .35s cubic-bezier(.34,1.56,.64,1), opacity .2s", transform:scale, opacity:opacity, textAlign:"center" }}>
+        <img src={IGOR} alt="" style={{ width:180, height:180, borderRadius:"50%", objectFit:"cover", border:"4px solid #FE424D", display:"block", margin:"0 auto 16px" }} />
+        <div style={{ color:C.hot, fontWeight:900, fontSize:22, letterSpacing:-1 }}>KitchenRobot</div>
+        <div style={{ color:C.aqua, fontSize:10, fontWeight:700, letterSpacing:3, textTransform:"uppercase" }}>UP Events</div>
+      </div>
+    </div>
+  );
+}
+
+// ─── LOGIN ─────────────────────────────────────────────────────────────────────
+
+function LoginScreen({ onLogin }) {
+  var [u, setU] = useState("");
+  var [p, setP] = useState("");
+  var [err, setErr] = useState("");
+  var [splash, setSplash] = useState(false);
+
+  function doLogin(rol, naam) {
+    setSplash(true);
+    setTimeout(function() { onLogin({ naam:naam, rol:rol }); }, 1300);
+  }
+
+  function go() {
+    if (u === "StefanHerder" && p === "Stefan2026") doLogin("beheerder", "Stefan");
+    else if (u === "FinAdmin" && p === "Finance2026") doLogin("financieel", "FinAdmin");
+    else setErr("Gebruikersnaam of wachtwoord onjuist.");
+  }
+
+  return (
+    <div>
+      {splash && <Splash onDone={function() {}} />}
+      <div style={{ minHeight:"100vh", background:C.night, display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column" }}>
+        <div style={{ color:C.hot, fontWeight:900, fontSize:30, letterSpacing:-1, marginBottom:4 }}>KitchenRobot</div>
+        <div style={{ color:C.aqua, fontWeight:700, fontSize:10, letterSpacing:3, textTransform:"uppercase", marginBottom:24 }}>UP Events</div>
+        <div style={{ background:C.white, borderRadius:14, padding:32, width:370, boxShadow:"0 8px 32px rgba(0,0,0,.4)" }}>
+          <div style={{ fontWeight:900, fontSize:18, color:C.night, marginBottom:3 }}>Inloggen</div>
+          <div style={{ fontWeight:700, fontSize:10, color:C.aqua, letterSpacing:1, textTransform:"uppercase", marginBottom:16 }}>Keuken beheer systeem</div>
+          <div style={{ background:C.light, borderRadius:8, padding:12, marginBottom:16 }}>
+            <div style={{ fontWeight:700, fontSize:10, color:C.night, marginBottom:8 }}>SNEL INLOGGEN (testomgeving)</div>
+            <div style={{ display:"flex", gap:8 }}>
+              <button style={{ ...btnP, flex:1, justifyContent:"center", fontSize:11 }} onClick={function() { doLogin("beheerder","Stefan"); }}>Stefan (Beheerder)</button>
+              <button style={{ ...btnA, flex:1, justifyContent:"center", fontSize:11 }} onClick={function() { doLogin("financieel","FinAdmin"); }}>FinAdmin (Financieel)</button>
+            </div>
+          </div>
+          <div style={{ borderTop:"1px solid #E8EEF2", paddingTop:14 }}>
+            <div style={{ marginBottom:10 }}>
+              <label style={SS.lbl}>Gebruikersnaam</label>
+              <input style={SS.inp} value={u} onChange={function(e) { setU(e.target.value); }} onKeyDown={function(e) { if (e.key === "Enter") go(); }} />
+            </div>
+            <div style={{ marginBottom:12 }}>
+              <label style={SS.lbl}>Wachtwoord</label>
+              <input style={SS.inp} type="password" value={p} onChange={function(e) { setP(e.target.value); }} onKeyDown={function(e) { if (e.key === "Enter") go(); }} />
+            </div>
+            {err && <div style={{ color:C.hot, fontSize:11, fontWeight:700, marginBottom:10 }}>&#9888; {err}</div>}
+            <button style={{ ...btnP, width:"100%", justifyContent:"center", padding:"11px 16px", fontSize:13 }} onClick={go}>Inloggen &rarr;</button>
+            <div style={{ marginTop:12, fontSize:10, color:C.muted }}>Stefan: StefanHerder / Stefan2026</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── HEADER ────────────────────────────────────────────────────────────────────
+
+function Header({ sc, setSc, user, logout }) {
+  var nav = [["home","Import"],["boekingen","Boekingen"],["buffet","Buffetformulieren"],["opzet","Opzetoverzicht"],["tijden","Tijden"]];
+  return (
+    <div style={SS.hdr}>
+      <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+        <div style={{ color:C.hot, fontWeight:900, fontSize:14 }}>KitchenRobot</div>
+        <div style={{ color:C.aqua, fontSize:9, fontWeight:700, letterSpacing:2, textTransform:"uppercase" }}>UP Events</div>
+      </div>
+      <div style={{ display:"flex", gap:3, alignItems:"center" }}>
+        {nav.map(function(item) {
+          return (
+            <button key={item[0]} style={navStyle(sc === item[0])} onClick={function() { setSc(item[0]); }}>{item[1]}</button>
+          );
+        })}
+        <button style={{ background:C.aqua, color:C.white, border:"none", borderRadius:5, padding:"5px 11px", fontFamily:"inherit", fontWeight:700, fontSize:11, cursor:"pointer" }} onClick={function() { setSc("stam"); }}>Stamgegevens</button>
+        <button style={{ background:"#1a6b2d", color:C.white, border:"none", borderRadius:5, padding:"5px 11px", fontFamily:"inherit", fontWeight:700, fontSize:11, cursor:"pointer" }} onClick={function() { setSc("fin"); }}>Financieel</button>
+        <div style={{ width:1, background:"rgba(255,255,255,.2)", height:18, margin:"0 4px" }}></div>
+        <span style={{ fontSize:10, color:C.light, fontWeight:700 }}>{user.naam}</span>
+        <button style={{ background:"transparent", color:C.light, border:"none", borderRadius:5, padding:"5px 8px", fontFamily:"inherit", fontWeight:700, fontSize:10, cursor:"pointer" }} onClick={logout}>&#x21A9;</button>
+      </div>
+    </div>
+  );
+}
+
+// ─── HOME ──────────────────────────────────────────────────────────────────────
+
+function HomeScreen({ setSc }) {
+  var [imp, setImp] = useState(false);
+  var [showCSV, setShowCSV] = useState(false);
+  var [showDetail, setShowDetail] = useState(null); // artnr van uitgekapt artikel
+  var csv = useMemo(function() { return genereerCSV(); }, []);
+  var bestelling = useMemo(function() { return berekenSligroBestelling(); }, []);
+  var csvLines = bestelling.length;
+
+  return (
+    <div>
+      <div style={SS.pT}>Welkom terug</div>
+      <div style={SS.pD}>Importeer de Recras boekingenexport om te starten.</div>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, marginBottom:14 }}>
+        <div style={SS.card}>
+          <div style={SS.cS}>Stap 1 &mdash; dagelijkse import</div>
+          <div style={SS.cT}>Recras boekingenexport</div>
+          <p style={{ fontSize:12, color:C.muted, margin:"0 0 12px" }}>Importeer het .xlsx bestand vanuit Recras. Privacygevoelige kolommen L/M/N/O worden direct verwijderd.</p>
+          <div style={{ border:"2px dashed #1AA6B7", borderRadius:10, padding:"22px 16px", textAlign:"center", background:"rgba(218,237,243,.35)", cursor:"pointer", marginBottom:10 }} onClick={function() { setImp(true); }}>
+            <div style={{ fontSize:28, marginBottom:6 }}>&#128194;</div>
+            <div style={{ fontWeight:700, fontSize:12, color:C.night, marginBottom:3 }}>Klik om bestand te kiezen (.xlsx)</div>
+          </div>
+          {imp && <div style={alertS}>Geladen: {BOEKINGEN.length} boekingen &bull; 26 mrt &ndash; 5 apr 2026</div>}
+          {imp && <button style={btnA} onClick={function() { setSc("boekingen"); }}>Bekijk boekingen &rarr;</button>}
+        </div>
+        <div style={SS.card}>
+          <div style={SS.cS}>Snel naar</div>
+          <div style={SS.cT}>Overzichten</div>
+          <div style={{ display:"flex", flexDirection:"column", gap:6, marginTop:8 }}>
+            {[["Boekingsoverzicht","boekingen"],["Buffetformulieren","buffet"],["Opzetoverzicht","opzet"],["Tijdenoverzicht","tijden"]].map(function(item) {
+              return (
+                <button key={item[1]} onClick={function() { setSc(item[1]); }} style={{ background:C.gray, border:"none", borderRadius:7, padding:"8px 12px", cursor:"pointer", textAlign:"left", fontWeight:700, fontSize:12, color:C.night }}>
+                  {item[0]}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+      {imp && (
+        <div style={SS.card}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom: showCSV ? 12 : 0 }}>
+            <div>
+              <div style={SS.cT}>Sligro bestelling gereed</div>
+              <div style={{ fontSize:11, color:C.muted, marginTop:2 }}>sligrobestelling 26-03-2026 05-04-2026.csv &bull; {csvLines} artikelen</div>
+            </div>
+            <div style={{ display:"flex", gap:8 }}>
+              <button style={btnSG} onClick={function() { setShowCSV(!showCSV); }}>{showCSV ? "Verberg controle" : "Controleer bestelling"}</button>
+              <button style={btnA}>Download (.csv)</button>
+            </div>
+          </div>
+          {showCSV && (
+            <div>
+              <div style={alertI}>
+                Controleer hieronder of alle aantallen kloppen. Klik op een artikel om de volledige berekening te zien.
+                De kolom "Verpakkingen" is wat Sligro ontvangt (afgerond naar boven).
+              </div>
+
+              <table style={SS.tbl}>
+                <thead>
+                  <tr>
+                    {["Artikelnummer","Productnaam","Verpakking","Berekend (exact)","Bestellen (afgerond)",""].map(function(h) {
+                      return <th key={h} style={SS.th}>{h}</th>;
+                    })}
+                  </tr>
+                </thead>
+                <tbody>
+                  {bestelling.map(function(r) {
+                    var isOpen = showDetail === r.artnr;
+                    return (
+                      <React.Fragment key={r.artnr}>
+                        <tr style={{ cursor:"pointer", background: isOpen ? C.light : C.white }}
+                          onClick={function() { setShowDetail(isOpen ? null : r.artnr); }}>
+                          <td style={SS.td}><span style={tg(C.muted)}>{r.artnr}</span></td>
+                          <td style={{ ...SS.td, fontWeight:700 }}>{r.naam}</td>
+                          <td style={{ ...SS.td, color:C.muted }}>{r.verp} {r.eenh}</td>
+                          <td style={{ ...SS.td, color:C.muted }}>{r.totaalRauw.toFixed(2)}</td>
+                          <td style={{ ...SS.td, fontWeight:900, color:C.green, fontSize:14 }}>{r.totaalVerpakkingen}</td>
+                          <td style={SS.td}>
+                            <span style={{ fontSize:11, color:C.aqua, fontWeight:700 }}>{isOpen ? "Verberg" : "Bekijk berekening"}</span>
+                          </td>
+                        </tr>
+                        {isOpen && (
+                          <tr>
+                            <td colSpan={6} style={{ padding:0, background:"#F0F7FF" }}>
+                              <div style={{ padding:"10px 16px" }}>
+                                <div style={{ fontWeight:700, fontSize:11, color:C.night, marginBottom:8 }}>
+                                  Berekening: personen &times; porties/p &times; opzet% &times; gebruik/{r.verp}{r.eenh} = verpakkingen
+                                </div>
+                                <table style={{ ...SS.tbl, fontSize:11 }}>
+                                  <thead>
+                                    <tr>
+                                      {["Boeking","Menu","Gerecht","Personen","Opzet%","Porties/p","Eff. porties","Gebruik/{eenh}".replace("{eenh}",r.eenh),"Verpakkingen"].map(function(h) {
+                                        return <th key={h} style={{ ...SS.th, background:"#2979b0", fontSize:9 }}>{h}</th>;
+                                      })}
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {r.berekening.map(function(calc, ci) {
+                                      return (
+                                        <tr key={ci} style={{ background: ci%2===0 ? C.white : "#EEF4FF" }}>
+                                          <td style={SS.td}>{calc.boeking}</td>
+                                          <td style={SS.td}>{calc.menu}</td>
+                                          <td style={{ ...SS.td, fontWeight:700 }}>{calc.gerecht}</td>
+                                          <td style={SS.td}>{calc.personen}</td>
+                                          <td style={SS.td}>{calc.pct}%</td>
+                                          <td style={SS.td}>{calc.pp}</td>
+                                          <td style={{ ...SS.td, color:C.aqua, fontWeight:700 }}>{calc.portiesEff.toFixed(1)}</td>
+                                          <td style={SS.td}>{calc.gebruik}</td>
+                                          <td style={{ ...SS.td, fontWeight:700, color:"#2979b0" }}>{calc.verpakkingen.toFixed(2)}</td>
+                                        </tr>
+                                      );
+                                    })}
+                                    <tr style={{ background:"#D0E8FF" }}>
+                                      <td colSpan={8} style={{ ...SS.td, fontWeight:700, textAlign:"right" }}>Totaal exact:</td>
+                                      <td style={{ ...SS.td, fontWeight:900 }}>{r.totaalRauw.toFixed(2)}</td>
+                                    </tr>
+                                    <tr style={{ background:C.light }}>
+                                      <td colSpan={8} style={{ ...SS.td, fontWeight:700, textAlign:"right" }}>Afgerond (Math.ceil) = Sligro bestelling:</td>
+                                      <td style={{ ...SS.td, fontWeight:900, fontSize:14, color:C.green }}>{r.totaalVerpakkingen}</td>
+                                    </tr>
+                                  </tbody>
+                                </table>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
+
+              <div style={{ marginTop:14, padding:"10px 14px", background:C.gray, borderRadius:8, fontSize:11, color:C.muted }}>
+                <strong style={{ color:C.night }}>CSV bestand dat naar Sligro gaat:</strong> kolom A = lijstnaam, kolom C = artikelnummer, kolom F = verpakkingen (afgerond naar boven).
+                <br/>Klik "Download (.csv)" om het definitieve bestand te downloaden.
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── BOEKINGEN ─────────────────────────────────────────────────────────────────
+
+function BoekingenScreen({ setSc, setActieve }) {
+  return (
+    <div>
+      <div style={SS.pT}>Boekingsoverzicht</div>
+      <div style={SS.pD}>{BOEKINGEN.length} boekingen &bull; chronologisch &bull; klik op een rij</div>
+      <div style={SS.card}>
+        <table style={SS.tbl}>
+          <thead>
+            <tr>
+              {["ID","Naam","Deadline","Status","Locatie","Pers.","Menus"].map(function(h) {
+                return <th key={h} style={SS.th}>{h}</th>;
+              })}
+            </tr>
+          </thead>
+          <tbody>
+            {BOEKINGEN.map(function(b) {
+              return (
+                <tr key={b.id} style={{ cursor:"pointer" }} onClick={function() { setActieve({ boekingId:b.id, psId:null }); setSc("buffet"); }}>
+                  <td style={SS.td}><span style={tg(C.aqua)}>{b.id}</span></td>
+                  <td style={{ ...SS.td, fontWeight:700 }}>{b.naam}</td>
+                  <td style={{ ...SS.td, fontWeight:700, color:C.hot, fontSize:11 }}>{fDatum(b.deadline, false)}</td>
+                  <td style={SS.td}><span style={tg(b.status === "Bevestigd" ? C.green : C.orange)}>{b.status}</span></td>
+                  <td style={{ ...SS.td, fontSize:11, color:C.muted }}>{b.locatie}</td>
+                  <td style={{ ...SS.td, fontWeight:700 }}>{totPers(b)}</td>
+                  <td style={SS.td}>
+                    {b.regels.map(function(r) {
+                      var m = MENUS.find(function(m) { return m.code === r.menuCode; });
+                      return <div key={r.menuCode} style={{ ...tg(C.night), marginBottom:2 }}>{m ? m.naam : r.menuCode} ({r.aantal}p)</div>;
+                    })}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ─── BUFFET ────────────────────────────────────────────────────────────────────
+
+function BuffetScreen({ actieve, setActieve }) {
+  var [extraFormulieren, setExtraFormulieren] = useState([]);
+
+  function voegFormulierToe(pgId, psId) {
+    var pg = PRODUCTGROEPEN.find(function(g) { return g.id === pgId; });
+    var ps = pg && pg.soorten.find(function(s) { return s.id === psId; });
+    // Maak handmatig formulier aan zonder boeking (personen invulbaar)
+    var uid = "handmatig_" + Date.now();
+    var nieuw = {
+      boekingId: uid,
+      psId: psId, psNaam: ps ? ps.naam : "",
+      pgNaam: pg ? pg.naam : "", pgId: pgId,
+      handmatig: true,
+      manueelNaam: "Handmatig formulier",
+      manueel: true,
+      aantalPersonen: 50,
+    };
+    setExtraFormulieren(function(prev) { return prev.concat([nieuw]); });
+    setActieve(nieuw);
+  }
+
+  var formulieren = useMemo(function() {
+    var lijst = [];
+    BOEKINGEN.forEach(function(b) {
+      var psIds = {};
+      b.regels.forEach(function(r) {
+        var m = MENUS.find(function(m) { return m.code === r.menuCode; });
+        if (!m) return;
+        if (m.psId) psIds[m.psId] = true;
+        // Ook psIds van individuele gerechten meenemen (bv. rood vlees in BBQ Premium)
+        m.gerechten.forEach(function(mg) {
+          var g = GERECHTEN.find(function(g) { return g.code === mg.grCode; });
+          if (g && g.psId) psIds[g.psId] = true;
+        });
+      });
+      Object.keys(psIds).forEach(function(psId) {
+        var pg = PRODUCTGROEPEN.find(function(g) { return g.soorten.some(function(s) { return s.id === psId; }); });
+        var ps = pg && pg.soorten.find(function(s) { return s.id === psId; });
+        lijst.push({ boekingId:b.id, psId:psId, psNaam:ps ? ps.naam : "", pgNaam:pg ? pg.naam : "", pgId:pg ? pg.id : "" });
+      });
+    });
+    return lijst;
+  }, []);
+
+  // Voeg extra handmatige formulieren toe (die nog niet bestaan)
+  var alleFormulieren = formulieren.concat(extraFormulieren.filter(function(ef) {
+    return !formulieren.some(function(f) { return f.pgId === ef.pgId && f.psId === ef.psId && f.boekingId === ef.boekingId; });
+  }));
+
+  var huidig = actieve || formulieren[0] || {};
+  var isHandmatig = !!(huidig && huidig.manueel);
+  var boekingUitDB = BOEKINGEN.find(function(b) { return b.id === huidig.boekingId; });
+  var [handmatigePersonen, setHandmatigePersonen] = useState((huidig && huidig.aantalPersonen) || 50);
+  var boeking = boekingUitDB || {
+    id: huidig.boekingId || "handmatig",
+    naam: huidig.manueelNaam || "Handmatig formulier",
+    deadline: new Date().toISOString(),
+    status: "Handmatig",
+    locatie: "-", plaats: "-", opmerking: "",
+    regels: [],
+  };
+  var psId = huidig.psId || (formulieren[0] ? formulieren[0].psId : "");
+  var pgId = huidig.pgId || (formulieren[0] ? formulieren[0].pgId : "");
+  var pg = PRODUCTGROEPEN.find(function(g) { return g.id === pgId; });
+  var ps = pg && pg.soorten.find(function(s) { return s.id === psId; });
+
+  var pgLijst = formulieren.reduce(function(acc, f) { if (acc.indexOf(f.pgId) < 0) acc.push(f.pgId); return acc; }, []);
+  var psInPg = pg ? pg.soorten.filter(function(ps_) { return alleFormulieren.some(function(f) { return f.pgId === pgId && f.psId === ps_.id; }); }) : [];
+  var boekInPg = alleFormulieren.filter(function(f) { return f.pgId === pgId; }).reduce(function(acc, f) { if (acc.indexOf(f.boekingId) < 0) acc.push(f.boekingId); return acc; }, []);
+
+  var gerechten = GERECHTEN.filter(function(g) { return g.psId === psId; }).sort(function(a, b) {
+    if (a.gn && !b.gn) return -1;
+    if (!a.gn && b.gn) return 1;
+    return a.volgorde - b.volgorde;
+  });
+
+  var totaal = isHandmatig ? handmatigePersonen : totPers(boeking);
+  var pct = opzetPct(totaal);
+  var nBuf = aantalBuf(totaal);
+
+  var gerechtenMet = gerechten.map(function(g) {
+    var ben = calcGerecht(boeking, g);
+    return Object.assign({}, g, { ben:ben });
+  });
+
+  // Handmatige overrides: {grCode: {actief:bool, overschrijfBen:number|null, overschrijfFormaat:string|null}}
+  var [overrides, setOverrides] = useState({});
+  var [bewerkModus, setBewerkModus] = useState(false);
+
+  function getOverride(code) { return overrides[code] || {}; }
+  function setOverride(code, key, val) {
+    setOverrides(function(prev) {
+      var curr = Object.assign({}, prev[code] || {});
+      curr[key] = val;
+      return Object.assign({}, prev, {[code]: curr});
+    });
+  }
+
+  var gnGerMet = gerechtenMet.filter(function(g) {
+    var ov = getOverride(g.code);
+    return g.gn && (ov.actief === false ? false : g.ben > 0);
+  });
+  var buffetLayout = berekenBuffetLayout(gnGerMet, nBuf);
+  var totaalDishes = buffetLayout ? buffetLayout.totalDishes : 0;
+  var dishesPerBuf = buffetLayout ? buffetLayout.dishesPerBuf : 0;
+  // Merge layout items back into gerechtenMet
+  var layoutMap = {};
+  if (buffetLayout) {
+    buffetLayout.items.forEach(function(item) { layoutMap[item.code] = item; });
+  }
+  gerechtenMet = gerechtenMet.map(function(g) {
+    var li = layoutMap[g.code];
+    return Object.assign({}, g, li ? {layoutFormaat:li.formaat, layoutUpgraded:li.upgraded, layoutGrootte:li.grootte} : {});
+  });
+
+  return (
+    <div>
+      <style>{"@media print { .no-print { display:none !important; } .print-only { display:block !important; } } .print-only { display:none; }"}</style>
+      <div style={SS.tabBar}>
+        {pgLijst.map(function(pid) {
+          var pgItem = PRODUCTGROEPEN.find(function(g) { return g.id === pid; });
+          return (
+            <button key={pid} style={tabStyle(pid === pgId)} onClick={function() {
+              var f = formulieren.find(function(f) { return f.pgId === pid; });
+              if (f) setActieve(f);
+            }}>
+              {pgItem ? pgItem.naam : pid}
+            </button>
+          );
+        })}
+      </div>
+
+      <div style={{ display:"flex", gap:6, marginBottom:10, flexWrap:"wrap" }}>
+        {psInPg.map(function(ps_) {
+          var isAct = ps_.id === psId;
+          return (
+            <button key={ps_.id} style={{ background: isAct ? C.aqua : C.white, color: isAct ? C.white : C.night, border:"1.5px solid " + (isAct ? C.aqua : C.lgray), borderRadius:6, padding:"5px 12px", fontFamily:"inherit", fontWeight:700, fontSize:11, cursor:"pointer" }}
+              onClick={function() {
+                var f = formulieren.find(function(f) { return f.pgId === pgId && f.psId === ps_.id; });
+                if (f) setActieve(f);
+              }}>
+              {ps_.naam}
+            </button>
+          );
+        })}
+      </div>
+
+      <div style={{ display:"flex", gap:6, marginBottom:8, flexWrap:"wrap", alignItems:"center" }}>
+        {pg && pg.soorten.map(function(ps_) {
+          var heeftAl = alleFormulieren.some(function(f) { return f.pgId === pgId && f.psId === ps_.id; });
+          return (
+            <button key={ps_.id} style={{ ...btnSA, fontSize:10, opacity: heeftAl ? 0.7 : 1 }}
+              onClick={function() { voegFormulierToe(pgId, ps_.id); }}>
+              + {ps_.naam} formulier
+            </button>
+          );
+        })}
+      </div>
+
+      <div style={{ display:"flex", gap:6, marginBottom:14, flexWrap:"wrap" }}>
+        {boekInPg.map(function(bid) {
+          var b2 = BOEKINGEN.find(function(b) { return b.id === bid; });
+          var isAct = bid === boeking.id;
+          return (
+            <button key={bid} style={{ background: isAct ? C.night : C.white, color: isAct ? C.white : C.night, border:"1.5px solid " + (isAct ? C.night : C.lgray), borderRadius:7, padding:"6px 12px", fontFamily:"inherit", fontWeight:700, fontSize:11, cursor:"pointer" }}
+              onClick={function() {
+                var f = formulieren.find(function(f) { return f.pgId === pgId && f.psId === psId && f.boekingId === bid; })
+                     || formulieren.find(function(f) { return f.pgId === pgId && f.boekingId === bid; });
+                if (f) setActieve(f);
+              }}>
+              <div style={{ fontSize:11 }}>{b2 ? b2.naam : bid}</div>
+              <div style={{ fontSize:9, opacity:.75 }}>{b2 ? fDatum(b2.deadline, true) : ""}</div>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="no-print" style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+        <div>
+          <div style={{ display:"flex", alignItems:"baseline", gap:8 }}>
+            <div style={{ fontWeight:900, fontSize:22, color:C.night }}>{boeking.naam}</div>
+            <div style={{ fontSize:12, color:C.muted }}>#{boeking.id} &bull; {ps ? ps.naam : ""}</div>
+            <span style={tg(boeking.status === "Bevestigd" ? C.green : C.orange)}>{boeking.status}</span>
+          </div>
+          <div style={{ fontSize:14, fontWeight:700, color:C.night, marginTop:3 }}>{boeking.locatie}, {boeking.plaats}</div>
+        </div>
+        <div style={{ display:"flex", gap:6 }}>
+          <button style={btnSG}>Print dit formulier</button>
+          <button style={btnSG}>Print alle ({alleFormulieren.filter(function(f) { return f.boekingId === boeking.id; }).length})</button>
+          <button style={btnSG}>PDF</button>
+          <button style={btnA}>Publiceer Recras</button>
+        </div>
+      </div>
+
+      <div style={{ ...SS.card, background:C.night, color:C.white, padding:"14px 18px", marginBottom:12 }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+          <div>
+            {isHandmatig ? (
+              <div style={{ fontSize:11, color:C.muted }}>Handmatig formulier &mdash; geen Recras boeking</div>
+            ) : (
+              <div>
+                <div style={{ fontSize:9, color:C.muted, fontWeight:700, letterSpacing:1, textTransform:"uppercase" }}>Recras deadline</div>
+                <div style={{ fontWeight:900, fontSize:15, color:C.hot }}>{fDatum(boeking.deadline, false)}</div>
+              </div>
+            )}
+          </div>
+          <div style={{ display:"flex", gap:16 }}>
+            <div style={{ textAlign:"center" }}>
+              <div style={{ fontSize:9, color:C.muted, fontWeight:700, letterSpacing:1, textTransform:"uppercase" }}>Personen</div>
+              {isHandmatig ? (
+                <input type="number" value={handmatigePersonen}
+                  onChange={function(e) { setHandmatigePersonen(parseInt(e.target.value,10)||1); }}
+                  style={{ width:60, fontWeight:900, fontSize:16, color:C.white, background:"transparent", border:"1px solid rgba(255,255,255,.3)", borderRadius:5, textAlign:"center", padding:"2px 4px" }} />
+              ) : (
+                <div style={{ fontWeight:900, fontSize:18, color:C.white }}>{totaal}</div>
+              )}
+            </div>
+            <div style={{ textAlign:"center" }}>
+              <div style={{ fontSize:9, color:C.muted, fontWeight:700, letterSpacing:1, textTransform:"uppercase" }}>Buffetten</div>
+              <div style={{ fontWeight:900, fontSize:18, color:C.aqua }}>{nBuf}x</div>
+            </div>
+            <div style={{ textAlign:"center" }}>
+              <div style={{ fontSize:9, color:C.muted, fontWeight:700, letterSpacing:1, textTransform:"uppercase" }}>GN dishes</div>
+              <div style={{ fontWeight:900, fontSize:18, color:"#FFD54F" }}>{totaalDishes}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style={SS.card}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+          <div style={SS.cT}>Tijden</div>
+          <button style={btnSG}>Herbereken</button>
+        </div>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:8 }}>
+          {[["15:30","Oven aan","oven"],["15:45","BBQ aansteken","bbq"],["16:15","Producten ophalen",""],["16:45","Chafingdishes vullen",""],["17:00","Recras tijd","recras"]].map(function(item) {
+            var isRecras = item[2] === "recras";
+            return (
+              <div key={item[0]} style={{ background: isRecras ? "rgba(254,66,77,.1)" : C.gray, borderRadius:7, padding:"8px 10px", borderLeft: isRecras ? "3px solid #FE424D" : item[2] === "oven" ? "3px solid #FE424D" : "3px solid #E8EEF2" }}>
+                <div style={{ fontWeight:900, fontSize:14, color: isRecras ? C.hot : C.night }}>{item[0]}</div>
+                <div style={{ fontSize:10, color:C.muted, marginTop:2 }}>{item[1]}</div>
+                {item[2] && item[2] !== "recras" && <span style={{ ...tg(item[2] === "oven" ? C.hot : "#8B4513"), fontSize:9, marginTop:3, display:"inline-block" }}>{item[2]}</span>}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div style={SS.card}>
+        <div style={SS.cT}>Menus &mdash; opzetmarge: {Math.round(pct * 100)}%</div>
+        <table style={{ ...SS.tbl, marginTop:8 }}>
+          <thead>
+            <tr>
+              {["Menu","Personen","Effectief (na opzetmarge)"].map(function(h) { return <th key={h} style={SS.th}>{h}</th>; })}
+            </tr>
+          </thead>
+          <tbody>
+            {boeking.regels.map(function(r) {
+              var m = MENUS.find(function(m) { return m.code === r.menuCode; });
+              if (!m || m.psId !== psId) return null;
+              return (
+                <tr key={r.menuCode}>
+                  <td style={SS.td}><span style={{ ...tg(C.hot), marginRight:6 }}>{m.code}</span><strong>{m.naam}</strong></td>
+                  <td style={{ ...SS.td, fontWeight:700 }}>{r.aantal}</td>
+                  <td style={{ ...SS.td, fontWeight:700, color:C.aqua }}>{Math.round(r.aantal * pct)}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {buffetLayout && buffetLayout.items.length > 0 && (
+        <div style={Object.assign({}, SS.card, {borderLeft:"4px solid #1AA6B7"})}>
+          <div style={SS.cT}>Chafingdish benodigdheden</div>
+          <div style={alertI}>
+            Regel: kleinste GN bak die de porties past. Prio gerechten worden eerst geupgraded zodat het totaal uitkomt op hele chafingdishes. 3x GN 1/3 = 1 dish | 2x GN 1/2 = 1 dish | 1x GN 1/1 = 1 dish.
+          </div>
+          <table style={SS.tbl}>
+            <thead>
+              <tr>
+                {["Gerecht","Porties/buffet","GN formaat"].map(function(h) { return <th key={h} style={SS.th}>{h}</th>; })}
+              </tr>
+            </thead>
+            <tbody>
+              {buffetLayout.items.map(function(item) {
+                return (
+                  <tr key={item.code}>
+                    <td style={Object.assign({},SS.td,{fontWeight:700})}>
+                      {item.prio && <span style={{...tg(C.hot),marginRight:5,fontSize:9}}>PRIO</span>}
+                      {item.naam}
+                      {item.upgraded && <span style={{...tg(C.orange),marginLeft:5,fontSize:9}}>upgraded</span>}
+                    </td>
+                    <td style={SS.td}>{item.portiesPerBuf.toFixed(1)}</td>
+                    <td style={Object.assign({},SS.td,{fontWeight:700,color:C.aqua})}>{item.formaat}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <div style={{marginTop:10,padding:"10px 14px",background:C.light,borderRadius:7}}>
+            <div style={{fontWeight:900,fontSize:13}}>
+              Per buffet: {buffetLayout.counts[0] > 0 ? (Math.floor(buffetLayout.counts[0]/3) + " dish (" + buffetLayout.counts[0] + "x GN 1/3)") : ""}{buffetLayout.counts[0]>0&&(buffetLayout.counts[1]>0||buffetLayout.counts[2]>0)?" + ":""}{buffetLayout.counts[1] > 0 ? (Math.floor(buffetLayout.counts[1]/2) + " dish (" + buffetLayout.counts[1] + "x GN 1/2)") : ""}{buffetLayout.counts[1]>0&&buffetLayout.counts[2]>0?" + ":""}{buffetLayout.counts[2] > 0 ? (buffetLayout.counts[2] + " dish (GN 1/1)") : ""} = {buffetLayout.dishesPerBuf} chafingdishes
+            </div>
+            {nBuf > 1 && (
+              <div style={{fontSize:12,color:C.muted,marginTop:4}}>
+                {buffetLayout.dishesPerBuf} dishes x {nBuf} buffetten = {buffetLayout.totalDishes} chafingdishes totaal
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div style={SS.card}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
+          <div>
+            <div style={SS.cT}>Gerechtenlijst</div>
+            <div style={{ fontSize:11, color:C.muted }}>GN bovenaan &bull; grijs = niet van toepassing</div>
+          </div>
+          <button
+            style={{ ...btnSA, background: bewerkModus ? C.hot : C.aqua, fontSize:12, padding:"7px 14px" }}
+            onClick={function() { setBewerkModus(function(v) { return !v; }); }}>
+            {bewerkModus ? "Klaar met aanpassen" : "Formulier aanpassen"}
+          </button>
+        </div>
+
+        {bewerkModus && (
+          <div style={{ ...alertI, marginBottom:10 }}>
+            Aanpasmodus actief: vink gerechten aan/uit of overschrijf het benodigde aantal. Oranje = handmatig aangepast. Klik "Klaar met aanpassen" om terug te gaan.
+          </div>
+        )}
+
+        <table style={SS.tbl}>
+          <thead>
+            <tr>
+              {(bewerkModus
+                ? ["Act.","Gerecht","Benodigd (aanpasbaar)","Presentatievorm"]
+                : ["Act.","Gerecht","Benodigd","Presentatievorm"]
+              ).map(function(h) { return <th key={h} style={SS.th}>{h}</th>; })}
+            </tr>
+          </thead>
+          <tbody>
+            {gerechtenMet.map(function(g) {
+              var ov = getOverride(g.code);
+              var isUitgezet = ov.actief === false;
+              var grijs = isUitgezet || (g.ben === 0 && ov.overschrijfBen === undefined);
+              var presText = "";
+              if (!grijs) {
+                if (g.gn && g.layoutFormaat) {
+                  presText = g.toonBuffet ? (g.layoutFormaat) : (g.ben.toFixed(1) + " " + g.portieEenh + " → " + g.layoutFormaat);
+                } else if (!g.gn && g.schaalFormaten) {
+                  var sf = g.schaalFormaten.find(function(f) { return !f.uit; });
+                  presText = g.toonBuffet ? (nBuf + "x " + (sf ? sf.f : "")) : (g.ben.toFixed(1) + " " + g.portieEenh);
+                }
+              }
+              var benWaarde = ov.overschrijfBen !== undefined ? ov.overschrijfBen : (g.ben > 0 ? g.ben.toFixed(1) : "");
+              var isHandmatigAangepast = ov.overschrijfBen !== undefined;
+              return (
+                <tr key={g.code} style={{ opacity: isUitgezet ? 0.5 : 1 }}>
+                  <td style={grijs ? SS.tdG : SS.td}>
+                    {bewerkModus ? (
+                      <input type="checkbox"
+                        checked={!isUitgezet && (g.ben > 0 || ov.overschrijfBen !== undefined)}
+                        onChange={function(e) { setOverride(g.code, "actief", e.target.checked); }} />
+                    ) : (
+                      <span style={{ fontSize:13 }}>{!grijs ? "ok" : "-"}</span>
+                    )}
+                  </td>
+                  <td style={grijs ? { ...SS.tdG, fontWeight:700 } : { ...SS.td, fontWeight:700 }}>
+                    {g.gn && <span style={{ ...tg(C.aqua), marginRight:4, fontSize:9 }}>GN</span>}
+                    {g.prio && <span style={{ ...tg(C.hot), marginRight:4, fontSize:9 }}>PRIO</span>}
+                    {g.naam}
+                    {isHandmatigAangepast && <span style={{ ...tg(C.orange), marginLeft:5, fontSize:9 }}>aangepast</span>}
+                  </td>
+                  <td style={grijs ? SS.tdG : { ...SS.td, fontWeight:700, color: isHandmatigAangepast ? C.orange : C.night }}>
+                    {bewerkModus ? (
+                      <input type="number" step="0.5" min="0"
+                        value={benWaarde}
+                        onChange={function(e) { setOverride(g.code, "overschrijfBen", parseFloat(e.target.value)||0); }}
+                        placeholder="-"
+                        style={{ ...SS.inp, width:65, padding:"3px 6px", fontWeight:700, color: isHandmatigAangepast ? C.orange : C.night }} />
+                    ) : (
+                      <span>{benWaarde || "-"}</span>
+                    )}
+                  </td>
+                  <td style={grijs ? SS.tdG : { ...SS.td, color: g.toonBuffet ? C.aqua : C.night, fontWeight: g.toonBuffet ? 700 : 400 }}>
+                    {presText || "-"}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      <div style={SS.card}>
+        <div style={SS.cT}>Opmerkingen</div>
+        {boeking.opmerking && (
+          <div style={{ padding:"8px 12px", background:C.light, borderRadius:7, fontSize:12, marginBottom:10 }}>
+            <strong>[Recras]</strong> <span style={{ color:C.muted }}>{boeking.opmerking}</span>
+          </div>
+        )}
+        <textarea placeholder="Extra opmerking..." style={{ ...SS.inp, height:55, resize:"vertical" }} />
+      </div>
+    </div>
+  );
+}
+
+// ─── OPZET ─────────────────────────────────────────────────────────────────────
+
+function OpzetScreen() {
+  var [psId, setPsId] = useState("ps1");
+  var pg = PRODUCTGROEPEN.find(function(g) { return g.soorten.some(function(s) { return s.id === psId; }); });
+  // Boekingen die gerechten bevatten van deze productsoort (ook via menu's van andere productsoort)
+  var boekingen = BOEKINGEN.filter(function(b) {
+    return b.regels.some(function(r) {
+      var m = MENUS.find(function(m) { return m.code === r.menuCode; });
+      if (!m) return false;
+      // Direct psId match of gerecht in menu van deze psId
+      if (m.psId === psId) return true;
+      return m.gerechten.some(function(mg) {
+        var g = GERECHTEN.find(function(g) { return g.code === mg.grCode; });
+        return g && g.psId === psId;
+      });
+    });
+  });
+  var gerechten = GERECHTEN.filter(function(g) { return g.psId === psId; }).sort(function(a, b) {
+    if (a.gn && !b.gn) return -1;
+    if (!a.gn && b.gn) return 1;
+    return a.volgorde - b.volgorde;
+  });
+  var kleuren = [C.aqua, "#2979b0", "#5e35b1", "#00838f", "#2e7d32"];
+
+  return (
+    <div>
+      <div style={SS.pT}>Opzetoverzicht</div>
+      <div style={{ display:"flex", gap:6, marginBottom:12, flexWrap:"wrap" }}>
+        {PRODUCTGROEPEN.reduce(function(acc, g) { return acc.concat(g.soorten); }, []).map(function(ps_) {
+          var isAct = ps_.id === psId;
+          return (
+            <button key={ps_.id} style={{ background: isAct ? C.night : C.white, color: isAct ? C.white : C.night, border:"1.5px solid " + (isAct ? C.night : C.lgray), borderRadius:7, padding:"5px 12px", fontFamily:"inherit", fontWeight:700, fontSize:11, cursor:"pointer" }}
+              onClick={function() { setPsId(ps_.id); }}>
+              {ps_.naam}
+            </button>
+          );
+        })}
+      </div>
+      <div style={SS.card}>
+        <div style={{ overflowX:"auto" }}>
+          <table style={SS.tbl}>
+            <thead>
+              <tr>
+                <th style={{ ...SS.th, minWidth:160, background:"#001828" }}>Gerecht</th>
+                {boekingen.map(function(b, idx) {
+                  var kleur = kleuren[idx % kleuren.length];
+                  var nBuf = aantalBuf(totPers(b));
+                  var pct = opzetPct(totPers(b));
+                  var menusPs = b.regels.filter(function(r) {
+                    var m = MENUS.find(function(m) { return m.code === r.menuCode; });
+                    return m && m.psId === psId;
+                  });
+                  return (
+                    <th key={b.id} style={{ ...SS.th, background:kleur, minWidth:170, borderLeft:"2px solid rgba(255,255,255,.2)" }}>
+                      <div style={{ fontWeight:900, fontSize:12, marginBottom:2 }}>{b.naam}</div>
+                      <div style={{ fontSize:9, opacity:.85 }}>#{b.id} &bull; {fDatum(b.deadline, true)}</div>
+                      <div style={{ fontWeight:900, color:"#FFD54F", fontSize:12 }}>
+                        {new Date(b.deadline).toLocaleTimeString("nl-NL", { hour:"2-digit", minute:"2-digit" })}
+                      </div>
+                      <div style={{ fontSize:9, marginTop:3, borderTop:"1px solid rgba(255,255,255,.2)", paddingTop:3 }}>
+                        {menusPs.map(function(r) {
+                          var m = MENUS.find(function(m) { return m.code === r.menuCode; });
+                          return <div key={r.menuCode}>{m ? m.naam : r.menuCode}: {r.aantal}p</div>;
+                        })}
+                      </div>
+                      <div style={{ fontSize:9, opacity:.75, marginTop:2 }}>{Math.round(pct*100)}% opzet &bull; {nBuf}x buffet</div>
+                    </th>
+                  );
+                })}
+                <th style={{ ...SS.th, minWidth:140, background:"#000d14", borderLeft:"3px solid rgba(255,255,255,.3)" }}>TOTAAL</th>
+              </tr>
+            </thead>
+            <tbody>
+              {gerechten.map(function(g, ri) {
+                var waarden = boekingen.map(function(b) { return calcGerecht(b, g); });
+                var totaal = waarden.reduce(function(s, v) { return s + v; }, 0);
+                var rowBg = ri % 2 === 0 ? C.white : "#F9FAFB";
+                return (
+                  <tr key={g.code} style={{ background:rowBg }}>
+                    <td style={{ ...SS.td, fontWeight:700, background:rowBg, borderRight:"2px solid #E8EEF2" }}>
+                      {g.gn && <span style={{ ...tg(C.aqua), marginRight:4, fontSize:9 }}>GN</span>}
+                      {g.naam}
+                    </td>
+                    {waarden.map(function(v, i) {
+                      var b = boekingen[i];
+                      var nBuf = aantalBuf(totPers(b));
+                      var kleur = kleuren[i % kleuren.length];
+                      // Single gerecht chafing estimate for opzetoverzicht
+                      var c = (function() {
+                        if (!g.gn || v<=0) return null;
+                        var portBuf = v;
+                        var fmts=(g.gnFormaten||[]).filter(function(f){return !f.uit;}).sort(function(a,b){return a.p-b.p;});
+                        var fm=fmts.find(function(f){return f.p>=portBuf;});
+                        if(!fm) fm=fmts[fmts.length-1];
+                        if(!fm) return null;
+                        var gr=fm.f.indexOf("1/3")>=0?0:fm.f.indexOf("1/2")>=0?1:2;
+                        return {formaat:fm.f,grootte:gr};
+                      })();
+                      var verpInfo = berekenVerpakkingen(g, v);
+                      return (
+                        <td key={i} style={{ ...SS.td, fontSize:11, background: v === 0 ? "#F0F0F0" : rowBg, color: v === 0 ? C.muted : C.night, borderLeft:"2px solid " + kleur + "33", padding:"8px 10px" }}>
+                          {v > 0 ? (
+                            <div>
+                              {g.toonBuffet && c ? (
+                                <div style={{ fontWeight:700, color:C.aqua }}>{c.formaat}</div>
+                              ) : (
+                                <div style={{ fontWeight:700 }}>{v.toFixed(1)} {g.portieEenh}</div>
+                              )}
+                              {!g.toonBuffet && g.gn && c && (
+                                <div style={{ fontSize:10, color:C.aqua, marginTop:1 }}>{c.formaat}</div>
+                              )}
+                              {verpInfo && (
+                                <div style={{ fontSize:10, color:"#7B5EA7", fontWeight:700, marginTop:2, borderTop:"1px solid #E8EEF2", paddingTop:2 }}>
+                                  {verpInfo.aantal} verp. {verpInfo.naam}
+                                </div>
+                              )}
+                            </div>
+                          ) : "-"}
+                        </td>
+                      );
+                    })}
+                    <td style={{ ...SS.td, fontWeight:900, fontSize:11, background: ri % 2 === 0 ? "#EEF3F7" : "#E8EFF5", borderLeft:"3px solid rgba(0,45,65,.15)" }}>
+                      {totaal > 0 ? (
+                        <div>
+                          {g.toonBuffet ? (
+                            <div style={{ fontWeight:700, color:C.aqua }}>{totaal.toFixed(1)} {g.portieEenh}</div>
+                          ) : (
+                            <div>{totaal.toFixed(1)} {g.portieEenh}</div>
+                          )}
+                          {(function() {
+                            var vi = berekenVerpakkingen(g, totaal);
+                            if (!vi) return null;
+                            return <div style={{ fontSize:10, color:"#7B5EA7", fontWeight:700, marginTop:2, borderTop:"1px solid #E8EEF2", paddingTop:2 }}>{vi.aantal} verp. {vi.naam}</div>;
+                          })()}
+                        </div>
+                      ) : "-"}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── TIJDEN ────────────────────────────────────────────────────────────────────
+
+function TijdenScreen() {
+  var [appTab, setAppTab] = useState("alle");
+  var dagen = BOEKINGEN.map(function(b) { return b.deadline.split("T")[0]; }).filter(function(v, i, a) { return a.indexOf(v) === i; }).sort();
+  var [dag, setDag] = useState(dagen[0] || "");
+  var tijden = [
+    { t:"14:00", a:"Oven aan", b:"Familie Jansen / 85p", app:"oven" },
+    { t:"14:30", a:"BBQ aansteken", b:"Familie Jansen / 85p", app:"bbq" },
+    { t:"15:00", a:"Producten ophalen", b:"Bedrijf XYZ / 40p", app:"alle" },
+    { t:"15:30", a:"Oven aan", b:"Bedrijf XYZ / 40p", app:"oven" },
+    { t:"16:15", a:"Chafingdishes vullen", b:"Familie Jansen / 85p", app:"alle" },
+    { t:"17:00", a:"Recras tijd", b:"Familie Jansen", app:"alle" },
+    { t:"17:30", a:"Recras tijd", b:"Bedrijf XYZ", app:"alle" },
+  ];
+  var filtered = appTab === "alle" ? tijden : tijden.filter(function(x) { return x.app === appTab || x.app === "alle"; });
+  var ak = { oven:C.hot, bbq:"#8B4513", frituur:"#FF6B35" };
+  var dnamen = ["zo","ma","di","wo","do","vr","za"];
+  var mnamen = ["jan","feb","mrt","apr","mei","jun","jul","aug","sep","okt","nov","dec"];
+
+  return (
+    <div>
+      <div style={SS.pT}>Tijdenoverzicht</div>
+      <div style={{ display:"flex", gap:6, marginBottom:12, flexWrap:"wrap" }}>
+        {dagen.map(function(d) {
+          var dt = new Date(d);
+          var label = dnamen[dt.getDay()] + " " + dt.getDate() + " " + mnamen[dt.getMonth()];
+          return (
+            <button key={d} style={{ background: dag === d ? C.night : C.white, color: dag === d ? C.white : C.night, border:"1.5px solid " + (dag === d ? C.night : C.lgray), borderRadius:7, padding:"5px 12px", fontFamily:"inherit", fontWeight:700, fontSize:11, cursor:"pointer" }}
+              onClick={function() { setDag(d); }}>
+              {label}
+            </button>
+          );
+        })}
+      </div>
+      <div style={SS.tabBar}>
+        {[["alle","Alle tijden"],["oven","Oven"],["bbq","BBQ"],["frituur","Frituur"]].map(function(item) {
+          return <button key={item[0]} style={tabStyle(appTab === item[0])} onClick={function() { setAppTab(item[0]); }}>{item[1]}</button>;
+        })}
+      </div>
+      <div style={SS.card}>
+        <div style={SS.cS}>Vlees &amp; Vis &mdash; Gevogelte</div>
+        {filtered.map(function(x, i) {
+          var isRecras = x.a.indexOf("Recras") >= 0;
+          return (
+            <div key={i} style={{ display:"flex", alignItems:"center", gap:12, padding:"8px 0", borderBottom: i < filtered.length - 1 ? "1px solid #E8EEF2" : "none" }}>
+              <div style={{ fontWeight:900, fontSize:16, color: isRecras ? C.hot : C.night, width:52 }}>{x.t}</div>
+              <div style={{ flex:1 }}>
+                <div style={{ fontWeight: isRecras ? 900 : 700, color: isRecras ? C.hot : C.night, fontSize:12 }}>{isRecras ? "* " : ""}{x.a}</div>
+                <div style={{ fontSize:10, color:C.muted }}>{x.b}</div>
+              </div>
+              {x.app !== "alle" && <span style={tg(ak[x.app])}>{x.app}</span>}
+            </div>
+          );
+        })}
+      </div>
+      <div style={{ display:"flex", gap:7 }}>
+        <button style={btnSG}>Print</button>
+        <button style={btnSG}>PDF</button>
+      </div>
+    </div>
+  );
+}
+
+// ─── STAMGEGEVENS ──────────────────────────────────────────────────────────────
+
+function StamScreen() {
+  var [tab, setTab] = useState("pg");
+  var [heeftWijzigingen, setHeeftWijzigingen] = useState(false);
+  var [pendingTab, setPendingTab] = useState(null);
+  var tabs = [["pg","Productgroepen"],["sl","Sligro Import"],["gr","Gerechten"],["ti","Buffet / Tijden"],["mn","Menus"],["re","Recras Import"],["ge","Gebruikers"]];
+
+  function switchTab(newTab) {
+    if (heeftWijzigingen) {
+      setPendingTab(newTab);
+    } else {
+      setTab(newTab);
+    }
+  }
+
+  function bevestigWisselen() {
+    setTab(pendingTab);
+    setPendingTab(null);
+    setHeeftWijzigingen(false);
+  }
+
+  function annuleerWisselen() {
+    setPendingTab(null);
+  }
+
+  function markeerGewijzigd() {
+    setHeeftWijzigingen(true);
+  }
+
+  function markeerOpgeslagen() {
+    setHeeftWijzigingen(false);
+  }
+
+  return (
+    <div>
+      {pendingTab && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,45,65,.65)", zIndex:300, display:"flex", alignItems:"center", justifyContent:"center" }}>
+          <div style={{ background:C.white, borderRadius:14, padding:28, width:420, boxShadow:"0 8px 28px rgba(0,0,0,.3)" }}>
+            <div style={{ fontWeight:900, fontSize:18, color:C.night, marginBottom:8 }}>Niet-opgeslagen wijzigingen</div>
+            <p style={{ fontSize:13, color:C.muted, margin:"0 0 20px" }}>
+              Je hebt wijzigingen die nog niet zijn opgeslagen. Wil je doorgaan zonder opslaan?
+            </p>
+            <div style={{ display:"flex", gap:8, justifyContent:"flex-end" }}>
+              <button style={btnSG} onClick={annuleerWisselen}>Terug &mdash; ik ga opslaan</button>
+              <button style={{ ...btnSP, background:C.orange }} onClick={bevestigWisselen}>Toch doorgaan (wijzigingen kwijt)</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+        <div style={SS.pT}>Stamgegevens</div>
+        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+          {heeftWijzigingen && (
+            <span style={{ ...tg(C.orange), fontSize:11, padding:"4px 10px" }}>Niet-opgeslagen wijzigingen</span>
+          )}
+          <button style={{ ...btnP, opacity: heeftWijzigingen ? 1 : 0.45 }}
+            onClick={markeerOpgeslagen}>
+            Opslaan
+          </button>
+        </div>
+      </div>
+
+      <div style={SS.tabBar}>
+        {tabs.map(function(item) {
+          return (
+            <button key={item[0]} style={tabStyle(tab === item[0])} onClick={function() { switchTab(item[0]); }}>
+              {item[1]}
+            </button>
+          );
+        })}
+      </div>
+
+      {tab === "pg" && <PGTab onChange={markeerGewijzigd} onSave={markeerOpgeslagen} />}
+      {tab === "sl" && <SligroTab onChange={markeerGewijzigd} onSave={markeerOpgeslagen} />}
+      {tab === "gr" && <GerechtenTab onChange={markeerGewijzigd} onSave={markeerOpgeslagen} />}
+      {tab === "ti" && <TijdenTab onChange={markeerGewijzigd} onSave={markeerOpgeslagen} />}
+      {tab === "mn" && <MenusTab onChange={markeerGewijzigd} onSave={markeerOpgeslagen} />}
+      {tab === "re" && <RecrasTab onChange={markeerGewijzigd} onSave={markeerOpgeslagen} />}
+      {tab === "ge" && <GebruikersTab onChange={markeerGewijzigd} onSave={markeerOpgeslagen} />}
+    </div>
+  );
+}
+
+function PGTab({ onChange, onSave }) {
+  var [groepen, setGroepen] = useState(PRODUCTGROEPEN);
+  var [exp, setExp] = useState("pg1");
+  var [nG, setNG] = useState("");
+  var [nP, setNP] = useState({});
+
+  function addGroep() {
+    if (!nG.trim()) return;
+    var code = "PGen" + String(groepen.length + 1).padStart(3, "0");
+    setGroepen(function(g) { return g.concat([{ id:"pg"+Date.now(), code:code, naam:nG.trim(), soorten:[] }]); });
+    setNG("");
+  }
+
+  function addSoort(pgId) {
+    var nm = nP[pgId] || "";
+    if (!nm.trim()) return;
+    setGroepen(function(g) {
+      return g.map(function(x) {
+        if (x.id !== pgId) return x;
+        var code = "PS" + String(x.soorten.length + 1).padStart(3, "0");
+        return Object.assign({}, x, { soorten: x.soorten.concat([{ id:"ps"+Date.now(), code:code, naam:nm.trim() }]) });
+      });
+    });
+    setNP(function(p) { return Object.assign({}, p, { [pgId]:"" }); });
+  }
+
+  return (
+    <div style={SS.card}>
+      <div style={SS.cT}>Productgroepen</div>
+      {groepen.map(function(g) {
+        return (
+          <div key={g.id} style={{ border:"1px solid #E8EEF2", borderRadius:8, marginBottom:7 }}>
+            <div style={{ padding:"10px 13px", display:"flex", alignItems:"center", gap:8, cursor:"pointer", background: exp === g.id ? C.light : C.white }}
+              onClick={function() { setExp(exp === g.id ? null : g.id); }}>
+              <span style={{ fontSize:10, color:C.muted }}>{exp === g.id ? "v" : ">"}</span>
+              <span style={tg(C.aqua)}>{g.code}</span>
+              <span style={{ fontWeight:700, flex:1, fontSize:12 }}>{g.naam}</span>
+              <span style={{ fontSize:10, color:C.muted }}>{g.soorten.length} soorten</span>
+              <button style={{ ...btnSG, color:C.hot }} onClick={function(e) {
+                e.stopPropagation();
+                if (window.confirm("Verwijder " + g.naam + "?")) {
+                  setGroepen(function(p) { return p.filter(function(x) { return x.id !== g.id; }); });
+                }
+              }}>X</button>
+            </div>
+            {exp === g.id && (
+              <div style={{ padding:"6px 13px 12px 30px", borderTop:"1px solid #E8EEF2" }}>
+                <div style={{ fontWeight:700, fontSize:10, color:C.muted, letterSpacing:1, textTransform:"uppercase", margin:"6px 0 8px" }}>Productsoorten</div>
+                {g.soorten.length === 0 && <div style={{ fontSize:11, color:C.muted, marginBottom:8 }}>Nog geen productsoorten.</div>}
+                {g.soorten.map(function(ps) {
+                  return (
+                    <div key={ps.id} style={{ display:"flex", alignItems:"center", gap:7, padding:"6px 0", borderBottom:"1px solid #E8EEF2" }}>
+                      <span style={tg(C.night)}>{ps.code}</span>
+                      <span style={{ flex:1, fontSize:12 }}>{ps.naam}</span>
+                      <button style={{ ...btnSG, color:C.hot }} onClick={function() {
+                        setGroepen(function(p) {
+                          return p.map(function(x) {
+                            if (x.id !== g.id) return x;
+                            return Object.assign({}, x, { soorten: x.soorten.filter(function(s) { return s.id !== ps.id; }) });
+                          });
+                        });
+                      }}>X</button>
+                    </div>
+                  );
+                })}
+                <div style={{ display:"flex", gap:7, marginTop:8 }}>
+                  <input value={nP[g.id] || ""} onChange={function(e) { setNP(function(p) { return Object.assign({}, p, { [g.id]: e.target.value }); }); }}
+                    placeholder="Naam productsoort..." style={{ ...SS.inp, flex:1, padding:"6px 9px" }}
+                    onKeyDown={function(e) { if (e.key === "Enter") addSoort(g.id); }} />
+                  <button style={btnSA} onClick={function() { addSoort(g.id); }}>+ Toevoegen</button>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
+      <div style={{ display:"flex", gap:7, marginTop:10 }}>
+        <input value={nG} onChange={function(e) { setNG(e.target.value); if(onChange) onChange(); }} placeholder="Naam nieuwe productgroep..." style={{ ...SS.inp, flex:1 }}
+          onKeyDown={function(e) { if (e.key === "Enter") addGroep(); }} />
+        <button style={btnP} onClick={addGroep}>+ Productgroep</button>
+      </div>
+      <div style={{ display:"flex", justifyContent:"flex-end", marginTop:10 }}>
+        <button style={btnP} onClick={function() { if(onSave) onSave(); }}>Opslaan</button>
+      </div>
+    </div>
+  );
+}
+
+function SligroTab({ onChange, onSave }) {
+  var oningesteld = SLIGRO.filter(function(p) { return !p.ok; }).length;
+  return (
+    <div style={SS.card}>
+      <div style={{ display:"flex", justifyContent:"space-between", marginBottom:10 }}>
+        <div>
+          <div style={SS.cT}>Sligro Import</div>
+          <div style={{ fontSize:11, color:C.muted }}>{SLIGRO.length} producten</div>
+        </div>
+        <button style={btnA}>Importeer</button>
+      </div>
+      {oningesteld > 0 && <div style={alertW}>{oningesteld} producten oningesteld (geel gemarkeerd)</div>}
+      <div style={alertI}>Zichtbaar: Ja = toont als verpakkingsregel in opzetoverzicht &bull; Nee = verborgen &bull; Nooit = altijd verborgen (bijv. kruiden)</div>
+      <input placeholder="Zoek op artikelnummer of naam..." style={{ ...SS.inp, marginBottom:10 }} />
+      <div style={{ overflowX:"auto" }}>
+        <table style={SS.tbl}>
+          <thead>
+            <tr>
+              {["Artnr.","Productnaam","Merk","Eigen productgroep","Hoev.","Eenheid","euro ex. BTW","Zichtbaar",""].map(function(h) {
+                return <th key={h} style={SS.th}>{h}</th>;
+              })}
+            </tr>
+          </thead>
+          <tbody>
+            {SLIGRO.map(function(p) {
+              var cel = p.ok ? SS.td : SS.tdY;
+              return (
+                <tr key={p.artnr}>
+                  <td style={cel}><span style={tg(C.muted)}>{p.artnr}</span></td>
+                  <td style={{ ...cel, fontWeight:700, maxWidth:200, fontSize:11 }}>{p.naam}</td>
+                  <td style={cel}><span style={tg(C.aqua)}>{p.merk}</span></td>
+                  <td style={cel}>
+                    <select style={{ ...SS.inp, width:130, padding:"3px 6px" }} defaultValue={p.pgIds[0] || ""} onChange={function() { if(onChange) onChange(); }}>
+                      <option value="">-- Kies groep --</option>
+                      {PRODUCTGROEPEN.map(function(g) { return <option key={g.id} value={g.id}>{g.naam}</option>; })}
+                    </select>
+                  </td>
+                  <td style={cel}><input defaultValue={p.hoev} style={{ ...SS.inp, width:55, padding:"3px 6px" }} /></td>
+                  <td style={cel}>
+                    <select style={{ ...SS.inp, width:65, padding:"3px 6px" }} defaultValue={p.eenh}>
+                      {["stuks","gram","kilo","ml","liter"].map(function(e) { return <option key={e}>{e}</option>; })}
+                    </select>
+                  </td>
+                  <td style={cel}><input defaultValue={p.prijs} placeholder="0.00" style={{ ...SS.inp, width:65, padding:"3px 6px" }} /></td>
+                  <td style={cel}>
+                    <select style={{ ...SS.inp, width:75, padding:"3px 6px" }}>
+                      <option>Ja</option><option>Nee</option><option>Nooit</option>
+                    </select>
+                  </td>
+                  <td style={cel}><button style={{ ...btnSG, color:C.hot }}>X</button></td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <div style={{ display:"flex", justifyContent:"flex-end", marginTop:10 }}>
+        <button style={btnP} onClick={function() { if(onSave) onSave(); }}>Opslaan</button>
+      </div>
+    </div>
+  );
+}
+
+function GerechtenTab({ onChange, onSave }) {
+  var [detail, setDetail] = useState(null);
+  var [subTab, setSubTab] = useState("alg");
+
+  if (detail) {
+    var g = GERECHTEN.find(function(x) { return x.code === detail; }) || GERECHTEN[0];
+    return (
+      <div>
+        <button style={{ ...btnSG, marginBottom:12 }} onClick={function() { setDetail(null); }}>Terug naar overzicht</button>
+        <div style={{ fontWeight:900, fontSize:16, marginBottom:12 }}>{g.naam} <span style={tg(C.hot)}>{g.code}</span></div>
+        <div style={SS.tabBar}>
+          {[["alg","Algemeen"],["pres","Presentatie"],["ing","Ingredienten"]].map(function(item) {
+            return <button key={item[0]} style={tabStyle(subTab === item[0])} onClick={function() { setSubTab(item[0]); }}>{item[1]}</button>;
+          })}
+        </div>
+        {subTab === "alg" && (
+          <div style={SS.card}>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+              <div><label style={SS.lbl}>Naam</label><input style={SS.inp} defaultValue={g.naam} onChange={function() { if(onChange) onChange(); }} /></div>
+              <div><label style={SS.lbl}>Code</label><input style={{ ...SS.inp, background:"#F5F5F5" }} defaultValue={g.code} readOnly /></div>
+              <div><label style={SS.lbl}>Portie-eenheid</label>
+                <select style={SS.inp} defaultValue={g.portieEenh}>
+                  <option>portie</option><option>stuks</option>
+                </select>
+              </div>
+              <div><label style={SS.lbl}>Volgorde</label><input style={SS.inp} defaultValue={g.volgorde} type="number" /></div>
+            </div>
+            <div style={{ display:"flex", justifyContent:"flex-end", marginTop:12 }}>
+              <button style={btnP} onClick={function() { if(onSave) onSave(); }}>Opslaan</button>
+            </div>
+          </div>
+        )}
+        {subTab === "pres" && (
+          <div style={SS.card}>
+            <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:14 }}>
+              <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+                <input type="checkbox" defaultChecked={g.gn} id="chk-gn" />
+                <label htmlFor="chk-gn" style={{ fontWeight:700, fontSize:12 }}>GN presentatie (chafingdish)</label>
+              </div>
+              <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+                <input type="checkbox" defaultChecked={g.prio} id="chk-prio" />
+                <label htmlFor="chk-prio" style={{ fontWeight:700, fontSize:12 }}>Prio &mdash; upgrade naar grotere bak</label>
+              </div>
+              <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+                <input type="checkbox" defaultChecked={g.toonBuffet} id="chk-buf" />
+                <label htmlFor="chk-buf" style={{ fontWeight:700, fontSize:12 }}>Toon buffetaantal x presentatievorm (i.p.v. portieaantal)</label>
+              </div>
+            </div>
+            {g.gn && g.gnFormaten && (
+              <table style={SS.tbl}>
+                <thead>
+                  <tr>{["Formaat","Porties/bak","Uitsluiten"].map(function(h) { return <th key={h} style={SS.th}>{h}</th>; })}</tr>
+                </thead>
+                <tbody>
+                  {g.gnFormaten.map(function(f) {
+                    return (
+                      <tr key={f.f}>
+                        <td style={SS.td}>{f.f}</td>
+                        <td style={SS.td}><input defaultValue={f.p} style={{ ...SS.inp, width:60, padding:"3px 7px" }} /></td>
+                        <td style={SS.td}><input type="checkbox" defaultChecked={f.uit} /></td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+            {!g.gn && (
+              <div>
+                <div style={{ fontWeight:700, fontSize:12, marginBottom:8 }}>Presentatie formaten</div>
+                <div style={alertI}>Volgorde bepaalt grootte: kleinste formaat bovenaan, grootste onderaan. Markeer het grootste formaat met "Grootst".</div>
+                <table style={SS.tbl}>
+                  <thead>
+                    <tr>{["Naam formaat","Max porties","Grootst","Uitsluiten",""].map(function(h) { return <th key={h} style={SS.th}>{h}</th>; })}</tr>
+                  </thead>
+                  <tbody>
+                    {(g.schaalFormaten || []).map(function(f, fi) {
+                      return (
+                        <tr key={fi}>
+                          <td style={SS.td}>
+                            <input defaultValue={f.f} style={{ ...SS.inp, padding:"3px 7px" }}
+                              placeholder="bijv. Vierkant klein" />
+                          </td>
+                          <td style={SS.td}><input defaultValue={f.p} style={{ ...SS.inp, width:60, padding:"3px 7px" }} type="number" /></td>
+                          <td style={SS.td}>
+                            <input type="checkbox" defaultChecked={!!f.isGroot}
+                              title="Dit is het grootste beschikbare formaat" />
+                          </td>
+                          <td style={SS.td}><input type="checkbox" defaultChecked={!!f.uit} /></td>
+                          <td style={SS.td}><button style={{...btnSG,color:C.hot}}>X</button></td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+                <button style={{...btnSA, marginTop:8}}>+ Formaat toevoegen</button>
+              </div>
+            )}
+            <div style={{ display:"flex", justifyContent:"flex-end", marginTop:12 }}>
+              <button style={btnP} onClick={function() { if(onSave) onSave(); }}>Opslaan</button>
+            </div>
+          </div>
+        )}
+        {subTab === "ing" && (
+          <div style={SS.card}>
+            <table style={SS.tbl}>
+              <thead>
+                <tr>{["Artnr.","Naam","Verpakking","prijs/verp","Gebruik/portie","prijs/portie","Zichtbaar",""].map(function(h) { return <th key={h} style={SS.th}>{h}</th>; })}</tr>
+              </thead>
+              <tbody>
+                {(g.ingredienten || []).map(function(ing) {
+                  var kp = ing.prijs && ing.verp ? ((ing.gebruik / ing.verp) * ing.prijs).toFixed(2) : "?";
+                  return (
+                    <tr key={ing.artnr}>
+                      <td style={SS.td}><span style={tg(C.muted)}>{ing.artnr}</span></td>
+                      <td style={{ ...SS.td, fontWeight:700, fontSize:11 }}>{ing.naam}</td>
+                      <td style={SS.td}>{ing.verp} {ing.eenh}</td>
+                      <td style={SS.td}>{ing.prijs}</td>
+                      <td style={SS.td}><input defaultValue={ing.gebruik} style={{ ...SS.inp, width:60, padding:"3px 7px" }} /> {ing.eenh}</td>
+                      <td style={{ ...SS.td, color:C.green, fontWeight:700 }}>{kp}</td>
+                      <td style={SS.td}>
+                        <select style={{ ...SS.inp, width:75, padding:"3px 7px" }} defaultValue={ing.zichtbaar}>
+                          <option value="ja">Ja</option>
+                          <option value="nee">Nee</option>
+                          <option value="nooit">Nooit</option>
+                        </select>
+                      </td>
+                      <td style={SS.td}><button style={{ ...btnSG, color:C.hot }}>X</button></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            <button style={{ ...btnA, marginTop:10 }}>+ Sligro product toevoegen</button>
+            <div style={{ display:"flex", justifyContent:"flex-end", marginTop:10 }}>
+              <button style={btnP} onClick={function() { if(onSave) onSave(); }}>Opslaan</button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div style={SS.card}>
+      <div style={SS.cT}>Gerechten</div>
+      <div style={SS.cS}>Versleepbaar &bull; klik om te bewerken</div>
+      {PRODUCTGROEPEN.filter(function(g) { return GERECHTEN.some(function(gr) { return gr.pgId === g.id; }); }).map(function(g) {
+        return (
+          <div key={g.id} style={{ marginBottom:14 }}>
+            <div style={{ fontWeight:900, fontSize:12, color:C.night, marginBottom:7 }}>{g.naam}</div>
+            {GERECHTEN.filter(function(gr) { return gr.pgId === g.id; }).sort(function(a, b) { return a.volgorde - b.volgorde; }).map(function(gr) {
+              return (
+                <div key={gr.code} style={{ display:"flex", alignItems:"center", gap:7, padding:"8px 11px", background:C.gray, borderRadius:6, marginBottom:3, cursor:"pointer" }}
+                  onClick={function() { setDetail(gr.code); }}>
+                  <span style={tg(C.hot)}>{gr.code}</span>
+                  <span style={{ flex:1, fontWeight:700, fontSize:12 }}>{gr.naam}</span>
+                  {gr.gn && <span style={tg(C.aqua)}>GN</span>}
+                  {gr.prio && <span style={tg(C.hot)}>PRIO</span>}
+                  {gr.toonBuffet && <span style={tg("#8B4513")}>BUFFET</span>}
+                  <button style={btnSA}>Bewerken</button>
+                </div>
+              );
+            })}
+            <button style={{ ...btnSP, marginTop:5 }}>+ Nieuw gerecht</button>
+          </div>
+        );
+      })}
+      <div style={{ display:"flex", justifyContent:"flex-end" }}>
+        <button style={btnP} onClick={function() { if(onSave) onSave(); }}>Opslaan</button>
+      </div>
+    </div>
+  );
+}
+
+function TijdenTab({ onChange, onSave }) {
+  var [actief, setActief] = useState("ps1");
+  var allePsIds = PRODUCTGROEPEN.reduce(function(acc, g) { return acc.concat(g.soorten); }, []);
+  var pg = PRODUCTGROEPEN.find(function(g) { return g.soorten.some(function(s) { return s.id === actief; }); });
+  var ps = allePsIds.find(function(s) { return s.id === actief; });
+  var [marges, setMarges] = useState([{tot:10,pct:100},{tot:25,pct:95},{tot:50,pct:90},{tot:100,pct:85}]);
+  var [bufs, setBufs] = useState([{tot:100,aantal:1},{tot:200,aantal:2},{tot:300,aantal:3}]);
+  var [tijs, setTijs] = useState([
+    { id:1, naam:"Oven aan",          app:"oven",    alles:false, tredes:[{tot:50,min:60},{tot:150,min:90}] },
+    { id:2, naam:"BBQ aansteken",     app:"bbq",     alles:true,  min:75 },
+    { id:3, naam:"Producten ophalen", app:"",        alles:true,  min:45 },
+  ]);
+
+  return (
+    <div>
+      <div style={{ display:"flex", gap:5, marginBottom:12, flexWrap:"wrap" }}>
+        {allePsIds.map(function(ps_) {
+          return (
+            <button key={ps_.id} style={{ background: actief === ps_.id ? C.night : C.white, color: actief === ps_.id ? C.white : C.night, border:"1.5px solid " + (actief === ps_.id ? C.night : C.lgray), borderRadius:6, padding:"4px 11px", fontFamily:"inherit", fontWeight:700, fontSize:11, cursor:"pointer" }}
+              onClick={function() { setActief(ps_.id); }}>
+              {ps_.naam}
+            </button>
+          );
+        })}
+      </div>
+      <div style={{ fontWeight:900, fontSize:12, marginBottom:12 }}>{pg ? pg.naam : ""} &mdash; {ps ? ps.naam : ""}</div>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:12 }}>
+        <div style={SS.card}>
+          <div style={SS.cT}>Opzetmarges</div>
+          <table style={SS.tbl}>
+            <thead><tr>{["Tot pers.","Pct",""].map(function(h) { return <th key={h} style={SS.th}>{h}</th>; })}</tr></thead>
+            <tbody>
+              {marges.map(function(m, i) {
+                return (
+                  <tr key={i}>
+                    <td style={SS.td}><input defaultValue={m.tot} style={{ ...SS.inp, width:55, padding:"3px 7px" }} /></td>
+                    <td style={SS.td}><input defaultValue={m.pct} style={{ ...SS.inp, width:55, padding:"3px 7px" }} /> %</td>
+                    <td style={SS.td}><button style={{ ...btnSG, color:C.hot }} onClick={function() { setMarges(function(prev) { return prev.filter(function(_, j) { return j !== i; }); }); }}>X</button></td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <button style={{ ...btnSA, marginTop:7 }} onClick={function() { setMarges(function(m) { var last = m[m.length-1]; return m.concat([{tot: last.tot+50, pct: Math.max(last.pct-5,50)}]); }); }}>+ Trede</button>
+        </div>
+        <div style={SS.card}>
+          <div style={SS.cT}>Buffet hoeveelheden</div>
+          <table style={SS.tbl}>
+            <thead><tr>{["Tot pers.","Buffetten",""].map(function(h) { return <th key={h} style={SS.th}>{h}</th>; })}</tr></thead>
+            <tbody>
+              {bufs.map(function(b, i) {
+                return (
+                  <tr key={i}>
+                    <td style={SS.td}><input defaultValue={b.tot} style={{ ...SS.inp, width:55, padding:"3px 7px" }} /></td>
+                    <td style={SS.td}><input defaultValue={b.aantal} style={{ ...SS.inp, width:55, padding:"3px 7px" }} /></td>
+                    <td style={SS.td}><button style={{ ...btnSG, color:C.hot }} onClick={function() { setBufs(function(prev) { return prev.filter(function(_, j) { return j !== i; }); }); }}>X</button></td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <button style={{ ...btnSA, marginTop:7 }} onClick={function() { setBufs(function(b) { var last = b[b.length-1]; return b.concat([{tot: last.tot+100, aantal: last.aantal+1}]); }); }}>+ Trede</button>
+        </div>
+      </div>
+      <div style={SS.card}>
+        <div style={SS.cT}>Tijdseenheden</div>
+        {tijs.map(function(t, i) {
+          return (
+            <div key={t.id} style={{ border:"1px solid #E8EEF2", borderRadius:8, padding:12, marginBottom:8 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+                <input defaultValue={t.naam} style={{ ...SS.inp, flex:1, padding:"5px 9px" }} />
+                <select style={{ ...SS.inp, width:95, padding:"5px 7px" }} defaultValue={t.app}>
+                  <option value="">Algemeen</option>
+                  <option value="oven">Oven</option>
+                  <option value="bbq">BBQ</option>
+                  <option value="frituur">Frituur</option>
+                </select>
+                <button style={{ ...btnSG, color:C.hot }} onClick={function() { setTijs(function(prev) { return prev.filter(function(_, j) { return j !== i; }); }); }}>X</button>
+              </div>
+              <div style={{ display:"flex", gap:8, alignItems:"center", marginBottom:8 }}>
+                <input type="checkbox" defaultChecked={t.alles} />
+                <label style={{ fontSize:11, fontWeight:700 }}>Geldt voor alle groepsgroottes</label>
+              </div>
+              {t.alles ? (
+                <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+                  <span style={{ fontSize:11, color:C.muted }}>Minuten voor recras:</span>
+                  <input defaultValue={t.min} style={{ ...SS.inp, width:60, padding:"5px 8px" }} />
+                </div>
+              ) : (
+                <div>
+                  <table style={SS.tbl}>
+                    <thead><tr>{["Tot pers.","Minuten",""].map(function(h) { return <th key={h} style={SS.th}>{h}</th>; })}</tr></thead>
+                    <tbody>
+                      {(t.tredes || []).map(function(tr, j) {
+                        return (
+                          <tr key={j}>
+                            <td style={SS.td}><input defaultValue={tr.tot} style={{ ...SS.inp, width:55, padding:"3px 7px" }} /></td>
+                            <td style={SS.td}><input defaultValue={tr.min} style={{ ...SS.inp, width:55, padding:"3px 7px" }} /></td>
+                            <td style={SS.td}><button style={{ ...btnSG, color:C.hot }}>X</button></td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                  <button style={{ ...btnSA, marginTop:5 }}>+ Trede</button>
+                </div>
+              )}
+            </div>
+          );
+        })}
+        <button style={btnA} onClick={function() { setTijs(function(prev) { return prev.concat([{id:Date.now(),naam:"Nieuwe tijdseenheid",app:"",alles:true,min:30}]); }); }}>+ Tijdseenheid</button>
+      </div>
+      <div style={{ display:"flex", justifyContent:"flex-end" }}>
+        <button style={btnP} onClick={function() { if(onSave) onSave(); }}>Opslaan</button>
+      </div>
+    </div>
+  );
+}
+
+function MenusTab({ onChange, onSave }) {
+  var [menus, setMenus] = useState(MENUS);
+  var [exp, setExp] = useState("MN001");
+  var [editModal, setEditModal] = useState(null);
+  var [editForm, setEditForm] = useState({ naam:"", verkoop:0 });
+  var [addModal, setAddModal] = useState(null);
+  var [addCode, setAddCode] = useState("");
+  var [addPp, setAddPp] = useState("1");
+
+  function dup(m) {
+    var count = menus.filter(function(x) { return x.naam.indexOf(m.naam) === 0; }).length;
+    var nieuw = Object.assign({}, m, { code:"MN"+String(menus.length+1).padStart(3,"0"), naam:m.naam+" ("+count+")" });
+    var idx = menus.findIndex(function(x) { return x.code === m.code; });
+    var next = menus.slice();
+    next.splice(idx + 1, 0, nieuw);
+    setMenus(next);
+    setExp(nieuw.code);
+  }
+
+  return (
+    <div>
+      <div style={{ ...SS.card, padding:14, marginBottom:12 }}>
+        <div style={{ display:"flex", justifyContent:"space-between" }}>
+          <div style={SS.cT}>Menus</div>
+          <button style={btnP}>+ Nieuw menu</button>
+        </div>
+      </div>
+      {PRODUCTGROEPEN.map(function(pg) {
+        var msInPg = menus.filter(function(m) { return m.pgId === pg.id; });
+        if (!msInPg.length) return null;
+        return (
+          <div key={pg.id} style={{ marginBottom:16 }}>
+            <div style={{ fontWeight:900, fontSize:13, color:C.night, marginBottom:8 }}>{pg.naam}</div>
+            {pg.soorten.map(function(ps) {
+              var msInPs = msInPg.filter(function(m) { return m.psId === ps.id; });
+              if (!msInPs.length) return null;
+              return (
+                <div key={ps.id} style={{ marginBottom:10 }}>
+                  <div style={{ fontWeight:700, fontSize:10, color:C.aqua, letterSpacing:1, textTransform:"uppercase", marginBottom:6 }}>{ps.naam}</div>
+                  {msInPs.map(function(m) {
+                    return (
+                      <div key={m.code} style={{ border:"1px solid #E8EEF2", borderRadius:8, marginBottom:5 }}>
+                        <div style={{ padding:"10px 13px", display:"flex", alignItems:"center", gap:8, cursor:"pointer", background: exp === m.code ? C.light : C.white }}
+                          onClick={function() { setExp(exp === m.code ? null : m.code); }}>
+                          <span style={{ fontSize:10, color:C.muted }}>{exp === m.code ? "v" : ">"}</span>
+                          <span style={tg(C.hot)}>{m.code}</span>
+                          <span style={{ fontWeight:900, flex:1, fontSize:13 }}>{m.naam}</span>
+                          <span style={tg(C.green)}>{m.verkoop.toFixed(2)} excl. BTW</span>
+                          <button style={btnSG} onClick={function(e) { e.stopPropagation(); setEditForm({naam:m.naam,verkoop:m.verkoop}); setEditModal(m.code); }}>Bewerken</button>
+                          <button style={btnSA} onClick={function(e) { e.stopPropagation(); dup(m); }}>Dupliceer</button>
+                          <button style={{ ...btnSG, color:C.hot }} onClick={function(e) { e.stopPropagation(); }}>X</button>
+                        </div>
+                        {exp === m.code && (
+                          <div style={{ padding:"8px 13px 12px 30px", borderTop:"1px solid #E8EEF2" }}>
+                            <div style={{ fontWeight:700, fontSize:10, color:C.muted, letterSpacing:1, textTransform:"uppercase", margin:"5px 0 8px" }}>Gekoppelde gerechten</div>
+                            {m.gerechten.map(function(mg) {
+                              var gr = GERECHTEN.find(function(g) { return g.code === mg.grCode; });
+                              if (!gr) return null;
+                              return (
+                                <div key={mg.grCode} style={{ display:"flex", alignItems:"center", gap:8, padding:"7px 0", borderBottom:"1px solid #E8EEF2" }}>
+                                  <span style={tg(C.night)}>{gr.code}</span>
+                                  <span style={{ flex:1, fontWeight:700, fontSize:12 }}>{gr.naam}</span>
+                                  {gr.gn && <span style={tg(C.aqua)}>GN</span>}
+                                  <input defaultValue={mg.pp} style={{ ...SS.inp, width:55, padding:"3px 7px" }} placeholder="Hoev./pers." />
+                                  <span style={{ fontSize:11, color:C.muted }}>x per persoon</span>
+                                  <button style={{ ...btnSG, color:C.hot }} onClick={function() {
+                                    setMenus(function(ms) {
+                                      return ms.map(function(x) {
+                                        if (x.code !== m.code) return x;
+                                        return Object.assign({}, x, { gerechten: x.gerechten.filter(function(mg2) { return mg2.grCode !== mg.grCode; }) });
+                                      });
+                                    });
+                                  }}>X</button>
+                                </div>
+                              );
+                            })}
+                            <button style={{ ...btnA, marginTop:8 }} onClick={function() { setAddCode(""); setAddPp("1"); setAddModal(m.code); }}>+ Gerecht toevoegen</button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        );
+      })}
+      <div style={{ display:"flex", justifyContent:"flex-end" }}>
+        <button style={btnP} onClick={function() { if(onSave) onSave(); }}>Opslaan</button>
+      </div>
+
+      {editModal && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,45,65,.6)", zIndex:200, display:"flex", alignItems:"center", justifyContent:"center" }}>
+          <div style={{ background:C.white, borderRadius:14, padding:26, width:360, boxShadow:"0 8px 28px rgba(0,0,0,.3)" }}>
+            <div style={{ fontWeight:900, fontSize:17, color:C.night, marginBottom:16 }}>Menu bewerken</div>
+            <div style={{ marginBottom:10 }}>
+              <label style={SS.lbl}>Naam</label>
+              <input style={SS.inp} value={editForm.naam} onChange={function(e) { setEditForm(function(f) { return Object.assign({}, f, {naam: e.target.value}); }); if(onChange) onChange(); }} />
+            </div>
+            <div style={{ marginBottom:14 }}>
+              <label style={SS.lbl}>Verkoopprijs excl. BTW</label>
+              <input style={SS.inp} value={editForm.verkoop} type="number" step="0.01" onChange={function(e) { setEditForm(function(f) { return Object.assign({}, f, {verkoop: e.target.value}); }); }} />
+            </div>
+            <div style={{ display:"flex", gap:7, justifyContent:"flex-end" }}>
+              <button style={btnSG} onClick={function() { setEditModal(null); }}>Annuleren</button>
+              <button style={btnP} onClick={function() { setMenus(function(m) { return m.map(function(x) { return x.code !== editModal ? x : Object.assign({}, x, {naam:editForm.naam, verkoop:parseFloat(editForm.verkoop)||0}); }); }); setEditModal(null); }}>Opslaan</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {addModal && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,45,65,.6)", zIndex:200, display:"flex", alignItems:"center", justifyContent:"center" }}>
+          <div style={{ background:C.white, borderRadius:14, padding:26, width:400, boxShadow:"0 8px 28px rgba(0,0,0,.3)" }}>
+            <div style={{ fontWeight:900, fontSize:17, color:C.night, marginBottom:16 }}>Gerecht toevoegen</div>
+            <div style={{ marginBottom:10 }}>
+              <label style={SS.lbl}>Gerecht</label>
+              <select style={SS.inp} value={addCode} onChange={function(e) { setAddCode(e.target.value); }}>
+                <option value="">-- Kies gerecht --</option>
+                {GERECHTEN.map(function(g) { return <option key={g.code} value={g.code}>{g.code} &mdash; {g.naam}</option>; })}
+              </select>
+            </div>
+            <div style={{ marginBottom:14 }}>
+              <label style={SS.lbl}>Hoeveelheid per persoon</label>
+              <input style={SS.inp} value={addPp} type="number" step="0.25" min="0.1" onChange={function(e) { setAddPp(e.target.value); }} />
+            </div>
+            <div style={{ display:"flex", gap:7, justifyContent:"flex-end" }}>
+              <button style={btnSG} onClick={function() { setAddModal(null); }}>Annuleren</button>
+              <button style={btnP} onClick={function() {
+                if (!addCode) return;
+                setMenus(function(ms) {
+                  return ms.map(function(x) {
+                    if (x.code !== addModal) return x;
+                    return Object.assign({}, x, { gerechten: x.gerechten.concat([{grCode:addCode, pp:parseFloat(addPp)||1}]) });
+                  });
+                });
+                setAddModal(null);
+              }}>Toevoegen</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RecrasTab({ onChange, onSave }) {
+  var items = [
+    {id:7834,naam:"ADD UP BBQ Asperges",    incl:20.00,btw:9,mc:"MN001"},
+    {id:7835,naam:"ADD UP BBQ Premium",     incl:27.50,btw:9,mc:"MN002"},
+    {id:7836,naam:"ADD UP BBQ Vegetarisch", incl:16.00,btw:9,mc:"MN003"},
+    {id:7837,naam:"ADD UP Lunch Licht",     incl:18.50,btw:9,mc:null},
+    {id:7838,naam:"ADD UP Diner 3-gangen",  incl:45.00,btw:9,mc:null},
+  ];
+  return (
+    <div style={SS.card}>
+      <div style={{ display:"flex", justifyContent:"space-between", marginBottom:10 }}>
+        <div style={SS.cT}>Recras Import</div>
+        <button style={btnA}>Importeer</button>
+      </div>
+      <div style={alertW}>2 producten nog niet gekoppeld aan een menu</div>
+      <table style={SS.tbl}>
+        <thead>
+          <tr>{["ID","Interne naam","Incl. BTW","BTW%","Excl. BTW","Menu koppeling"].map(function(h) { return <th key={h} style={SS.th}>{h}</th>; })}</tr>
+        </thead>
+        <tbody>
+          {items.map(function(r) {
+            var m = MENUS.find(function(m) { return m.code === r.mc; });
+            return (
+              <tr key={r.id}>
+                <td style={r.mc ? SS.td : SS.tdY}>{r.id}</td>
+                <td style={r.mc ? { ...SS.td, fontWeight:700 } : { ...SS.tdY, fontWeight:700 }}>{r.naam}</td>
+                <td style={r.mc ? SS.td : SS.tdY}>{r.incl.toFixed(2)}</td>
+                <td style={r.mc ? SS.td : SS.tdY}>{r.btw}%</td>
+                <td style={r.mc ? SS.td : SS.tdY}>{(r.incl / 1.09).toFixed(2)}</td>
+                <td style={r.mc ? SS.td : SS.tdY}>
+                  {m ? (
+                    <span style={tg(C.aqua)}>{m.code} &mdash; {m.naam}</span>
+                  ) : (
+                    <select style={{ ...SS.inp, width:185, padding:"3px 7px" }} onChange={function() { if(onChange) onChange(); }}>
+                      <option value="">-- Kies menu --</option>
+                      {MENUS.map(function(m2) { return <option key={m2.code} value={m2.code}>{m2.code} &mdash; {m2.naam}</option>; })}
+                    </select>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      <div style={{ display:"flex", justifyContent:"flex-end", marginTop:10 }}>
+        <button style={btnP} onClick={function() { if(onSave) onSave(); }}>Opslaan</button>
+      </div>
+    </div>
+  );
+}
+
+function GebruikersTab({ onChange, onSave }) {
+  var rK = { "Beheerder":C.hot, "Financieel":C.green, "Operationeel":C.orange, "Alleen lezen":C.muted };
+  var [users, setUsers] = useState([
+    {id:1,naam:"StefanHerder",rol:"Beheerder",actief:true},
+    {id:2,naam:"Keukenchef1",rol:"Operationeel",actief:true},
+    {id:3,naam:"FinAdmin",rol:"Financieel",actief:true},
+    {id:4,naam:"Stagiair",rol:"Alleen lezen",actief:false},
+  ]);
+  var [modal, setModal] = useState(null);
+  var [form, setForm] = useState({naam:"",ww:"",ww2:"",rol:"Operationeel",actief:true});
+  var [err, setErr] = useState("");
+
+  function save() {
+    if (form.naam.length < 4) { setErr("Min. 4 tekens."); return; }
+    if (form.naam.indexOf(" ") >= 0) { setErr("Geen spaties."); return; }
+    if (modal === "nieuw" && !form.ww) { setErr("Wachtwoord verplicht."); return; }
+    if (form.ww && form.ww.length < 8) { setErr("Min. 8 tekens."); return; }
+    if (form.ww && form.ww !== form.ww2) { setErr("Wachtwoorden komen niet overeen."); return; }
+    if (modal === "nieuw") {
+      setUsers(function(u) { return u.concat([{id:Date.now(),naam:form.naam,rol:form.rol,actief:form.actief}]); });
+    } else {
+      setUsers(function(u) { return u.map(function(x) { return x.id === modal.id ? Object.assign({},x,{naam:form.naam,rol:form.rol,actief:form.actief}) : x; }); });
+    }
+    setModal(null);
+  }
+
+  return (
+    <div>
+      <div style={SS.card}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+          <div style={SS.cT}>Gebruikersbeheer</div>
+          <button style={btnP} onClick={function() { setForm({naam:"",ww:"",ww2:"",rol:"Operationeel",actief:true}); setErr(""); setModal("nieuw"); }}>+ Nieuwe gebruiker</button>
+        </div>
+        <table style={SS.tbl}>
+          <thead>
+            <tr>{["Gebruikersnaam","Rol","Status","Acties"].map(function(h) { return <th key={h} style={SS.th}>{h}</th>; })}</tr>
+          </thead>
+          <tbody>
+            {users.map(function(g) {
+              return (
+                <tr key={g.id}>
+                  <td style={SS.td}>
+                    <strong>{g.naam}</strong>
+                    {g.naam === "StefanHerder" && <span style={{ ...tg(C.night), marginLeft:5, fontSize:9 }}>jij</span>}
+                  </td>
+                  <td style={SS.td}><span style={tg(rK[g.rol])}>{g.rol}</span></td>
+                  <td style={SS.td}><span style={tg(g.actief ? C.green : C.muted)}>{g.actief ? "Actief" : "Inactief"}</span></td>
+                  <td style={SS.td}>
+                    <div style={{ display:"flex", gap:5 }}>
+                      <button style={btnSA} onClick={function() { setForm({naam:g.naam,ww:"",ww2:"",rol:g.rol,actief:g.actief}); setErr(""); setModal(g); }}>Bewerken</button>
+                      <button style={{ ...btnSG, color:C.hot }} onClick={function() {
+                        if (g.naam === "StefanHerder") { alert("Eigen account niet verwijderbaar."); return; }
+                        if (window.confirm("Verwijder " + g.naam + "?")) {
+                          setUsers(function(u) { return u.filter(function(x) { return x.id !== g.id; }); });
+                        }
+                      }}>X</button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      {modal && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,45,65,.65)", zIndex:200, display:"flex", alignItems:"center", justifyContent:"center" }}>
+          <div style={{ background:C.white, borderRadius:14, padding:26, width:370, boxShadow:"0 8px 28px rgba(0,0,0,.3)" }}>
+            <div style={{ fontWeight:900, fontSize:17, color:C.night, marginBottom:16 }}>
+              {modal === "nieuw" ? "Nieuwe gebruiker" : "Bewerken: " + modal.naam}
+            </div>
+            <div style={{ marginBottom:9 }}>
+              <label style={SS.lbl}>Gebruikersnaam</label>
+              <input style={SS.inp} value={form.naam} onChange={function(e) { setForm(function(f) { return Object.assign({},f,{naam:e.target.value}); }); if(onChange) onChange(); }} />
+            </div>
+            <div style={{ marginBottom:9 }}>
+              <label style={SS.lbl}>Rol</label>
+              <select style={SS.inp} value={form.rol} onChange={function(e) { setForm(function(f) { return Object.assign({},f,{rol:e.target.value}); }); }}>
+                {["Beheerder","Financieel","Operationeel","Alleen lezen"].map(function(r) { return <option key={r}>{r}</option>; })}
+              </select>
+            </div>
+            <div style={{ marginBottom:9 }}>
+              <label style={SS.lbl}>Wachtwoord</label>
+              <input style={SS.inp} type="password" value={form.ww} placeholder="Min. 8 tekens" onChange={function(e) { setForm(function(f) { return Object.assign({},f,{ww:e.target.value}); }); }} />
+            </div>
+            {form.ww && (
+              <div style={{ marginBottom:9 }}>
+                <label style={SS.lbl}>Herhaal wachtwoord</label>
+                <input style={SS.inp} type="password" value={form.ww2} onChange={function(e) { setForm(function(f) { return Object.assign({},f,{ww2:e.target.value}); }); }} />
+              </div>
+            )}
+            <div style={{ display:"flex", gap:7, alignItems:"center", marginBottom:14 }}>
+              <input type="checkbox" checked={form.actief} onChange={function(e) { setForm(function(f) { return Object.assign({},f,{actief:e.target.checked}); }); }} />
+              <label style={{ fontSize:12, fontWeight:700 }}>Actief</label>
+            </div>
+            {err && <div style={{ color:C.hot, fontWeight:700, fontSize:11, marginBottom:9 }}>{err}</div>}
+            <div style={{ display:"flex", gap:7, justifyContent:"flex-end" }}>
+              <button style={btnSG} onClick={function() { setModal(null); }}>Annuleren</button>
+              <button style={btnP} onClick={function() { save(); if(onSave) onSave(); }}>{modal === "nieuw" ? "Aanmaken" : "Opslaan"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── FINANCIEEL ────────────────────────────────────────────────────────────────
+
+function FinancieelScreen() {
+  var [tab, setTab] = useState("samen");
+  var tabItems = [["samen","Samenvatting"],["bk","Boekingen"],["mn","Menus"],["ing","Ingredienten"]];
+  return (
+    <div>
+      <div style={SS.pT}>Financieel Overzicht</div>
+      <div style={SS.pD}>Alle bedragen excl. BTW</div>
+      <div style={SS.tabBar}>
+        {tabItems.map(function(item) {
+          return <button key={item[0]} style={tabStyle(tab === item[0])} onClick={function() { setTab(item[0]); }}>{item[1]}</button>;
+        })}
+      </div>
+      {tab === "samen" && (
+        <div>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12, marginBottom:14 }}>
+            {[
+              {l:"Totale omzet",     v:"48.250",  s:"excl. BTW",          a:C.hot},
+              {l:"Totale inkoop",    v:"12.840",  s:"Sligro ingredienten", a:C.aqua},
+              {l:"Brutowinst",       v:"35.410",  s:"excl. BTW",          a:C.green},
+              {l:"Gem. marge",       v:"73.4%",   s:"alle boekingen",     a:C.night},
+            ].map(function(k) {
+              return (
+                <div key={k.l} style={{ background:C.white, borderRadius:10, padding:"14px 16px", borderTop:"4px solid "+k.a, boxShadow:"0 1px 4px rgba(0,45,65,.07)" }}>
+                  <div style={{ fontWeight:700, fontSize:10, color:C.muted, letterSpacing:1, textTransform:"uppercase", marginBottom:6 }}>{k.l}</div>
+                  <div style={{ fontWeight:900, fontSize:22, color:C.night }}>{k.v}</div>
+                  <div style={{ fontSize:11, color:C.muted, marginTop:3 }}>{k.s}</div>
+                </div>
+              );
+            })}
+          </div>
+          <div style={SS.card}>
+            <div style={SS.cT}>Top menus op marge</div>
+            {MENUS.map(function(m) {
+              return (
+                <div key={m.code} style={{ display:"flex", alignItems:"center", padding:"8px 0", borderBottom:"1px solid #E8EEF2" }}>
+                  <span style={{ ...tg(C.hot), marginRight:7 }}>{m.code}</span>
+                  <div style={{ flex:1, fontWeight:700, fontSize:12 }}>{m.naam}</div>
+                  <span style={tg(C.green)}>~73%</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+      {tab === "bk" && (
+        <div style={SS.card}>
+          <table style={SS.tbl}>
+            <thead>
+              <tr>{["ID","Naam","Datum","Pers.","Omzet","Inkoop","Winst","Marge"].map(function(h) { return <th key={h} style={SS.th}>{h}</th>; })}</tr>
+            </thead>
+            <tbody>
+              {BOEKINGEN.map(function(b) {
+                var omzet = b.regels.reduce(function(s, r) {
+                  var m = MENUS.find(function(m) { return m.code === r.menuCode; });
+                  return s + (m ? m.verkoop : 0) * r.aantal;
+                }, 0);
+                var inkoop = omzet * 0.266;
+                return (
+                  <tr key={b.id}>
+                    <td style={SS.td}><span style={tg(C.aqua)}>{b.id}</span></td>
+                    <td style={{ ...SS.td, fontWeight:700 }}>{b.naam}</td>
+                    <td style={SS.td}>{fDatum(b.deadline, true)}</td>
+                    <td style={SS.td}>{totPers(b)}</td>
+                    <td style={SS.td}>{omzet.toFixed(0)}</td>
+                    <td style={SS.td}>{inkoop.toFixed(0)}</td>
+                    <td style={{ ...SS.td, fontWeight:700, color:C.green }}>{(omzet-inkoop).toFixed(0)}</td>
+                    <td style={SS.td}><span style={tg(C.green)}>73%</span></td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <div style={{ display:"flex", gap:7, marginTop:10 }}>
+            <button style={btnSG}>Export Excel</button>
+            <button style={btnSG}>Export CSV</button>
+          </div>
+        </div>
+      )}
+      {(tab === "mn" || tab === "ing") && (
+        <div style={SS.card}>
+          <div style={{ color:C.muted }}>Uitwerken zodra alle data gekoppeld is.</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── ROOT ──────────────────────────────────────────────────────────────────────
+
+export default function App({ supabaseInloggen, supabaseUitloggen, supabaseSessie, supabaseProfiel }) {
+  var [user, setUser] = useState(null);
+  var [sc, setSc] = useState("home");
+  var [actieve, setActieve] = useState(null);
+
+  // Sync met Supabase sessie als die beschikbaar is
+  var useSupabase = typeof supabaseInloggen === "function";
+
+  // Als Supabase sessie actief is, gebruik dat profiel
+  React.useEffect(function() {
+    if (useSupabase && supabaseSessie && supabaseProfiel) {
+      setUser({ naam: supabaseProfiel.naam, rol: supabaseProfiel.rol });
+    } else if (useSupabase && !supabaseSessie) {
+      setUser(null);
+    }
+  }, [supabaseSessie, supabaseProfiel]);
+
+  function handleLogin(u) {
+    if (useSupabase) {
+      // Login via Supabase (email = gebruikersnaam@upevents.nl)
+      supabaseInloggen(u.naam + "@upevents.nl", u.wachtwoord)
+        .then(function() { setSc("home"); })
+        .catch(function(err) { alert("Inloggen mislukt: " + err.message); });
+    } else {
+      setUser(u);
+      setSc("home");
+    }
+  }
+
+  function handleLogout() {
+    if (useSupabase) {
+      supabaseUitloggen();
+    }
+    setUser(null);
+    setSc("home");
+  }
+
+  if (!user) {
+    return <LoginScreen onLogin={handleLogin} />;
+  }
+
+  return (
+    <div style={SS.app}>
+      <Header sc={sc} setSc={setSc} user={user} logout={handleLogout} />
+      <div style={SS.wrap}>
+        {sc === "home"      && <HomeScreen setSc={setSc} />}
+        {sc === "boekingen" && <BoekingenScreen setSc={setSc} setActieve={setActieve} />}
+        {sc === "buffet"    && <BuffetScreen actieve={actieve} setActieve={setActieve} />}
+        {sc === "opzet"     && <OpzetScreen />}
+        {sc === "tijden"    && <TijdenScreen />}
+        {sc === "stam"      && <StamScreen />}
+        {sc === "fin"       && <FinancieelScreen />}
+      </div>
+    </div>
+  );
+}
