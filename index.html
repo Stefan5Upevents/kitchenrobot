@@ -19,10 +19,17 @@
       try {
         var r = await _supa.auth.signInWithPassword({email: email, password: ww});
         if (r.error) { if(onError) onError(r.error.message); return null; }
+        // Na succesvolle login: herlaad de pagina zodat de sessie opgepikt wordt
+        window.location.reload();
         return r.data;
       } catch(e) { if(onError) onError(e.message); return null; }
     };
-    window.sbUitloggen = async function() { await _supa.auth.signOut(); };
+
+    window.sbUitloggen = async function() {
+      await _supa.auth.signOut();
+      window.location.reload();
+    };
+
     window.sbProfiel = async function() {
       try {
         var u = await _supa.auth.getUser();
@@ -30,9 +37,6 @@
         var p = await _supa.from('gebruikers_profielen').select('*').eq('id', u.data.user.id).single();
         return p.data || null;
       } catch(e) { return null; }
-    };
-    window.sbAuthChange = function(cb) {
-      return _supa.auth.onAuthStateChange(cb);
     };
   </script>
   <script>
@@ -1673,30 +1677,26 @@ function App({ supabaseInloggen, supabaseUitloggen, supabaseSessie, supabaseProf
 
 
     function AppWrapper() {
-      var _ref = React.useState(null), sessie = _ref[0], setSessie = _ref[1];
-      var _ref2 = React.useState(null), profiel = _ref2[0], setProfiel = _ref2[1];
-      var _ref3 = React.useState(false), geladen = _ref3[0], setGeladen = _ref3[1];
+      var _r1 = React.useState(null), sessie = _r1[0], setSessie = _r1[1];
+      var _r2 = React.useState(null), profiel = _r2[0], setProfiel = _r2[1];
+      var _r3 = React.useState(true), laden = _r3[0], setLaden = _r3[1];
 
       React.useEffect(function() {
         _supa.auth.getSession().then(function(r) {
-          setSessie(r.data.session);
-          if (r.data.session) {
-            window.sbProfiel().then(function(p) { setProfiel(p); setGeladen(true); });
+          var sess = r.data && r.data.session ? r.data.session : null;
+          setSessie(sess);
+          if (sess) {
+            window.sbProfiel().then(function(p) {
+              setProfiel(p);
+              setLaden(false);
+            });
           } else {
-            setGeladen(true);
+            setLaden(false);
           }
         });
-        var sub = _supa.auth.onAuthStateChange(function(_e, sess) {
-          setSessie(sess);
-          if (sess) { window.sbProfiel().then(setProfiel); }
-          else { setProfiel(null); }
-        });
-        return function() {
-          if (sub && sub.data && sub.data.subscription) sub.data.subscription.unsubscribe();
-        };
       }, []);
 
-      if (!geladen) {
+      if (laden) {
         return React.createElement('div', {
           style: {minHeight:'100vh',background:'#002D41',display:'flex',
                   alignItems:'center',justifyContent:'center',
