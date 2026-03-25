@@ -14,31 +14,20 @@
 </head>
 <body>
   <div id="root"></div>
-
-  <!-- React via CDN -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-
-  <!-- Supabase via CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-
-  <!-- Babel voor JSX -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-  <script type="text/babel" data-type="module">
+  <script type="text/babel">
+    const { useState, useMemo, useEffect } = React;
     const supabaseClient = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
 
-    // Supabase helpers
     async function inloggen(email, wachtwoord) {
       const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password: wachtwoord });
       if (error) throw error;
       return data;
     }
-
-    async function uitloggen() {
-      await supabaseClient.auth.signOut();
-    }
-
+    async function uitloggen() { await supabaseClient.auth.signOut(); }
     async function huidigeProfiel() {
       const { data: { user } } = await supabaseClient.auth.getUser();
       if (!user) return null;
@@ -415,9 +404,14 @@ function LoginScreen({ onLogin }) {
   }
 
   function go() {
+    // Testmodus (zonder Supabase): snelle login
     if (u === "StefanHerder" && p === "Stefan2026") doLogin("beheerder", "Stefan");
     else if (u === "FinAdmin" && p === "Finance2026") doLogin("financieel", "FinAdmin");
-    else setErr("Gebruikersnaam of wachtwoord onjuist.");
+    // Live modus: email login
+    else if (u.indexOf("@") >= 0) {
+      onLogin({ email: u, wachtwoord: p });
+    }
+    else setErr("Gebruik je e-mailadres (stefan@upevents.nl) en wachtwoord.");
   }
 
   return (
@@ -447,7 +441,7 @@ function LoginScreen({ onLogin }) {
             </div>
             {err && <div style={{ color:C.hot, fontSize:11, fontWeight:700, marginBottom:10 }}>&#9888; {err}</div>}
             <button style={{ ...btnP, width:"100%", justifyContent:"center", padding:"11px 16px", fontSize:13 }} onClick={go}>Inloggen &rarr;</button>
-            <div style={{ marginTop:12, fontSize:10, color:C.muted }}>Stefan: StefanHerder / Stefan2026</div>
+            <div style={{ marginTop:12, fontSize:10, color:C.muted }}>Inloggen met je e-mailadres (bijv. stefan@upevents.nl)</div>
           </div>
         </div>
       </div>
@@ -2234,11 +2228,11 @@ function App({ supabaseInloggen, supabaseUitloggen, supabaseSessie, supabaseProf
   }, [supabaseSessie, supabaseProfiel]);
 
   function handleLogin(u) {
-    if (useSupabase) {
-      // Login via Supabase (email = gebruikersnaam@upevents.nl)
-      supabaseInloggen(u.naam + "@upevents.nl", u.wachtwoord)
+    if (useSupabase && u.email) {
+      // Login via Supabase met echt e-mailadres
+      supabaseInloggen(u.email, u.wachtwoord)
         .then(function() { setSc("home"); })
-        .catch(function(err) { alert("Inloggen mislukt: " + err.message); });
+        .catch(function(err) { alert("Inloggen mislukt: " + (err.message || "Controleer e-mail en wachtwoord")); });
     } else {
       setUser(u);
       setSc("home");
@@ -2272,7 +2266,6 @@ function App({ supabaseInloggen, supabaseUitloggen, supabaseSessie, supabaseProf
     </div>
   );
 }
-
 
     
 
@@ -2335,7 +2328,6 @@ function AppWrapper() {
 }
 
 
-    // Start de app
     const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(React.createElement(AppWrapper));
   </script>
