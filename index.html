@@ -19,8 +19,6 @@
       try {
         var r = await _supa.auth.signInWithPassword({email: email, password: ww});
         if (r.error) { if(onError) onError(r.error.message); return null; }
-        // Na succesvolle login: herlaad de pagina zodat de sessie opgepikt wordt
-        window.location.reload();
         return r.data;
       } catch(e) { if(onError) onError(e.message); return null; }
     };
@@ -30,11 +28,9 @@
       window.location.reload();
     };
 
-    window.sbProfiel = async function() {
+    window.sbProfiel = async function(userId) {
       try {
-        var u = await _supa.auth.getUser();
-        if (!u.data || !u.data.user) return null;
-        var p = await _supa.from('gebruikers_profielen').select('*').eq('id', u.data.user.id).single();
+        var p = await _supa.from('gebruikers_profielen').select('*').eq('id', userId).single();
         return p.data || null;
       } catch(e) { return null; }
     };
@@ -1684,13 +1680,34 @@ function App({ supabaseInloggen, supabaseUitloggen, supabaseSessie, supabaseProf
       React.useEffect(function() {
         _supa.auth.getSession().then(function(r) {
           var sess = r.data && r.data.session ? r.data.session : null;
+          if (!sess) {
+            setLaden(false);
+            return;
+          }
           setSessie(sess);
-          if (sess) {
-            window.sbProfiel().then(function(p) {
+          // Haal profiel op met de user ID
+          window.sbProfiel(sess.user.id).then(function(p) {
+            if (p) {
               setProfiel(p);
+            } else {
+              // Geen profiel gevonden: gebruik email als naam, beheerder als standaard
+              setProfiel({ naam: sess.user.email, rol: 'beheerder', actief: true });
+            }
+            setLaden(false);
+          });
+        });
+
+        // Luister naar auth veranderingen
+        _supa.auth.onAuthStateChange(function(event, sess) {
+          if (event === 'SIGNED_IN' && sess) {
+            setSessie(sess);
+            window.sbProfiel(sess.user.id).then(function(p) {
+              setProfiel(p || { naam: sess.user.email, rol: 'beheerder', actief: true });
               setLaden(false);
             });
-          } else {
+          } else if (event === 'SIGNED_OUT') {
+            setSessie(null);
+            setProfiel(null);
             setLaden(false);
           }
         });
