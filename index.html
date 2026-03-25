@@ -934,7 +934,7 @@ function StamScreen() {
     setLaden(true);
     Promise.all([
       window._supa.from("productgroepen").select("*, productsoorten(*)").order("volgorde"),
-      window._supa.from("gerechten").select("*, gn_formaten(*), schaal_formaten(*), ingredienten(*), presentatievormen(*)").order("volgorde"),
+      window._supa.from("gerechten").select("*, ingredienten(*), presentatievormen(*), gerecht_gn_formaten(*, standaard_gn_formaten(*)), gerecht_schaal_formaten(*, standaard_schaal_formaten(*))").order("naam"),
       window._supa.from("menus").select("*, menu_gerechten(*, gerechten(*))").order("code"),
       window._supa.from("sligro_producten").select("*, sligro_productgroep_koppelingen(productgroep_id)").order("naam")
     ]).then(function(results) {
@@ -1243,13 +1243,24 @@ function SligroTab({ sligro, setSligro, productgroepen, onChange, onSave }) {
   }
   function verwijderItem(artnr) {
     if (!window.confirm("Verwijder artikel " + artnr + "?")) return;
-    setItems(function(prev) {
-      return prev.filter(function(p) {
-        return p.artnr !== artnr;
+    window._supa.from("sligro_producten").delete().eq("artnr", artnr).then(function(r) {
+      if (r.error) {
+        toonMelding("Fout bij verwijderen: " + r.error.message, true);
+        return;
+      }
+      setItems(function(prev) {
+        return prev.filter(function(p) {
+          return p.artnr !== artnr;
+        });
       });
+      setSligro(function(prev) {
+        return prev.filter(function(p) {
+          return p.artnr !== artnr;
+        });
+      });
+      toonMelding("Verwijderd \u2713");
+      if (onChange) onChange();
     });
-    window._supa.from("sligro_producten").delete().eq("artnr", artnr);
-    if (onChange) onChange();
   }
   function slaOp() {
     setBezig(true);
@@ -1564,77 +1575,209 @@ function AlgemeenTab({ g, items, setItems, onChange, onSave }) {
   } }, /* @__PURE__ */ React.createElement("option", { value: "nee" }, "Normaal \u2014 toon alle opzetaantallen"), /* @__PURE__ */ React.createElement("option", { value: "ja" }, "Alleen buffet + presentatievorm tonen"))))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } }, melding && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, fontWeight: 700, color: melding.startsWith("Fout") ? C.hot : C.green } }, melding), /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }), /* @__PURE__ */ React.createElement("button", { style: btnP, onClick: opslaan }, "Opslaan")));
 }
 function PresTab({ g, items, setItems, onChange }) {
-  var [vormen, setVormen] = useState(g.presentatievormen || []);
+  var [gnFormaten, setGnFormaten] = useState([]);
+  var [schaalFormaten, setSchaalFormaten] = useState([]);
+  var [gerechtenGN, setGerechtenGN] = useState(g.gerecht_gn_formaten || []);
+  var [gerechtenSchaal, setGerechtenSchaal] = useState(g.gerecht_schaal_formaten || []);
   var [melding, setMelding] = useState("");
+  var isGn = !!g.is_gn;
+  useEffect(function() {
+    window._supa.from("standaard_gn_formaten").select("*").order("volgorde").then(function(r) {
+      setGnFormaten(r.data || []);
+    });
+    window._supa.from("standaard_schaal_formaten").select("*").order("volgorde").then(function(r) {
+      setSchaalFormaten(r.data || []);
+    });
+  }, []);
+  function toonMelding(t, fout) {
+    setMelding(t);
+    setTimeout(function() {
+      setMelding("");
+    }, fout ? 5e3 : 2500);
+  }
   if (!g.heeft_presentatie) {
-    return /* @__PURE__ */ React.createElement("div", { style: SS.card }, /* @__PURE__ */ React.createElement("div", { style: alertI }, 'Zet "Presentatievorm van toepassing" eerst op "Ja" via het tabblad Algemeen.'));
+    return /* @__PURE__ */ React.createElement("div", { style: SS.card }, /* @__PURE__ */ React.createElement("div", { style: alertI }, 'Zet "Presentatievorm van toepassing" eerst op Ja via het tabblad Algemeen.'));
   }
-  function voegVormToe() {
-    var naam = prompt("Naam van de presentatievorm (bijv. 'Schaal groot', 'GN 1/1'):");
-    if (!naam || !naam.trim()) return;
-    var porties = parseInt(prompt("Hoeveel porties passen er in deze vorm?", "10") || "10");
-    window._supa.from("presentatievormen").insert({
-      gerecht_id: g.id,
-      naam: naam.trim(),
-      porties_per_vorm: porties,
-      volgorde: vormen.length
-    }).select("*").then(function(r) {
-      if (r.error) {
-        setMelding("Fout: " + r.error.message);
-        return;
-      }
-      var nieuw = vormen.concat([r.data[0]]);
-      setVormen(nieuw);
-      setItems(function(prev) {
-        return prev.map(function(x) {
-          return x.id === g.id ? Object.assign({}, x, { presentatievormen: nieuw }) : x;
+  function toggleGN(gfId, aan) {
+    if (aan) {
+      window._supa.from("gerecht_gn_formaten").insert({ gerecht_id: g.id, gn_formaat_id: gfId, porties_per_bak: 1, volgorde: gerechtenGN.length }).select("*, standaard_gn_formaten(*)").then(function(r) {
+        if (r.error) {
+          toonMelding("Fout: " + r.error.message, true);
+          return;
+        }
+        var nieuw = gerechtenGN.concat([r.data[0]]);
+        setGerechtenGN(nieuw);
+        updateGerecht({ gerecht_gn_formaten: nieuw });
+        if (onChange) onChange();
+      });
+    } else {
+      var item = gerechtenGN.find(function(x) {
+        return x.gn_formaat_id === gfId;
+      });
+      if (!item) return;
+      window._supa.from("gerecht_gn_formaten").delete().eq("id", item.id).then(function() {
+        var nieuw = gerechtenGN.filter(function(x) {
+          return x.gn_formaat_id !== gfId;
         });
+        setGerechtenGN(nieuw);
+        updateGerecht({ gerecht_gn_formaten: nieuw });
+        if (onChange) onChange();
       });
-      setMelding("Presentatievorm toegevoegd \u2713");
-      setTimeout(function() {
-        setMelding("");
-      }, 2e3);
-      if (onChange) onChange();
-    });
+    }
   }
-  function verwijderVorm(id) {
-    window._supa.from("presentatievormen").delete().eq("id", id).then(function() {
-      var nieuw = vormen.filter(function(v) {
-        return v.id !== id;
+  function toggleSchaal(sfId, aan) {
+    if (aan) {
+      window._supa.from("gerecht_schaal_formaten").insert({ gerecht_id: g.id, schaal_formaat_id: sfId, porties_per_schaal: 1, volgorde: gerechtenSchaal.length }).select("*, standaard_schaal_formaten(*)").then(function(r) {
+        if (r.error) {
+          toonMelding("Fout: " + r.error.message, true);
+          return;
+        }
+        var nieuw = gerechtenSchaal.concat([r.data[0]]);
+        setGerechtenSchaal(nieuw);
+        updateGerecht({ gerecht_schaal_formaten: nieuw });
+        if (onChange) onChange();
       });
-      setVormen(nieuw);
-      setItems(function(prev) {
-        return prev.map(function(x) {
-          return x.id === g.id ? Object.assign({}, x, { presentatievormen: nieuw }) : x;
+    } else {
+      var item = gerechtenSchaal.find(function(x) {
+        return x.schaal_formaat_id === sfId;
+      });
+      if (!item) return;
+      window._supa.from("gerecht_schaal_formaten").delete().eq("id", item.id).then(function() {
+        var nieuw = gerechtenSchaal.filter(function(x) {
+          return x.schaal_formaat_id !== sfId;
         });
+        setGerechtenSchaal(nieuw);
+        updateGerecht({ gerecht_schaal_formaten: nieuw });
+        if (onChange) onChange();
       });
-    });
+    }
   }
-  function updatePorties(id, waarde) {
-    window._supa.from("presentatievormen").update({ porties_per_vorm: parseInt(waarde) || 1 }).eq("id", id);
-    setVormen(function(prev) {
-      return prev.map(function(v) {
-        return v.id === id ? Object.assign({}, v, { porties_per_vorm: parseInt(waarde) || 1 }) : v;
+  function updatePortiesGN(itemId, waarde) {
+    window._supa.from("gerecht_gn_formaten").update({ porties_per_bak: parseInt(waarde) || 1 }).eq("id", itemId);
+    setGerechtenGN(function(prev) {
+      return prev.map(function(x) {
+        return x.id === itemId ? Object.assign({}, x, { porties_per_bak: parseInt(waarde) || 1 }) : x;
       });
     });
     if (onChange) onChange();
   }
-  return /* @__PURE__ */ React.createElement("div", { style: SS.card }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 14 } }, "Presentatievormen"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.muted } }, "Hoeveel porties passen er in elke presentatievorm? Dit wordt gebruikt voor buffetformulieren.")), melding && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, fontWeight: 700, color: melding.startsWith("Fout") ? C.hot : C.green } }, melding), /* @__PURE__ */ React.createElement("button", { style: { ...btnA, marginLeft: 8 }, onClick: voegVormToe }, "+ Presentatievorm")), vormen.length === 0 && /* @__PURE__ */ React.createElement("div", { style: alertI }, 'Nog geen presentatievormen. Klik op "+ Presentatievorm" om toe te voegen.'), vormen.map(function(v) {
-    return /* @__PURE__ */ React.createElement("div", { key: v.id, style: { display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: C.gray, borderRadius: 8, marginBottom: 6 } }, /* @__PURE__ */ React.createElement("span", { style: { flex: 1, fontWeight: 700, fontSize: 13 } }, v.naam), /* @__PURE__ */ React.createElement("label", { style: { fontSize: 12, color: C.muted } }, "Porties per vorm:"), /* @__PURE__ */ React.createElement(
+  function updatePortiesSchaal(itemId, waarde) {
+    window._supa.from("gerecht_schaal_formaten").update({ porties_per_schaal: parseInt(waarde) || 1 }).eq("id", itemId);
+    setGerechtenSchaal(function(prev) {
+      return prev.map(function(x) {
+        return x.id === itemId ? Object.assign({}, x, { porties_per_schaal: parseInt(waarde) || 1 }) : x;
+      });
+    });
+    if (onChange) onChange();
+  }
+  function updateGerecht(extra) {
+    setItems(function(prev) {
+      return prev.map(function(x) {
+        return x.id === g.id ? Object.assign({}, x, extra) : x;
+      });
+    });
+  }
+  var geselecteerdeGN = gerechtenGN.sort(function(a, b) {
+    return (a.volgorde || 0) - (b.volgorde || 0);
+  });
+  var geselecteerdeSchaal = gerechtenSchaal.sort(function(a, b) {
+    return (a.volgorde || 0) - (b.volgorde || 0);
+  });
+  return /* @__PURE__ */ React.createElement("div", null, melding && /* @__PURE__ */ React.createElement("div", { style: { ...alertS, marginBottom: 8 } }, melding), /* @__PURE__ */ React.createElement("div", { style: { ...SS.card, marginBottom: 12 } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 14, marginBottom: 4 } }, "GN Bakken"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.muted, marginBottom: 12 } }, isGn ? "Dit is een GN gerecht. Vink aan welke GN maten van toepassing zijn en hoeveel porties er per bak passen." : "Dit gerecht is geen GN gerecht (ingesteld in Algemeen). GN bakken zijn niet van toepassing."), isGn && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px,1fr))", gap: 8, marginBottom: 16 } }, gnFormaten.map(function(gf) {
+    var actief = gerechtenGN.some(function(x) {
+      return x.gn_formaat_id === gf.id;
+    });
+    return /* @__PURE__ */ React.createElement("label", { key: gf.id, style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 8,
+      padding: "8px 12px",
+      background: actief ? C.light : C.gray,
+      borderRadius: 8,
+      cursor: "pointer",
+      border: actief ? "1px solid " + C.aqua : "1px solid transparent"
+    } }, /* @__PURE__ */ React.createElement(
+      "input",
+      {
+        type: "checkbox",
+        checked: actief,
+        onChange: function(e) {
+          toggleGN(gf.id, e.target.checked);
+        }
+      }
+    ), /* @__PURE__ */ React.createElement("span", { style: { fontWeight: actief ? 700 : 400 } }, gf.naam));
+  })), geselecteerdeGN.length > 0 && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 12, marginBottom: 8, color: C.night } }, "Porties per bak (van klein naar groot):"), geselecteerdeGN.map(function(item) {
+    var gf = item.standaard_gn_formaten || gnFormaten.find(function(f) {
+      return f.id === item.gn_formaat_id;
+    }) || {};
+    return /* @__PURE__ */ React.createElement("div", { key: item.id, style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 12,
+      padding: "8px 12px",
+      background: C.gray,
+      borderRadius: 8,
+      marginBottom: 6
+    } }, /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 700, fontSize: 13, minWidth: 80 } }, gf.naam), /* @__PURE__ */ React.createElement("label", { style: { fontSize: 12, color: C.muted } }, "Porties per bak:"), /* @__PURE__ */ React.createElement(
       "input",
       {
         type: "number",
         min: "1",
+        defaultValue: item.porties_per_bak,
         style: { ...SS.inp, width: 70, padding: "3px 8px" },
-        defaultValue: v.porties_per_vorm,
         onBlur: function(e) {
-          updatePorties(v.id, e.target.value);
+          updatePortiesGN(item.id, e.target.value);
         }
       }
-    ), /* @__PURE__ */ React.createElement("button", { style: { ...btnSG, color: C.hot }, onClick: function() {
-      verwijderVorm(v.id);
-    } }, "\u2715"));
-  }));
+    ), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.muted } }, "porties"));
+  })))), /* @__PURE__ */ React.createElement("div", { style: SS.card }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 14, marginBottom: 4 } }, "Schaalformaten"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.muted, marginBottom: 12 } }, !isGn ? "Vink aan welke schaalformaten van toepassing zijn en hoeveel porties er per schaal passen." : "Dit is een GN gerecht \u2014 schaalformaten zijn niet van toepassing."), !isGn && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px,1fr))", gap: 8, marginBottom: 16 } }, schaalFormaten.map(function(sf) {
+    var actief = gerechtenSchaal.some(function(x) {
+      return x.schaal_formaat_id === sf.id;
+    });
+    return /* @__PURE__ */ React.createElement("label", { key: sf.id, style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 8,
+      padding: "8px 12px",
+      background: actief ? C.light : C.gray,
+      borderRadius: 8,
+      cursor: "pointer",
+      border: actief ? "1px solid " + C.aqua : "1px solid transparent"
+    } }, /* @__PURE__ */ React.createElement(
+      "input",
+      {
+        type: "checkbox",
+        checked: actief,
+        onChange: function(e) {
+          toggleSchaal(sf.id, e.target.checked);
+        }
+      }
+    ), /* @__PURE__ */ React.createElement("span", { style: { fontWeight: actief ? 700 : 400 } }, sf.naam));
+  })), geselecteerdeSchaal.length > 0 && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 12, marginBottom: 8, color: C.night } }, "Porties per schaal (van klein naar groot):"), geselecteerdeSchaal.map(function(item) {
+    var sf = item.standaard_schaal_formaten || schaalFormaten.find(function(f) {
+      return f.id === item.schaal_formaat_id;
+    }) || {};
+    return /* @__PURE__ */ React.createElement("div", { key: item.id, style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 12,
+      padding: "8px 12px",
+      background: C.gray,
+      borderRadius: 8,
+      marginBottom: 6
+    } }, /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 700, fontSize: 13, minWidth: 120 } }, sf.naam), /* @__PURE__ */ React.createElement("label", { style: { fontSize: 12, color: C.muted } }, "Porties per schaal:"), /* @__PURE__ */ React.createElement(
+      "input",
+      {
+        type: "number",
+        min: "1",
+        defaultValue: item.porties_per_schaal,
+        style: { ...SS.inp, width: 70, padding: "3px 8px" },
+        onBlur: function(e) {
+          updatePortiesSchaal(item.id, e.target.value);
+        }
+      }
+    ), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.muted } }, "porties"));
+  })))));
 }
 function IngTab({ g, items, setItems, sligro, productgroepen, onChange }) {
   var [zoek, setZoek] = useState("");
