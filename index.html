@@ -934,7 +934,7 @@ function StamScreen() {
     setLaden(true);
     Promise.all([
       window._supa.from("productgroepen").select("*, productsoorten(*)").order("volgorde"),
-      window._supa.from("gerechten").select("*, gn_formaten(*), schaal_formaten(*), ingredienten(*, sligro_producten(*))").order("volgorde"),
+      window._supa.from("gerechten").select("*, gn_formaten(*), schaal_formaten(*), ingredienten(*), presentatievormen(*)").order("volgorde"),
       window._supa.from("menus").select("*, menu_gerechten(*, gerechten(*))").order("code"),
       window._supa.from("sligro_producten").select("*, sligro_productgroep_koppelingen(productgroep_id)").order("naam")
     ]).then(function(results) {
@@ -1295,7 +1295,21 @@ function SligroTab({ sligro, setSligro, productgroepen, onChange, onSave }) {
         });
       });
     }).then(function() {
-      setSligro(items);
+      return window._supa.from("sligro_producten").select("*, sligro_productgroep_koppelingen(productgroep_id)").order("naam");
+    }).then(function(rr) {
+      var herlaad = (rr.data || []).map(function(p) {
+        var kops = (p.sligro_productgroep_koppelingen || []).map(function(k) {
+          return k.productgroep_id;
+        });
+        return Object.assign({}, p, {
+          pgIds: kops.length ? kops : p.productgroep_id ? [p.productgroep_id] : [],
+          hoev: p.hoeveelheid,
+          eenh: p.eenheid,
+          prijs: p.prijs_excl
+        });
+      });
+      setItems(herlaad);
+      setSligro(herlaad);
       toonMelding("Opgeslagen in database \u2713");
       setBezig(false);
       if (onSave) onSave();
@@ -1419,88 +1433,17 @@ function GerechtenTab({ gerechten, setGerechten, productgroepen, sligro, onChang
     var g = items.find(function(x) {
       return (x.code || x.id) === detail;
     }) || {};
+    var heeftPres = !!g.heeft_presentatie;
     return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("button", { style: { ...btnSG, marginBottom: 12 }, onClick: function() {
       setDetail(null);
       setSubTab("alg");
-    } }, "\u2190 Terug naar overzicht"), /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 900, fontSize: 16, marginBottom: 12 } }, g.naam), /* @__PURE__ */ React.createElement("div", { style: SS.tabBar }, [["alg", "Algemeen"], ["ing", "Ingredienten"]].map(function(item) {
+    } }, "\u2190 Terug naar overzicht"), /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 900, fontSize: 16, marginBottom: 12 } }, g.naam), /* @__PURE__ */ React.createElement("div", { style: SS.tabBar }, [["alg", "Algemeen"], ["pres", "Presentatievorm"], ["ing", "Ingredienten"]].map(function(item) {
       return /* @__PURE__ */ React.createElement("button", { key: item[0], style: tabStyle(subTab === item[0]), onClick: function() {
         setSubTab(item[0]);
       } }, item[1]);
-    })), subTab === "alg" && /* @__PURE__ */ React.createElement("div", { style: SS.card }, /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { style: SS.lbl }, "Naam"), /* @__PURE__ */ React.createElement("input", { style: SS.inp, defaultValue: g.naam, onChange: function(e) {
-      if (onChange) onChange();
-      window._gerechtenEditBuf = window._gerechtenEditBuf || {};
-      window._gerechtenEditBuf.naam = e.target.value;
-    } })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { style: SS.lbl }, "Is GN gerecht?"), /* @__PURE__ */ React.createElement("select", { style: SS.inp, defaultValue: g.is_gn ? "ja" : "nee" }, /* @__PURE__ */ React.createElement("option", { value: "nee" }, "Nee \u2014 schaal"), /* @__PURE__ */ React.createElement("option", { value: "ja" }, "Ja \u2014 GN bak"))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { style: SS.lbl }, "Portie-eenheid"), /* @__PURE__ */ React.createElement("select", { style: SS.inp, defaultValue: g.portie_eenh || "portie" }, /* @__PURE__ */ React.createElement("option", { value: "portie" }, "portie"), /* @__PURE__ */ React.createElement("option", { value: "stuks" }, "stuks"), /* @__PURE__ */ React.createElement("option", { value: "gram" }, "gram"))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { style: SS.lbl }, "Prioriteit (PRIO)"), /* @__PURE__ */ React.createElement("select", { style: SS.inp, defaultValue: g.prio ? "ja" : "nee" }, /* @__PURE__ */ React.createElement("option", { value: "nee" }, "Nee"), /* @__PURE__ */ React.createElement("option", { value: "ja" }, "Ja")))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "flex-end", marginTop: 12 } }, /* @__PURE__ */ React.createElement("button", { style: btnP, onClick: function() {
-      window._supa.from("gerechten").update({ naam: g.naam }).eq("id", g.id).then(function() {
-        if (onSave) onSave();
-      });
-    } }, "Opslaan"))), subTab === "ing" && /* @__PURE__ */ React.createElement("div", { style: SS.card }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 12, marginBottom: 8 } }, "Ingredienten (Sligro producten)"), (g.ingredienten || []).length === 0 && /* @__PURE__ */ React.createElement("div", { style: alertI }, "Nog geen ingredienten gekoppeld."), (g.ingredienten || []).length > 0 && /* @__PURE__ */ React.createElement("table", { style: SS.tbl }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, ["Naam", "Gebruik/portie", "Zichtbaar", ""].map(function(h) {
-      return /* @__PURE__ */ React.createElement("th", { key: h, style: SS.th }, h);
-    }))), /* @__PURE__ */ React.createElement("tbody", null, (g.ingredienten || []).map(function(ing) {
-      var sp = sligro.find(function(p) {
-        return p.id === ing.sligro_id;
-      }) || {};
-      return /* @__PURE__ */ React.createElement("tr", { key: ing.id }, /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 700 } }, sp.naam || ing.sligro_id), /* @__PURE__ */ React.createElement("td", { style: SS.td }, /* @__PURE__ */ React.createElement(
-        "input",
-        {
-          type: "number",
-          step: "0.01",
-          defaultValue: ing.gebruik_per_portie,
-          style: { ...SS.inp, width: 80, padding: "2px 6px" },
-          onChange: function(e) {
-            window._supa.from("ingredienten").update({ gebruik_per_portie: parseFloat(e.target.value) || 0 }).eq("id", ing.id);
-          }
-        }
-      )), /* @__PURE__ */ React.createElement("td", { style: SS.td }, /* @__PURE__ */ React.createElement(
-        "select",
-        {
-          style: { ...SS.inp, width: 75, padding: "2px 6px" },
-          defaultValue: ing.zichtbaar || "ja",
-          onChange: function(e) {
-            window._supa.from("ingredienten").update({ zichtbaar: e.target.value }).eq("id", ing.id);
-          }
-        },
-        /* @__PURE__ */ React.createElement("option", { value: "ja" }, "Ja"),
-        /* @__PURE__ */ React.createElement("option", { value: "nee" }, "Nee"),
-        /* @__PURE__ */ React.createElement("option", { value: "nooit" }, "Nooit")
-      )), /* @__PURE__ */ React.createElement("td", { style: SS.td }, /* @__PURE__ */ React.createElement("button", { style: { ...btnSG, color: C.hot }, onClick: function() {
-        if (!window.confirm("Verwijder dit ingredient?")) return;
-        window._supa.from("ingredienten").delete().eq("id", ing.id).then(function() {
-          setItems(function(prev) {
-            return prev.map(function(x) {
-              if (x.id !== g.id) return x;
-              return Object.assign({}, x, { ingredienten: (x.ingredienten || []).filter(function(i2) {
-                return i2.id !== ing.id;
-              }) });
-            });
-          });
-        });
-      } }, "\u2715")));
-    }))), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 11, marginBottom: 6 } }, "Sligro product koppelen:"), /* @__PURE__ */ React.createElement("select", { style: { ...SS.inp, width: "100%" }, onChange: function(e) {
-      if (!e.target.value) return;
-      window._supa.from("ingredienten").insert({
-        gerecht_id: g.id,
-        sligro_id: e.target.value,
-        gebruik_per_portie: 1,
-        zichtbaar: "ja"
-      }).select("*, sligro_producten(*)").then(function(r) {
-        if (r.error) {
-          alert("Fout: " + r.error.message);
-          return;
-        }
-        setItems(function(prev) {
-          return prev.map(function(x) {
-            if (x.id !== g.id) return x;
-            return Object.assign({}, x, { ingredienten: (x.ingredienten || []).concat([r.data[0]]) });
-          });
-        });
-        e.target.value = "";
-      });
-    } }, /* @__PURE__ */ React.createElement("option", { value: "" }, "-- Koppel Sligro product --"), sligro.map(function(p) {
-      return /* @__PURE__ */ React.createElement("option", { key: p.id, value: p.id }, p.naam);
-    })))));
+    })), subTab === "alg" && /* @__PURE__ */ React.createElement("div", { style: SS.card }, /* @__PURE__ */ React.createElement(AlgemeenTab, { g, items, setItems, onChange, onSave })), subTab === "pres" && /* @__PURE__ */ React.createElement(PresTab, { g, items, setItems, sligro, onChange, onSave }), subTab === "ing" && /* @__PURE__ */ React.createElement(IngTab, { g, items, setItems, sligro, productgroepen, onChange, onSave }));
   }
-  return /* @__PURE__ */ React.createElement("div", { style: SS.card }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 12 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: SS.cT }, "Gerechten"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.muted } }, items.length, " gerechten \u2022 klik om te bewerken"))), productgroepen.length === 0 && /* @__PURE__ */ React.createElement("div", { style: alertI }, 'Voeg eerst productgroepen toe via de tab "Productgroepen".'), productgroepen.map(function(g2) {
+  return /* @__PURE__ */ React.createElement("div", { style: SS.card }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 12 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: SS.cT }, "Gerechten"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.muted } }, items.length, " gerechten"))), productgroepen.length === 0 && /* @__PURE__ */ React.createElement("div", { style: alertI }, 'Voeg eerst productgroepen toe via de tab "Productgroepen".'), productgroepen.map(function(g2) {
     return /* @__PURE__ */ React.createElement("div", { key: g2.id, style: { marginBottom: 16, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden" } }, /* @__PURE__ */ React.createElement("div", { style: { padding: "10px 14px", background: C.light, fontWeight: 900, fontSize: 13, color: C.night } }, g2.naam), (g2.soorten || []).length === 0 && /* @__PURE__ */ React.createElement("div", { style: { padding: "8px 14px", fontSize: 11, color: C.muted } }, "Geen productsoorten \u2014 voeg toe via Productgroepen tab."), (g2.soorten || []).map(function(ps) {
       var psGer = items.filter(function(gr) {
         return gr.productsoort_id === ps.id || gr.psId === ps.id;
@@ -1512,14 +1455,16 @@ function GerechtenTab({ gerechten, setGerechten, productgroepen, sligro, onChang
         if (!naam || !naam.trim()) return;
         window._supa.from("gerechten").insert({
           naam: naam.trim(),
-          code: naam.trim().toUpperCase().replace(/\s+/g, "_").substring(0, 10) + "_" + Date.now().toString().slice(-4),
+          code: naam.trim().toUpperCase().replace(/[^A-Z0-9]/g, "").substring(0, 8) + "_" + Date.now().toString().slice(-4),
           productgroep_id: g2.id,
           productsoort_id: ps.id,
           is_gn: false,
           prio: false,
           portie_eenh: "portie",
-          volgorde: psGer.length
-        }).select("*, ingredienten(*)").then(function(r) {
+          volgorde: psGer.length,
+          heeft_presentatie: false,
+          toon_in_opzet_alleen_buffet: false
+        }).select("*, ingredienten(*), presentatievormen(*)").then(function(r) {
           if (r.error) {
             alert("Fout: " + r.error.message);
             return;
@@ -1542,6 +1487,7 @@ function GerechtenTab({ gerechten, setGerechten, productgroepen, sligro, onChang
           /* @__PURE__ */ React.createElement("span", { style: { flex: 1, fontWeight: 700, fontSize: 12 } }, gr.naam),
           gr.is_gn && /* @__PURE__ */ React.createElement("span", { style: tg(C.aqua) }, "GN"),
           gr.prio && /* @__PURE__ */ React.createElement("span", { style: tg(C.hot) }, "PRIO"),
+          gr.heeft_presentatie && /* @__PURE__ */ React.createElement("span", { style: tg("#8B4513") }, "PRES"),
           /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: C.muted } }, (gr.ingredienten || []).length, " ing."),
           /* @__PURE__ */ React.createElement("button", { style: btnSA, onClick: function(e) {
             e.stopPropagation();
@@ -1562,6 +1508,276 @@ function GerechtenTab({ gerechten, setGerechten, productgroepen, sligro, onChang
       }));
     }));
   }));
+}
+function AlgemeenTab({ g, items, setItems, onChange, onSave }) {
+  var [naam, setNaam] = useState(g.naam || "");
+  var [isGn, setIsGn] = useState(!!g.is_gn);
+  var [prio, setPrio] = useState(!!g.prio);
+  var [portieEenh, setPortieEenh] = useState(g.portie_eenh || "portie");
+  var [heeftPres, setHeeftPres] = useState(!!g.heeft_presentatie);
+  var [alBuf, setAlBuf] = useState(!!g.toon_in_opzet_alleen_buffet);
+  var [melding, setMelding] = useState("");
+  function opslaan() {
+    window._supa.from("gerechten").update({
+      naam,
+      is_gn: isGn,
+      prio,
+      portie_eenh: portieEenh,
+      heeft_presentatie: heeftPres,
+      toon_in_opzet_alleen_buffet: alBuf
+    }).eq("id", g.id).then(function(r) {
+      if (r.error) {
+        setMelding("Fout: " + r.error.message);
+        return;
+      }
+      setItems(function(prev) {
+        return prev.map(function(x) {
+          if (x.id !== g.id) return x;
+          return Object.assign({}, x, { naam, is_gn: isGn, prio, portie_eenh: portieEenh, heeft_presentatie: heeftPres, toon_in_opzet_alleen_buffet: alBuf });
+        });
+      });
+      setMelding("Opgeslagen \u2713");
+      setTimeout(function() {
+        setMelding("");
+      }, 2e3);
+      if (onSave) onSave();
+    });
+  }
+  return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { style: SS.lbl }, "Naam"), /* @__PURE__ */ React.createElement("input", { style: SS.inp, value: naam, onChange: function(e) {
+    setNaam(e.target.value);
+    if (onChange) onChange();
+  } })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { style: SS.lbl }, "Portie-eenheid"), /* @__PURE__ */ React.createElement("select", { style: SS.inp, value: portieEenh, onChange: function(e) {
+    setPortieEenh(e.target.value);
+    if (onChange) onChange();
+  } }, /* @__PURE__ */ React.createElement("option", { value: "portie" }, "portie"), /* @__PURE__ */ React.createElement("option", { value: "stuks" }, "stuks"), /* @__PURE__ */ React.createElement("option", { value: "gram" }, "gram"))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { style: SS.lbl }, "GN gerecht (buffetbak)?"), /* @__PURE__ */ React.createElement("select", { style: SS.inp, value: isGn ? "ja" : "nee", onChange: function(e) {
+    setIsGn(e.target.value === "ja");
+    if (onChange) onChange();
+  } }, /* @__PURE__ */ React.createElement("option", { value: "nee" }, "Nee \u2014 presentatie op schaal"), /* @__PURE__ */ React.createElement("option", { value: "ja" }, "Ja \u2014 GN bak"))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { style: SS.lbl }, "Prioriteit (PRIO)"), /* @__PURE__ */ React.createElement("select", { style: SS.inp, value: prio ? "ja" : "nee", onChange: function(e) {
+    setPrio(e.target.value === "ja");
+    if (onChange) onChange();
+  } }, /* @__PURE__ */ React.createElement("option", { value: "nee" }, "Nee"), /* @__PURE__ */ React.createElement("option", { value: "ja" }, "Ja \u2014 staat vooraan in GN bak")))), /* @__PURE__ */ React.createElement("div", { style: { background: C.light, borderRadius: 10, padding: 14, marginBottom: 12 } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 12, marginBottom: 8 } }, "Presentatie & opzetinstellingen"), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { style: SS.lbl }, "Presentatievorm van toepassing?"), /* @__PURE__ */ React.createElement("select", { style: SS.inp, value: heeftPres ? "ja" : "nee", onChange: function(e) {
+    setHeeftPres(e.target.value === "ja");
+    if (onChange) onChange();
+  } }, /* @__PURE__ */ React.createElement("option", { value: "nee" }, "Nee \u2014 geen presentatievorm"), /* @__PURE__ */ React.createElement("option", { value: "ja" }, "Ja \u2014 stel in op tabblad Presentatievorm")), heeftPres && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.aqua, marginTop: 4 } }, '\u2192 Stel het aantal porties per vorm in via het tabblad "Presentatievorm"')), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("label", { style: SS.lbl }, "Opzetoverzicht weergave"), /* @__PURE__ */ React.createElement("select", { style: SS.inp, value: alBuf ? "ja" : "nee", onChange: function(e) {
+    setAlBuf(e.target.value === "ja");
+    if (onChange) onChange();
+  } }, /* @__PURE__ */ React.createElement("option", { value: "nee" }, "Normaal \u2014 toon alle opzetaantallen"), /* @__PURE__ */ React.createElement("option", { value: "ja" }, "Alleen buffet + presentatievorm tonen"))))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } }, melding && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, fontWeight: 700, color: melding.startsWith("Fout") ? C.hot : C.green } }, melding), /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }), /* @__PURE__ */ React.createElement("button", { style: btnP, onClick: opslaan }, "Opslaan")));
+}
+function PresTab({ g, items, setItems, onChange }) {
+  var [vormen, setVormen] = useState(g.presentatievormen || []);
+  var [melding, setMelding] = useState("");
+  if (!g.heeft_presentatie) {
+    return /* @__PURE__ */ React.createElement("div", { style: SS.card }, /* @__PURE__ */ React.createElement("div", { style: alertI }, 'Zet "Presentatievorm van toepassing" eerst op "Ja" via het tabblad Algemeen.'));
+  }
+  function voegVormToe() {
+    var naam = prompt("Naam van de presentatievorm (bijv. 'Schaal groot', 'GN 1/1'):");
+    if (!naam || !naam.trim()) return;
+    var porties = parseInt(prompt("Hoeveel porties passen er in deze vorm?", "10") || "10");
+    window._supa.from("presentatievormen").insert({
+      gerecht_id: g.id,
+      naam: naam.trim(),
+      porties_per_vorm: porties,
+      volgorde: vormen.length
+    }).select("*").then(function(r) {
+      if (r.error) {
+        setMelding("Fout: " + r.error.message);
+        return;
+      }
+      var nieuw = vormen.concat([r.data[0]]);
+      setVormen(nieuw);
+      setItems(function(prev) {
+        return prev.map(function(x) {
+          return x.id === g.id ? Object.assign({}, x, { presentatievormen: nieuw }) : x;
+        });
+      });
+      setMelding("Presentatievorm toegevoegd \u2713");
+      setTimeout(function() {
+        setMelding("");
+      }, 2e3);
+      if (onChange) onChange();
+    });
+  }
+  function verwijderVorm(id) {
+    window._supa.from("presentatievormen").delete().eq("id", id).then(function() {
+      var nieuw = vormen.filter(function(v) {
+        return v.id !== id;
+      });
+      setVormen(nieuw);
+      setItems(function(prev) {
+        return prev.map(function(x) {
+          return x.id === g.id ? Object.assign({}, x, { presentatievormen: nieuw }) : x;
+        });
+      });
+    });
+  }
+  function updatePorties(id, waarde) {
+    window._supa.from("presentatievormen").update({ porties_per_vorm: parseInt(waarde) || 1 }).eq("id", id);
+    setVormen(function(prev) {
+      return prev.map(function(v) {
+        return v.id === id ? Object.assign({}, v, { porties_per_vorm: parseInt(waarde) || 1 }) : v;
+      });
+    });
+    if (onChange) onChange();
+  }
+  return /* @__PURE__ */ React.createElement("div", { style: SS.card }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 14 } }, "Presentatievormen"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.muted } }, "Hoeveel porties passen er in elke presentatievorm? Dit wordt gebruikt voor buffetformulieren.")), melding && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, fontWeight: 700, color: melding.startsWith("Fout") ? C.hot : C.green } }, melding), /* @__PURE__ */ React.createElement("button", { style: { ...btnA, marginLeft: 8 }, onClick: voegVormToe }, "+ Presentatievorm")), vormen.length === 0 && /* @__PURE__ */ React.createElement("div", { style: alertI }, 'Nog geen presentatievormen. Klik op "+ Presentatievorm" om toe te voegen.'), vormen.map(function(v) {
+    return /* @__PURE__ */ React.createElement("div", { key: v.id, style: { display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: C.gray, borderRadius: 8, marginBottom: 6 } }, /* @__PURE__ */ React.createElement("span", { style: { flex: 1, fontWeight: 700, fontSize: 13 } }, v.naam), /* @__PURE__ */ React.createElement("label", { style: { fontSize: 12, color: C.muted } }, "Porties per vorm:"), /* @__PURE__ */ React.createElement(
+      "input",
+      {
+        type: "number",
+        min: "1",
+        style: { ...SS.inp, width: 70, padding: "3px 8px" },
+        defaultValue: v.porties_per_vorm,
+        onBlur: function(e) {
+          updatePorties(v.id, e.target.value);
+        }
+      }
+    ), /* @__PURE__ */ React.createElement("button", { style: { ...btnSG, color: C.hot }, onClick: function() {
+      verwijderVorm(v.id);
+    } }, "\u2715"));
+  }));
+}
+function IngTab({ g, items, setItems, sligro, productgroepen, onChange }) {
+  var [zoek, setZoek] = useState("");
+  var [melding, setMelding] = useState("");
+  var [geselecteerd, setGeselecteerd] = useState(null);
+  var ings = g.ingredienten || [];
+  var gerechtenPgId = g.productgroep_id;
+  var gefilterdSligro = sligro.filter(function(p) {
+    if (gerechtenPgId && p.pgIds && p.pgIds.length > 0) {
+      if (!p.pgIds.includes(gerechtenPgId)) return false;
+    }
+    if (!zoek) return true;
+    return (p.naam || "").toLowerCase().includes(zoek.toLowerCase()) || (p.artnr || "").toLowerCase().includes(zoek.toLowerCase());
+  });
+  function koppel() {
+    if (!geselecteerd) return;
+    window._supa.from("ingredienten").insert({
+      gerecht_id: g.id,
+      sligro_id: geselecteerd.id,
+      gebruik_per_portie: 1,
+      zichtbaar: "ja"
+    }).select("*").then(function(r) {
+      if (r.error) {
+        setMelding("Fout: " + r.error.message);
+        return;
+      }
+      var nieuwIng = Object.assign({}, r.data[0], { sligro_naam: geselecteerd.naam, sligro_artnr: geselecteerd.artnr });
+      setItems(function(prev) {
+        return prev.map(function(x) {
+          return x.id === g.id ? Object.assign({}, x, { ingredienten: (x.ingredienten || []).concat([nieuwIng]) }) : x;
+        });
+      });
+      setGeselecteerd(null);
+      setZoek("");
+      setMelding("Gekoppeld \u2713");
+      setTimeout(function() {
+        setMelding("");
+      }, 2e3);
+      if (onChange) onChange();
+    });
+  }
+  function updateGebruik(ingId, waarde) {
+    window._supa.from("ingredienten").update({ gebruik_per_portie: parseFloat(waarde) || 0 }).eq("id", ingId);
+    setItems(function(prev) {
+      return prev.map(function(x) {
+        if (x.id !== g.id) return x;
+        return Object.assign({}, x, { ingredienten: (x.ingredienten || []).map(function(i) {
+          return i.id === ingId ? Object.assign({}, i, { gebruik_per_portie: parseFloat(waarde) || 0 }) : i;
+        }) });
+      });
+    });
+  }
+  function verwijderIng(ingId) {
+    if (!window.confirm("Verwijder dit ingredient?")) return;
+    window._supa.from("ingredienten").delete().eq("id", ingId).then(function() {
+      setItems(function(prev) {
+        return prev.map(function(x) {
+          if (x.id !== g.id) return x;
+          return Object.assign({}, x, { ingredienten: (x.ingredienten || []).filter(function(i) {
+            return i.id !== ingId;
+          }) });
+        });
+      });
+    });
+  }
+  return /* @__PURE__ */ React.createElement("div", { style: SS.card }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 14, marginBottom: 4 } }, "Ingredienten (Sligro producten)"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.muted, marginBottom: 12 } }, "Sligro producten gefilterd op productgroep van dit gerecht. Zoek op naam of artikelnummer."), ings.length > 0 && /* @__PURE__ */ React.createElement("table", { style: { ...SS.tbl, marginBottom: 16 } }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, ["Artnr.", "Product", "Gebruik per portie", "Zichtbaar", ""].map(function(h) {
+    return /* @__PURE__ */ React.createElement("th", { key: h, style: SS.th }, h);
+  }))), /* @__PURE__ */ React.createElement("tbody", null, ings.map(function(ing) {
+    var sp = sligro.find(function(p) {
+      return p.id === ing.sligro_id;
+    }) || {};
+    var eenh = sp.eenh || sp.eenheid || "";
+    var verp = sp.hoev || sp.hoeveelheid || "";
+    return /* @__PURE__ */ React.createElement("tr", { key: ing.id }, /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontSize: 10, color: C.muted } }, sp.artnr || "-"), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 700 } }, sp.naam || ing.sligro_id, verp && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: C.muted, marginLeft: 4 } }, verp, " ", eenh)), /* @__PURE__ */ React.createElement("td", { style: SS.td }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 4 } }, /* @__PURE__ */ React.createElement(
+      "input",
+      {
+        type: "number",
+        step: "0.01",
+        min: "0",
+        defaultValue: ing.gebruik_per_portie,
+        style: { ...SS.inp, width: 70, padding: "2px 6px" },
+        onBlur: function(e) {
+          updateGebruik(ing.id, e.target.value);
+        }
+      }
+    ), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.muted } }, eenh))), /* @__PURE__ */ React.createElement("td", { style: SS.td }, /* @__PURE__ */ React.createElement(
+      "select",
+      {
+        style: { ...SS.inp, width: 75, padding: "2px 5px" },
+        defaultValue: ing.zichtbaar || "ja",
+        onChange: function(e) {
+          window._supa.from("ingredienten").update({ zichtbaar: e.target.value }).eq("id", ing.id);
+        }
+      },
+      /* @__PURE__ */ React.createElement("option", { value: "ja" }, "Ja"),
+      /* @__PURE__ */ React.createElement("option", { value: "nee" }, "Nee"),
+      /* @__PURE__ */ React.createElement("option", { value: "nooit" }, "Nooit")
+    )), /* @__PURE__ */ React.createElement("td", { style: SS.td }, /* @__PURE__ */ React.createElement("button", { style: { ...btnSG, color: C.hot }, onClick: function() {
+      verwijderIng(ing.id);
+    } }, "\u2715")));
+  }))), ings.length === 0 && /* @__PURE__ */ React.createElement("div", { style: { ...alertI, marginBottom: 12 } }, "Nog geen ingredienten."), /* @__PURE__ */ React.createElement("div", { style: { background: C.light, borderRadius: 10, padding: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 12, marginBottom: 8 } }, "Sligro product koppelen", melding && /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 700, marginLeft: 10, color: melding.startsWith("Fout") ? C.hot : C.green } }, melding)), /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      value: zoek,
+      onChange: function(e) {
+        setZoek(e.target.value);
+        setGeselecteerd(null);
+      },
+      placeholder: "Zoek op naam of artikelnummer...",
+      style: { ...SS.inp, width: "100%", marginBottom: 8 }
+    }
+  ), zoek && /* @__PURE__ */ React.createElement("div", { style: { maxHeight: 200, overflowY: "auto", border: "1px solid " + C.border, borderRadius: 7, marginBottom: 8 } }, gefilterdSligro.length === 0 && /* @__PURE__ */ React.createElement("div", { style: { padding: "8px 12px", fontSize: 11, color: C.muted } }, "Geen producten gevonden."), gefilterdSligro.slice(0, 20).map(function(p) {
+    var sel = geselecteerd && geselecteerd.id === p.id;
+    return /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        key: p.id,
+        onClick: function() {
+          setGeselecteerd(p);
+          setZoek(p.naam);
+        },
+        style: {
+          padding: "8px 12px",
+          cursor: "pointer",
+          background: sel ? C.light : C.white,
+          borderBottom: "1px solid " + C.border,
+          display: "flex",
+          gap: 8
+        }
+      },
+      /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: C.muted, minWidth: 70 } }, p.artnr),
+      /* @__PURE__ */ React.createElement("span", { style: { fontWeight: sel ? 700 : 400 } }, p.naam),
+      /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: C.muted, marginLeft: "auto" } }, p.hoev, " ", p.eenh)
+    );
+  })), geselecteerd && /* @__PURE__ */ React.createElement("div", { style: { background: C.white, borderRadius: 8, padding: 12, marginBottom: 8, border: "1px solid " + C.aqua } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 12, marginBottom: 4 } }, geselecteerd.naam), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.muted } }, "Artnr: ", geselecteerd.artnr, " \u2022 Verpakking: ", geselecteerd.hoev, " ", geselecteerd.eenh, " \u2022 Prijs: \u20AC ", geselecteerd.prijs || "?"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.night, marginTop: 6 } }, "Eenheid voor gebruik per portie: ", /* @__PURE__ */ React.createElement("strong", null, geselecteerd.eenh), " (verpakkingsgrootte ", geselecteerd.hoev, " ", geselecteerd.eenh, ")")), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      style: { ...btnP, opacity: geselecteerd ? 1 : 0.4 },
+      onClick: koppel,
+      disabled: !geselecteerd
+    },
+    "Koppel geselecteerd product"
+  )));
 }
 function TijdenTab({ productgroepen, onChange, onSave }) {
   var allePsIds = productgroepen.reduce(function(acc, g) {
