@@ -1494,36 +1494,137 @@ function GerechtenTab({ gerechten, setGerechten, productgroepen, sligro, onChang
           if (onChange) onChange();
         });
       } }, "+ Gerecht toevoegen")), psGer.length === 0 && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.muted, fontStyle: "italic" } }, "Nog geen gerechten."), psGer.map(function(gr) {
+        var kostprijs = (gr.ingredienten || []).reduce(function(sum, ing) {
+          var sp = sligro.find(function(p) {
+            return p.id === ing.sligro_id;
+          }) || {};
+          var prijs = parseFloat(sp.prijs || sp.prijs_excl) || 0;
+          var verp = parseFloat(sp.hoev || sp.hoeveelheid) || 1;
+          var gebruik = parseFloat(ing.gebruik_per_portie) || 0;
+          if (!prijs || !gebruik) return sum;
+          return sum + gebruik / verp * prijs;
+        }, 0);
+        var heeftKostprijs = kostprijs > 0;
+        var isKoppeling = gr.productsoort_id !== ps.id && (gr.gerecht_productsoort_koppelingen || []).some(function(k) {
+          return k.productsoort_id === ps.id;
+        });
         return /* @__PURE__ */ React.createElement(
           "div",
           {
-            key: gr.id,
-            style: { display: "flex", alignItems: "center", gap: 7, padding: "6px 10px", background: C.gray, borderRadius: 6, marginBottom: 3, cursor: "pointer" },
+            key: gr.id + "_" + ps.id,
+            style: {
+              display: "flex",
+              alignItems: "center",
+              gap: 7,
+              padding: "6px 10px",
+              background: isKoppeling ? "#F0F7FF" : C.gray,
+              borderRadius: 6,
+              marginBottom: 3,
+              cursor: "pointer",
+              border: isKoppeling ? "1px dashed " + C.aqua : "none"
+            },
             onClick: function() {
               setDetail(gr.code || gr.id);
             }
           },
-          /* @__PURE__ */ React.createElement("span", { style: { flex: 1, fontWeight: 700, fontSize: 12 } }, gr.naam),
+          /* @__PURE__ */ React.createElement("span", { style: { flex: 1, fontWeight: 700, fontSize: 12 } }, gr.naam, isKoppeling && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 9, color: C.aqua, marginLeft: 4, fontWeight: 400 } }, "gekoppeld")),
           gr.is_gn && /* @__PURE__ */ React.createElement("span", { style: tg(C.aqua) }, "GN"),
           gr.prio && /* @__PURE__ */ React.createElement("span", { style: tg(C.hot) }, "PRIO"),
           gr.heeft_presentatie && /* @__PURE__ */ React.createElement("span", { style: tg("#8B4513") }, "PRES"),
-          gr.altijd_afronden && /* @__PURE__ */ React.createElement("span", { style: tg(C.aqua) }, "\u2191"),
+          gr.altijd_afronden && /* @__PURE__ */ React.createElement("span", { style: tg(C.aqua) }, "\u21E7"),
+          heeftKostprijs && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, fontWeight: 700, color: C.green } }, "\u20AC", gr.altijd_afronden ? Math.ceil(kostprijs * 100) / 100 : kostprijs.toFixed(2)),
           /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: C.muted } }, (gr.ingredienten || []).length, " ing."),
           /* @__PURE__ */ React.createElement("button", { style: btnSA, onClick: function(e) {
             e.stopPropagation();
             setDetail(gr.code || gr.id);
           } }, "Bewerken"),
-          /* @__PURE__ */ React.createElement("button", { style: { ...btnSG, color: C.hot, fontSize: 10 }, onClick: function(e) {
+          /* @__PURE__ */ React.createElement("button", { style: { ...btnSG, fontSize: 10, color: C.night }, title: "Dupliceren", onClick: function(e) {
             e.stopPropagation();
-            if (!window.confirm("Verwijder gerecht '" + gr.naam + "'?")) return;
-            window._supa.from("gerechten").delete().eq("id", gr.id).then(function() {
+            var nieuweNaam = prompt("Naam van het duplicaat:", gr.naam + " (kopie)");
+            if (!nieuweNaam || !nieuweNaam.trim()) return;
+            var nieuweCode = nieuweNaam.trim().toUpperCase().replace(/[^A-Z0-9]/g, "").substring(0, 8) + "_" + Date.now().toString().slice(-4);
+            window._supa.from("gerechten").insert({
+              naam: nieuweNaam.trim(),
+              code: nieuweCode,
+              productgroep_id: gr.productgroep_id,
+              productsoort_id: gr.productsoort_id,
+              is_gn: gr.is_gn,
+              prio: gr.prio,
+              portie_eenh: gr.portie_eenh,
+              heeft_presentatie: gr.heeft_presentatie,
+              toon_in_opzet_alleen_buffet: gr.toon_in_opzet_alleen_buffet,
+              altijd_afronden: gr.altijd_afronden,
+              volgorde: (gr.volgorde || 0) + 1
+            }).select("*, ingredienten(*), presentatievormen(*), gerecht_gn_formaten(*, standaard_gn_formaten(*)), gerecht_schaal_formaten(*, standaard_schaal_formaten(*)), gerecht_productsoort_koppelingen(productsoort_id)").then(function(r) {
+              if (r.error) {
+                alert("Fout: " + r.error.message);
+                return;
+              }
+              var kopie = r.data[0];
+              var ingKopie\u00EBn = (gr.ingredienten || []).map(function(ing) {
+                return { gerecht_id: kopie.id, sligro_id: ing.sligro_id, gebruik_per_portie: ing.gebruik_per_portie, zichtbaar: ing.zichtbaar };
+              });
+              if (ingKopie\u00EBn.length > 0) {
+                window._supa.from("ingredienten").insert(ingKopie\u00EBn).then(function() {
+                  window._supa.from("gerechten").select("*, ingredienten(*), presentatievormen(*), gerecht_gn_formaten(*, standaard_gn_formaten(*)), gerecht_schaal_formaten(*, standaard_schaal_formaten(*)), gerecht_productsoort_koppelingen(productsoort_id)").eq("id", kopie.id).single().then(function(rr) {
+                    setItems(function(prev) {
+                      return prev.concat([rr.data]);
+                    });
+                  });
+                });
+              } else {
+                setItems(function(prev) {
+                  return prev.concat([kopie]);
+                });
+              }
+              if (onChange) onChange();
+            });
+          } }, "Dup."),
+          /* @__PURE__ */ React.createElement("button", { style: { ...btnSG, fontSize: 10, color: C.aqua }, title: "Koppelen aan andere productsoort", onClick: function(e) {
+            e.stopPropagation();
+            var psId2 = prompt("Productsoort ID om aan te koppelen:");
+            if (!psId2 || !psId2.trim()) return;
+            psId2 = psId2.trim();
+            window._supa.from("gerecht_productsoort_koppelingen").insert({ gerecht_id: gr.id, productsoort_id: psId2 }).then(function(r) {
+              if (r.error) {
+                alert(r.error.message.includes("duplicate") ? "Al gekoppeld." : "Fout: " + r.error.message);
+                return;
+              }
+              var nieuw = (gr.gerecht_productsoort_koppelingen || []).concat([{ productsoort_id: psId2 }]);
               setItems(function(prev) {
-                return prev.filter(function(x) {
-                  return x.id !== gr.id;
+                return prev.map(function(x) {
+                  return x.id === gr.id ? Object.assign({}, x, { gerecht_productsoort_koppelingen: nieuw }) : x;
                 });
               });
+              alert("Gekoppeld! Beheer koppelingen via Bewerken > Algemeen.");
+              if (onChange) onChange();
             });
-          } }, "\u2715")
+          } }, "Koppel"),
+          /* @__PURE__ */ React.createElement("button", { style: { ...btnSG, color: C.hot, fontSize: 10 }, onClick: function(e) {
+            e.stopPropagation();
+            if (isKoppeling) {
+              if (!window.confirm("Ontkoppel '" + gr.naam + "' van deze productsoort?")) return;
+              window._supa.from("gerecht_productsoort_koppelingen").delete().eq("gerecht_id", gr.id).eq("productsoort_id", ps.id).then(function() {
+                var nieuwKoppelingen = (gr.gerecht_productsoort_koppelingen || []).filter(function(k) {
+                  return k.productsoort_id !== ps.id;
+                });
+                setItems(function(prev) {
+                  return prev.map(function(x) {
+                    return x.id === gr.id ? Object.assign({}, x, { gerecht_productsoort_koppelingen: nieuwKoppelingen }) : x;
+                  });
+                });
+              });
+            } else {
+              if (!window.confirm("Verwijder gerecht '" + gr.naam + "'? Dit verwijdert het gerecht overal.")) return;
+              window._supa.from("gerechten").delete().eq("id", gr.id).then(function() {
+                setItems(function(prev) {
+                  return prev.filter(function(x) {
+                    return x.id !== gr.id;
+                  });
+                });
+              });
+            }
+          } }, isKoppeling ? "Ontkoppel" : "&#x2715;")
         );
       }));
     }));
