@@ -1437,6 +1437,8 @@ function GerechtenTab({ gerechten, setGerechten, productgroepen, sligro, onChang
   var [items, setItems] = useState(gerechten);
   var [detail, setDetail] = useState(null);
   var [subTab, setSubTab] = useState("alg");
+  var [verplaatsModal, setVerplaatsModal] = useState(null);
+  var [gekozenPsId, setGekozenPsId] = useState("");
   useEffect(function() {
     setItems(gerechten);
   }, [gerechten]);
@@ -1488,7 +1490,66 @@ function GerechtenTab({ gerechten, setGerechten, productgroepen, sligro, onChang
       if (onSave) onSave();
     } }, "Opslaan"))));
   }
-  return /* @__PURE__ */ React.createElement("div", { style: SS.card }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 12 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: SS.cT }, "Gerechten"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.muted } }, items.length, " gerechten"))), productgroepen.length === 0 && /* @__PURE__ */ React.createElement("div", { style: alertI }, 'Voeg eerst productgroepen toe via de tab "Productgroepen".'), productgroepen.map(function(g2) {
+  function voerVerplaatsUit() {
+    if (!gekozenPsId || !verplaatsModal) return;
+    var nieuwePs = null;
+    var nieuwePg = null;
+    productgroepen.forEach(function(pgx) {
+      (pgx.soorten || []).forEach(function(psx) {
+        if (psx.id === gekozenPsId) {
+          nieuwePs = psx;
+          nieuwePg = pgx;
+        }
+      });
+    });
+    window._supa.from("gerechten").update({
+      productsoort_id: gekozenPsId,
+      productgroep_id: nieuwePg ? nieuwePg.id : null
+    }).eq("id", verplaatsModal.grId).then(function() {
+      window._supa.from("gerecht_productsoort_koppelingen").upsert({ gerecht_id: verplaatsModal.grId, productsoort_id: gekozenPsId });
+      setItems(function(prev) {
+        return prev.map(function(x) {
+          if (x.id !== verplaatsModal.grId) return x;
+          return Object.assign({}, x, {
+            productsoort_id: gekozenPsId,
+            productgroep_id: nieuwePg ? nieuwePg.id : x.productgroep_id,
+            gerecht_productsoort_koppelingen: (x.gerecht_productsoort_koppelingen || []).filter(function(k) {
+              return k.productsoort_id !== gekozenPsId;
+            }).concat([{ productsoort_id: gekozenPsId }])
+          });
+        });
+      });
+      setVerplaatsModal(null);
+      setGekozenPsId("");
+    });
+  }
+  return /* @__PURE__ */ React.createElement("div", { style: SS.card }, verplaatsModal && /* @__PURE__ */ React.createElement("div", { style: { position: "fixed", inset: 0, background: "rgba(0,45,65,.6)", zIndex: 400, display: "flex", alignItems: "center", justifyContent: "center" } }, /* @__PURE__ */ React.createElement("div", { style: { background: C.white, borderRadius: 14, padding: 28, width: 440, boxShadow: "0 8px 32px rgba(0,0,0,.3)" } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 900, fontSize: 16, color: C.night, marginBottom: 4 } }, "Verplaatsen naar productsoort"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.muted, marginBottom: 16 } }, "Gerecht: ", /* @__PURE__ */ React.createElement("strong", null, verplaatsModal.grNaam)), /* @__PURE__ */ React.createElement(
+    "select",
+    {
+      style: { ...SS.inp, width: "100%", marginBottom: 16 },
+      value: gekozenPsId,
+      onChange: function(e) {
+        setGekozenPsId(e.target.value);
+      }
+    },
+    /* @__PURE__ */ React.createElement("option", { value: "" }, "\u2014 Kies een productsoort \u2014"),
+    productgroepen.map(function(pgx) {
+      return (pgx.soorten || []).map(function(psx) {
+        return /* @__PURE__ */ React.createElement("option", { key: psx.id, value: psx.id }, pgx.naam, " \u203A ", psx.naam);
+      });
+    })
+  ), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, justifyContent: "flex-end" } }, /* @__PURE__ */ React.createElement("button", { style: btnSG, onClick: function() {
+    setVerplaatsModal(null);
+    setGekozenPsId("");
+  } }, "Annuleren"), /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      style: { ...btnP, opacity: gekozenPsId ? 1 : 0.4 },
+      disabled: !gekozenPsId,
+      onClick: voerVerplaatsUit
+    },
+    "Verplaatsen"
+  )))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 12 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: SS.cT }, "Gerechten"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.muted } }, items.length, " gerechten"))), productgroepen.length === 0 && /* @__PURE__ */ React.createElement("div", { style: alertI }, 'Voeg eerst productgroepen toe via de tab "Productgroepen".'), productgroepen.map(function(g2) {
     return /* @__PURE__ */ React.createElement("div", { key: g2.id, style: { marginBottom: 16, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden" } }, /* @__PURE__ */ React.createElement("div", { style: { padding: "10px 14px", background: C.light, fontWeight: 900, fontSize: 13, color: C.night } }, g2.naam), (g2.soorten || []).length === 0 && /* @__PURE__ */ React.createElement("div", { style: { padding: "8px 14px", fontSize: 11, color: C.muted } }, "Geen productsoorten \u2014 voeg toe via Productgroepen tab."), (g2.soorten || []).map(function(ps) {
       var psGer = items.filter(function(gr) {
         var directGekoppeld = gr.productsoort_id === ps.id || gr.psId === ps.id;
@@ -1631,55 +1692,25 @@ function GerechtenTab({ gerechten, setGerechten, productgroepen, sligro, onChang
                   return prev.concat([kopie]);
                 });
               }
-              var alleSoorten = productgroepen.reduce(function(acc, pgx) {
-                return acc.concat((pgx.soorten || []).map(function(psx) {
-                  return pgx.naam + " > " + psx.naam + "=" + psx.id;
-                }));
-              }, []);
-              var verplaats = confirm("Wil je het duplicaat naar een andere productsoort verplaatsen?");
-              if (verplaats) {
-                var keuze = prompt("Kies productsoort:\n" + alleSoorten.join("\n") + "\n\nPlak de ID na het = teken:");
-                if (keuze && keuze.trim()) {
-                  var nieuwPsId = keuze.trim();
-                  var nieuwePg = productgroepen.find(function(pgx) {
-                    return (pgx.soorten || []).some(function(psx) {
-                      return psx.id === nieuwPsId;
-                    });
-                  });
-                  window._supa.from("gerechten").update({
-                    productsoort_id: nieuwPsId,
-                    productgroep_id: nieuwePg ? nieuwePg.id : kopie.productgroep_id
-                  }).eq("id", kopie.id).then(function() {
-                    window._supa.from("gerecht_productsoort_koppelingen").upsert({
-                      gerecht_id: kopie.id,
-                      productsoort_id: nieuwPsId
-                    });
-                  });
-                }
-              }
               if (onChange) onChange();
+              setTimeout(function() {
+                setVerplaatsModal({ grId: kopie.id, grNaam: kopie.naam });
+              }, 300);
             });
           } }, "Dup."),
-          /* @__PURE__ */ React.createElement("button", { style: { ...btnSG, fontSize: 10, color: C.aqua }, title: "Koppelen aan andere productsoort", onClick: function(e) {
-            e.stopPropagation();
-            var psId2 = prompt("Productsoort ID om aan te koppelen:");
-            if (!psId2 || !psId2.trim()) return;
-            psId2 = psId2.trim();
-            window._supa.from("gerecht_productsoort_koppelingen").insert({ gerecht_id: gr.id, productsoort_id: psId2 }).then(function(r) {
-              if (r.error) {
-                alert(r.error.message.includes("duplicate") ? "Al gekoppeld." : "Fout: " + r.error.message);
-                return;
+          /* @__PURE__ */ React.createElement(
+            "button",
+            {
+              style: { ...btnSG, fontSize: 10, color: C.aqua },
+              title: "Verplaatsen naar andere productsoort",
+              onClick: function(e) {
+                e.stopPropagation();
+                setGekozenPsId(gr.productsoort_id || "");
+                setVerplaatsModal({ grId: gr.id, grNaam: gr.naam });
               }
-              var nieuw = (gr.gerecht_productsoort_koppelingen || []).concat([{ productsoort_id: psId2 }]);
-              setItems(function(prev) {
-                return prev.map(function(x) {
-                  return x.id === gr.id ? Object.assign({}, x, { gerecht_productsoort_koppelingen: nieuw }) : x;
-                });
-              });
-              alert("Gekoppeld! Beheer koppelingen via Bewerken > Algemeen.");
-              if (onChange) onChange();
-            });
-          } }, "Koppel"),
+            },
+            "Verplaats"
+          ),
           /* @__PURE__ */ React.createElement("button", { style: { ...btnSG, color: C.hot, fontSize: 10 }, onClick: function(e) {
             e.stopPropagation();
             if (isKoppeling) {
