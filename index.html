@@ -1447,27 +1447,32 @@ function GerechtenTab({ gerechten, setGerechten, productgroepen, sligro, onChang
       return x.productsoort_id === psId || (x.gerecht_productsoort_koppelingen || []).some(function(k) {
         return k.productsoort_id === psId;
       });
-    }).sort(function(a2, b2) {
-      return (a2.volgorde || 0) - (b2.volgorde || 0);
+    }).sort(function(a, b) {
+      var va = a.volgorde !== null && a.volgorde !== void 0 ? a.volgorde : 9999;
+      var vb = b.volgorde !== null && b.volgorde !== void 0 ? b.volgorde : 9999;
+      return va - vb;
     });
-    var idx = inSoort.findIndex(function(x) {
+    var huidigeIdx = inSoort.findIndex(function(x) {
       return x.id === grId;
     });
-    var swapIdx = richting === "omhoog" ? idx - 1 : idx + 1;
-    if (swapIdx < 0 || swapIdx >= inSoort.length) return;
-    var a = inSoort[idx];
-    var b = inSoort[swapIdx];
-    var volgordeA = a.volgorde || idx;
-    var volgordeB = b.volgorde || swapIdx;
-    Promise.all([
-      window._supa.from("gerechten").update({ volgorde: volgordeB }).eq("id", a.id),
-      window._supa.from("gerechten").update({ volgorde: volgordeA }).eq("id", b.id)
-    ]).then(function() {
+    if (huidigeIdx < 0) return;
+    var nieuwIdx = richting === "omhoog" ? huidigeIdx - 1 : huidigeIdx + 1;
+    if (nieuwIdx < 0 || nieuwIdx >= inSoort.length) return;
+    var hergeordend = inSoort.slice();
+    var tijdelijk = hergeordend[huidigeIdx];
+    hergeordend[huidigeIdx] = hergeordend[nieuwIdx];
+    hergeordend[nieuwIdx] = tijdelijk;
+    var updates = hergeordend.map(function(gr, i) {
+      return window._supa.from("gerechten").update({ volgorde: i }).eq("id", gr.id);
+    });
+    Promise.all(updates).then(function() {
+      var nieuweVolgordes = {};
+      hergeordend.forEach(function(gr, i) {
+        nieuweVolgordes[gr.id] = i;
+      });
       setItems(function(prev) {
         return prev.map(function(x) {
-          if (x.id === a.id) return Object.assign({}, x, { volgorde: volgordeB });
-          if (x.id === b.id) return Object.assign({}, x, { volgorde: volgordeA });
-          return x;
+          return nieuweVolgordes.hasOwnProperty(x.id) ? Object.assign({}, x, { volgorde: nieuweVolgordes[x.id] }) : x;
         });
       });
     });
