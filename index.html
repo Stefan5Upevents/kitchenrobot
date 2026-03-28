@@ -422,7 +422,8 @@ function HomeScreen({ setSc }) {
         rijen.slice(1).forEach(function(r) {
           var bid = String(r[0] || "").trim();
           var productNaam = String(r[1] || "").trim();
-          var opmerking = String(r[3] || "").trim();
+          var bijzonderheden = String(r[3] || "").trim();
+          var opmerking = String(r[16] || "").trim();
           var rawDatum = r[2] || "";
           var datum = String(rawDatum).trim();
           if (rawDatum instanceof Date) {
@@ -475,6 +476,9 @@ function HomeScreen({ setSc }) {
           }
           boekingenMap[bid].regels.push({
             menuNaam: productNaam,
+            starttijd: datum,
+            starttijdTijd: deadlineTijd,
+            opmerking: opmerking || bijzonderheden,
             opmerking,
             menuCode: productNaam,
             aantal
@@ -774,11 +778,13 @@ function BuffetScreen({ actieve, setActieve }) {
     if (!m) return;
     var mPsId = m.productsoort_id || m.psId;
     if (mPsId !== psId) return;
-    geboekteMenus.push({ menu: m, aantal: r.aantal, recrasNaam: r.menuNaam });
+    geboekteMenus.push({ menu: m, aantal: r.aantal, recrasNaam: r.menuNaam, starttijd: r.starttijd || "", starttijdTijd: r.starttijdTijd || boeking.deadlineTijd, opmerking: r.opmerking || "" });
   });
   var totaalPers = geboekteMenus.reduce(function(s, gm) {
     return s + gm.aantal;
   }, 0);
+  var psDeadline = geboekteMenus.length > 0 ? geboekteMenus[0].starttijdTijd || boeking.deadlineTijd : boeking.deadlineTijd;
+  var psDeadlineRaw = geboekteMenus.length > 0 ? geboekteMenus[0].starttijd || boeking.deadline : boeking.deadline;
   var opzetFactor = overrideMarge !== null ? overrideMarge / 100 : opzetPct(totaalPers, psId);
   var margePercent = Math.round(opzetFactor * 100);
   var nBuf = aantalBuf(totaalPers);
@@ -920,7 +926,9 @@ function BuffetScreen({ actieve, setActieve }) {
         style: { ...btnSG, fontSize: 10 },
         onClick: function() {
           var uid = "handmatig_" + Date.now();
-          var newForm = { boekingId: uid, boekingNaam: "Handmatig", boekingTijd: "", boekingDag: "", psId: ps_.id, psNaam: ps_.naam, pgNaam: pg ? pg.naam : "", pgId };
+          var handBoeking = { id: uid, naam: "Handmatig formulier", deadline: "", deadlineTijd: "", deadlineDag: "", locatie: "", plaats: "", regels: [] };
+          window._recrasBoekingen = (window._recrasBoekingen || []).concat([handBoeking]);
+          var newForm = { boekingId: uid, boekingNaam: "Handmatig formulier", boekingTijd: "", boekingDag: "", psId: ps_.id, psNaam: ps_.naam, pgNaam: pg ? pg.naam : "", pgId };
           setActieve(newForm);
         }
       },
@@ -948,12 +956,15 @@ function BuffetScreen({ actieve, setActieve }) {
     window.print();
   } }, "PDF"), /* @__PURE__ */ React.createElement("button", { style: btnA, onClick: function() {
     window.open("https://upevents.recras.nl/v2/customer/" + (boeking.id || "").split("-")[0], "_blank");
-  } }, "Publiceer Recras →"))), /* @__PURE__ */ React.createElement("div", { style: { background: C.white, padding: "16px 20px", borderRadius: 10, border: "1px solid " + C.border } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12, borderBottom: "2px solid " + C.night, paddingBottom: 10 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 900, fontSize: 20, color: C.night } }, boeking.naam), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.muted } }, pg ? pg.naam : "", " \u203A ", ps ? ps.naam : "", " \u2022 #", boeking.id), boeking.locatie && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.muted } }, boeking.locatie, boeking.plaats ? ", " + boeking.plaats : "")), /* @__PURE__ */ React.createElement("div", { style: { textAlign: "right" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.muted, textTransform: "uppercase", letterSpacing: 1 } }, "Recras deadline"), /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 900, fontSize: 24, color: C.hot } }, boeking.deadlineTijd || "—"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.muted } }, boeking.deadlineDag || "—"))), (function() {
+  } }, "Publiceer Recras →"))), /* @__PURE__ */ React.createElement("div", { style: { background: C.white, padding: "16px 20px", borderRadius: 10, border: "1px solid " + C.border } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12, borderBottom: "2px solid " + C.night, paddingBottom: 10 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 900, fontSize: 20, color: C.night } }, boeking.naam), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.muted } }, pg ? pg.naam : "", " \u203A ", ps ? ps.naam : "", " \u2022 #", boeking.id), boeking.locatie && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.muted } }, boeking.locatie, boeking.plaats ? ", " + boeking.plaats : "")), /* @__PURE__ */ React.createElement("div", { style: { textAlign: "right" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.muted, textTransform: "uppercase", letterSpacing: 1 } }, "Recras deadline"), /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 900, fontSize: 24, color: C.hot } }, psDeadline || boeking.deadlineTijd || "—"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.muted } }, boeking.deadlineDag || "—"))), (function() {
     var psInst = (window._stamTijdenInst || []).find(function(inst) {
+      return inst && inst._psId === psId && inst.tijden && inst.tijden.length;
+    }) || (window._stamTijdenInst || []).find(function(inst) {
       return inst && inst.tijden && inst.tijden.length;
     });
-    if (!psInst || !boeking.deadline) return null;
-    var ds = (boeking.deadline || "").replace("T", " ").split(" ");
+    var rawDl = psDeadlineRaw || boeking.deadline;
+    if (!psInst || !rawDl) return null;
+    var ds = (rawDl || "").replace("T", " ").split(" ");
     var dp = (ds[0] || "").split("-");
     var tp = (ds[1] || "").split(":");
     var recrasDt = new Date(parseInt(dp[0]), parseInt(dp[1]) - 1, parseInt(dp[2]), parseInt(tp[0]) || 0, parseInt(tp[1]) || 0, 0);
@@ -979,21 +990,10 @@ function BuffetScreen({ actieve, setActieve }) {
       return /* @__PURE__ */ React.createElement("div", { key: i, style: { textAlign: "center" } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 900, fontSize: 16, color: isRecras ? C.hot : C.night } }, t.tijd), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 9, color: isRecras ? C.hot : C.muted } }, t.naam), t.kwal && !isRecras && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 8, color: C.muted, opacity: 0.7 } }, t.kwal));
     }));
   })(), (function() {
-    var opmRegel = geboekteMenus.find(function(gm) {
-      var _a;
-      return (gm.opmerking || ((_a = (boeking.regels || []).find(function(r2) {
-        return r2.menuNaam === gm.recrasNaam && r2.opmerking;
-      })) == null ? void 0 : _a.opmerking) || "").trim();
-    });
     var opmLijst = [];
     geboekteMenus.forEach(function(gm) {
-      var regel = (boeking.regels || []).find(function(r2) {
-        return r2.menuNaam === gm.recrasNaam && r2.opmerking && r2.opmerking.replace(/<[^>]+>/g, "").trim();
-      });
-      if (regel) {
-        var tekst = regel.opmerking.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-        if (tekst) opmLijst.push({ product: gm.recrasNaam, tekst });
-      }
+      var tekst = (gm.opmerking || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+      if (tekst) opmLijst.push({ product: gm.recrasNaam, tekst });
     });
     if (!opmLijst.length) return null;
     return /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 10, background: "#FFF3E0", borderRadius: 8, padding: "8px 14px", borderLeft: "4px solid #FF9800" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: "#E65100", marginBottom: 6 } }, "\u26A0 Opmerkingen"), opmLijst.map(function(o, i) {
@@ -1051,7 +1051,9 @@ function OpzetScreen() {
         var g = (window._stamGerechten || []).find(function(g2) {
           return g2.code === mg.grCode;
         });
-        return g && g.psId === psId;
+        return g && g.productsoort_id === psId || (g.gerecht_productsoort_koppelingen || []).some(function(k) {
+          return k.productsoort_id === psId;
+        });
       });
     });
   });
@@ -1197,6 +1199,8 @@ function TijdenScreen() {
       });
       Object.values(psIds).forEach(function(psInfo) {
         var psInst = (window._stamTijdenInst || []).find(function(inst) {
+          return inst && inst._psId === psInfo.psId && inst.tijden && inst.tijden.length;
+        }) || (window._stamTijdenInst || []).find(function(inst) {
           return inst && inst.tijden && inst.tijden.length;
         });
         if (!psInst) return;
@@ -3851,9 +3855,11 @@ function App({ supabaseInloggen, supabaseUitloggen, supabaseSessie, supabaseProf
       window._stamKoppelingen = results[4].data || [];
       window._stamTijdenInst = (results[5].data || []).map(function(row) {
         try {
-          return JSON.parse(row.instellingen_json || "{}");
+          var inst = JSON.parse(row.instellingen_json || "{}");
+          inst._psId = row.productsoort_id;
+          return inst;
         } catch (e) {
-          return {};
+          return { _psId: row.productsoort_id };
         }
       });
       setStamLaden(false);
