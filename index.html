@@ -1057,18 +1057,20 @@ function BuffetScreen({ actieve, setActieve }) {
     return /* @__PURE__ */ React.createElement("th", { key: h, style: { ...SS.th, color: "white", background: "transparent", textAlign: h === "Gerecht" ? "left" : "center", whiteSpace: "nowrap" } }, h);
   }))), /* @__PURE__ */ React.createElement("tbody", null, alleGerechten.map(function(g) {
     var portiesRauw = berekenPorties(g);
-    var portiesEff = portiesRauw * opzetFactor;
+    var overschrijfVal = overschrijven[g.id];
+    var portiesEff = overschrijfVal !== void 0 && overschrijfVal !== null && overschrijfVal > 0 ? overschrijfVal : portiesRauw * opzetFactor;
     var heeftData = portiesRauw > 0;
-    var pres = heeftData ? getPresentatie(g, portiesEff) : null;
-    var sligro = heeftData ? getSligroVerpakkingen(g, portiesEff) : [];
-    var bg = heeftData ? C.white : "#F5F5F5";
-    var kleur = heeftData ? C.night : "#BDBDBD";
+    var effData = heeftData || bewerkModus && overschrijfVal > 0;
+    var pres = effData ? getPresentatie(g, portiesEff) : null;
+    var sligro = effData ? getSligroVerpakkingen(g, portiesEff) : [];
+    var bg = effData ? C.white : "#F5F5F5";
+    var kleur = effData ? C.night : "#BDBDBD";
     var layoutItem = buffetLayout ? (buffetLayout.items || []).find(function(li) {
       return li.code === (g.code || g.id);
     }) : null;
     var afgerondeEff = g.altijd_afronden ? Math.ceil(portiesEff) : Math.round(portiesEff * 10) / 10;
     var toonAlleenBuffet = !!g.toon_in_opzet_alleen_buffet;
-    return /* @__PURE__ */ React.createElement("tr", { key: g.id, style: { background: bg, borderBottom: "1px solid #EEE" } }, /* @__PURE__ */ React.createElement("td", { style: { padding: "5px 8px", fontWeight: heeftData ? 700 : 400, color: kleur } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6 } }, /* @__PURE__ */ React.createElement("span", null, g.naam), g.is_gn && /* @__PURE__ */ React.createElement("span", { style: { ...tg(C.aqua), fontSize: 9 } }, "GN"), g.prio && /* @__PURE__ */ React.createElement("span", { style: { ...tg(C.hot), fontSize: 9 } }, "PRIO"), bewerkModus && /* @__PURE__ */ React.createElement(
+    return /* @__PURE__ */ React.createElement("tr", { key: g.id, style: { background: bg, borderBottom: "1px solid #EEE" } }, /* @__PURE__ */ React.createElement("td", { style: { padding: "5px 8px", fontWeight: effData ? 700 : 400, color: kleur } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6 } }, /* @__PURE__ */ React.createElement("span", null, g.naam), g.is_gn && /* @__PURE__ */ React.createElement("span", { style: { ...tg(C.aqua), fontSize: 9 } }, "GN"), g.prio && /* @__PURE__ */ React.createElement("span", { style: { ...tg(C.hot), fontSize: 9 } }, "PRIO"), bewerkModus && /* @__PURE__ */ React.createElement(
       "button",
       {
         style: { ...btnSG, fontSize: 9, color: C.hot, padding: "1px 5px" },
@@ -1081,7 +1083,24 @@ function BuffetScreen({ actieve, setActieve }) {
         }
       },
       "✕"
-    ))), /* @__PURE__ */ React.createElement("td", { style: { padding: "5px 8px", textAlign: "center", color: kleur } }, heeftData ? portiesRauw.toFixed(1) : "—"), /* @__PURE__ */ React.createElement("td", { style: { padding: "5px 8px", textAlign: "center" } }, heeftData ? toonAlleenBuffet && pres ? /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 700, color: C.night } }, nBuf, "\xD7 ", pres.naam || "") : /* @__PURE__ */ React.createElement(
+    ))), /* @__PURE__ */ React.createElement("td", { style: { padding: "5px 8px", textAlign: "center", color: kleur } }, heeftData ? portiesRauw.toFixed(1) : bewerkModus ? /* @__PURE__ */ React.createElement(
+      "input",
+      {
+        type: "number",
+        min: "0",
+        step: "1",
+        placeholder: "0",
+        style: { width: 55, padding: "2px 4px", border: "1px solid " + C.border, borderRadius: 4, textAlign: "center", fontSize: 11 },
+        onChange: function(e) {
+          var v = parseFloat(e.target.value) || 0;
+          setOverschrijven(function(prev) {
+            var n = Object.assign({}, prev);
+            n[g.id] = v * opzetFactor;
+            return n;
+          });
+        }
+      }
+    ) : "—"), /* @__PURE__ */ React.createElement("td", { style: { padding: "5px 8px", textAlign: "center" } }, effData || bewerkModus ? toonAlleenBuffet && pres ? /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 700, color: C.night } }, nBuf, "\xD7 ", pres.naam || "") : /* @__PURE__ */ React.createElement(
       "input",
       {
         type: "number",
