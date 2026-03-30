@@ -16,7 +16,6 @@
       table{border-collapse:collapse!important;width:100%!important;page-break-inside:auto}
       tr{page-break-inside:avoid}
       @page{margin:12mm 10mm;size:A4}
-      h1,h2{font-size:16px!important;margin:0 0 6px!important}
     }
     .print-only{display:none}
     @media print{.print-only{display:block!important}}
@@ -236,11 +235,36 @@ function berekenBuffetLayout(gnGerechtenMet, nBuf) {
     }
     return false;
   }
+  function upgradePrio(vanGrootte) {
+    var naarGrootte = vanGrootte + 1;
+    if (naarGrootte > 2) return false;
+    var kandidaten = items.map(function(item, idx) {
+      return { item, idx };
+    }).filter(function(x) {
+      return x.item.grootte === vanGrootte && x.item.prio;
+    });
+    for (var ki = 0; ki < kandidaten.length; ki++) {
+      var kand = kandidaten[ki];
+      var nfs = (kand.item.gnFormaten || []).filter(function(f) {
+        return !f.uit && grootteVan(f.f) === naarGrootte;
+      }).sort(function(a, b) {
+        return a.p - b.p;
+      });
+      if (nfs.length > 0) {
+        items[kand.idx] = Object.assign({}, kand.item, { formaat: nfs[0].f, portiesPerBak: nfs[0].p, grootte: naarGrootte, upgraded: true });
+        return true;
+      }
+    }
+    return false;
+  }
   for (var iter = 0; iter < 30; iter++) {
     var c = getCounts();
     if (c[0] % 3 === 0 && c[1] % 2 === 0) break;
-    if (c[0] % 3 !== 0) upgradeEen(0);
-    else if (c[1] % 2 !== 0) upgradeEen(1);
+    if (c[0] % 3 !== 0) {
+      if (!upgradePrio(0)) upgradeEen(0);
+    } else if (c[1] % 2 !== 0) {
+      if (!upgradePrio(1)) upgradeEen(1);
+    }
   }
   var counts = getCounts();
   var dishesPerBuf = Math.floor(counts[0] / 3) + Math.floor(counts[1] / 2) + counts[2];
@@ -470,10 +494,24 @@ function HomeScreen({ setSc }) {
           var deadlineDatum = "";
           if (datum) {
             var ds = datum.replace("T", " ").split(" ");
-            var datParts = (ds[0] || "").split("-");
+            var ds = datum.replace("T", " ").split(" ");
+            var datStr = ds[0] || "";
             var tijdStr = (ds[1] || "").substring(0, 5);
+            var datParts = datStr.indexOf("/") >= 0 ? datStr.split("/") : datStr.split("-");
+            var jaar, maand, dag;
             if (datParts.length === 3) {
-              var jaar = parseInt(datParts[0]), maand = parseInt(datParts[1]) - 1, dag = parseInt(datParts[2]);
+              if (parseInt(datParts[0]) > 31) {
+                jaar = parseInt(datParts[0]);
+                maand = parseInt(datParts[1]) - 1;
+                dag = parseInt(datParts[2]);
+              } else {
+                dag = parseInt(datParts[0]);
+                maand = parseInt(datParts[1]) - 1;
+                jaar = parseInt(datParts[2].split(" ")[0]);
+                if (!tijdStr && datParts[2].indexOf(" ") > 0) {
+                  tijdStr = datParts[2].split(" ")[1].substring(0, 5);
+                }
+              }
               var tijdParts = tijdStr.split(":");
               var uur = parseInt(tijdParts[0]) || 0, min = parseInt(tijdParts[1]) || 0;
               var d = new Date(jaar, maand, dag, uur, min, 0);
@@ -1081,7 +1119,19 @@ function BuffetScreen({ actieve, setActieve }) {
     var baseMin = parseInt(tp[0] || 0) * 60 + parseInt(tp[1] || 0);
     var vorigeMin = baseMin;
     psInst.tijden.forEach(function(t) {
-      var min = parseInt(t.minuten) || 0;
+      var min;
+      if (t.perGroepsgrootte && (t.tredes || []).length > 0) {
+        var gevondenTrede = null;
+        for (var ti = 0; ti < t.tredes.length; ti++) {
+          if (totaalPers <= (parseInt(t.tredes[ti].tot) || 9999)) {
+            gevondenTrede = t.tredes[ti];
+            break;
+          }
+        }
+        min = gevondenTrede ? parseInt(gevondenTrede.min) || 0 : parseInt(t.minuten) || 0;
+      } else {
+        min = parseInt(t.minuten) || 0;
+      }
       var tijdMin;
       if (t.basis === "vorige") {
         tijdMin = vorigeMin - min;
@@ -1476,8 +1526,21 @@ function TijdenScreen() {
         if (!psInst) return;
         var baseMinuten = parseInt(tp[0] || 0) * 60 + parseInt(tp[1] || 0);
         var vorigeMinuten = baseMinuten;
+        var totPersB = totPers(b);
         psInst.tijden.forEach(function(t) {
-          var min = parseInt(t.minuten) || 0;
+          var min;
+          if (t.perGroepsgrootte && (t.tredes || []).length > 0) {
+            var trTrede = null;
+            for (var tti = 0; tti < t.tredes.length; tti++) {
+              if (totPersB <= (parseInt(t.tredes[tti].tot) || 9999)) {
+                trTrede = t.tredes[tti];
+                break;
+              }
+            }
+            min = trTrede ? parseInt(trTrede.min) || 0 : parseInt(t.minuten) || 0;
+          } else {
+            min = parseInt(t.minuten) || 0;
+          }
           var tijdMin;
           if (t.basis === "vorige") {
             tijdMin = vorigeMinuten - min;
@@ -3611,7 +3674,20 @@ function MenusTab({ menus: menusProp, setMenus: setMenusProp, gerechten, product
   }
   function updatePP(menuId, mgId, pp) {
     var n = parseFloat(pp) || 1;
-    window._supa.from("menu_gerechten").update({ porties_per_persoon: n }).eq("id", mgId);
+    window._supa.from("menu_gerechten").update({ porties_per_persoon: n }).eq("id", mgId).then(function(res) {
+      if (res.error) {
+        alert("Opslaan mislukt: " + res.error.message);
+        return;
+      }
+      if (window._stamMenus) {
+        window._stamMenus = window._stamMenus.map(function(m) {
+          if (m.id !== menuId) return m;
+          return Object.assign({}, m, { menu_gerechten: (m.menu_gerechten || []).map(function(mg) {
+            return mg.id === mgId ? Object.assign({}, mg, { porties_per_persoon: n }) : mg;
+          }) });
+        });
+      }
+    });
     setMenus(function(prev) {
       return prev.map(function(m) {
         if (m.id !== menuId) return m;
