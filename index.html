@@ -23,7 +23,7 @@
     window._supa=supabase.createClient('https://aezatnwsrhlwtykpixsq.supabase.co','sb_publishable_qkQzUEM5fvJPSsfScEzNCg_Eug8-d4t');
     window._recrasBoekingen=[];window._stamProductgroepen=[];window._stamGerechten=[];
     window._stamMenus=[];window._stamSligro=[];window._stamKoppelingen=[];window._stamTijdenInst=[];
-    window._formulierOverrides={};
+    window._formulierOverrides={};window._formulierTijden={};
     window.sbInloggen=async function(e,w,onErr){try{var r=await window._supa.auth.signInWithPassword({email:e,password:w});if(r.error){if(onErr)onErr(r.error.message);return null;}return r.data;}catch(ex){if(onErr)onErr(ex.message);return null;}};
     window.sbUitloggen=async function(){await window._supa.auth.signOut();window.location.reload();};
     window.sbProfiel=async function(uid){try{var p=await window._supa.from('gebruikers_profielen').select('*').eq('id',uid).single();return p.data||null;}catch(e){return null;}};
@@ -1099,32 +1099,38 @@ function BuffetScreen({ actieve, setActieve }) {
     html += "</style></head><body>";
     html += "<h1>" + boeking.naam + "</h1>";
     html += "<h2>" + boeking.deadlineDag + " &bull; " + (psDeadline || boeking.deadlineTijd || "") + " &bull; " + boeking.locatie + " &bull; " + totaalPers + " personen &bull; " + nBuf + " buffet" + (nBuf > 1 ? "ten" : "") + "</h2>";
-    html += "<table><thead><tr><th>Gerecht</th><th>Opzet aantal</th><th>Presentatievorm</th><th>Sligro verpakkingen</th></tr></thead><tbody>";
-    alleGerechten.forEach(function(g) {
-      var pRauw = berekenPorties(g);
-      var pEff = pRauw * opzetFactor;
-      var heeftD = pRauw > 0;
-      var pres = heeftD ? getPresentatie(g, pEff) : null;
-      var sligros = heeftD ? getSligroVerpakkingen(g, pEff) : [];
-      var li = buffetLayout ? (buffetLayout.items || []).find(function(x) {
-        return x.code === (g.code || g.id);
-      }) : null;
-      var presStr = "";
-      if (pres) {
-        if (pres.type === "gn") presStr = li ? li.formaat : pres.naam;
-        else presStr = nBuf + "\xD7 " + pres.naam;
-      }
-      var slStr = sligros.map(function(s) {
-        return s.afgerond + "\xD7 " + s.naam;
-      }).join(", ");
-      var aant = g.altijd_afronden ? Math.ceil(pEff) : Math.round(pEff * 10) / 10;
-      var cls = heeftD ? "" : ' class="gray"';
-      html += "<tr" + cls + "><td>" + g.naam + (g.is_gn ? '<span class="gn">GN</span>' : "") + (g.prio ? '<span class="prio">PRIO</span>' : "") + "</td>";
-      html += "<td>" + (heeftD ? '<span class="cnt">' + aant + "</span>" : "—") + "</td>";
-      html += "<td>" + (presStr || "—") + "</td>";
-      html += "<td>" + (slStr || "—") + "</td></tr>";
+    var gnGerechten = alleGerechten.filter(function(g) {
+      return g.is_gn && berekenPorties(g) * opzetFactor > 0;
     });
-    html += "</tbody></table>";
+    var nijGnGerechten = alleGerechten.filter(function(g) {
+      return !g.is_gn && berekenPorties(g) * opzetFactor > 0;
+    });
+    function renderTabel(lijst, titel) {
+      if (!lijst.length) return "";
+      var out = '<h3 style="margin:20px 0 8px;font-size:15px;font-weight:900;border-bottom:2px solid #002D41;padding-bottom:4px">' + titel + "</h3>";
+      out += '<table><thead><tr><th>Gerecht</th><th style="width:180px">Presentatievorm</th></tr></thead><tbody>';
+      lijst.forEach(function(g) {
+        var pRauw = berekenPorties(g);
+        var pEff = pRauw * opzetFactor;
+        var pres2 = getPresentatie(g, pEff);
+        var li = buffetLayout ? (buffetLayout.items || []).find(function(x) {
+          return x.code === (g.code || g.id);
+        }) : null;
+        var presStr = "";
+        if (pres2) {
+          if (pres2.type === "gn") presStr = li ? li.formaat + (li.upgraded ? " ↑" : "") : pres2.naam;
+          else presStr = nBuf + "\xD7 " + pres2.naam;
+        }
+        var aant = g.altijd_afronden ? Math.ceil(pEff) : Math.round(pEff * 10) / 10;
+        out += "<tr><td>" + g.naam + (g.is_gn ? '<span class="gn">GN</span>' : "") + (g.prio ? '<span class="prio">PRIO</span>' : "") + "</td>";
+        out += '<td style="font-weight:900;font-size:16px">' + (presStr || "—") + "</td></tr>";
+      });
+      out += "</tbody></table>";
+      return out;
+    }
+    html += renderTabel(gnGerechten, "GN Bakken (Chafingdishes)");
+    html += renderTabel(nijGnGerechten, "Overige gerechten");
+    html += '<div style="display:none"><!-- old --></div>';
     if (buffetLayout) html += '<p style="margin-top:16px;padding:10px;background:#f0f8ff;border-radius:6px;font-size:13px"><strong>Chafingdish layout:</strong> GN 1/3: ' + buffetLayout.counts[0] + " &bull; GN 1/2: " + buffetLayout.counts[1] + " &bull; GN 1/1: " + buffetLayout.counts[2] + " &bull; <strong>" + buffetLayout.dishesPerBuf + " dishes/buffet</strong></p>";
     html += "<script>window.print();window.onafterprint=function(){window.close();};<\/script>";
     html += "</body></html>";
@@ -1185,7 +1191,19 @@ function BuffetScreen({ actieve, setActieve }) {
     tijdItems.sort(function(a, b) {
       return (a.minVal || 0) - (b.minVal || 0);
     });
-    tijdItems.push({ tijd: String(parseInt(tp[0] || 0)).padStart(2, "0") + ":" + String(parseInt(tp[1] || 0)).padStart(2, "0"), naam: "Recras deadline", kwal: "recras" });
+    var recrasTijdStr = String(parseInt(tp[0] || 0)).padStart(2, "0") + ":" + String(parseInt(tp[1] || 0)).padStart(2, "0");
+    tijdItems.push({ tijd: recrasTijdStr, naam: "Recras deadline", kwal: "recras", minVal: parseInt(tp[0] || 0) * 60 + parseInt(tp[1] || 0) });
+    if (!window._formulierTijden) window._formulierTijden = {};
+    var ftKey = boeking.id + "_" + psId;
+    window._formulierTijden[ftKey] = {
+      boeking: boeking.naam,
+      boekingId: boeking.id,
+      psNaam: (pg ? pg.naam + " > " : "") + (ps ? ps.naam : psId),
+      psId,
+      dag: boeking.deadlineDag,
+      deadline: recrasTijdStr,
+      tijden: tijdItems.slice()
+    };
     return /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 10, background: "#FFF8E1", borderRadius: 8, padding: "8px 14px", display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: 1 } }, "Tijden"), tijdItems.map(function(t, i) {
       var isRecras = t.kwal === "recras";
       return /* @__PURE__ */ React.createElement("div", { key: i, style: { textAlign: "center" } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 900, fontSize: 16, color: isRecras ? C.hot : C.night } }, t.tijd), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 9, color: isRecras ? C.hot : C.muted } }, t.naam), t.kwal && !isRecras && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 8, color: C.muted, opacity: 0.7 } }, t.kwal));
@@ -1282,14 +1300,17 @@ function BuffetScreen({ actieve, setActieve }) {
         }
       },
       "✕"
-    ))), /* @__PURE__ */ React.createElement("td", { style: { padding: "5px 8px", textAlign: "center", color: kleur } }, heeftData ? portiesRauw.toFixed(1) : bewerkModus ? /* @__PURE__ */ React.createElement(
+    ))), /* @__PURE__ */ React.createElement("td", { style: { padding: "5px 8px", textAlign: "center", color: kleur } }, heeftData ? portiesRauw.toFixed(1) : actieveOverride > 0 ? (
+      // Toon terugberekende rauw waarde na opslaan
+      /* @__PURE__ */ React.createElement("span", { style: { color: C.muted, fontSize: 10 } }, Math.round(actieveOverride / opzetFactor))
+    ) : bewerkModus ? /* @__PURE__ */ React.createElement(
       "input",
       {
         type: "number",
         min: "0",
         step: "1",
         placeholder: "0",
-        value: overschrijfVal ? Math.round(overschrijfVal / opzetFactor) : "",
+        value: actieveOverride > 0 ? Math.round(actieveOverride / opzetFactor) : "",
         style: { width: 55, padding: "2px 4px", border: "1px solid " + C.border, borderRadius: 4, textAlign: "center", fontSize: 11 },
         onChange: function(e) {
           var v = parseFloat(e.target.value) || 0;
@@ -1528,12 +1549,12 @@ function TijdenScreen() {
       var ds = (b.deadline || "").replace("T", " ").split(" ");
       var dp = (ds[0] || "").split("-");
       var tp = (ds[1] || "").split(":");
-      var recrasDt = new Date(parseInt(dp[0]), parseInt(dp[1]) - 1, parseInt(dp[2]), parseInt(tp[0]) || 0, parseInt(tp[1]) || 0, 0);
-      if (isNaN(recrasDt.getTime())) return;
       var recrasTijd = String(parseInt(tp[0] || 0)).padStart(2, "0") + ":" + String(parseInt(tp[1] || 0)).padStart(2, "0");
-      resultaat.push({ t: recrasTijd, a: "Recras deadline", b: b.naam, psNaam: "", app: "alle", isRecras: true, boekingId: b.id, uur: parseInt(tp[0] || 0) * 60 + parseInt(tp[1] || 0) });
+      var baseMinuten = parseInt(tp[0] || 0) * 60 + parseInt(tp[1] || 0);
+      resultaat.push({ t: recrasTijd, a: "Recras deadline", boeking: b.naam, psNaam: "", app: "alle", isRecras: true, uur: baseMinuten, dag: b.deadlineDag });
       var psIds = {};
       (b.regels || []).forEach(function(r) {
+        if ((r.menuNaam || "").toLowerCase().includes("add up")) return;
         var kop = (window._stamKoppelingen || []).find(function(k) {
           return (k.recras_naam || "").trim() === (r.menuNaam || "").trim();
         });
@@ -1555,6 +1576,24 @@ function TijdenScreen() {
         }
       });
       Object.values(psIds).forEach(function(psInfo) {
+        var ftKey = b.id + "_" + psInfo.psId;
+        var ftData = window._formulierTijden && window._formulierTijden[ftKey];
+        if (ftData && ftData.tijden) {
+          ftData.tijden.forEach(function(t) {
+            if (t.kwal === "recras") return;
+            resultaat.push({
+              t: t.tijd,
+              a: t.naam,
+              boeking: b.naam,
+              psNaam: psInfo.psNaam,
+              app: (t.kwal || "algemeen").toLowerCase(),
+              isRecras: false,
+              uur: t.minVal || 0,
+              dag: b.deadlineDag
+            });
+          });
+          return;
+        }
         var psInstCheck = (window._stamTijdenInst || []).find(function(inst) {
           return inst && inst._psId === psInfo.psId;
         });
@@ -1563,44 +1602,51 @@ function TijdenScreen() {
           return inst && inst.tijden && inst.tijden.length && !inst.geenTijden;
         });
         if (!psInst) return;
-        var baseMinuten = parseInt(tp[0] || 0) * 60 + parseInt(tp[1] || 0);
-        var vorigeMinuten = baseMinuten;
-        var totPersB = totPers(b);
+        var psRegel = (b.regels || []).find(function(r) {
+          if ((r.menuNaam || "").toLowerCase().includes("add up")) return false;
+          var kp2 = (window._stamKoppelingen || []).find(function(k) {
+            return (k.recras_naam || "").trim() === (r.menuNaam || "").trim();
+          });
+          var m2 = kp2 ? (window._stamMenus || []).find(function(m) {
+            return m.id === kp2.menu_id;
+          }) : null;
+          return m2 && (m2.productsoort_id || m2.psId) === psInfo.psId;
+        });
+        var psTijd = psRegel ? psRegel.starttijdTijd || recrasTijd : recrasTijd;
+        var psParts = psTijd.split(":");
+        var psBase = parseInt(psParts[0] || 0) * 60 + parseInt(psParts[1] || 0);
+        var nPers = totPers(b);
+        var vorigeMin = psBase;
         psInst.tijden.forEach(function(t) {
           var min;
           if ((t.perGroepsgrootte || t.perGroep) && (t.tredes || []).length > 0) {
-            var trTrede = null;
-            var trSorted2 = (t.tredes || []).slice().sort(function(a, b2) {
+            var trSorted3 = (t.tredes || []).slice().sort(function(a, b2) {
               return (parseInt(a.tot) || 9999) - (parseInt(b2.tot) || 9999);
             });
-            for (var tti = 0; tti < trSorted2.length; tti++) {
-              if (totPersB <= (parseInt(trSorted2[tti].tot) || 9999)) {
-                trTrede = trSorted2[tti];
+            var trTrede3 = null;
+            for (var tti = 0; tti < trSorted3.length; tti++) {
+              if (nPers <= (parseInt(trSorted3[tti].tot) || 9999)) {
+                trTrede3 = trSorted3[tti];
                 break;
               }
             }
-            min = trTrede ? parseInt(trTrede.min) || 0 : parseInt(t.minuten) || 0;
+            min = trTrede3 ? parseInt(trTrede3.min) || 0 : parseInt(t.minuten) || 0;
           } else {
             min = parseInt(t.minuten) || 0;
           }
-          var tijdMin;
-          if (t.basis === "vorige") {
-            tijdMin = vorigeMinuten - min;
-          } else {
-            tijdMin = baseMinuten - min;
-          }
-          vorigeMinuten = tijdMin;
+          var tijdMin = t.basis === "vorige" ? vorigeMin - min : psBase - min;
+          vorigeMin = tijdMin;
           var uur3 = Math.floor(tijdMin / 60);
           var min3 = String(tijdMin % 60).padStart(2, "0");
           resultaat.push({
             t: String(uur3).padStart(2, "0") + ":" + min3,
             a: t.naam,
-            b: b.naam,
+            boeking: b.naam,
             psNaam: psInfo.psNaam,
             app: (t.kwalificatie || "algemeen").toLowerCase(),
             isRecras: false,
-            boekingId: b.id,
-            uur: tijdMin
+            uur: tijdMin,
+            dag: b.deadlineDag
           });
         });
       });
@@ -1611,16 +1657,20 @@ function TijdenScreen() {
     return resultaat;
   }
   var tijden = berekenTijdenVoorDag(dag);
+  var ak = { oven: C.hot, bbq: "#5D4037", frituur: "#E65100" };
   var filtered = appTab === "alle" ? tijden : tijden.filter(function(x) {
-    return x.app === appTab || x.app === "alle";
+    return x.isRecras || x.app === appTab;
   });
-  var ak = { oven: C.hot, bbq: "#8B4513", frituur: "#FF6B35" };
-  return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: SS.pT }, "Tijdenoverzicht"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" } }, dagen.length === 0 ? /* @__PURE__ */ React.createElement("div", { style: alertI }, "Importeer eerst boekingen via het hoofdscherm.") : dagen.map(function(d) {
+  return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 } }, /* @__PURE__ */ React.createElement("div", { style: SS.pT }, "Tijdenoverzicht"), /* @__PURE__ */ React.createElement("button", { style: btnSG, className: "no-print", onClick: function() {
+    window.print();
+  } }, "\u{1F5A8} Print")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" } }, dagen.length === 0 ? /* @__PURE__ */ React.createElement("div", { style: alertI }, "Importeer eerst boekingen via het hoofdscherm.") : dagen.map(function(d) {
     var parts = d.split("-");
     var dt = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
     var dnamen = ["zo", "ma", "di", "wo", "do", "vr", "za"];
     var mnamen = ["jan", "feb", "mrt", "apr", "mei", "jun", "jul", "aug", "sep", "okt", "nov", "dec"];
-    var label = dnamen[dt.getDay()] + " " + parseInt(parts[2]) + " " + mnamen[parseInt(parts[1]) - 1];
+    var dagNr = parseInt(parts[2]);
+    var maandNr = parseInt(parts[1]) - 1;
+    var label = dnamen[dt.getDay()] + " " + dagNr + " " + mnamen[maandNr];
     return /* @__PURE__ */ React.createElement(
       "button",
       {
@@ -1636,13 +1686,11 @@ function TijdenScreen() {
     return /* @__PURE__ */ React.createElement("button", { key: item[0], style: tabStyle(appTab === item[0]), onClick: function() {
       setAppTab(item[0]);
     } }, item[1]);
-  }), /* @__PURE__ */ React.createElement("button", { style: { ...btnSG, marginLeft: "auto", fontSize: 10 }, onClick: function() {
-    window.print();
-  } }, "\u{1F5A8} Print")), filtered.length === 0 ? /* @__PURE__ */ React.createElement("div", { style: { ...SS.card, ...alertI } }, dagen.length > 0 ? "Geen tijdinstellingen geconfigureerd. Stel tijden in bij Stamgegevens → Buffet / Tijden." : "Geen boekingen voor deze dag.") : /* @__PURE__ */ React.createElement("div", { style: SS.card }, /* @__PURE__ */ React.createElement("table", { style: { width: "100%", borderCollapse: "collapse" } }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", { style: { background: C.night } }, ["Tijd", "Activiteit", "Boeking", "Productsoort"].map(function(h) {
+  }), /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }), window._formulierTijden && Object.keys(window._formulierTijden).length > 0 && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: C.green, fontWeight: 700 } }, "✓ ", Object.keys(window._formulierTijden).length, " formulieren geladen")), filtered.length === 0 ? /* @__PURE__ */ React.createElement("div", { style: { ...SS.card, ...alertI } }, dagen.length > 0 ? "Geen tijden voor deze dag/categorie. Open buffetformulieren om tijden te genereren." : "") : /* @__PURE__ */ React.createElement("div", { style: SS.card }, /* @__PURE__ */ React.createElement("table", { style: { width: "100%", borderCollapse: "collapse" } }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", { style: { background: C.night } }, ["Tijd", "Activiteit", "Boeking", "Productsoort"].map(function(h) {
     return /* @__PURE__ */ React.createElement("th", { key: h, style: { ...SS.th, color: "white", background: "transparent", textAlign: "left" } }, h);
-  }))), /* @__PURE__ */ React.createElement("tbody", null, filtered.map(function(item, i) {
+  }))), /* @__PURE__ */ React.createElement("tbody", null, filtered.map(function(item, ii) {
     var kleur = item.isRecras ? C.hot : ak[item.app] || C.night;
-    return /* @__PURE__ */ React.createElement("tr", { key: i, style: { background: item.isRecras ? "rgba(254,66,77,.08)" : i % 2 === 0 ? C.white : C.gray, borderLeft: item.isRecras ? "4px solid " + C.hot : "4px solid transparent" } }, /* @__PURE__ */ React.createElement("td", { style: { padding: "8px 12px", fontWeight: 900, fontSize: 15, color: kleur, whiteSpace: "nowrap" } }, item.t), /* @__PURE__ */ React.createElement("td", { style: { padding: "8px 12px", fontWeight: 700, color: kleur } }, item.a, item.app && item.app !== "alle" && !item.isRecras && /* @__PURE__ */ React.createElement("span", { style: { ...tg(ak[item.app] || C.muted), marginLeft: 6, fontSize: 9, textTransform: "uppercase" } }, item.app)), /* @__PURE__ */ React.createElement("td", { style: { padding: "8px 12px", fontSize: 12, color: C.muted } }, item.b), /* @__PURE__ */ React.createElement("td", { style: { padding: "8px 12px", fontSize: 11, color: C.muted } }, item.psNaam));
+    return /* @__PURE__ */ React.createElement("tr", { key: ii, style: { background: item.isRecras ? "rgba(254,66,77,.07)" : ii % 2 === 0 ? C.white : "#F8FAFB", borderLeft: item.isRecras ? "4px solid " + C.hot : "4px solid transparent" } }, /* @__PURE__ */ React.createElement("td", { style: { padding: "9px 12px", fontWeight: 900, fontSize: 16, color: kleur, whiteSpace: "nowrap" } }, item.t), /* @__PURE__ */ React.createElement("td", { style: { padding: "9px 12px", fontWeight: 700, color: kleur } }, item.a, item.app && item.app !== "alle" && !item.isRecras && /* @__PURE__ */ React.createElement("span", { style: { background: ak[item.app] || C.muted, color: "#fff", borderRadius: 4, padding: "1px 5px", fontSize: 9, marginLeft: 6, textTransform: "uppercase" } }, item.app)), /* @__PURE__ */ React.createElement("td", { style: { padding: "9px 12px", fontSize: 12, color: C.muted } }, item.boeking), /* @__PURE__ */ React.createElement("td", { style: { padding: "9px 12px", fontSize: 11, color: C.muted } }, item.psNaam));
   })))));
 }
 function StamScreen() {
