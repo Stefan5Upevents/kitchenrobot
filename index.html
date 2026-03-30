@@ -7,18 +7,8 @@
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:'Roboto',sans-serif;background:#EEF2F6;color:#002D41}
-    @media print{
-      .no-print{display:none!important}
-      body{background:white!important;color:#000!important}
-      th{background:#002D41!important;color:#fff!important;font-size:12px!important;padding:9px 12px!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-      td{border-bottom:1px solid #ddd!important;padding:8px 12px!important;font-size:12px!important;color:#000!important}
-      tr:nth-child(even) td{background:#f5f8fa!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-      table{border-collapse:collapse!important;width:100%!important;page-break-inside:auto}
-      tr{page-break-inside:avoid}
-      @page{margin:12mm 10mm;size:A4}
-    }
-    .print-only{display:none}
-    @media print{.print-only{display:block!important}}
+    @media print{.no-print{display:none!important}body{background:white!important;color:#000!important}th{background:#002D41!important;color:#fff!important;font-size:12px!important;padding:9px 12px!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}td{border-bottom:1px solid #ddd!important;padding:8px 12px!important;font-size:12px!important;color:#000!important}tr:nth-child(even) td{background:#f5f8fa!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}table{border-collapse:collapse!important;width:100%!important;page-break-inside:auto}tr{page-break-inside:avoid}@page{margin:12mm 10mm;size:A4}}
+    .print-only{display:none}@media print{.print-only{display:block!important}}
     input,select,button{font-family:inherit}
     ::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-thumb{background:#1AA6B7;border-radius:3px}
   </style>
@@ -521,6 +511,7 @@ function HomeScreen({ setSc }) {
               var tijdParts = tijdStr.split(":");
               var uur = parseInt(tijdParts[0]) || 0, min = parseInt(tijdParts[1]) || 0;
               var d = new Date(jaar, maand, dag, uur, min, 0);
+              datum = String(jaar) + "-" + String(maand + 1).padStart(2, "0") + "-" + String(dag).padStart(2, "0") + " " + String(uur).padStart(2, "0") + ":" + String(min).padStart(2, "0") + ":00";
               if (!isNaN(d.getTime())) {
                 deadlineTijd = tijdStr || uur + ":" + String(min).padStart(2, "0");
                 deadlineDatum = String(dag).padStart(2, "0") + "-" + String(maand + 1).padStart(2, "0") + "-" + String(jaar).slice(-2);
@@ -1165,7 +1156,7 @@ function BuffetScreen({ actieve, setActieve }) {
     var vorigeMin = baseMin;
     psInst.tijden.forEach(function(t) {
       var min;
-      if (t.perGroepsgrootte && (t.tredes || []).length > 0) {
+      if ((t.perGroepsgrootte || t.perGroep) && (t.tredes || []).length > 0) {
         var gevondenTrede = null;
         var trSorted = (t.tredes || []).slice().sort(function(a, b) {
           return (parseInt(a.tot) || 9999) - (parseInt(b.tot) || 9999);
@@ -1577,7 +1568,7 @@ function TijdenScreen() {
         var totPersB = totPers(b);
         psInst.tijden.forEach(function(t) {
           var min;
-          if (t.perGroepsgrootte && (t.tredes || []).length > 0) {
+          if ((t.perGroepsgrootte || t.perGroep) && (t.tredes || []).length > 0) {
             var trTrede = null;
             var trSorted2 = (t.tredes || []).slice().sort(function(a, b2) {
               return (parseInt(a.tot) || 9999) - (parseInt(b2.tot) || 9999);
