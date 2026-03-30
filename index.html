@@ -754,6 +754,7 @@ function BuffetScreen({ actieve, setActieve }) {
   var huidig = actieve && actieve.boekingId ? actieve : formulieren[0] || {};
   var psId = huidig.psId || "";
   var pgId = huidig.pgId || "";
+  var formKey = (huidig.boekingId || "") + "_" + psId;
   if ((window._recrasBoekingen || []).length > 0 && formulieren.length === 0 && (window._stamMenus || []).length === 0) {
     return /* @__PURE__ */ React.createElement("div", { style: SS.card }, /* @__PURE__ */ React.createElement("div", { style: alertI }, "Stamgegevens laden..."));
   }
@@ -1024,23 +1025,46 @@ function BuffetScreen({ actieve, setActieve }) {
     }));
   })(), (function() {
     var opmLijst = [];
-    var streetfoodSuggestie = null;
+    var streetfoodItems = [];
+    (boeking.regels || []).forEach(function(r) {
+      var naam = (r.menuNaam || "").toLowerCase();
+      if (naam.includes("foodtruck") && naam.includes("add up")) {
+        var sfMenu = (window._stamMenus || []).find(function(m) {
+          return m.naam.toLowerCase().includes("foodtruck");
+        });
+        if (sfMenu) streetfoodItems.push({ menu: sfMenu, aantal: r.aantal, type: "Foodtruck" });
+      }
+      if (naam.includes("marktkraam") && naam.includes("add up")) {
+        var sfMenu = (window._stamMenus || []).find(function(m) {
+          return m.naam.toLowerCase().includes("marktkraam");
+        });
+        if (sfMenu) streetfoodItems.push({ menu: sfMenu, aantal: r.aantal, type: "Marktkraam" });
+      }
+    });
     geboekteMenus.forEach(function(gm) {
       var tekst = (gm.opmerking || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
       if (tekst) opmLijst.push({ product: gm.recrasNaam, tekst });
       var lowerTekst = tekst.toLowerCase();
-      if (lowerTekst.includes("foodtruck") || lowerTekst.includes("marktkraam") || lowerTekst.includes("streetfood") || lowerTekst.includes("street food")) {
-        var sfMenu = (window._stamMenus || []).find(function(m) {
-          return m.naam.toLowerCase().includes("streetfood") || m.naam.toLowerCase().includes("street food");
-        });
-        if (sfMenu) streetfoodSuggestie = { menu: sfMenu, opmerking: tekst };
-      }
+      var sfTypes = ["foodtruck", "marktkraam", "streetfood", "street food"];
+      sfTypes.forEach(function(sfType) {
+        if (!lowerTekst.includes(sfType)) return;
+        var aantalMatch = tekst.match(new RegExp("(\\d+)\\s*[x\xD7]?\\s*" + sfType, "i")) || tekst.match(new RegExp(sfType + "[:\\s]+?(\\d+)", "i"));
+        var sfAantal = aantalMatch ? parseInt(aantalMatch[1]) : null;
+        if (sfAantal) {
+          var sfMenu = (window._stamMenus || []).find(function(m) {
+            return m.naam.toLowerCase().includes(sfType);
+          });
+          if (sfMenu) streetfoodItems.push({ menu: sfMenu, aantal: sfAantal, type: sfType });
+        }
+      });
     });
     if (handOpm) opmLijst.push({ product: "Handmatig", tekst: handOpm });
     if (!opmLijst.length) return null;
     return /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 10, background: "#FFF3E0", borderRadius: 8, padding: "8px 14px", borderLeft: "4px solid #FF9800" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: "#E65100", marginBottom: 6 } }, "\u26A0 Opmerkingen"), opmLijst.map(function(o, i) {
       return /* @__PURE__ */ React.createElement("div", { key: i, style: { fontSize: 11, marginBottom: 4 } }, /* @__PURE__ */ React.createElement("strong", null, o.product, ":"), " ", o.tekst);
-    }), streetfoodSuggestie && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 6, padding: "6px 10px", background: "#E8F5E9", borderRadius: 6, fontSize: 11 } }, /* @__PURE__ */ React.createElement("span", { style: { color: C.green, fontWeight: 700 } }, "\u{1F69A} Streetfood herkend! "), "Suggestie: koppel ", /* @__PURE__ */ React.createElement("strong", null, streetfoodSuggestie.menu.naam), " aan dit formulier."));
+    }), streetfoodItems.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 6, padding: "6px 10px", background: "#E8F5E9", borderRadius: 6, fontSize: 11 } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, color: C.green, marginBottom: 4 } }, "\u{1F69A} Streetfood gedetecteerd:"), streetfoodItems.map(function(sf, sfi) {
+      return /* @__PURE__ */ React.createElement("div", { key: sfi, style: { marginBottom: 2 } }, /* @__PURE__ */ React.createElement("strong", null, sf.aantal, "\xD7"), " ", sf.type, " — menu: ", /* @__PURE__ */ React.createElement("strong", null, sf.menu.naam));
+    })));
   })(), /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 10, background: "#F8FBFC", borderRadius: 8, padding: "8px 12px" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 12 } }, "Geboekte menus — ", totaalPers, " personen totaal"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.muted } }, "Opzetmarge: ", /* @__PURE__ */ React.createElement("strong", null, margePercent, "%"), isPsBBQ && /* @__PURE__ */ React.createElement("span", null, " \u2022 ", nBuf, " buffet", nBuf !== 1 ? "ten" : ""), buffetLayout && /* @__PURE__ */ React.createElement("span", null, " \u2022 ", /* @__PURE__ */ React.createElement("strong", null, buffetLayout.dishesPerBuf), " dishes/buf"))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } }, geboekteMenus.map(function(gm, i) {
     return /* @__PURE__ */ React.createElement("div", { key: i, style: { background: C.white, borderRadius: 6, padding: "4px 10px", border: "1px solid " + C.border, fontSize: 12 } }, /* @__PURE__ */ React.createElement("strong", null, gm.aantal, "\xD7"), " ", gm.menu.naam);
   }))), /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 4 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, fontWeight: 700, color: C.muted } }, "Opmerking formulier:")), /* @__PURE__ */ React.createElement(
@@ -1057,7 +1081,8 @@ function BuffetScreen({ actieve, setActieve }) {
     return /* @__PURE__ */ React.createElement("th", { key: h, style: { ...SS.th, color: "white", background: "transparent", textAlign: h === "Gerecht" ? "left" : "center", whiteSpace: "nowrap" } }, h);
   }))), /* @__PURE__ */ React.createElement("tbody", null, alleGerechten.map(function(g) {
     var portiesRauw = berekenPorties(g);
-    var overschrijfVal = overschrijven[g.id];
+    var formOvr = overschrijven[formKey] || {};
+    var overschrijfVal = formOvr[g.id];
     var portiesEff = overschrijfVal !== void 0 && overschrijfVal !== null && overschrijfVal > 0 ? overschrijfVal : portiesRauw * opzetFactor;
     var heeftData = portiesRauw > 0;
     var effData = heeftData || bewerkModus && overschrijfVal > 0;
@@ -1100,26 +1125,32 @@ function BuffetScreen({ actieve, setActieve }) {
           });
         }
       }
-    ) : "—"), /* @__PURE__ */ React.createElement("td", { style: { padding: "5px 8px", textAlign: "center" } }, effData || bewerkModus ? toonAlleenBuffet && pres ? /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 700, color: C.night } }, nBuf, "\xD7 ", pres.naam || "") : /* @__PURE__ */ React.createElement(
+    ) : "—"), /* @__PURE__ */ React.createElement("td", { style: { padding: "5px 8px", textAlign: "center" } }, effData ? toonAlleenBuffet && pres ? /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 700, color: C.night } }, nBuf, "\xD7 ", pres.naam || "") : bewerkModus ? /* @__PURE__ */ React.createElement(
       "input",
       {
         type: "number",
         step: "0.5",
         min: "0",
         defaultValue: afgerondeEff,
+        key: formKey + "_" + g.id,
         onChange: function(e) {
           var v = parseFloat(e.target.value);
           setOverschrijven(function(prev) {
             var n = Object.assign({}, prev);
-            n[g.id] = v;
+            var fk = Object.assign({}, n[formKey] || {});
+            fk[g.id] = v;
+            n[formKey] = fk;
             return n;
           });
         },
         style: { width: 60, padding: "2px 4px", border: "1px solid " + C.border, borderRadius: 4, fontWeight: 700, color: C.aqua, textAlign: "center", fontSize: 12 }
       }
+    ) : /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 700, color: C.aqua } }, afgerondeEff) : bewerkModus ? (
+      // Grey row in bewerkModus - show add input
+      /* @__PURE__ */ React.createElement("span", { style: { color: C.muted, fontSize: 10 } }, "zie Rauw ↑")
     ) : "—"), /* @__PURE__ */ React.createElement("td", { style: { padding: "5px 8px", color: kleur } }, pres ? pres.type === "gn" ? (
       // GN: toon formaat uit layout als beschikbaar, anders max vorm
-      layoutItem ? /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("strong", null, layoutItem.formaat), layoutItem.upgraded ? " \u2191" : "") : /* @__PURE__ */ React.createElement("span", null, pres.naam)
+      layoutItem ? /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("strong", null, layoutItem.formaat), layoutItem.upgraded ? " ↑" : "") : /* @__PURE__ */ React.createElement("span", null, pres.naam)
     ) : pres.type === "schaal" ? (
       // Schaal: aantal buffetten × naam
       /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("strong", null, nBuf), "\xD7 ", pres.naam)
@@ -1130,7 +1161,9 @@ function BuffetScreen({ actieve, setActieve }) {
         onChange: function(e) {
           setOverschrijven(function(prev) {
             var n = Object.assign({}, prev);
-            n["pres_" + g.id] = e.target.value;
+            var fk = Object.assign({}, n[formKey] || {});
+            fk["pres_" + g.id] = e.target.value;
+            n[formKey] = fk;
             return n;
           });
         }
@@ -1248,15 +1281,17 @@ function OpzetScreen() {
       return s + v;
     }, 0);
     var rowBg = ri % 2 === 0 ? C.white : "#F9FAFB";
-    return /* @__PURE__ */ React.createElement("tr", { key: g.code, style: { background: rowBg } }, /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 700, background: rowBg, borderRight: "2px solid #E8EEF2" } }, g.gn && /* @__PURE__ */ React.createElement("span", { style: { ...tg(C.aqua), marginRight: 4, fontSize: 9 } }, "GN"), g.naam), waarden.map(function(v, i) {
+    return /* @__PURE__ */ React.createElement("tr", { key: g.id, style: { background: rowBg } }, /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 700, background: rowBg, borderRight: "2px solid #E8EEF2" } }, g.is_gn && /* @__PURE__ */ React.createElement("span", { style: { ...tg(C.aqua), marginRight: 4, fontSize: 9 } }, "GN"), g.naam), waarden.map(function(v, i) {
       var b = boekingen[i];
       var nBuf = aantalBuf(totPers(b));
       var kleur = kleuren[i % kleuren.length];
       var c = (function() {
-        if (!g.gn || v <= 0) return null;
+        if (!g.is_gn || v <= 0) return null;
         var portBuf = v;
-        var fmts = (g.gnFormaten || []).filter(function(f) {
-          return !f.uit;
+        var fmts = (g.gerecht_gn_formaten || []).filter(function(gf) {
+          return (gf.porties_per_bak || 0) > 0;
+        }).map(function(gf) {
+          return { f: (gf.standaard_gn_formaten || {}).naam || "", p: gf.porties_per_bak || 1 };
         }).sort(function(a, b2) {
           return a.p - b2.p;
         });
@@ -1293,10 +1328,10 @@ function OpzetScreen() {
             return /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, color: C.aqua } }, nBuf2, "\xD7 ", sfNaam);
           }
         })())
-      ) : /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700 } }, v.toFixed(1), " ", g.portieEenh || ""), g.is_gn && c && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.aqua, marginTop: 1 } }, c.formaat)), verpInfo && verpInfo.map(function(vi, vii) {
+      ) : /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700 } }, v.toFixed(1), " ", g.portieEenh || "" || ""), g.is_gn && c && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.aqua, marginTop: 1 } }, c.formaat)), verpInfo && verpInfo.map(function(vi, vii) {
         return /* @__PURE__ */ React.createElement("div", { key: vii, style: { fontSize: 10, color: "#7B5EA7", fontWeight: 700, marginTop: 2, borderTop: vii === 0 ? "1px solid #E8EEF2" : "none", paddingTop: vii === 0 ? 2 : 0 } }, vi.exact.toFixed(1), " verp. ", vi.naam);
       })) : "-");
-    }), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 900, fontSize: 11, background: ri % 2 === 0 ? "#EEF3F7" : "#E8EFF5", borderLeft: "3px solid rgba(0,45,65,.15)" } }, totaal > 0 ? /* @__PURE__ */ React.createElement("div", null, g.toonBuffet ? /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, color: C.aqua } }, totaal.toFixed(1), " ", g.portieEenh) : /* @__PURE__ */ React.createElement("div", null, totaal.toFixed(1), " ", g.portieEenh), (function() {
+    }), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 900, fontSize: 11, background: ri % 2 === 0 ? "#EEF3F7" : "#E8EFF5", borderLeft: "3px solid rgba(0,45,65,.15)" } }, totaal > 0 ? /* @__PURE__ */ React.createElement("div", null, g.toonBuffet ? /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, color: C.aqua } }, totaal.toFixed(1), " ", g.portieEenh || "") : /* @__PURE__ */ React.createElement("div", null, totaal.toFixed(1), " ", g.portieEenh || ""), (function() {
       var vi = berekenVerpakkingen(g, totaal);
       if (!vi) return null;
       return /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: "#7B5EA7", fontWeight: 700, marginTop: 2, borderTop: "1px solid #E8EEF2", paddingTop: 2 } }, vi.aantal, " verp. ", vi.naam);
