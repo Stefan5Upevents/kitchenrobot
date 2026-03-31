@@ -168,10 +168,15 @@ function berekenBuffetLayout(gnGerechtenMet, nBuf) {
     }).slice().sort(function(a, b) {
       return a.p - b.p;
     });
-    var formaat = formaten.find(function(f) {
+    var natFormaten = formaten.filter(function(f) {
+      return !f.isMax;
+    });
+    var formaat = natFormaten.find(function(f) {
       return f.p >= portiesPerBuf;
     });
-    if (!formaat) formaat = formaten[formaten.length - 1];
+    if (!formaat) formaat = formaten.filter(function(f) {
+      return !f.isMax;
+    }).slice(-1)[0] || formaten[formaten.length - 1];
     if (!formaat) return null;
     return {
       code: g.code,
