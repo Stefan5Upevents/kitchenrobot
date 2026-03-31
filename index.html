@@ -170,10 +170,22 @@ function berekenBuffetLayout(gnGerechtenMet, nBuf) {
     }).slice().sort(function(a, b) {
       return a.p - b.p;
     });
-    var formaat = formaten.find(function(f) {
-      return f.p >= portiesPerBuf;
-    });
-    if (!formaat) formaat = formaten[formaten.length - 1];
+    var formaat;
+    if (g.prio) {
+      var maxVorm = formaten.slice().sort(function(a, b) {
+        return b.p - a.p;
+      }).find(function(f) {
+        return f.isMax;
+      }) || formaten[formaten.length - 1];
+      formaat = maxVorm || formaten.find(function(f) {
+        return f.p >= portiesPerBuf;
+      }) || formaten[formaten.length - 1];
+    } else {
+      formaat = formaten.find(function(f) {
+        return f.p >= portiesPerBuf;
+      });
+      if (!formaat) formaat = formaten[formaten.length - 1];
+    }
     if (!formaat) return null;
     return {
       code: g.code,
@@ -915,7 +927,7 @@ function BuffetScreen({ actieve, setActieve }) {
     if (!g.is_gn || !portiesEff || nBuf < 1) return null;
     var gnFormaten = (g.gerecht_gn_formaten || []).map(function(gf) {
       var naam = (gf.standaard_gn_formaten || {}).naam || "";
-      return { f: naam, p: gf.porties_per_bak || 1, uit: false };
+      return { f: naam, p: gf.porties_per_bak || 1, uit: false, isMax: !!gf.is_max_vorm };
     }).filter(function(gf) {
       return gf.f;
     });
@@ -1139,10 +1151,7 @@ function BuffetScreen({ actieve, setActieve }) {
     html += "</style></head><body>";
     html += "<h1>" + boeking.naam + "</h1>";
     var menuInfoStr = geboekteMenus.map(function(gm) {
-      var mn = (window._stamMenus || []).find(function(m) {
-        return m.id === gm.menuId;
-      });
-      return gm.aantal + "\xD7 " + (mn ? mn.naam : gm.menuCode);
+      return gm.aantal + "\xD7 " + (gm.menu ? gm.menu.naam : gm.recrasNaam);
     }).join(", ");
     html += "<h2>" + boeking.deadlineDag + " &bull; " + (psDeadline || boeking.deadlineTijd || "") + " &bull; " + boeking.locatie + " &bull; " + totaalPers + " personen &bull; " + nBuf + " buffet" + (nBuf > 1 ? "ten" : "") + "</h2>";
     html += '<p style="margin:-8px 0 16px;font-size:12px;color:#555">' + menuInfoStr + "</p>";
