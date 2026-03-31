@@ -4,7 +4,7 @@
   <meta charset='UTF-8'/><meta name='viewport' content='width=device-width,initial-scale=1.0'/>
   <title>KitchenRobot — UP Events</title>
   <link href='https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap' rel='stylesheet'/>
-  <style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Roboto',sans-serif;background:#EEF2F6;color:#002D41}@media print{.no-print{display:none!important}body{background:white!important;color:#000!important}nav,header,.nav-bar{display:none!important}th{background:#002D41!important;color:#fff!important;font-size:10px!important;padding:6px 8px!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}td{border-bottom:1px solid #ddd!important;padding:5px 8px!important;font-size:10px!important;color:#000!important}tr:nth-child(even) td{background:#f5f8fa!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}table{border-collapse:collapse!important;width:100%!important;page-break-inside:auto;table-layout:auto!important}.opzet-tbl{font-size:9px!important}.opzet-tbl th{font-size:9px!important;padding:5px 6px!important}.opzet-tbl td{font-size:9px!important;padding:5px 6px!important}tr{page-break-inside:avoid}@page{margin:8mm 6mm;size:A4 landscape}}.print-only{display:none}@media print{.print-only{display:block!important}}input,select,button{font-family:inherit}::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-thumb{background:#1AA6B7;border-radius:3px}</style>
+  <style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Roboto',sans-serif;background:#EEF2F6;color:#002D41}@media print{.no-print{display:none!important}body{background:white!important;color:#000!important}th{background:#002D41!important;color:#fff!important;font-size:10px!important;padding:6px 8px!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}td{border-bottom:1px solid #ddd!important;padding:5px 8px!important;font-size:10px!important;color:#000!important}tr:nth-child(even) td{background:#f5f8fa!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}table{border-collapse:collapse!important;width:100%!important;page-break-inside:auto}.opzet-tbl{font-size:9px!important}.opzet-tbl th,.opzet-tbl td{font-size:9px!important;padding:4px 5px!important}tr{page-break-inside:avoid}@page{margin:8mm 6mm;size:A4 landscape}}.print-only{display:none}@media print{.print-only{display:block!important}}input,select,button{font-family:inherit}::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-thumb{background:#1AA6B7;border-radius:3px}</style>
 </head>
 <body>
   <div id='root'></div>
@@ -188,11 +188,11 @@ function berekenBuffetLayout(gnGerechtenMet, nBuf) {
     };
   }).filter(Boolean);
   function getCounts() {
-    var c3 = [0, 0, 0];
+    var c2 = [0, 0, 0];
     items.forEach(function(x) {
-      c3[x.grootte]++;
+      c2[x.grootte]++;
     });
-    return c3;
+    return c2;
   }
   function upgradeEen(vanGrootte) {
     var naarGrootte = vanGrootte + 1;
@@ -240,20 +240,17 @@ function berekenBuffetLayout(gnGerechtenMet, nBuf) {
     }
     return false;
   }
-  for (var iter = 0; iter < 30; iter++) {
+  for (var iter = 0; iter < 60; iter++) {
     var c = getCounts();
     if (c[0] % 3 === 0 && c[1] % 2 === 0) break;
-    var didUpgrade = false;
-    if (c[0] % 3 !== 0) didUpgrade = upgradePrio(0);
-    if (!didUpgrade && c[1] % 2 !== 0) didUpgrade = upgradePrio(1);
-    if (!didUpgrade) break;
-  }
-  for (var iter2 = 0; iter2 < 30; iter2++) {
-    var c2 = getCounts();
-    if (c2[0] % 3 === 0 && c2[1] % 2 === 0) break;
-    if (c2[0] % 3 !== 0) upgradeEen(0);
-    else if (c2[1] % 2 !== 0) upgradeEen(1);
-    else break;
+    var deed = false;
+    if (c[0] % 3 !== 0) deed = upgradePrio(0);
+    if (!deed && c[1] % 2 !== 0) deed = upgradePrio(1);
+    if (!deed) {
+      if (c[0] % 3 !== 0) deed = upgradeEen(0);
+      if (!deed && c[1] % 2 !== 0) deed = upgradeEen(1);
+    }
+    if (!deed) break;
   }
   var counts = getCounts();
   var dishesPerBuf = Math.floor(counts[0] / 3) + Math.floor(counts[1] / 2) + counts[2];
@@ -750,6 +747,7 @@ function BuffetScreen({ actieve, setActieve }) {
   var [opgeslagenOverrides, setOpgeslagenOverrides] = useState({});
   var [bewerkModus, setBewerkModus] = useState(false);
   var [overrideNBuf, setOverrideNBuf] = useState(null);
+  var [gnLayoutKey, setGnLayoutKey] = useState(0);
   var [verwijderdGerechten, setVerwijderdGerechten] = useState({});
   var [toegevoegdGerechten, setToegevoeagdGerechten] = useState({});
   var formulieren = useMemo(function() {
@@ -873,7 +871,8 @@ function BuffetScreen({ actieve, setActieve }) {
   var isPsBBQ = !!(pg && (pg.naam || "").toLowerCase().includes("bbq")) || !!(ps && (ps.naam || "").toLowerCase().includes("bbq"));
   var gnGerechtenVoorLayout = alleGerechten.map(function(g) {
     var portiesRauw = berekenPorties(g);
-    var portiesEff = portiesRauw * opzetFactor;
+    var manualEff = (overschrijven[formKey] || {})[g.id] || (opgeslagenOverrides[formKey] || {})[g.id] || 0;
+    var portiesEff = manualEff > 0 ? manualEff : portiesRauw * opzetFactor;
     if (!g.is_gn || !portiesEff || nBuf < 1) return null;
     var gnFormaten = (g.gerecht_gn_formaten || []).map(function(gf) {
       var naam = (gf.standaard_gn_formaten || {}).naam || "";
@@ -883,6 +882,7 @@ function BuffetScreen({ actieve, setActieve }) {
     });
     return { id: g.id, code: g.code || g.id, naam: g.naam, prio: !!(g.prio || g.toon_buffet), ben: portiesEff, gnFormaten };
   }).filter(Boolean);
+  void gnLayoutKey;
   var buffetLayout = isPsBBQ && gnGerechtenVoorLayout.length > 0 ? berekenBuffetLayout(gnGerechtenVoorLayout, nBuf) : null;
   function getPresentatie(g, portiesEff) {
     if (!g.heeft_presentatie) return null;
@@ -1308,17 +1308,24 @@ function BuffetScreen({ actieve, setActieve }) {
         min: "0",
         step: "1",
         placeholder: "0",
-        value: actieveOverride > 0 ? Math.round(actieveOverride / opzetFactor) : "",
-        style: { width: 55, padding: "2px 4px", border: "1px solid " + C.border, borderRadius: 4, textAlign: "center", fontSize: 11 },
-        onChange: function(e) {
+        defaultValue: actieveOverride > 0 ? Math.round(actieveOverride / opzetFactor) : "",
+        key: "r_" + g.id + "_" + formKey,
+        style: { width: 65, padding: "3px 6px", border: "2px solid " + C.aqua, borderRadius: 4, textAlign: "center", fontSize: 13, fontWeight: 700 },
+        onBlur: function(e) {
           var v = parseFloat(e.target.value) || 0;
-          setOverschrijven(function(prev) {
+          if (v > 0) setOverschrijven(function(prev) {
             var n = Object.assign({}, prev);
             var fk = Object.assign({}, n[formKey] || {});
             fk[g.id] = v * opzetFactor;
             n[formKey] = fk;
             return n;
           });
+        },
+        onKeyDown: function(e) {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            e.target.blur();
+          }
         }
       }
     ) : "—"), /* @__PURE__ */ React.createElement("td", { style: { padding: "5px 8px", textAlign: "center" } }, effData ? toonAlleenBuffet && pres ? /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 700, color: C.night } }, nBuf, "\xD7 ", pres.naam || "") : bewerkModus ? /* @__PURE__ */ React.createElement(
