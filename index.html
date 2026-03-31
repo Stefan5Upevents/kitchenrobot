@@ -1163,7 +1163,6 @@ function BuffetScreen({ actieve, setActieve }) {
       if (!lijst.length) return "";
       var out = '<h3 style="margin:20px 0 8px;font-size:15px;font-weight:900;border-bottom:2px solid #002D41;padding-bottom:4px">' + titel + "</h3>";
       out += '<table><thead><tr><th>Gerecht</th><th style="width:180px">Presentatievorm</th></tr></thead><tbody>';
-      out += '<table><thead><tr><th>Gerecht</th><th style="width:180px">Presentatievorm</th></tr></thead><tbody>';
       lijst.forEach(function(g) {
         var pEff = pdfPortiesEff(g);
         var pres2 = getPresentatie(g, pEff);
@@ -1188,10 +1187,13 @@ function BuffetScreen({ actieve, setActieve }) {
     if (buffetLayout) html += '<p style="margin-top:16px;padding:10px;background:#f0f8ff;border-radius:6px;font-size:13px"><strong>Chafingdish layout:</strong> GN 1/3: ' + buffetLayout.counts[0] + " &bull; GN 1/2: " + buffetLayout.counts[1] + " &bull; GN 1/1: " + buffetLayout.counts[2] + " &bull; <strong>" + buffetLayout.dishesPerBuf + " dishes/buffet</strong></p>";
     html += "<script>window.print();window.onafterprint=function(){window.close();};<\/script>";
     html += "</body></html>";
+    var bbqNaam = boeking.naam.replace(/[^a-zA-Z0-9 \-_]/g, "").trim();
+    var bbqDag = (boeking.deadlineDag || "").replace(/ /g, "_");
     var w = window.open("", "_blank", "width=900,height=700");
     if (w) {
       w.document.write(html);
       w.document.close();
+      w.document.title = "BBQ_Opzet_" + bbqNaam + "_" + bbqDag;
     }
   } }, "\u{1F5A8} BBQ Opzet PDF"), /* @__PURE__ */ React.createElement("button", { style: btnA, onClick: function() {
     window.open("https://upevents.recras.nl/v2/customer/" + (boeking.id || "").split("-")[0], "_blank");
@@ -1786,7 +1788,7 @@ function TijdenScreen() {
     setTimeout(function() {
       document.title = origTitle;
     }, 1e3);
-  } }, "\u{1F5A8} Print")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" } }, dagen.length === 0 ? /* @__PURE__ */ React.createElement("div", { style: alertI }, "Importeer eerst boekingen via het hoofdscherm.") : dagen.map(function(d) {
+  } }, "\u{1F5A8} Print")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap" }, className: "no-print" }, dagen.length === 0 ? /* @__PURE__ */ React.createElement("div", { style: alertI }, "Importeer eerst boekingen via het hoofdscherm.") : dagen.map(function(d) {
     var parts = d.split("-");
     var dt = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
     var dnamen = ["zo", "ma", "di", "wo", "do", "vr", "za"];
@@ -1805,7 +1807,14 @@ function TijdenScreen() {
       },
       label
     );
-  })), /* @__PURE__ */ React.createElement("div", { style: SS.tabBar }, [["alle", "Alle"], ["bbq", "BBQ"], ["oven", "Oven"], ["frituur", "Frituur"]].map(function(item) {
+  })), /* @__PURE__ */ React.createElement("div", { className: "print-only", style: { fontWeight: 700, fontSize: 14, marginBottom: 8, color: C.night } }, (function() {
+    if (!dag) return null;
+    var parts = dag.split("-");
+    var dt = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    var dn = ["zo", "ma", "di", "wo", "do", "vr", "za"];
+    var mn = ["jan", "feb", "mrt", "apr", "mei", "jun", "jul", "aug", "sep", "okt", "nov", "dec"];
+    return dn[dt.getDay()] + " " + parseInt(parts[2]) + " " + mn[parseInt(parts[1]) - 1];
+  })()), /* @__PURE__ */ React.createElement("div", { style: SS.tabBar, className: "no-print" }, [["alle", "Alle"], ["bbq", "BBQ"], ["oven", "Oven"], ["frituur", "Frituur"]].map(function(item) {
     return /* @__PURE__ */ React.createElement("button", { key: item[0], style: tabStyle(appTab === item[0]), onClick: function() {
       setAppTab(item[0]);
     } }, item[1]);
