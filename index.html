@@ -4,7 +4,7 @@
   <meta charset='UTF-8'/><meta name='viewport' content='width=device-width,initial-scale=1.0'/>
   <title>KitchenRobot — UP Events</title>
   <link href='https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap' rel='stylesheet'/>
-  <style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Roboto',sans-serif;background:#EEF2F6;color:#002D41}@media print{.no-print{display:none!important}body{background:white!important;color:#000!important}th{background:#002D41!important;color:#fff!important;font-size:10px!important;padding:6px 8px!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}td{border-bottom:1px solid #ddd!important;padding:5px 8px!important;font-size:10px!important;color:#000!important}tr:nth-child(even) td{background:#f5f8fa!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}table{border-collapse:collapse!important;width:100%!important;page-break-inside:auto}.opzet-tbl{font-size:9px!important}.opzet-tbl th,.opzet-tbl td{font-size:9px!important;padding:4px 5px!important}tr{page-break-inside:avoid}@page{margin:8mm 6mm;size:A4 landscape}}.print-only{display:none}@media print{.print-only{display:block!important}}input,select,button{font-family:inherit}::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-thumb{background:#1AA6B7;border-radius:3px}</style>
+  <style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Roboto',sans-serif;background:#EEF2F6;color:#002D41}@media print{.no-print{display:none!important}body{background:white!important;color:#000!important}th{background:#002D41!important;color:#fff!important;font-size:10px!important;padding:6px 8px!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}td{border-bottom:1px solid #ddd!important;padding:5px 8px!important;font-size:10px!important;color:#000!important}tr:nth-child(even) td{background:#f5f8fa!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}table{border-collapse:collapse!important;width:100%!important;page-break-inside:auto}.opzet-tbl th,.opzet-tbl td{font-size:8px!important;padding:3px 4px!important}tr{page-break-inside:avoid}@page{margin:8mm 6mm;size:A4 landscape}}.print-only{display:none}@media print{.print-only{display:block!important}}input,select,button{font-family:inherit}::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-thumb{background:#1AA6B7;border-radius:3px}</style>
 </head>
 <body>
   <div id='root'></div>
@@ -1088,7 +1088,13 @@ function BuffetScreen({ actieve, setActieve }) {
   } }, "+"), overrideNBuf !== null && /* @__PURE__ */ React.createElement("button", { style: { ...btnSG, fontSize: 10 }, onClick: function() {
     setOverrideNBuf(null);
   } }, "Auto (", nBufBase, ")")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6 } }, /* @__PURE__ */ React.createElement("button", { style: btnSG, onClick: function() {
+    var origTitle = document.title;
+    var psNm = ps ? ps.naam : "";
+    document.title = boeking.naam + " \u2013 " + boeking.deadlineDag + " \u2013 " + psNm;
     window.print();
+    setTimeout(function() {
+      document.title = origTitle;
+    }, 1e3);
   } }, "\u{1F5A8} Print formulier"), /* @__PURE__ */ React.createElement("button", { style: { ...btnSG, fontSize: 11 }, onClick: function() {
     setOverschrijven(function(prev) {
       var n = Object.assign({}, prev);
@@ -1453,7 +1459,18 @@ function OpzetScreen() {
   });
   var kleuren = [C.aqua, "#2979b0", "#5e35b1", "#00838f", "#2e7d32"];
   return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 } }, /* @__PURE__ */ React.createElement("div", { style: SS.pT }, "Opzetoverzicht"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6 } }, /* @__PURE__ */ React.createElement("button", { style: btnSG, className: "no-print", onClick: function() {
+    var origTitle = document.title;
+    var psObj = (window._stamProductgroepen || []).reduce(function(found, pg2) {
+      return found || (pg2.soorten || []).find(function(s) {
+        return s.id === psId;
+      });
+    }, null);
+    var psNm = psObj ? psObj.naam : psId;
+    document.title = psNm + " \u2013 Opzetoverzicht";
     window.print();
+    setTimeout(function() {
+      document.title = origTitle;
+    }, 1e3);
   } }, "\u{1F5A8} Print / PDF"))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" } }, (window._stamProductgroepen || []).reduce(function(acc, g) {
     return acc.concat(g.soorten);
   }, []).map(function(ps_) {
@@ -1734,11 +1751,27 @@ function TijdenScreen() {
   }
   var tijden = berekenTijdenVoorDag(dag);
   var ak = { oven: C.hot, bbq: "#5D4037", frituur: "#E65100" };
-  var filtered = appTab === "alle" ? tijden : tijden.filter(function(x) {
-    return x.isRecras || x.app === appTab;
-  });
+  var filtered;
+  if (appTab === "alle") {
+    filtered = tijden;
+  } else {
+    var boekingIdsMetType = {};
+    tijden.forEach(function(x) {
+      if (!x.isRecras && x.app === appTab) boekingIdsMetType[x.boeking] = true;
+    });
+    filtered = tijden.filter(function(x) {
+      if (!x.isRecras) return x.app === appTab;
+      return boekingIdsMetType[x.boeking] === true;
+    });
+  }
   return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 } }, /* @__PURE__ */ React.createElement("div", { style: SS.pT }, "Tijdenoverzicht"), /* @__PURE__ */ React.createElement("button", { style: btnSG, className: "no-print", onClick: function() {
+    var origTitle = document.title;
+    var dagLabel = dag.replace(/-/g, "");
+    document.title = "Tijdenoverzicht \u2013 " + dagLabel;
     window.print();
+    setTimeout(function() {
+      document.title = origTitle;
+    }, 1e3);
   } }, "\u{1F5A8} Print")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" } }, dagen.length === 0 ? /* @__PURE__ */ React.createElement("div", { style: alertI }, "Importeer eerst boekingen via het hoofdscherm.") : dagen.map(function(d) {
     var parts = d.split("-");
     var dt = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
@@ -4339,22 +4372,41 @@ function FinancieelScreen() {
       })();
       return s + (m ? parseFloat(m.verkoop_prijs) || parseFloat(m.verkoop) || 0 : 0) * r.aantal;
     }, 0);
-    var inkoop = b.regels.reduce(function(s, r) {
-      var kp2 = (window._stamKoppelingen || []).find(function(k) {
-        return (k.recras_naam || "").trim() === (r.menuNaam || "").trim();
-      });
-      var m2 = kp2 ? (window._stamMenus || []).find(function(m) {
-        return m.id === kp2.menu_id;
-      }) : null;
-      if (!m2) return s;
-      var mgKosten = (m2.menu_gerechten || []).reduce(function(ms, mg) {
-        var g2 = (window._stamGerechten || []).find(function(g) {
-          return g.id === mg.gerecht_id;
+    var inkoop = (function() {
+      var inkoopTotaal = 0;
+      var pct = opzetPct(totPers(b), null);
+      b.regels.forEach(function(r) {
+        if ((r.menuNaam || "").toLowerCase().includes("add up")) return;
+        var kp2 = (window._stamKoppelingen || []).find(function(k) {
+          return (k.recras_naam || "").trim() === (r.menuNaam || "").trim();
         });
-        return ms + (g2 ? (parseFloat(g2.kostprijs_portie) || 0) * (mg.porties_per_persoon || 1) : 0);
-      }, 0);
-      return s + mgKosten * r.aantal * opzetPct(totPers(b), m2.productsoort_id);
-    }, 0);
+        var m2 = kp2 ? (window._stamMenus || []).find(function(m) {
+          return m.id === kp2.menu_id;
+        }) : null;
+        if (!m2) return;
+        var psPct = opzetPct(totPers(b), m2.productsoort_id);
+        (m2.menu_gerechten || []).forEach(function(mg) {
+          var g2 = (window._stamGerechten || []).find(function(g) {
+            return g.id === mg.gerecht_id;
+          });
+          if (!g2) return;
+          var portiesEff = r.aantal * (mg.porties_per_persoon || 1) * psPct;
+          (g2.ingredienten || []).forEach(function(ing) {
+            if (ing.zichtbaar === "nee" || ing.zichtbaar === "nooit") return;
+            var sp = (window._stamSligro || []).find(function(p) {
+              return p.id === ing.sligro_id;
+            });
+            if (!sp) return;
+            var hoev = parseFloat(sp.hoeveelheid || sp.hoev || 1) || 1;
+            var prijs = parseFloat(sp.prijs_excl || sp.prijs || 0);
+            var gebruik = parseFloat(ing.gebruik_per_portie) || 0;
+            var verpakkingen = Math.ceil(portiesEff * gebruik / hoev);
+            inkoopTotaal += verpakkingen * prijs;
+          });
+        });
+      });
+      return inkoopTotaal;
+    })();
     return /* @__PURE__ */ React.createElement("tr", { key: b.id }, /* @__PURE__ */ React.createElement("td", { style: SS.td }, /* @__PURE__ */ React.createElement("span", { style: tg(C.aqua) }, b.id)), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 700 } }, b.naam), /* @__PURE__ */ React.createElement("td", { style: SS.td }, fDatum(b.deadline, true)), /* @__PURE__ */ React.createElement("td", { style: SS.td }, totPers(b)), /* @__PURE__ */ React.createElement("td", { style: SS.td }, omzet.toFixed(0)), /* @__PURE__ */ React.createElement("td", { style: SS.td }, inkoop.toFixed(0)), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 700, color: C.green } }, (omzet - inkoop).toFixed(0)), /* @__PURE__ */ React.createElement("td", { style: SS.td }, /* @__PURE__ */ React.createElement("span", { style: tg(C.green) }, omzet > 0 ? Math.round((omzet - inkoop) / omzet * 100) + "%" : "—")));
   }))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 7, marginTop: 10 } }, /* @__PURE__ */ React.createElement("button", { style: btnSG }, "Export Excel"), /* @__PURE__ */ React.createElement("button", { style: btnSG }, "Export CSV"))), (tab === "mn" || tab === "ing") && /* @__PURE__ */ React.createElement("div", { style: SS.card }, /* @__PURE__ */ React.createElement("div", { style: { color: C.muted } }, "Uitwerken zodra alle data gekoppeld is.")));
 }
