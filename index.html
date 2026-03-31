@@ -1138,20 +1138,33 @@ function BuffetScreen({ actieve, setActieve }) {
     html += "@media print{body{padding:10mm}@page{size:A4;margin:10mm}}";
     html += "</style></head><body>";
     html += "<h1>" + boeking.naam + "</h1>";
+    var menuInfoStr = geboekteMenus.map(function(gm) {
+      var mn = (window._stamMenus || []).find(function(m) {
+        return m.id === gm.menuId;
+      });
+      return gm.aantal + "\xD7 " + (mn ? mn.naam : gm.menuCode);
+    }).join(", ");
     html += "<h2>" + boeking.deadlineDag + " &bull; " + (psDeadline || boeking.deadlineTijd || "") + " &bull; " + boeking.locatie + " &bull; " + totaalPers + " personen &bull; " + nBuf + " buffet" + (nBuf > 1 ? "ten" : "") + "</h2>";
+    html += '<p style="margin:-8px 0 16px;font-size:12px;color:#555">' + menuInfoStr + "</p>";
+    var pdfOvr = overschrijven[formKey] || {};
+    var pdfSvd = opgeslagenOverrides[formKey] || {};
+    function pdfPortiesEff(g) {
+      var man = pdfOvr[g.id] || pdfSvd[g.id] || 0;
+      return man > 0 ? man : berekenPorties(g) * opzetFactor;
+    }
     var gnGerechten = alleGerechten.filter(function(g) {
-      return g.is_gn && berekenPorties(g) * opzetFactor > 0;
+      return g.is_gn && pdfPortiesEff(g) > 0;
     });
     var nijGnGerechten = alleGerechten.filter(function(g) {
-      return !g.is_gn && berekenPorties(g) * opzetFactor > 0;
+      return !g.is_gn && pdfPortiesEff(g) > 0;
     });
     function renderTabel(lijst, titel) {
       if (!lijst.length) return "";
       var out = '<h3 style="margin:20px 0 8px;font-size:15px;font-weight:900;border-bottom:2px solid #002D41;padding-bottom:4px">' + titel + "</h3>";
       out += '<table><thead><tr><th>Gerecht</th><th style="width:180px">Presentatievorm</th></tr></thead><tbody>';
+      out += '<table><thead><tr><th>Gerecht</th><th style="width:180px">Presentatievorm</th></tr></thead><tbody>';
       lijst.forEach(function(g) {
-        var pRauw = berekenPorties(g);
-        var pEff = pRauw * opzetFactor;
+        var pEff = pdfPortiesEff(g);
         var pres2 = getPresentatie(g, pEff);
         var li = buffetLayout ? (buffetLayout.items || []).find(function(x) {
           return x.code === (g.code || g.id);
