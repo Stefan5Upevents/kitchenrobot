@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang='nl'>
 <head>
-  <meta charset='UTF-8'/>
+  <meta charset='UTF-8'/><meta name='viewport' content='width=device-width,initial-scale=1.0'/>
   <title>KitchenRobot — UP Events</title>
   <link href='https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap' rel='stylesheet'/>
   <style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Roboto',sans-serif;background:#EEF2F6;color:#002D41}@media print{.no-print{display:none!important}body{background:white!important;color:#000!important}th{background:#002D41!important;color:#fff!important;font-size:10px!important;padding:6px 8px!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}td{border-bottom:1px solid #ddd!important;padding:5px 8px!important;font-size:10px!important;color:#000!important}tr:nth-child(even) td{background:#f5f8fa!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}table{border-collapse:collapse!important;width:100%!important;page-break-inside:auto}.opzet-tbl th,.opzet-tbl td{font-size:8px!important;padding:3px 4px!important}tr{page-break-inside:avoid}@page{margin:8mm 6mm;size:A4 landscape}}.print-only{display:none}@media print{.print-only{display:block!important}}input,select,button{font-family:inherit}::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-thumb{background:#1AA6B7;border-radius:3px}</style>
@@ -14,7 +14,8 @@
   <script src='https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js'></script>
   <script>
     window._supa=supabase.createClient('https://aezatnwsrhlwtykpixsq.supabase.co','sb_publishable_qkQzUEM5fvJPSsfScEzNCg_Eug8-d4t');
-    window._recrasBoekingen=[];window._stamProductgroepen=[];window._stamGerechten=[];window._stamMenus=[];window._stamSligro=[];window._stamKoppelingen=[];window._stamTijdenInst=[];window._formulierOverrides={};window._formulierTijden={};
+    window._recrasBoekingen=[];window._stamProductgroepen=[];window._stamGerechten=[];window._stamMenus=[];window._stamSligro=[];window._stamKoppelingen=[];window._stamTijdenInst=[];
+    window._formulierOverrides={};window._formulierTijden={};
     window.sbInloggen=async function(e,w,onErr){try{var r=await window._supa.auth.signInWithPassword({email:e,password:w});if(r.error){if(onErr)onErr(r.error.message);return null;}return r.data;}catch(ex){if(onErr)onErr(ex.message);return null;}};
     window.sbUitloggen=async function(){await window._supa.auth.signOut();window.location.reload();};
     window.sbProfiel=async function(uid){try{var p=await window._supa.from('gebruikers_profielen').select('*').eq('id',uid).single();return p.data||null;}catch(e){return null;}};
@@ -345,7 +346,20 @@ function berekenSligroBestelling() {
   return regels;
 }
 function genereerCSV() {
-  var lijstnaam = "sligrobestelling 26-03-2026 05-04-2026";
+  var boekData = (window._recrasBoekingen || []).map(function(b) {
+    return b.deadline || "";
+  }).filter(Boolean).sort();
+  var fmtDate = function(ds) {
+    var p = ds.replace("T", " ").split(" ")[0].split("-");
+    if (p.length === 3) {
+      var d = new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]));
+      return String(d.getDate()).padStart(2, "0") + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + d.getFullYear();
+    }
+    return ds;
+  };
+  var vanDatum = boekData.length > 0 ? fmtDate(boekData[0]) : fmtDate((/* @__PURE__ */ new Date()).toISOString());
+  var totDatum = boekData.length > 0 ? fmtDate(boekData[boekData.length - 1]) : vanDatum;
+  var lijstnaam = "sligrobestelling " + vanDatum + " " + totDatum;
   var regels = berekenSligroBestelling();
   var hdr = "Lijstnaam (Verplicht);Sorteervolgorde (Optioneel);Artikelnummer (Verplicht);Portionering gewicht (Optioneel);Verpakkingscode (Optioneel);Voorkeurs-aantal (Optioneel);(niet gevuld);(niet gevuld);Productinformatie;Productgroepcode;Productgroepnaam;Portionering omschrijving;Verpakking omschrijving";
   var rows = regels.map(function(r) {
@@ -791,6 +805,7 @@ function BuffetScreen({ actieve, setActieve }) {
   var [bewerkModus, setBewerkModus] = useState(false);
   var [overrideNBuf, setOverrideNBuf] = useState(null);
   var [gnLayoutKey, setGnLayoutKey] = useState(0);
+  var [saveStatus, setSaveStatus] = useState("");
   var [verwijderdGerechten, setVerwijderdGerechten] = useState({});
   var [toegevoegdGerechten, setToegevoeagdGerechten] = useState({});
   var formulieren = useMemo(function() {
@@ -840,6 +855,27 @@ function BuffetScreen({ actieve, setActieve }) {
   var psId = huidig.psId || "";
   var pgId = huidig.pgId || "";
   var formKey = (huidig.boekingId || "") + "_" + psId;
+  useEffect(function() {
+    if (!huidig.boekingId || !psId || !window._supa) return;
+    window._supa.from("formulier_overrides").select("*").eq("boeking_id", huidig.boekingId).eq("productsoort_id", psId).single().then(function(r) {
+      if (r.data) {
+        try {
+          var ovr = JSON.parse(r.data.overrides_json || "{}");
+          setOpgeslagenOverrides(function(prev) {
+            var n = Object.assign({}, prev);
+            n[formKey] = ovr;
+            return n;
+          });
+          if (!window._formulierOverrides) window._formulierOverrides = {};
+          window._formulierOverrides[formKey] = ovr;
+          if (r.data.opmerking) setHandOpm(r.data.opmerking);
+        } catch (e) {
+          console.warn("Override laden mislukt:", e);
+        }
+      }
+    }).catch(function() {
+    });
+  }, [formKey]);
   if ((window._recrasBoekingen || []).length > 0 && formulieren.length === 0 && (window._stamMenus || []).length === 0) {
     return /* @__PURE__ */ React.createElement("div", { style: SS.card }, /* @__PURE__ */ React.createElement("div", { style: alertI }, "Stamgegevens laden..."));
   }
@@ -1054,7 +1090,12 @@ function BuffetScreen({ actieve, setActieve }) {
   })), /* @__PURE__ */ React.createElement("div", { className: "no-print", style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, flexWrap: "wrap", gap: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10 } }, /* @__PURE__ */ React.createElement(
     "button",
     {
-      style: { ...btnSG, fontWeight: 700, background: bewerkModus ? C.night : C.white, color: bewerkModus ? C.white : C.night },
+      style: {
+        ...btnSG,
+        fontWeight: 700,
+        background: bewerkModus ? C.night : saveStatus === "saved" ? C.green : C.white,
+        color: bewerkModus ? C.white : saveStatus === "saved" ? C.white : C.night
+      },
       onClick: function() {
         if (bewerkModus) {
           var nieuweOvr = Object.assign({}, overschrijven[formKey] || {});
@@ -1065,11 +1106,29 @@ function BuffetScreen({ actieve, setActieve }) {
           });
           if (!window._formulierOverrides) window._formulierOverrides = {};
           window._formulierOverrides[formKey] = nieuweOvr;
+          setSaveStatus("saved");
+          setTimeout(function() {
+            setSaveStatus("");
+          }, 2500);
+          if (window._supa && huidig.boekingId && psId) {
+            var opmTxt = handOpm || "";
+            window._supa.from("formulier_overrides").upsert({
+              boeking_id: huidig.boekingId,
+              productsoort_id: psId,
+              overrides_json: JSON.stringify(nieuweOvr),
+              opmerking: opmTxt,
+              updated_at: (/* @__PURE__ */ new Date()).toISOString()
+            }, { onConflict: "boeking_id,productsoort_id" }).then(function(r) {
+              if (r.error) console.warn("Opslaan formulier mislukt:", r.error);
+            }).catch(function(e) {
+              console.warn("DB save error:", e);
+            });
+          }
         }
         setBewerkModus(!bewerkModus);
       }
     },
-    bewerkModus ? "✓ Opslaan wijzigingen" : "\u270F Aanpassen"
+    bewerkModus ? "✓ Opslaan wijzigingen" : saveStatus === "saved" ? "✓ Opgeslagen" : "\u270F Aanpassen"
   ), /* @__PURE__ */ React.createElement("label", { style: { fontSize: 11, fontWeight: 700 } }, "Opzetmarge:"), /* @__PURE__ */ React.createElement(
     "input",
     {
@@ -1251,7 +1310,7 @@ function BuffetScreen({ actieve, setActieve }) {
     tijdItems.push({ tijd: recrasTijdStr, naam: "Recras deadline", kwal: "recras", minVal: parseInt(tp[0] || 0) * 60 + parseInt(tp[1] || 0) });
     if (!window._formulierTijden) window._formulierTijden = {};
     var ftKey = boeking.id + "_" + psId;
-    window._formulierTijden[ftKey] = {
+    var ftData = {
       boeking: boeking.naam,
       boekingId: boeking.id,
       psNaam: (pg ? pg.naam + " > " : "") + (ps ? ps.naam : psId),
@@ -1260,6 +1319,21 @@ function BuffetScreen({ actieve, setActieve }) {
       deadline: recrasTijdStr,
       tijden: tijdItems.slice()
     };
+    window._formulierTijden[ftKey] = ftData;
+    if (window._supa && psId && boeking.id) {
+      window._supa.from("formulier_tijden").upsert({
+        boeking_id: boeking.id,
+        productsoort_id: psId,
+        boeking_naam: boeking.naam,
+        ps_naam: ftData.psNaam,
+        dag: boeking.deadlineDag,
+        deadline: recrasTijdStr,
+        tijden_json: JSON.stringify(tijdItems),
+        updated_at: (/* @__PURE__ */ new Date()).toISOString()
+      }, { onConflict: "boeking_id,productsoort_id" }).catch(function(e) {
+        console.warn("formulier_tijden opslaan:", e);
+      });
+    }
     return /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 10, background: "#FFF8E1", borderRadius: 8, padding: "8px 14px", display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: 1 } }, "Tijden"), tijdItems.map(function(t, i) {
       var isRecras = t.kwal === "recras";
       return /* @__PURE__ */ React.createElement("div", { key: i, style: { textAlign: "center" } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 900, fontSize: 16, color: isRecras ? C.hot : C.night } }, t.tijd), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 9, color: isRecras ? C.hot : C.muted } }, t.naam), t.kwal && !isRecras && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 8, color: C.muted, opacity: 0.7 } }, t.kwal));
@@ -1320,8 +1394,9 @@ function BuffetScreen({ actieve, setActieve }) {
       onChange: function(e) {
         setHandOpm(e.target.value);
       },
+      "data-opmerking": formKey,
       placeholder: "Voeg hier handmatige opmerkingen toe...",
-      style: { width: "100%", padding: "6px 10px", borderRadius: 6, border: "1px solid " + C.border, fontSize: 11, resize: "vertical", minHeight: 40, fontFamily: "inherit" }
+      style: { width: "100%", minHeight: 60, padding: "8px 10px", borderRadius: 6, border: "1px solid " + C.border, fontFamily: "inherit", fontSize: 12, resize: "vertical" }
     }
   )), /* @__PURE__ */ React.createElement("table", { style: { width: "100%", borderCollapse: "collapse", fontSize: 11 } }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", { style: { background: C.night, color: C.white } }, ["Gerecht", "Rauw", "Opzet aantal", "Presentatievorm", "Sligro verpakkingen"].map(function(h) {
     return /* @__PURE__ */ React.createElement("th", { key: h, style: { ...SS.th, color: "white", background: "transparent", textAlign: h === "Gerecht" ? "left" : "center", whiteSpace: "nowrap" } }, h);
@@ -1836,7 +1911,10 @@ function TijdenScreen() {
     return /* @__PURE__ */ React.createElement("button", { key: item[0], style: tabStyle(appTab === item[0]), onClick: function() {
       setAppTab(item[0]);
     } }, item[1]);
-  }), /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }), window._formulierTijden && Object.keys(window._formulierTijden).length > 0 && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: C.green, fontWeight: 700 } }, "✓ ", Object.keys(window._formulierTijden).length, " formulieren geladen")), filtered.length === 0 ? /* @__PURE__ */ React.createElement("div", { style: { ...SS.card, ...alertI } }, dagen.length > 0 ? "Geen tijden voor deze dag/categorie. Open buffetformulieren om tijden te genereren." : "") : /* @__PURE__ */ React.createElement("div", { style: SS.card }, /* @__PURE__ */ React.createElement("table", { style: { width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }, className: "opzet-tbl" }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", { style: { background: C.night } }, ["Tijd", "Activiteit", "Kwal.", "Aantal", "Menu", "Locatie", "Boeking"].map(function(h) {
+  }), /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }), (function() {
+    var n = Object.keys(window._formulierTijden || {}).length;
+    return n > 0 ? /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: C.green, fontWeight: 700 } }, "✓ ", n, " formulieren geladen") : /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: C.muted } }, "Bezoek buffetformulieren om tijden te laden");
+  })()), filtered.length === 0 ? /* @__PURE__ */ React.createElement("div", { style: { ...SS.card, ...alertI } }, dagen.length > 0 ? "Geen tijden voor deze dag/categorie. Open buffetformulieren om tijden te genereren." : "") : /* @__PURE__ */ React.createElement("div", { style: SS.card }, /* @__PURE__ */ React.createElement("table", { style: { width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }, className: "opzet-tbl" }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", { style: { background: C.night } }, ["Tijd", "Activiteit", "Kwal.", "Aantal", "Menu", "Locatie", "Boeking"].map(function(h) {
     return /* @__PURE__ */ React.createElement("th", { key: h, style: { ...SS.th, color: "white", background: "transparent", textAlign: "left" } }, h);
   }))), /* @__PURE__ */ React.createElement("tbody", null, filtered.map(function(item, ii) {
     var kleur = item.isRecras ? C.hot : ak[item.app] || C.night;
@@ -3942,7 +4020,7 @@ function MenusTab({ menus: menusProp, setMenus: setMenusProp, gerechten, product
       return g.id === grId;
     }) || {};
     var sligro = window._stamSligro || [];
-    return (gr.ingredienten || []).reduce(function(sum, ing) {
+    var viaIng = (gr.ingredienten || []).reduce(function(sum, ing) {
       var sp = sligro.find(function(p) {
         return p.id === ing.sligro_id;
       }) || {};
@@ -3952,6 +4030,8 @@ function MenusTab({ menus: menusProp, setMenus: setMenusProp, gerechten, product
       if (!prijs || !gebruik) return sum;
       return sum + gebruik / verp * prijs;
     }, 0);
+    if (viaIng === 0 && parseFloat(gr.kostprijs_portie) > 0) return parseFloat(gr.kostprijs_portie);
+    return viaIng;
   }
   function berekenInkoop(m) {
     return (m.menu_gerechten || []).reduce(function(sum, mg) {
@@ -4512,7 +4592,8 @@ function App({ supabaseInloggen, supabaseUitloggen, supabaseSessie, supabaseProf
       window._supa.from("menus").select("*, menu_gerechten(*, gerechten(*))").order("naam"),
       window._supa.from("sligro_producten").select("*, sligro_productgroep_koppelingen(productgroep_id)").order("naam"),
       window._supa.from("recras_koppelingen").select("*"),
-      window._supa.from("opzet_instellingen").select("*")
+      window._supa.from("opzet_instellingen").select("*"),
+      window._supa.from("formulier_overrides").select("*")
     ]).then(function(results) {
       var pgData = (results[0].data || []).map(function(pg) {
         return Object.assign({}, pg, { soorten: pg.productsoorten || [] });
@@ -4539,6 +4620,15 @@ function App({ supabaseInloggen, supabaseUitloggen, supabaseSessie, supabaseProf
           return inst;
         } catch (e) {
           return { _psId: row.productsoort_id };
+        }
+      });
+      if (!window._formulierOverrides) window._formulierOverrides = {};
+      (results[6].data || []).forEach(function(row) {
+        try {
+          var fk = row.boeking_id + "_" + row.productsoort_id;
+          var ovr = JSON.parse(row.overrides_json || "{}");
+          window._formulierOverrides[fk] = ovr;
+        } catch (e) {
         }
       });
       setStamLaden(false);
