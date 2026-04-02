@@ -4561,7 +4561,51 @@ function FinancieelScreen() {
     return /* @__PURE__ */ React.createElement("button", { key: item[0], style: tabStyle(tab === item[0]), onClick: function() {
       setTab(item[0]);
     } }, item[1]);
-  })), tab === "samen" && /* @__PURE__ */ React.createElement(FinancieelSamenvatting, null), tab === "bk" && /* @__PURE__ */ React.createElement("div", { style: SS.card }, /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 8, fontSize: 11, color: C2.muted } }, gefilterd.length, " boekingen — locatiebezoek/bananenbrood uitgesloten"), /* @__PURE__ */ React.createElement("table", { style: SS.tbl }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, ["", "ID", "Naam", "Datum", "Pers.", "Omzet excl.", "Inkoop", "Winst", "Marge"].map(function(h) {
+  })), tab === "samen" && /* @__PURE__ */ React.createElement("div", { style: SS.card }, (function() {
+    var excl = [];
+    var excludeWords2 = ["locatiebezoek", "bananenbrood", "twist"];
+    var gefilterd2 = (window._recrasBoekingen || []).filter(function(b) {
+      var naam = (b.naam || "").toLowerCase();
+      var menus2 = (b.regels || []).map(function(r) {
+        return (r.menuNaam || "").toLowerCase();
+      }).join(" ");
+      return !excludeWords2.some(function(w) {
+        return naam.includes(w) || menus2.includes(w);
+      });
+    });
+    if (gefilterd2.length === 0) return React.createElement("div", { style: { color: C.muted, padding: 20 } }, "Importeer eerst boekingen om een samenvatting te zien.");
+    var totOmzet = gefilterd2.reduce(function(s, b) {
+      return s + berekenOmzet(b);
+    }, 0);
+    var totInkoop = gefilterd2.reduce(function(s, b) {
+      return s + berekenInkoop(b);
+    }, 0);
+    var totOmzetExcl = totOmzet / (1 + BTW);
+    var totWinst = totOmzetExcl - totInkoop;
+    var totMarge = totOmzetExcl > 0 ? Math.round(totWinst / totOmzetExcl * 100) : 0;
+    return React.createElement(
+      "div",
+      null,
+      React.createElement(
+        "div",
+        { style: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12, marginBottom: 16 } },
+        [
+          ["Omzet excl.", "€ " + totOmzetExcl.toFixed(0), C2.aqua],
+          ["Inkoop", "€ " + totInkoop.toFixed(0), C2.muted],
+          ["Winst", "€ " + totWinst.toFixed(0), C2.green],
+          ["Marge", totMarge + "%", totMarge > 50 ? C2.green : totMarge > 25 ? "#E67E22" : C2.hot]
+        ].map(function(item) {
+          return React.createElement(
+            "div",
+            { key: item[0], style: { background: C2.white, borderRadius: 10, padding: "14px 16px", boxShadow: "0 1px 4px rgba(0,45,65,.07)", borderTop: "3px solid " + item[2] } },
+            React.createElement("div", { style: { fontSize: 10, color: C2.muted, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 } }, item[0]),
+            React.createElement("div", { style: { fontSize: 22, fontWeight: 900, color: item[2] } }, item[1])
+          );
+        })
+      ),
+      React.createElement("div", { style: { fontSize: 11, color: C2.muted } }, gefilterd2.length + " boekingen — locatiebezoek/bananenbrood uitgesloten")
+    );
+  })()), tab === "bk" && /* @__PURE__ */ React.createElement("div", { style: SS.card }, /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 8, fontSize: 11, color: C2.muted } }, gefilterd.length, " boekingen — locatiebezoek/bananenbrood uitgesloten"), /* @__PURE__ */ React.createElement("table", { style: SS.tbl }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, ["", "ID", "Naam", "Datum", "Pers.", "Omzet excl.", "Inkoop", "Winst", "Marge"].map(function(h) {
     return /* @__PURE__ */ React.createElement("th", { key: h, style: SS.th }, h);
   }))), /* @__PURE__ */ React.createElement("tbody", null, gefilterd.map(function(b) {
     var omzet = berekenOmzet(b);
