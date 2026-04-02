@@ -4536,8 +4536,6 @@ function FinancieelScreen() {
         return naam.includes(kw) || regels.includes(kw);
       });
     });
-    var [openBoeking, setOpenBoeking] = useState(null);
-    var [openMenu, setOpenMenu] = useState(null);
     var totOmzet = gefilterd.reduce(function(s, b) {
       return s + b.regels.reduce(function(ss, r) {
         var kp = (window._stamKoppelingen || []).find(function(k) {
