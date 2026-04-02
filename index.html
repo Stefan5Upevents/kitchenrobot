@@ -551,7 +551,6 @@ function HomeScreen({ setSc }) {
             starttijd: datum,
             starttijdTijd: deadlineTijd,
             opmerking: opmerking || bijzonderheden,
-            opmerking,
             menuCode: productNaam,
             aantal
           });
@@ -4526,59 +4525,221 @@ function FinancieelScreen() {
     }));
   })(), /* @__PURE__ */ React.createElement("div", { style: SS.card }, /* @__PURE__ */ React.createElement("div", { style: SS.cT }, "Top menus op marge"), (window._stamMenus || []).map(function(m) {
     return /* @__PURE__ */ React.createElement("div", { key: m.code, style: { display: "flex", alignItems: "center", padding: "8px 0", borderBottom: "1px solid #E8EEF2" } }, /* @__PURE__ */ React.createElement("span", { style: { ...tg(C.hot), marginRight: 7 } }, m.code), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, fontWeight: 700, fontSize: 12 } }, m.naam), /* @__PURE__ */ React.createElement("span", { style: tg(C.green) }, "~73%"));
-  }))), tab === "bk" && /* @__PURE__ */ React.createElement("div", { style: SS.card }, /* @__PURE__ */ React.createElement("table", { style: SS.tbl }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, ["ID", "Naam", "Datum", "Pers.", "Omzet", "Inkoop", "Winst", "Marge"].map(function(h) {
-    return /* @__PURE__ */ React.createElement("th", { key: h, style: SS.th }, h);
-  }))), /* @__PURE__ */ React.createElement("tbody", null, (window._recrasBoekingen || []).map(function(b) {
-    var omzet = b.regels.reduce(function(s, r) {
-      var m = (function() {
+  }))), tab === "bk" && /* @__PURE__ */ React.createElement("div", { style: SS.card }, (function() {
+    var excludeKeywords = ["locatiebezoek", "bananenbrood", "twist"];
+    var gefilterd = (window._recrasBoekingen || []).filter(function(b) {
+      var naam = (b.naam || "").toLowerCase();
+      var regels = b.regels.map(function(r) {
+        return (r.menuNaam || "").toLowerCase();
+      }).join(" ");
+      return !excludeKeywords.some(function(kw) {
+        return naam.includes(kw) || regels.includes(kw);
+      });
+    });
+    var [openBoeking, setOpenBoeking] = useState(null);
+    var [openMenu, setOpenMenu] = useState(null);
+    var totOmzet = gefilterd.reduce(function(s, b) {
+      return s + b.regels.reduce(function(ss, r) {
         var kp = (window._stamKoppelingen || []).find(function(k) {
           return (k.recras_naam || "").trim() === (r.menuNaam || "").trim();
         });
-        return kp ? (window._stamMenus || []).find(function(m2) {
+        var m = kp ? (window._stamMenus || []).find(function(m2) {
           return m2.id === kp.menu_id;
-        }) : (window._stamMenus || []).find(function(m2) {
-          return m2.naam === r.menuNaam;
-        });
-      })();
-      return s + (m ? parseFloat(m.verkoop_prijs) || parseFloat(m.verkoop) || 0 : 0) * r.aantal;
-    }, 0);
-    var inkoop = (function() {
-      var inkoopTotaal = 0;
-      var pct = opzetPct(totPers(b), null);
-      b.regels.forEach(function(r) {
-        if ((r.menuNaam || "").toLowerCase().includes("add up")) return;
-        var kp2 = (window._stamKoppelingen || []).find(function(k) {
-          return (k.recras_naam || "").trim() === (r.menuNaam || "").trim();
-        });
-        var m2 = kp2 ? (window._stamMenus || []).find(function(m) {
-          return m.id === kp2.menu_id;
         }) : null;
-        if (!m2) return;
-        var psPct = opzetPct(totPers(b), m2.productsoort_id);
-        (m2.menu_gerechten || []).forEach(function(mg) {
-          var g2 = (window._stamGerechten || []).find(function(g) {
-            return g.id === mg.gerecht_id;
-          });
-          if (!g2) return;
-          var portiesEff = r.aantal * (mg.porties_per_persoon || 1) * psPct;
-          (g2.ingredienten || []).forEach(function(ing) {
-            if (ing.zichtbaar === "nee" || ing.zichtbaar === "nooit") return;
-            var sp = (window._stamSligro || []).find(function(p) {
-              return p.id === ing.sligro_id;
-            });
-            if (!sp) return;
-            var hoev = parseFloat(sp.hoeveelheid || sp.hoev || 1) || 1;
-            var prijs = parseFloat(sp.prijs_excl || sp.prijs || 0);
-            var gebruik = parseFloat(ing.gebruik_per_portie) || 0;
-            var verpakkingen = Math.ceil(portiesEff * gebruik / hoev);
-            inkoopTotaal += verpakkingen * prijs;
-          });
-        });
-      });
-      return inkoopTotaal;
-    })();
-    return /* @__PURE__ */ React.createElement("tr", { key: b.id }, /* @__PURE__ */ React.createElement("td", { style: SS.td }, /* @__PURE__ */ React.createElement("span", { style: tg(C.aqua) }, b.id)), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 700 } }, b.naam), /* @__PURE__ */ React.createElement("td", { style: SS.td }, fDatum(b.deadline, true)), /* @__PURE__ */ React.createElement("td", { style: SS.td }, totPers(b)), /* @__PURE__ */ React.createElement("td", { style: SS.td }, omzet.toFixed(0)), /* @__PURE__ */ React.createElement("td", { style: SS.td }, inkoop.toFixed(0)), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 700, color: C.green } }, (omzet - inkoop).toFixed(0)), /* @__PURE__ */ React.createElement("td", { style: SS.td }, /* @__PURE__ */ React.createElement("span", { style: tg(C.green) }, omzet > 0 ? Math.round((omzet - inkoop) / omzet * 100) + "%" : "—")));
-  }))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 7, marginTop: 10 } }, /* @__PURE__ */ React.createElement("button", { style: btnSG }, "Export Excel"), /* @__PURE__ */ React.createElement("button", { style: btnSG }, "Export CSV"))), (tab === "mn" || tab === "ing") && /* @__PURE__ */ React.createElement("div", { style: SS.card }, /* @__PURE__ */ React.createElement("div", { style: { color: C.muted } }, "Uitwerken zodra alle data gekoppeld is.")));
+        return ss + (m ? (parseFloat(m.verkoop_prijs) || 0) * r.aantal : 0);
+      }, 0);
+    }, 0);
+    return React.createElement(
+      React.Fragment,
+      null,
+      React.createElement(
+        "div",
+        { style: { marginBottom: 8, fontSize: 11, color: C.muted } },
+        gefilterd.length + " boekingen (locatiebezoek/bananenbrood uitgesloten)"
+      ),
+      React.createElement(
+        "table",
+        { style: { ...SS.tbl } },
+        React.createElement(
+          "thead",
+          null,
+          React.createElement(
+            "tr",
+            null,
+            ["ID", "Naam", "Datum", "Pers.", "Omzet", "Inkoop", "Winst", "Marge", ""].map(function(h) {
+              return React.createElement("th", { key: h, style: SS.th }, h);
+            })
+          )
+        ),
+        React.createElement(
+          "tbody",
+          null,
+          gefilterd.map(function(b) {
+            var omzet = b.regels.reduce(function(s, r) {
+              var kp = (window._stamKoppelingen || []).find(function(k) {
+                return (k.recras_naam || "").trim() === (r.menuNaam || "").trim();
+              });
+              var m = kp ? (window._stamMenus || []).find(function(mm) {
+                return mm.id === kp.menu_id;
+              }) : null;
+              return s + (m ? (parseFloat(m.verkoop_prijs) || parseFloat(m.verkoop) || 0) * r.aantal : 0);
+            }, 0);
+            var inkoop = (function() {
+              var tot = 0;
+              b.regels.forEach(function(r) {
+                if ((r.menuNaam || "").toLowerCase().includes("add up")) return;
+                var kp2 = (window._stamKoppelingen || []).find(function(k) {
+                  return (k.recras_naam || "").trim() === (r.menuNaam || "").trim();
+                });
+                var m2 = kp2 ? (window._stamMenus || []).find(function(m) {
+                  return m.id === kp2.menu_id;
+                }) : null;
+                if (!m2) return;
+                var psPct = opzetPct(totPers(b), m2.productsoort_id);
+                (m2.menu_gerechten || []).forEach(function(mg) {
+                  var g2 = (window._stamGerechten || []).find(function(g) {
+                    return g.id === mg.gerecht_id;
+                  });
+                  if (!g2) return;
+                  var pEff = r.aantal * (mg.porties_per_persoon || 1) * psPct;
+                  (g2.ingredienten || []).forEach(function(ing) {
+                    if (ing.zichtbaar === "nee" || ing.zichtbaar === "nooit") return;
+                    var sp = (window._stamSligro || []).find(function(p) {
+                      return p.id === ing.sligro_id;
+                    });
+                    if (!sp) return;
+                    var hoev = parseFloat(sp.hoeveelheid || sp.hoev || 1) || 1;
+                    var prijs = parseFloat(sp.prijs_excl || sp.prijs || 0);
+                    var gebruik = parseFloat(ing.gebruik_per_portie) || 0;
+                    tot += Math.ceil(pEff * gebruik / hoev) * prijs;
+                  });
+                });
+              });
+              return tot;
+            })();
+            var winst = omzet - inkoop;
+            var marge = omzet > 0 ? Math.round(winst / omzet * 100) : 0;
+            var isOpen = openBoeking === b.id;
+            var rows = [React.createElement(
+              "tr",
+              {
+                key: b.id,
+                style: { background: isOpen ? "#EBF5FB" : C.white, cursor: "pointer" },
+                onClick: function() {
+                  setOpenBoeking(isOpen ? null : b.id);
+                  setOpenMenu(null);
+                }
+              },
+              React.createElement(
+                "td",
+                { style: { ...SS.td, fontSize: 10, color: C.muted } },
+                React.createElement("span", { style: tg(C.aqua) }, b.id),
+                React.createElement("span", { style: { marginLeft: 4, fontSize: 10 } }, isOpen ? "\u25BC" : "\u25B6")
+              ),
+              React.createElement("td", { style: { ...SS.td, fontWeight: 700 } }, b.naam),
+              React.createElement("td", { style: SS.td }, fDatum(b.deadline, true)),
+              React.createElement("td", { style: SS.td }, totPers(b)),
+              React.createElement("td", { style: SS.td }, "€ " + (omzet / 1.09).toFixed(0)),
+              React.createElement("td", { style: SS.td }, "€ " + inkoop.toFixed(0)),
+              React.createElement("td", { style: { ...SS.td, fontWeight: 700, color: C.green } }, "€ " + winst.toFixed(0)),
+              React.createElement(
+                "td",
+                { style: SS.td },
+                React.createElement("span", { style: tg(omzet > 0 ? marge > 60 ? C.green : marge > 30 ? C.hot : C.hot : "#ccc") }, omzet > 0 ? marge + "%" : "—")
+              ),
+              React.createElement("td", { style: SS.td })
+            )];
+            if (isOpen) {
+              rows.push(React.createElement(
+                "tr",
+                { key: b.id + "_detail" },
+                React.createElement(
+                  "td",
+                  { colSpan: 9, style: { padding: 0, background: "#F8FBFF", borderLeft: "3px solid " + C.aqua } },
+                  React.createElement(
+                    "div",
+                    { style: { padding: "8px 16px" } },
+                    React.createElement("div", { style: { fontWeight: 700, fontSize: 11, color: C.muted, marginBottom: 6 } }, "Geboekte menus:"),
+                    React.createElement(
+                      "table",
+                      { style: { width: "100%", borderCollapse: "collapse", fontSize: 11 } },
+                      React.createElement(
+                        "thead",
+                        null,
+                        React.createElement(
+                          "tr",
+                          null,
+                          ["Menu", "Aantal", "Omzet excl.", "Inkoop", "Winst"].map(function(h) {
+                            return React.createElement("th", { key: h, style: { ...SS.th, background: "#1a3b4d", padding: "5px 10px" } }, h);
+                          })
+                        )
+                      ),
+                      React.createElement(
+                        "tbody",
+                        null,
+                        b.regels.filter(function(r) {
+                          return !(r.menuNaam || "").toLowerCase().includes("add up");
+                        }).map(function(r, ri) {
+                          var kp3 = (window._stamKoppelingen || []).find(function(k) {
+                            return (k.recras_naam || "").trim() === (r.menuNaam || "").trim();
+                          });
+                          var m3 = kp3 ? (window._stamMenus || []).find(function(mm) {
+                            return mm.id === kp3.menu_id;
+                          }) : null;
+                          var rOmzet = m3 ? (parseFloat(m3.verkoop_prijs) || 0) * r.aantal : 0;
+                          var rInkoop = (function() {
+                            if (!m3) return 0;
+                            var psPct2 = opzetPct(totPers(b), m3.productsoort_id);
+                            return (m3.menu_gerechten || []).reduce(function(ms, mg) {
+                              var g3 = (window._stamGerechten || []).find(function(g) {
+                                return g.id === mg.gerecht_id;
+                              });
+                              if (!g3) return ms;
+                              var pEff2 = r.aantal * (mg.porties_per_persoon || 1) * psPct2;
+                              return ms + (g3.ingredienten || []).reduce(function(is, ing) {
+                                if (ing.zichtbaar === "nee" || ing.zichtbaar === "nooit") return is;
+                                var sp = (window._stamSligro || []).find(function(p) {
+                                  return p.id === ing.sligro_id;
+                                });
+                                if (!sp) return is;
+                                return is + Math.ceil(pEff2 * (parseFloat(ing.gebruik_per_portie) || 0) / (parseFloat(sp.hoeveelheid || sp.hoev || 1) || 1)) * parseFloat(sp.prijs_excl || sp.prijs || 0);
+                              }, 0);
+                            }, 0);
+                          })();
+                          var isMenuOpen = openMenu === b.id + "_" + ri;
+                          return React.createElement(
+                            "tr",
+                            {
+                              key: ri,
+                              style: { background: ri % 2 === 0 ? C.white : "#F5F8FA", cursor: "pointer" },
+                              onClick: function(e) {
+                                e.stopPropagation();
+                                setOpenMenu(isMenuOpen ? null : b.id + "_" + ri);
+                              }
+                            },
+                            React.createElement(
+                              "td",
+                              { style: { padding: "5px 10px", fontWeight: 700 } },
+                              (isMenuOpen ? "\u25BC " : "\u25B6 ") + (m3 ? m3.naam : r.menuNaam)
+                            ),
+                            React.createElement("td", { style: { padding: "5px 10px" } }, r.aantal + "\xD7"),
+                            React.createElement("td", { style: { padding: "5px 10px" } }, "€ " + (rOmzet / 1.09).toFixed(2)),
+                            React.createElement("td", { style: { padding: "5px 10px" } }, "€ " + rInkoop.toFixed(2)),
+                            React.createElement("td", { style: { padding: "5px 10px", color: C.green } }, "€ " + (rOmzet / 1.09 - rInkoop).toFixed(2))
+                          );
+                        })
+                      )
+                    )
+                  )
+                )
+              ));
+            }
+            return rows;
+          })
+        )
+      )
+    );
+  })()));
 }
 function App({ supabaseInloggen, supabaseUitloggen, supabaseSessie, supabaseProfiel }) {
   var [appProductgroepen, setAppProductgroepen] = useState(PRODUCTGROEPEN);
