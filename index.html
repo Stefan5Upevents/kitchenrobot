@@ -13,14 +13,12 @@
   <script src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js'></script>
   <script src='https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js'></script>
   <script>
-    try {
     window._supa=supabase.createClient('https://aezatnwsrhlwtykpixsq.supabase.co','sb_publishable_qkQzUEM5fvJPSsfScEzNCg_Eug8-d4t');
     window._recrasBoekingen=[];window._stamProductgroepen=[];window._stamGerechten=[];window._stamMenus=[];window._stamSligro=[];window._stamKoppelingen=[];window._stamTijdenInst=[];
     window._formulierOverrides={};window._formulierTijden={};
     window.sbInloggen=async function(e,w,onErr){try{var r=await window._supa.auth.signInWithPassword({email:e,password:w});if(r.error){if(onErr)onErr(r.error.message);return null;}return r.data;}catch(ex){if(onErr)onErr(ex.message);return null;}};
     window.sbUitloggen=async function(){await window._supa.auth.signOut();window.location.reload();};
     window.sbProfiel=async function(uid){try{var p=await window._supa.from('gebruikers_profielen').select('*').eq('id',uid).single();return p.data||null;}catch(e){return null;}};
-    } catch(initErr) { console.error('Init error:', initErr); document.getElementById('root').innerHTML='<div style="padding:20px;color:red">Init fout: '+initErr.message+'</div>'; }
   </script>
   <script>
     const {useState,useMemo,useEffect}=React;
@@ -1159,8 +1157,8 @@ function BuffetScreen({ actieve, setActieve }) {
               updated_at: (/* @__PURE__ */ new Date()).toISOString()
             }, { onConflict: "boeking_id,productsoort_id" }).then(function(r) {
               if (r.error) console.warn("Opslaan formulier mislukt:", r.error);
-            }).catch(function(e) {
-              console.warn("DB save error:", e);
+            }).then(function(r) {
+              if (r && r.error) console.warn("DB save error:", r.error);
             });
           }
         }
@@ -1369,8 +1367,8 @@ function BuffetScreen({ actieve, setActieve }) {
         deadline: recrasTijdStr,
         tijden_json: JSON.stringify(tijdItems),
         updated_at: (/* @__PURE__ */ new Date()).toISOString()
-      }, { onConflict: "boeking_id,productsoort_id" }).catch(function(e) {
-        console.warn("formulier_tijden opslaan:", e);
+      }, { onConflict: "boeking_id,productsoort_id" }).then(function(r) {
+        if (r && r.error) console.warn("formulier_tijden opslaan:", r.error);
       });
     }
     return /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 10, background: "#FFF8E1", borderRadius: 8, padding: "8px 14px", display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: 1 } }, "Tijden"), tijdItems.map(function(t, i) {
@@ -2027,7 +2025,7 @@ function StamScreen() {
         });
       });
     }).catch(function(e) {
-      console.log("Supabase laden mislukt, gebruik lokale data:", e.message);
+      console.warn("Supabase laden mislukt:", e);
       setLaden(false);
     });
   }, []);
@@ -4818,7 +4816,5 @@ function App({ supabaseInloggen, supabaseUitloggen, supabaseSessie, supabaseProf
 }
 
     function AppWrapper(){var[sessie,setSessie]=React.useState(null);var[profiel,setProfiel]=React.useState(null);var[laden,setLaden]=React.useState(true);React.useEffect(function(){setLaden(false);window._supa.auth.onAuthStateChange(function(ev,sess){if(ev==="SIGNED_IN"&&sess){setSessie(sess);window.sbProfiel(sess.user.id).then(function(p){setProfiel(p||{naam:sess.user.email,rol:"beheerder",actief:true});});}else if(ev==="SIGNED_OUT"){setSessie(null);setProfiel(null);}});},[]);if(laden)return React.createElement("div",{style:{minHeight:"100vh",background:"#002D41",display:"flex",alignItems:"center",justifyContent:"center",color:"#1AA6B7",fontFamily:"Roboto,sans-serif",fontWeight:700,fontSize:16,letterSpacing:3}},"KitchenRobot laden...");return React.createElement(App,{supabaseInloggen:window.sbInloggen,supabaseUitloggen:window.sbUitloggen,supabaseSessie:sessie,supabaseProfiel:profiel});}
-    ReactDOM.createRoot(document.getElementById("root")).render(
-      React.createElement(AppErrorBoundary, null, React.createElement(AppWrapper))
-    );
+    ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(AppErrorBoundary,null,React.createElement(AppWrapper)));
   </script></body></html>
