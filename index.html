@@ -450,11 +450,11 @@ function Header({ sc, setSc, user, logout }) {
     setSc("fin");
   } }, "Financieel"), /* @__PURE__ */ React.createElement("div", { style: { width: 1, background: "rgba(255,255,255,.2)", height: 18, margin: "0 4px" } }), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: C.light, fontWeight: 700 } }, user.naam), /* @__PURE__ */ React.createElement("button", { style: { background: "transparent", color: C.light, border: "none", borderRadius: 5, padding: "5px 8px", fontFamily: "inherit", fontWeight: 700, fontSize: 10, cursor: "pointer" }, onClick: logout }, "\u21A9")));
 }
-function genereerOpzetEmailHTML(boekingen, dagLabel) {
+function genereerOpzetEmailHTML(boekingen2, dagLabel) {
   var C2 = { night: "#002D41", aqua: "#1AA6B7", hot: "#FE424D", green: "#27AE60", muted: "#7A8FA6" };
   var secties = [];
   var psGroepen = {};
-  boekingen.forEach(function(b) {
+  boekingen2.forEach(function(b) {
     (b.regels || []).forEach(function(r) {
       if ((r.menuNaam || "").toLowerCase().includes("add up")) return;
       var kp = (window._stamKoppelingen || []).find(function(k) {
@@ -528,7 +528,7 @@ function genereerOpzetEmailHTML(boekingen, dagLabel) {
   var sectiesHtml = Object.values(psGroepen).map(function(grp) {
     return '<div style="margin-bottom:24px"><div style="background:' + C2.night + ';color:#fff;padding:8px 14px;border-radius:6px 6px 0 0;font-weight:900;font-size:14px">' + (grp.pgNaam ? grp.pgNaam + " \u203A " : "") + grp.psNaam + '</div><div style="background:#EEF2F6;padding:10px;border-radius:0 0 6px 6px">' + grp.boekRows.join("") + "</div></div>";
   }).join("");
-  return '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Opzetoverzicht ' + dagLabel + '</title></head><body style="font-family:Arial,sans-serif;background:#EEF2F6;padding:20px;margin:0"><div style="max-width:680px;margin:0 auto"><div style="background:' + C2.night + ';border-radius:8px;padding:16px 20px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center"><div><div style="color:' + C2.hot + ';font-weight:900;font-size:18px">KitchenRobot</div><div style="color:' + C2.aqua + ';font-size:10px;letter-spacing:2px">UP EVENTS</div></div><div style="color:#fff;font-weight:900;font-size:16px">' + dagLabel + '<br><span style="font-weight:400;font-size:12px">' + boekingen.length + " boeking" + (boekingen.length !== 1 ? "en" : "") + "</span></div></div>" + (sectiesHtml || '<div style="background:#fff;border-radius:8px;padding:20px;text-align:center;color:#999">Geen gekoppelde boekingen gevonden. Open eerst de buffetformulieren.</div>') + '<div style="text-align:center;color:#999;font-size:10px;padding:12px">Automatisch gegenereerd door KitchenRobot &bull; <a href="https://kitchenrobot.vercel.app" style="color:' + C2.aqua + '">kitchenrobot.vercel.app</a></div></div></body></html>';
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Opzetoverzicht ' + dagLabel + '</title></head><body style="font-family:Arial,sans-serif;background:#EEF2F6;padding:20px;margin:0"><div style="max-width:680px;margin:0 auto"><div style="background:' + C2.night + ';border-radius:8px;padding:16px 20px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center"><div><div style="color:' + C2.hot + ';font-weight:900;font-size:18px">KitchenRobot</div><div style="color:' + C2.aqua + ';font-size:10px;letter-spacing:2px">UP EVENTS</div></div><div style="color:#fff;font-weight:900;font-size:16px">' + dagLabel + '<br><span style="font-weight:400;font-size:12px">' + boekingen2.length + " boeking" + (boekingen2.length !== 1 ? "en" : "") + "</span></div></div>" + (sectiesHtml || '<div style="background:#fff;border-radius:8px;padding:20px;text-align:center;color:#999">Geen gekoppelde boekingen gevonden. Open eerst de buffetformulieren.</div>') + '<div style="text-align:center;color:#999;font-size:10px;padding:12px">Automatisch gegenereerd door KitchenRobot &bull; <a href="https://kitchenrobot.vercel.app" style="color:' + C2.aqua + '">kitchenrobot.vercel.app</a></div></div></body></html>';
 }
 function AllergenenKaart({ boeking, onClose }) {
   var gerechten = window._stamGerechten || [];
@@ -651,8 +651,8 @@ function HomeScreen({ setSc }) {
   var [showBbqAnalyse, setShowBbqAnalyse] = useState(false);
   var [dagpakketStatus, setDagpakketStatus] = useState(null);
   var [dagpakketPubliceren, setDagpakketPubliceren] = useState(false);
-  function checkBBQConflicten(boekingen) {
-    if (!boekingen || boekingen.length === 0) return;
+  function checkBBQConflicten(boekingen2) {
+    if (!boekingen2 || boekingen2.length === 0) return;
     var locatieConfig = {
       // Weesp: 2 setups
       "Archery Tag WP": 2,
@@ -754,7 +754,7 @@ function HomeScreen({ setSc }) {
     }
     var gevonden = [];
     var zoneGroepen = {};
-    boekingen.forEach(function(b) {
+    boekingen2.forEach(function(b) {
       if (!isBBQ(b)) return;
       var zone = zonesMap[b.locatie || ""];
       if (!zone) return;
@@ -793,15 +793,15 @@ function HomeScreen({ setSc }) {
     });
     setBbqConflicten(gevonden);
   }
-  function checkEnStuurEmail(boekingen) {
-    if (!boekingen || boekingen.length === 0 || !window._supa) return;
+  function checkEnStuurEmail(boekingen2) {
+    if (!boekingen2 || boekingen2.length === 0 || !window._supa) return;
     var morgen = /* @__PURE__ */ new Date();
     morgen.setDate(morgen.getDate() + 1);
     var morgenStr = morgen.toISOString().split("T")[0];
     var dagNamen = ["zo", "ma", "di", "wo", "do", "vr", "za"];
     var maandNamen = ["jan", "feb", "mrt", "apr", "mei", "jun", "jul", "aug", "sep", "okt", "nov", "dec"];
     var morgenLabel = dagNamen[morgen.getDay()] + " " + morgen.getDate() + " " + maandNamen[morgen.getMonth()];
-    var morgenBoekingen = boekingen.filter(function(b) {
+    var morgenBoekingen = boekingen2.filter(function(b) {
       return (b.deadline || "").startsWith(morgenStr);
     });
     if (morgenBoekingen.length === 0) return;
@@ -910,7 +910,15 @@ function HomeScreen({ setSc }) {
     display: "flex",
     alignItems: "center",
     gap: 8
-  } }, "✓ Geen BBQ planningsconflicten gevonden"), geladen.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 14, background: "#fff", borderRadius: 10, padding: 16, boxShadow: "0 1px 4px rgba(0,45,65,.07)" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 900, fontSize: 14, color: C.night } }, "\u{1F4F1} Dagpakket voor kiosks"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.muted, marginTop: 2 } }, dagpakketStatus === "gepubliceerd" ? "✓ Al gepubliceerd — kiosks hebben het dagpakket" : "Publiceer de boekingen, opzetlijsten en BBQ buffets naar de keuken tablets")), /* @__PURE__ */ React.createElement(
+  } }, "✓ Geen BBQ planningsconflicten gevonden"), geladen.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 14, background: "#fff", borderRadius: 10, padding: 16, boxShadow: "0 1px 4px rgba(0,45,65,.07)" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 900, fontSize: 14, color: C.night } }, "\u{1F4F1} Dagpakket voor kiosks"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.muted, marginTop: 2 } }, dagpakketStatus === "gepubliceerd" ? "✓ Al gepubliceerd — kiosks hebben het dagpakket" : "Publiceer de boekingen, opzetlijsten en BBQ buffets naar de keuken tablets"), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 8, display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement(
+    "a",
+    {
+      href: "#kiosk",
+      target: "_blank",
+      style: { fontSize: 11, color: C.aqua, textDecoration: "none", border: "1px solid " + C.aqua, borderRadius: 6, padding: "3px 10px", fontWeight: 700 }
+    },
+    "\u{1F441} Kiosk preview openen →"
+  ))), /* @__PURE__ */ React.createElement(
     "button",
     {
       style: {
@@ -922,11 +930,11 @@ function HomeScreen({ setSc }) {
       onClick: function() {
         setDagpakketPubliceren(true);
         var vandaag2 = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
-        var boekingen = window._recrasBoekingen || [];
+        var boekingen2 = window._recrasBoekingen || [];
         var outletCodes = ["west", "weesp"];
         var westLocaties = ["Loods 2", "Loods 4", "Loods 5", "Loods 6", "Terras Loods 6", "Pup - Bar", "Ronde Tent", "Stretchtent", "Terrace", "Beachclub", "Beachclub 2", "Loods 7", "Loods 7 Patio", "Combinatie | Loods 1, 2, 3 & Terrace"];
         var promises = outletCodes.map(function(code) {
-          var outletBoekingen = boekingen.filter(function(b) {
+          var outletBoekingen = boekingen2.filter(function(b) {
             if (code === "west") return westLocaties.indexOf(b.locatie || "") >= 0;
             return westLocaties.indexOf(b.locatie || "") < 0;
           });
@@ -1169,11 +1177,30 @@ function HomeScreen({ setSc }) {
     setSc("boekingen");
   } }, "Bekijk boekingen →"), geladen.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 12, overflowX: "auto" } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 12, marginBottom: 6 } }, "Alle ge\xEFmporteerde regels (", (window._recrasBoekingen || []).reduce(function(s, b) {
     return s + b.regels.length;
-  }, 0), " regels in ", geladen.length, " boekingen):"), /* @__PURE__ */ React.createElement("table", { style: { ...SS.tbl, fontSize: 11 } }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", { style: { background: C.night } }, ["Boeking ID", "Datum", "Tijd", "Groepsnaam", "Locatie", "Recras product", "Aantal", "Gekoppeld menu"].map(function(h) {
-    return /* @__PURE__ */ React.createElement("th", { key: h, style: { ...SS.th, color: "white", background: "transparent", whiteSpace: "nowrap" } }, h);
-  }))), /* @__PURE__ */ React.createElement("tbody", null, (window._recrasBoekingen || []).slice().sort(function(a, b) {
-    return a.id.localeCompare(b.id);
-  }).map(function(b) {
+  }, 0), " regels in ", geladen.length, " boekingen):"), /* @__PURE__ */ React.createElement("table", { style: { ...SS.tbl, fontSize: 11 } }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", { style: { background: C.night } }, [["id", "Boeking ID"], ["datum", "Datum"], ["tijd", "Tijd"], ["naam", "Groepsnaam"], ["locatie", "Locatie"], ["product", "Recras product"], ["aantal", "Aantal"], ["menu", "Gekoppeld menu"]].map(function(h) {
+    var klik = ["id", "datum", "tijd", "naam", "locatie"].includes(h[0]);
+    return /* @__PURE__ */ React.createElement(
+      "th",
+      {
+        key: h[0],
+        style: { ...SS.th, color: "white", background: "transparent", whiteSpace: "nowrap", cursor: klik ? "pointer" : "default" },
+        onClick: klik ? function() {
+          setSortBoekVeld(function(prev) {
+            if (prev === h[0]) {
+              setSortBoekDir(function(d) {
+                return d === "asc" ? "desc" : "asc";
+              });
+              return prev;
+            }
+            setSortBoekDir("asc");
+            return h[0];
+          });
+        } : void 0
+      },
+      h[1],
+      klik ? sortBoekVeld === h[0] ? sortBoekDir === "asc" ? " \u2191" : " \u2193" : " \u2195" : ""
+    );
+  }))), /* @__PURE__ */ React.createElement("tbody", null, boekingen.map(function(b) {
     return b.regels.map(function(r, ri) {
       var kop = (window._stamKoppelingen || []).find(function(k) {
         return (k.recras_naam || "").trim() === (r.menuNaam || "").trim();
@@ -1238,19 +1265,19 @@ function HomeScreen({ setSc }) {
 }
 function BoekingenScreen({ setSc, setActieve }) {
   var [openId, setOpenId] = useState(null);
-  var [sortBoekVeld, setSortBoekVeld] = useState("dag");
-  var [sortBoekDir, setSortBoekDir] = useState("asc");
+  var [sortBoekVeld2, setSortBoekVeld2] = useState("dag");
+  var [sortBoekDir2, setSortBoekDir2] = useState("asc");
   function toggleSortBoek(veld) {
-    if (sortBoekVeld === veld) setSortBoekDir(sortBoekDir === "asc" ? "desc" : "asc");
+    if (sortBoekVeld2 === veld) setSortBoekDir2(sortBoekDir2 === "asc" ? "desc" : "asc");
     else {
-      setSortBoekVeld(veld);
-      setSortBoekDir("asc");
+      setSortBoekVeld2(veld);
+      setSortBoekDir2("asc");
     }
   }
   function sortBoekIcon(veld) {
-    return sortBoekVeld === veld ? sortBoekDir === "asc" ? " \u2191" : " \u2193" : " \u2195";
+    return sortBoekVeld2 === veld ? sortBoekDir2 === "asc" ? " \u2191" : " \u2193" : " \u2195";
   }
-  var boekingen = (window._recrasBoekingen || []).slice().sort(function(a, b) {
+  var boekingen2 = (window._recrasBoekingen || []).slice().sort(function(a, b) {
     return (a.deadline || "").localeCompare(b.deadline || "");
   });
   function getMenuKoppelingInfo(regel) {
@@ -1270,15 +1297,15 @@ function BoekingenScreen({ setSc, setActieve }) {
     }
     return { menu: m, psNaam };
   }
-  var boekingen = (window._recrasBoekingen || []).slice().sort(function(a, b) {
+  var boekingen2 = (window._recrasBoekingen || []).slice().sort(function(a, b) {
     var va, vb;
-    if (sortBoekVeld === "dag") {
+    if (sortBoekVeld2 === "dag") {
       va = a.deadline || "";
       vb = b.deadline || "";
-    } else if (sortBoekVeld === "naam") {
+    } else if (sortBoekVeld2 === "naam") {
       va = a.naam || "";
       vb = b.naam || "";
-    } else if (sortBoekVeld === "locatie") {
+    } else if (sortBoekVeld2 === "locatie") {
       va = (a.locatie || "") + (a.plaats || "");
       vb = (b.locatie || "") + (b.plaats || "");
     } else {
@@ -1286,9 +1313,9 @@ function BoekingenScreen({ setSc, setActieve }) {
       vb = b.deadline || "";
     }
     var res = va.localeCompare(vb, "nl");
-    return sortBoekDir === "asc" ? res : -res;
+    return sortBoekDir2 === "asc" ? res : -res;
   });
-  return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: SS.pT }, "Boekingsoverzicht"), /* @__PURE__ */ React.createElement("div", { style: SS.pD }, boekingen.length, " boekingen \u2022 klik op kolomnaam om te sorteren"), /* @__PURE__ */ React.createElement("div", { style: SS.card }, /* @__PURE__ */ React.createElement("div", { style: { overflowX: "auto" } }, /* @__PURE__ */ React.createElement("table", { style: SS.tbl }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", { style: SS.th }), [["id", "ID"], ["naam", "Groepsnaam"], ["dag", "Dag"], ["locatie", "Locatie / Plaats"], ["pers", "Pers."], ["prod", "Recras producten"]].map(function(h) {
+  return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: SS.pT }, "Boekingsoverzicht"), /* @__PURE__ */ React.createElement("div", { style: SS.pD }, boekingen2.length, " boekingen \u2022 klik op kolomnaam om te sorteren"), /* @__PURE__ */ React.createElement("div", { style: SS.card }, /* @__PURE__ */ React.createElement("div", { style: { overflowX: "auto" } }, /* @__PURE__ */ React.createElement("table", { style: SS.tbl }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", { style: SS.th }), [["id", "ID"], ["naam", "Groepsnaam"], ["dag", "Dag"], ["locatie", "Locatie / Plaats"], ["pers", "Pers."], ["prod", "Recras producten"]].map(function(h) {
     var klik = ["naam", "dag", "locatie"].includes(h[0]);
     return /* @__PURE__ */ React.createElement(
       "th",
@@ -1302,7 +1329,7 @@ function BoekingenScreen({ setSc, setActieve }) {
       h[1],
       klik ? sortBoekIcon(h[0]) : ""
     );
-  }))), /* @__PURE__ */ React.createElement("tbody", null, boekingen.map(function(b) {
+  }))), /* @__PURE__ */ React.createElement("tbody", null, boekingen2.map(function(b) {
     var isOpen = openId === b.id;
     var uniekePsIds = /* @__PURE__ */ new Set();
     b.regels.forEach(function(r) {
@@ -2148,7 +2175,7 @@ function OpzetScreen() {
       return s.id === psId;
     });
   });
-  var boekingen = (window._recrasBoekingen || []).filter(function(b) {
+  var boekingen2 = (window._recrasBoekingen || []).filter(function(b) {
     var heeftNormaal = b.regels.some(function(r) {
       return !(r.menuNaam || "").toLowerCase().includes("add up");
     });
@@ -2189,8 +2216,8 @@ function OpzetScreen() {
       });
     }, null);
     var psNm = psObj ? psObj.naam : psId || "Opzet";
-    var dagStr = boekingen.length > 0 ? (function() {
-      var dl = boekingen[0].deadline || "";
+    var dagStr = boekingen2.length > 0 ? (function() {
+      var dl = boekingen2[0].deadline || "";
       var parts = dl.replace("T", " ").split(" ")[0].split("-");
       if (parts.length === 3) {
         var dt = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
@@ -2227,7 +2254,7 @@ function OpzetScreen() {
       });
     }, null);
     return psO ? "- " + psO.naam : "";
-  })()), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: "#7A8FA6", marginTop: 2 } }, "Afgedrukt op ", (/* @__PURE__ */ new Date()).toLocaleDateString("nl-NL", { weekday: "long", day: "numeric", month: "long", year: "numeric" }))), /* @__PURE__ */ React.createElement("div", { style: { overflowX: "auto" } }, /* @__PURE__ */ React.createElement("table", { style: SS.tbl }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", { style: { ...SS.th, minWidth: 160, background: "#001828" } }, "Gerecht"), boekingen.map(function(b, idx) {
+  })()), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: "#7A8FA6", marginTop: 2 } }, "Afgedrukt op ", (/* @__PURE__ */ new Date()).toLocaleDateString("nl-NL", { weekday: "long", day: "numeric", month: "long", year: "numeric" }))), /* @__PURE__ */ React.createElement("div", { style: { overflowX: "auto" } }, /* @__PURE__ */ React.createElement("table", { style: SS.tbl }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", { style: { ...SS.th, minWidth: 160, background: "#001828" } }, "Gerecht"), boekingen2.map(function(b, idx) {
     var kleur = kleuren[idx % kleuren.length];
     var nBuf = aantalBuf(totPers(b));
     var pct = opzetPct(totPers(b));
@@ -2256,7 +2283,7 @@ function OpzetScreen() {
       return /* @__PURE__ */ React.createElement("div", { key: r.menuCode }, m ? m.naam : r.menuCode, ": ", r.aantal, "p");
     })), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 9, opacity: 0.75, marginTop: 2 } }, Math.round(pct * 100), "% opzet \u2022 ", nBuf, "x buffet"));
   }), /* @__PURE__ */ React.createElement("th", { style: { ...SS.th, minWidth: 140, background: "#000d14", borderLeft: "3px solid rgba(255,255,255,.3)" } }, "TOTAAL"))), /* @__PURE__ */ React.createElement("tbody", null, gerechten.map(function(g, ri) {
-    var waarden = boekingen.map(function(b) {
+    var waarden = boekingen2.map(function(b) {
       return calcGerecht(b, g, void 0, psId);
     });
     var totaal = waarden.reduce(function(s, v) {
@@ -2264,7 +2291,7 @@ function OpzetScreen() {
     }, 0);
     var rowBg = ri % 2 === 0 ? C.white : "#F9FAFB";
     return /* @__PURE__ */ React.createElement("tr", { key: g.id, style: { background: rowBg } }, /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 700, background: rowBg, borderRight: "2px solid #E8EEF2" } }, g.is_gn && /* @__PURE__ */ React.createElement("span", { style: { ...tg(C.aqua), marginRight: 4, fontSize: 9 } }, "GN"), g.naam), waarden.map(function(v, i) {
-      var b = boekingen[i];
+      var b = boekingen2[i];
       var nBuf = aantalBuf(totPers(b));
       var kleur = kleuren[i % kleuren.length];
       var c = (function() {
@@ -6214,6 +6241,118 @@ function KioskBeheerTab() {
       });
     });
   }
+  var [taakBewerk, setTaakBewerk] = useState(null);
+  var taakLeeg = { naam: "", beschrijving: "", categorie: "Temperatuurbeheer", type: "checklist", frequentie: "wekelijks", outlet_codes: ["west", "weesp"], min_temp: "", max_temp: "", verplicht: true };
+  function slaaTaakOp() {
+    if (!taakBewerk || !taakBewerk.naam) {
+      toon("Vul een naam in", true);
+      return;
+    }
+    var data = {
+      naam: taakBewerk.naam,
+      beschrijving: taakBewerk.beschrijving || "",
+      categorie: taakBewerk.categorie,
+      type: taakBewerk.type,
+      frequentie: taakBewerk.frequentie,
+      outlet_codes: taakBewerk.outlet_codes || ["west", "weesp"],
+      min_temp: taakBewerk.min_temp || null,
+      max_temp: taakBewerk.max_temp || null,
+      verplicht: taakBewerk.verplicht !== false
+    };
+    if (taakBewerk.id) {
+      window._supa.from("kiosk_taak_templates").update(data).eq("id", taakBewerk.id).then(function(r) {
+        if (r.error) {
+          toon("Fout: " + r.error.message, true);
+          return;
+        }
+        setTaken(function(prev) {
+          return prev.map(function(t) {
+            return t.id === taakBewerk.id ? Object.assign({}, t, data) : t;
+          });
+        });
+        setTaakBewerk(null);
+        toon("Opgeslagen ✓");
+      });
+    } else {
+      window._supa.from("kiosk_taak_templates").insert(data).select("*").then(function(r) {
+        if (r.error) {
+          toon("Fout: " + r.error.message, true);
+          return;
+        }
+        setTaken(function(prev) {
+          return prev.concat(r.data);
+        });
+        setTaakBewerk(null);
+        toon("Taak toegevoegd ✓");
+      });
+    }
+  }
+  function verwijderTaak(taak) {
+    if (!window.confirm("Taak '" + taak.naam + "' verwijderen?")) return;
+    window._supa.from("kiosk_taak_templates").delete().eq("id", taak.id).then(function(r) {
+      if (r.error) {
+        toon("Fout", true);
+        return;
+      }
+      setTaken(function(prev) {
+        return prev.filter(function(t) {
+          return t.id !== taak.id;
+        });
+      });
+      toon("Verwijderd ✓");
+    });
+  }
+  var [haccpBewerk, setHaccpBewerk] = useState(null);
+  var haccpLeeg = { naam: "", outlet_code: "west", type: "koeling", min_temp: "", max_temp: "" };
+  function slaaHaccpOp() {
+    if (!haccpBewerk || !haccpBewerk.naam) {
+      toon("Vul een naam in", true);
+      return;
+    }
+    var data = { naam: haccpBewerk.naam, outlet_code: haccpBewerk.outlet_code, type: haccpBewerk.type, min_temp: haccpBewerk.min_temp || null, max_temp: haccpBewerk.max_temp || null };
+    if (haccpBewerk.id) {
+      window._supa.from("kiosk_haccp_punten").update(data).eq("id", haccpBewerk.id).then(function(r) {
+        if (r.error) {
+          toon("Fout", true);
+          return;
+        }
+        setHaccp(function(prev) {
+          return prev.map(function(h) {
+            return h.id === haccpBewerk.id ? Object.assign({}, h, data) : h;
+          });
+        });
+        setHaccpBewerk(null);
+        toon("Opgeslagen ✓");
+      });
+    } else {
+      window._supa.from("kiosk_haccp_punten").insert(data).select("*").then(function(r) {
+        if (r.error) {
+          toon("Fout", true);
+          return;
+        }
+        setHaccp(function(prev) {
+          return prev.concat(r.data);
+        });
+        setHaccpBewerk(null);
+        toon("Punt toegevoegd ✓");
+      });
+    }
+  }
+  function verwijderHaccp(punt) {
+    if (!window.confirm("Punt '" + punt.naam + "' verwijderen?")) return;
+    window._supa.from("kiosk_haccp_punten").delete().eq("id", punt.id).then(function(r) {
+      if (r.error) {
+        toon("Fout", true);
+        return;
+      }
+      setHaccp(function(prev) {
+        return prev.filter(function(h) {
+          return h.id !== punt.id;
+        });
+      });
+      toon("Verwijderd ✓");
+    });
+  }
   if (laden) return /* @__PURE__ */ React.createElement("div", { style: { padding: 40, textAlign: "center", color: C.muted } }, "Kiosk data laden...");
   return /* @__PURE__ */ React.createElement("div", null, melding && /* @__PURE__ */ React.createElement("div", { style: {
     marginBottom: 12,
@@ -6243,23 +6382,82 @@ function KioskBeheerTab() {
       },
       item[1]
     );
-  })), /* @__PURE__ */ React.createElement("div", { style: { padding: 20 } }, subtab === "taken" && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 } }, /* @__PURE__ */ React.createElement("div", { style: SS.cT }, "Taak Templates (", taken.length, ")"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.muted } }, "Uit Horeko overgenomen \xB7 aanpasbaar")), /* @__PURE__ */ React.createElement("table", { style: { ...SS.tbl, fontSize: 12 } }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, ["Taaknaam", "Categorie", "Type", "Frequentie", "Outlets", "Actief"].map(function(h) {
+  })), /* @__PURE__ */ React.createElement("div", { style: { padding: 20 } }, subtab === "taken" && /* @__PURE__ */ React.createElement("div", null, taakBewerk && /* @__PURE__ */ React.createElement(
+    "div",
+    {
+      style: { position: "fixed", inset: 0, background: "rgba(0,45,65,0.6)", zIndex: 1e3, display: "flex", alignItems: "center", justifyContent: "center" },
+      onClick: function(e) {
+        if (e.target === e.currentTarget) setTaakBewerk(null);
+      }
+    },
+    /* @__PURE__ */ React.createElement("div", { style: { background: "#fff", borderRadius: 14, width: "min(560px,95vw)", maxHeight: "88vh", overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 8px 40px rgba(0,45,65,.3)" } }, /* @__PURE__ */ React.createElement("div", { style: { background: C.night, padding: "12px 18px", display: "flex", justifyContent: "space-between", alignItems: "center" } }, /* @__PURE__ */ React.createElement("div", { style: { color: C.white, fontWeight: 900, fontSize: 14 } }, taakBewerk.id ? "Taak bewerken" : "Nieuwe taak"), /* @__PURE__ */ React.createElement("button", { onClick: function() {
+      setTaakBewerk(null);
+    }, style: { background: "transparent", border: "none", color: C.white, fontSize: 20, cursor: "pointer" } }, "\u2715")), /* @__PURE__ */ React.createElement("div", { style: { overflowY: "auto", padding: 20 } }, [["naam", "Naam"], ["beschrijving", "Beschrijving"]].map(function(f) {
+      return /* @__PURE__ */ React.createElement("div", { key: f[0], style: { marginBottom: 12 } }, /* @__PURE__ */ React.createElement("div", { style: SS.lbl }, f[1]), /* @__PURE__ */ React.createElement("input", { style: SS.inp, value: taakBewerk[f[0]] || "", onChange: function(e) {
+        setTaakBewerk(function(p) {
+          return Object.assign({}, p, { [f[0]]: e.target.value });
+        });
+      } }));
+    }), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: SS.lbl }, "Categorie"), /* @__PURE__ */ React.createElement("select", { style: SS.inp, value: taakBewerk.categorie || "", onChange: function(e) {
+      setTaakBewerk(function(p) {
+        return Object.assign({}, p, { categorie: e.target.value });
+      });
+    } }, ["Inkopen & ontvangen", "Temperatuurbeheer", "Bereiden", "Opslag", "Schoonmaak", "Schoonmaak (periodiek)", "Presenteren & serveren", "Overig"].map(function(c) {
+      return /* @__PURE__ */ React.createElement("option", { key: c }, c);
+    }))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: SS.lbl }, "Type"), /* @__PURE__ */ React.createElement("select", { style: SS.inp, value: taakBewerk.type || "", onChange: function(e) {
+      setTaakBewerk(function(p) {
+        return Object.assign({}, p, { type: e.target.value });
+      });
+    } }, ["checklist", "temperatuur", "meerdere_temps", "getal", "foto", "tekst"].map(function(t) {
+      return /* @__PURE__ */ React.createElement("option", { key: t }, t);
+    }))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: SS.lbl }, "Frequentie"), /* @__PURE__ */ React.createElement("select", { style: SS.inp, value: taakBewerk.frequentie || "", onChange: function(e) {
+      setTaakBewerk(function(p) {
+        return Object.assign({}, p, { frequentie: e.target.value });
+      });
+    } }, ["dagelijks", "wekelijks", "maandelijks", "jaarlijks"].map(function(f) {
+      return /* @__PURE__ */ React.createElement("option", { key: f }, f);
+    }))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: SS.lbl }, "Min temp (\xB0C)"), /* @__PURE__ */ React.createElement("input", { style: SS.inp, type: "number", value: taakBewerk.min_temp || "", onChange: function(e) {
+      setTaakBewerk(function(p) {
+        return Object.assign({}, p, { min_temp: e.target.value });
+      });
+    }, placeholder: "bijv. 2" })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: SS.lbl }, "Max temp (\xB0C)"), /* @__PURE__ */ React.createElement("input", { style: SS.inp, type: "number", value: taakBewerk.max_temp || "", onChange: function(e) {
+      setTaakBewerk(function(p) {
+        return Object.assign({}, p, { max_temp: e.target.value });
+      });
+    }, placeholder: "bijv. 7" }))), /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 12 } }, /* @__PURE__ */ React.createElement("div", { style: SS.lbl }, "Keukens"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10 } }, ["west", "weesp"].map(function(c) {
+      var aan = (taakBewerk.outlet_codes || []).includes(c);
+      return /* @__PURE__ */ React.createElement("label", { key: c, style: { display: "flex", alignItems: "center", gap: 5, cursor: "pointer" } }, /* @__PURE__ */ React.createElement("input", { type: "checkbox", checked: aan, onChange: function(e) {
+        setTaakBewerk(function(p) {
+          var codes = (p.outlet_codes || []).slice();
+          if (e.target.checked) {
+            if (!codes.includes(c)) codes.push(c);
+          } else {
+            codes = codes.filter(function(x) {
+              return x !== c;
+            });
+          }
+          return Object.assign({}, p, { outlet_codes: codes });
+        });
+      } }), /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 700 } }, c === "west" ? "Amsterdam West" : "Weesp"));
+    }))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, marginTop: 16 } }, /* @__PURE__ */ React.createElement("button", { style: btnP, onClick: slaaTaakOp }, "Opslaan"), /* @__PURE__ */ React.createElement("button", { style: btnSG, onClick: function() {
+      setTaakBewerk(null);
+    } }, "Annuleren"))))
+  ), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 } }, /* @__PURE__ */ React.createElement("div", { style: SS.cT }, "Taak Templates (", taken.length, ")"), /* @__PURE__ */ React.createElement("button", { style: btnP, onClick: function() {
+    setTaakBewerk(Object.assign({}, taakLeeg));
+  } }, "+ Nieuwe taak")), /* @__PURE__ */ React.createElement("table", { style: { ...SS.tbl, fontSize: 12 } }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, ["Taaknaam", "Categorie", "Type", "Frequentie", "Outlets", "Actief", ""].map(function(h) {
     return /* @__PURE__ */ React.createElement("th", { key: h, style: SS.th }, h);
   }))), /* @__PURE__ */ React.createElement("tbody", null, taken.map(function(t) {
-    var catKl = catKleuren[t.categorie] || "#546E7A";
-    var freqKl = freqKleur[t.frequentie] || C.muted;
+    var catKl = { "Inkopen & ontvangen": "#1565C0", "Temperatuurbeheer": "#E65100", "Bereiden": "#2E7D32", "Opslag": "#6A1B9A", "Schoonmaak (periodiek)": "#00695C", "Schoonmaak": "#00695C", "Presenteren & serveren": "#AD1457", "Overig": "#546E7A" }[t.categorie] || "#546E7A";
+    var freqKl = { "dagelijks": "#FE424D", "wekelijks": "#1AA6B7", "maandelijks": "#FF9800", "jaarlijks": "#9E9E9E" }[t.frequentie] || C.muted;
     return /* @__PURE__ */ React.createElement("tr", { key: t.id, style: { background: t.actief ? C.white : "#F5F5F5", opacity: t.actief ? 1 : 0.6 } }, /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 700 } }, t.naam), /* @__PURE__ */ React.createElement("td", { style: SS.td }, /* @__PURE__ */ React.createElement("span", { style: { background: catKl + "22", color: catKl, border: "1px solid " + catKl + "44", borderRadius: 4, padding: "1px 6px", fontSize: 10, fontWeight: 700 } }, t.categorie)), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontSize: 11, color: C.muted } }, t.type), /* @__PURE__ */ React.createElement("td", { style: SS.td }, /* @__PURE__ */ React.createElement("span", { style: { background: freqKl + "22", color: freqKl, border: "1px solid " + freqKl + "44", borderRadius: 4, padding: "1px 6px", fontSize: 10, fontWeight: 700 } }, t.frequentie)), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontSize: 11 } }, (t.outlet_codes || []).map(function(c) {
       return /* @__PURE__ */ React.createElement("span", { key: c, style: { background: C.light, borderRadius: 4, padding: "1px 5px", marginRight: 3, fontSize: 10 } }, c);
-    })), /* @__PURE__ */ React.createElement("td", { style: SS.td }, /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        style: { ...btnSG, fontSize: 10, background: t.actief ? "#E8F5E9" : "#F5F5F5", color: t.actief ? C.green : C.muted },
-        onClick: function() {
-          toggleTaakActief(t);
-        }
-      },
-      t.actief ? "✓ Actief" : "Inactief"
-    )));
+    })), /* @__PURE__ */ React.createElement("td", { style: SS.td }, /* @__PURE__ */ React.createElement("button", { style: { ...btnSG, fontSize: 10, background: t.actief ? "#E8F5E9" : "#F5F5F5", color: t.actief ? C.green : C.muted }, onClick: function() {
+      toggleTaakActief(t);
+    } }, t.actief ? "✓ Actief" : "Inactief")), /* @__PURE__ */ React.createElement("td", { style: SS.td }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 4 } }, /* @__PURE__ */ React.createElement("button", { style: { ...btnSG, fontSize: 10 }, onClick: function() {
+      setTaakBewerk(Object.assign({}, t));
+    }, title: "Bewerken" }, "\u270F"), /* @__PURE__ */ React.createElement("button", { style: { ...btnSG, fontSize: 10, color: C.hot }, onClick: function() {
+      verwijderTaak(t);
+    }, title: "Verwijderen" }, "\u{1F5D1}"))));
   })))), subtab === "medewerkers" && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: SS.cT }, "Medewerkers (", medewerkers.length, ")"), /* @__PURE__ */ React.createElement("div", { style: { ...alertW, marginBottom: 14, marginTop: 8 } }, "\u26A0 PINs worden veilig opgeslagen. Deel een PIN alleen persoonlijk mee aan de medewerker."), /* @__PURE__ */ React.createElement("div", { style: { background: C.light, borderRadius: 8, padding: 14, marginBottom: 16 } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 12, marginBottom: 10 } }, "Nieuwe medewerker toevoegen"), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr auto", gap: 8, alignItems: "end" } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: SS.lbl }, "Naam"), /* @__PURE__ */ React.createElement("input", { style: SS.inp, value: nieuwNaam, onChange: function(e) {
     setNieuwNaam(e.target.value);
   }, placeholder: "Voornaam" })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: SS.lbl }, "PIN (4-6 cijfers)"), /* @__PURE__ */ React.createElement(
@@ -6306,16 +6504,57 @@ function KioskBeheerTab() {
       },
       "Kopieer"
     )), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontSize: 11, color: C.muted } }, a.laatste_online ? new Date(a.laatste_online).toLocaleString("nl-NL") : "Nog nooit"), /* @__PURE__ */ React.createElement("td", { style: SS.td }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: a.actief ? C.green : C.muted } }, a.actief ? "✓ Actief" : "Inactief")));
-  })))), subtab === "haccp" && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: SS.cT }, "HACCP Controlepunten"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.muted, marginBottom: 14 } }, "Grenswaarden gebaseerd op Horeko configuratie \xB7 aanpasbaar per outlet"), ["west", "weesp"].map(function(outletCode) {
+  })))), subtab === "haccp" && /* @__PURE__ */ React.createElement("div", null, haccpBewerk && /* @__PURE__ */ React.createElement(
+    "div",
+    {
+      style: { position: "fixed", inset: 0, background: "rgba(0,45,65,0.6)", zIndex: 1e3, display: "flex", alignItems: "center", justifyContent: "center" },
+      onClick: function(e) {
+        if (e.target === e.currentTarget) setHaccpBewerk(null);
+      }
+    },
+    /* @__PURE__ */ React.createElement("div", { style: { background: "#fff", borderRadius: 14, width: "min(480px,95vw)", boxShadow: "0 8px 40px rgba(0,45,65,.3)" } }, /* @__PURE__ */ React.createElement("div", { style: { background: C.night, padding: "12px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", borderRadius: "14px 14px 0 0" } }, /* @__PURE__ */ React.createElement("div", { style: { color: C.white, fontWeight: 900, fontSize: 14 } }, haccpBewerk.id ? "Punt bewerken" : "Nieuw HACCP punt"), /* @__PURE__ */ React.createElement("button", { onClick: function() {
+      setHaccpBewerk(null);
+    }, style: { background: "transparent", border: "none", color: C.white, fontSize: 20, cursor: "pointer" } }, "\u2715")), /* @__PURE__ */ React.createElement("div", { style: { padding: 20 } }, /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 12 } }, /* @__PURE__ */ React.createElement("div", { style: SS.lbl }, "Naam"), /* @__PURE__ */ React.createElement("input", { style: SS.inp, value: haccpBewerk.naam || "", onChange: function(e) {
+      setHaccpBewerk(function(p) {
+        return Object.assign({}, p, { naam: e.target.value });
+      });
+    }, placeholder: "bijv. Koelkast 6" })), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: SS.lbl }, "Keuken"), /* @__PURE__ */ React.createElement("select", { style: SS.inp, value: haccpBewerk.outlet_code || "west", onChange: function(e) {
+      setHaccpBewerk(function(p) {
+        return Object.assign({}, p, { outlet_code: e.target.value });
+      });
+    } }, /* @__PURE__ */ React.createElement("option", { value: "west" }, "Amsterdam West"), /* @__PURE__ */ React.createElement("option", { value: "weesp" }, "Weesp"))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: SS.lbl }, "Type"), /* @__PURE__ */ React.createElement("select", { style: SS.inp, value: haccpBewerk.type || "koeling", onChange: function(e) {
+      setHaccpBewerk(function(p) {
+        return Object.assign({}, p, { type: e.target.value });
+      });
+    } }, ["koeling", "vriezer", "frituur", "bereiding", "serveren", "ontvangst", "vaatwasser", "overig"].map(function(t) {
+      return /* @__PURE__ */ React.createElement("option", { key: t }, t);
+    }))), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: SS.lbl }, "Min temp (\xB0C)"), /* @__PURE__ */ React.createElement("input", { style: SS.inp, type: "number", value: haccpBewerk.min_temp || "", onChange: function(e) {
+      setHaccpBewerk(function(p) {
+        return Object.assign({}, p, { min_temp: e.target.value });
+      });
+    }, placeholder: "bijv. 2" })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: SS.lbl }, "Max temp (\xB0C)"), /* @__PURE__ */ React.createElement("input", { style: SS.inp, type: "number", value: haccpBewerk.max_temp || "", onChange: function(e) {
+      setHaccpBewerk(function(p) {
+        return Object.assign({}, p, { max_temp: e.target.value });
+      });
+    }, placeholder: "bijv. 7" }))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10 } }, /* @__PURE__ */ React.createElement("button", { style: btnP, onClick: slaaHaccpOp }, "Opslaan"), /* @__PURE__ */ React.createElement("button", { style: btnSG, onClick: function() {
+      setHaccpBewerk(null);
+    } }, "Annuleren"))))
+  ), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 } }, /* @__PURE__ */ React.createElement("div", { style: SS.cT }, "HACCP Controlepunten"), /* @__PURE__ */ React.createElement("button", { style: btnP, onClick: function() {
+    setHaccpBewerk(Object.assign({}, haccpLeeg));
+  } }, "+ Nieuw punt")), ["west", "weesp"].map(function(outletCode) {
     var outletNaam = outletCode === "west" ? "Keuken Amsterdam West" : "Keuken Weesp";
     var punten = haccp.filter(function(p) {
       return p.outlet_code === outletCode;
     });
-    return /* @__PURE__ */ React.createElement("div", { key: outletCode, style: { marginBottom: 20 } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 900, fontSize: 13, color: C.night, marginBottom: 8, borderBottom: "2px solid " + C.aqua, paddingBottom: 4 } }, outletNaam, " (", punten.length, " controlepunten)"), /* @__PURE__ */ React.createElement("table", { style: { ...SS.tbl, fontSize: 12 } }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, ["Naam", "Type", "Min (\xB0C)", "Max (\xB0C)", "Status"].map(function(h) {
+    return /* @__PURE__ */ React.createElement("div", { key: outletCode, style: { marginBottom: 20 } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 900, fontSize: 13, color: C.night, marginBottom: 8, borderBottom: "2px solid " + C.aqua, paddingBottom: 4 } }, outletNaam, " (", punten.length, " punten)"), /* @__PURE__ */ React.createElement("table", { style: { ...SS.tbl, fontSize: 12 } }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, ["Naam", "Type", "Min \xB0C", "Max \xB0C", "Sensor", ""].map(function(h) {
       return /* @__PURE__ */ React.createElement("th", { key: h, style: SS.th }, h);
     }))), /* @__PURE__ */ React.createElement("tbody", null, punten.map(function(p) {
       var typeKl = { koeling: C.aqua, vriezer: "#5C6BC0", frituur: C.hot, bereiding: C.green }[p.type] || C.muted;
-      return /* @__PURE__ */ React.createElement("tr", { key: p.id }, /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 700 } }, p.naam), /* @__PURE__ */ React.createElement("td", { style: SS.td }, /* @__PURE__ */ React.createElement("span", { style: { background: typeKl + "22", color: typeKl, border: "1px solid " + typeKl + "44", borderRadius: 4, padding: "1px 6px", fontSize: 10, fontWeight: 700 } }, p.type)), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 700, color: C.aqua } }, p.min_temp !== null ? p.min_temp + "\xB0C" : "—"), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 700, color: C.hot } }, p.max_temp !== null ? p.max_temp + "\xB0C" : "—"), /* @__PURE__ */ React.createElement("td", { style: SS.td }, p.sensor_mac ? /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: C.green } }, "\u{1F535} Sensor gekoppeld") : /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: C.muted } }, "Handmatig")));
+      return /* @__PURE__ */ React.createElement("tr", { key: p.id }, /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 700 } }, p.naam), /* @__PURE__ */ React.createElement("td", { style: SS.td }, /* @__PURE__ */ React.createElement("span", { style: { background: typeKl + "22", color: typeKl, border: "1px solid " + typeKl + "44", borderRadius: 4, padding: "1px 6px", fontSize: 10, fontWeight: 700 } }, p.type)), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 700, color: C.aqua } }, p.min_temp !== null ? p.min_temp + "\xB0C" : "—"), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 700, color: C.hot } }, p.max_temp !== null ? p.max_temp + "\xB0C" : "—"), /* @__PURE__ */ React.createElement("td", { style: SS.td }, p.sensor_mac ? /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: C.green } }, "\u{1F535} Gekoppeld") : /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: C.muted } }, "Handmatig")), /* @__PURE__ */ React.createElement("td", { style: SS.td }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 4 } }, /* @__PURE__ */ React.createElement("button", { style: { ...btnSG, fontSize: 10 }, onClick: function() {
+        setHaccpBewerk(Object.assign({}, p));
+      }, title: "Bewerken" }, "\u270F"), /* @__PURE__ */ React.createElement("button", { style: { ...btnSG, fontSize: 10, color: C.hot }, onClick: function() {
+        verwijderHaccp(p);
+      }, title: "Verwijderen" }, "\u{1F5D1}"))));
     }))));
   })), subtab === "waste" && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: SS.cT }, "Waste Module"), /* @__PURE__ */ React.createElement("div", { style: { ...alertW, margin: "12px 0" } }, "\u{1F4F1} Waste wordt geregistreerd via de kiosk of via WhatsApp foto's naar de waste bot. Hier stel je de redenen en drempelwaarden in."), /* @__PURE__ */ React.createElement("div", { style: { background: C.light, borderRadius: 8, padding: 14, marginBottom: 16 } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 12, marginBottom: 8 } }, "16 afvalredenen (uit Horeko)"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6 } }, [
     { naam: "Over datum", kleur: "#FE424D" },
@@ -6579,15 +6818,15 @@ function FinancieelScreen() {
     });
   }, [tab]);
   function importeerOmzetVanRecras() {
-    var boekingen = window._recrasBoekingen || [];
-    if (!boekingen.length) {
+    var boekingen2 = window._recrasBoekingen || [];
+    if (!boekingen2.length) {
       alert("Importeer eerst boekingen via de Import tab.");
       return;
     }
     setImportBezig(true);
     setImportLog(["Starten met importeren..."]);
     var rijen = [];
-    boekingen.forEach(function(b) {
+    boekingen2.forEach(function(b) {
       (b.regels || []).forEach(function(r) {
         if ((r.menuNaam || "").toLowerCase().includes("add up")) return;
         var kp = (window._stamKoppelingen || []).find(function(k) {
@@ -7197,7 +7436,7 @@ function KioskApp() {
       );
     }))));
   }
-  var boekingen = dagpakket ? dagpakket.boekingen_json || [] : [];
+  var boekingen2 = dagpakket ? dagpakket.boekingen_json || [] : [];
   var tijden = dagpakket ? dagpakket.tijden_json || [] : [];
   var buffet = dagpakket ? dagpakket.buffet_json || [] : [];
   var vandaagStr = (/* @__PURE__ */ new Date()).toLocaleDateString("nl-NL", { weekday: "long", day: "numeric", month: "long" });
@@ -7224,7 +7463,7 @@ function KioskApp() {
     return /* @__PURE__ */ React.createElement("button", { key: item[0], style: tabBtn(actieveTab === item[0]), onClick: function() {
       setActieveTab(item[0]);
     } }, item[1]);
-  })), /* @__PURE__ */ React.createElement("div", { style: { padding: "16px 16px 80px", overflowY: "auto", maxHeight: "calc(100vh - 140px)" } }, actieveTab === "dag" && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.muted, marginBottom: 12, textTransform: "uppercase", letterSpacing: 1 } }, boekingen.length, " boekingen vandaag"), boekingen.length === 0 && /* @__PURE__ */ React.createElement("div", { style: { ...kaartStijl, textAlign: "center", color: C.muted } }, "Geen boekingen vandaag in het dagpakket."), boekingen.slice().sort(function(a, b) {
+  })), /* @__PURE__ */ React.createElement("div", { style: { padding: "16px 16px 80px", overflowY: "auto", maxHeight: "calc(100vh - 140px)" } }, actieveTab === "dag" && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.muted, marginBottom: 12, textTransform: "uppercase", letterSpacing: 1 } }, boekingen2.length, " boekingen vandaag"), boekingen2.length === 0 && /* @__PURE__ */ React.createElement("div", { style: { ...kaartStijl, textAlign: "center", color: C.muted } }, "Geen boekingen vandaag in het dagpakket."), boekingen2.slice().sort(function(a, b) {
     return (a.deadline || "").localeCompare(b.deadline || "");
   }).map(function(b) {
     var vg = voortgang.find(function(v) {
