@@ -7052,7 +7052,7 @@ function FinancieelScreen() {
         var m = kp ? (window._stamMenus || []).find(function(mm) {
           return mm.id === kp.menu_id;
         }) : null;
-        var datum = b.deadline ? b.deadline.split("T")[0] : (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
+        var datum = b.deadline ? b.deadline.replace("T", " ").split(" ")[0] : (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
         var hashStr = b.id + "_" + (r.menuNaam || "") + "_" + datum;
         var hash = hashStr.split("").reduce(function(a, c) {
           return (a << 5) - a + c.charCodeAt(0) | 0;
@@ -8070,7 +8070,7 @@ function KioskApp() {
   var buffet = dagpakket ? dagpakket.buffet_json || [] : [];
   var boekingenPerDag = {};
   boekingen.forEach(function(b) {
-    var d = (b.deadline || "").split("T")[0] || vandaag;
+    var d = (b.deadline || "").replace("T", " ").split(" ")[0] || vandaag;
     if (!boekingenPerDag[d]) boekingenPerDag[d] = [];
     boekingenPerDag[d].push(b);
   });
