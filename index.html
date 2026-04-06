@@ -714,126 +714,129 @@ function HomeScreen({ setSc }) {
   var [dagpakketStatus, setDagpakketStatus] = useState(null);
   var [dagpakketPubliceren, setDagpakketPubliceren] = useState(false);
   var [dagpakketStatusInfo, setDagpakketStatusInfo] = useState({});
+  function laadDagpakketStatus() {
+    if (!window._supa) return;
+    var vandaag2 = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
+    window._supa.from("kiosk_dagpakketten").select("outlet_code, status, activiteiten_count, eerste_activiteit_op").eq("datum", vandaag2).then(function(r) {
+      if (!r.data) return;
+      var info = {};
+      r.data.forEach(function(p) {
+        info[p.outlet_code] = p;
+      });
+      setDagpakketStatusInfo(info);
+      var statussen = r.data.map(function(p) {
+        return p.status;
+      });
+      if (statussen.includes("actief")) setDagpakketStatus("actief");
+      else if (statussen.includes("gepubliceerd")) setDagpakketStatus("gepubliceerd");
+      else if (statussen.includes("afgesloten")) setDagpakketStatus("afgesloten");
+    });
+  }
+  function publiceerDagpakket(doelStatus) {
+    var vandaag2 = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
+    var alleBoekingen = window._recrasBoekingen || [];
+    var stamMenus = window._stamMenus || [];
+    var stamGerechten = window._stamGerechten || [];
+    var stamKoppelingen = window._stamKoppelingen || [];
+    var westLocaties = ["Loods 2", "Loods 4", "Loods 5", "Loods 6", "Terras Loods 6", "Pup - Bar", "Ronde Tent", "Stretchtent", "Terrace", "Beachclub", "Beachclub 2", "Loods 7", "Loods 7 Patio", "Combinatie | Loods 1, 2, 3 & Terrace"];
+    var actiefWest = dagpakketStatusInfo["west"] && dagpakketStatusInfo["west"].status === "actief";
+    var actiefWeesp = dagpakketStatusInfo["weesp"] && dagpakketStatusInfo["weesp"].status === "actief";
+    if (doelStatus === "gepubliceerd" && (actiefWest || actiefWeesp)) {
+      var welke = [actiefWest ? "Amsterdam West" : "", actiefWeesp ? "Weesp" : ""].filter(Boolean).join(" en ");
+      if (!window.confirm("\u26A0 De keuken in " + welke + " werkt momenteel met dit dagpakket.\n\nAls je opnieuw publiceert worden de opzetlijsten bijgewerkt maar de voortgang (afgetekende boekingen) blijft bewaard.\n\nWil je doorgaan?")) return;
+    }
+    setDagpakketPubliceren(true);
+    var outletCodes = ["west", "weesp"];
+    var promises = outletCodes.map(function(code) {
+      var outletBoekingen = alleBoekingen.filter(function(b) {
+        if (code === "west") return westLocaties.indexOf(b.locatie || "") >= 0;
+        return westLocaties.indexOf(b.locatie || "") < 0;
+      });
+      var opzetLijst = [];
+      outletBoekingen.forEach(function(b) {
+        (b.regels || []).forEach(function(r) {
+          if ((r.menuNaam || "").toLowerCase().includes("add up")) return;
+          var kp = stamKoppelingen.find(function(k) {
+            return (k.recras_naam || "").trim() === (r.menuNaam || "").trim();
+          });
+          var m = kp ? stamMenus.find(function(mm) {
+            return mm.id === kp.menu_id;
+          }) : null;
+          if (!m) return;
+          var psNaam = "";
+          (window._stamProductgroepen || []).forEach(function(pg) {
+            (pg.soorten || []).forEach(function(ps) {
+              if (ps.id === m.productsoort_id) psNaam = pg.naam + " \u203A " + ps.naam;
+            });
+          });
+          var gerechtenLijst = (m.menu_gerechten || []).map(function(mg) {
+            var g = stamGerechten.find(function(x) {
+              return x.id === mg.gerecht_id;
+            });
+            if (!g) return null;
+            return { naam: g.naam, portiesPerPersoon: mg.porties_per_persoon || 1, portiesEff: Math.ceil(r.aantal * (mg.porties_per_persoon || 1)) };
+          }).filter(Boolean);
+          opzetLijst.push({ boekingId: b.id, boekingNaam: b.naam, menuNaam: m.naam, psNaam, deadline: b.deadline, deadlineTijd: b.deadlineTijd, deadlineDag: b.deadlineDag, locatie: b.locatie, personen: r.aantal, gerechten: gerechtenLijst });
+        });
+      });
+      var buffetLijst = outletBoekingen.filter(function(b) {
+        return (b.regels || []).some(function(r) {
+          return (r.menuNaam || "").toLowerCase().includes("bbq");
+        });
+      }).map(function(b) {
+        var bbqGerechten = [];
+        (b.regels || []).filter(function(r) {
+          return (r.menuNaam || "").toLowerCase().includes("bbq");
+        }).forEach(function(r) {
+          var kp = stamKoppelingen.find(function(k) {
+            return (k.recras_naam || "").trim() === (r.menuNaam || "").trim();
+          });
+          var m = kp ? stamMenus.find(function(mm) {
+            return mm.id === kp.menu_id;
+          }) : null;
+          if (!m) return;
+          (m.menu_gerechten || []).forEach(function(mg) {
+            var g = stamGerechten.find(function(x) {
+              return x.id === mg.gerecht_id;
+            });
+            if (!g) return;
+            bbqGerechten.push({ naam: g.naam, portiesEff: Math.ceil(r.aantal * (mg.porties_per_persoon || 1)), personen: r.aantal });
+          });
+        });
+        return { id: b.id, naam: b.naam, locatie: b.locatie, tijdLabel: b.deadlineTijd, deadlineDag: b.deadlineDag, gerechten: bbqGerechten };
+      });
+      var bestaand = dagpakketStatusInfo[code];
+      var versie = bestaand ? (bestaand.publicatie_versie || 1) + 1 : 1;
+      return window._supa.from("kiosk_dagpakketten").upsert({
+        outlet_code: code,
+        datum: vandaag2,
+        status: doelStatus,
+        boekingen_json: outletBoekingen,
+        opzet_json: opzetLijst,
+        tijden_json: outletBoekingen.map(function(b) {
+          return { boeking_id: b.id, naam: b.naam, tijd: b.deadlineTijd, dag: b.deadlineDag, locatie: b.locatie };
+        }),
+        buffet_json: buffetLijst,
+        gepubliceerd_op: (/* @__PURE__ */ new Date()).toISOString(),
+        gepubliceerd_door: "backoffice",
+        publicatie_versie: versie
+      }, { onConflict: "outlet_code,datum" });
+    });
+    Promise.all(promises).then(function() {
+      setDagpakketPubliceren(false);
+      laadDagpakketStatus();
+      if (doelStatus === "gepubliceerd") alert("✓ Gepubliceerd naar alle kiosks!");
+      else alert("✓ Concept opgeslagen");
+    }).catch(function(e) {
+      setDagpakketPubliceren(false);
+      alert("\u26A0 Fout: " + e.message);
+    });
+  }
   function checkBBQConflicten(boekingen2) {
-    function laadDagpakketStatus() {
-      if (!window._supa) return;
-      var vandaag2 = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
-      window._supa.from("kiosk_dagpakketten").select("outlet_code, status, activiteiten_count, eerste_activiteit_op").eq("datum", vandaag2).then(function(r) {
-        if (!r.data) return;
-        var info = {};
-        r.data.forEach(function(p) {
-          info[p.outlet_code] = p;
-        });
-        setDagpakketStatusInfo(info);
-        var statussen = r.data.map(function(p) {
-          return p.status;
-        });
-        if (statussen.includes("actief")) setDagpakketStatus("actief");
-        else if (statussen.includes("gepubliceerd")) setDagpakketStatus("gepubliceerd");
-        else if (statussen.includes("afgesloten")) setDagpakketStatus("afgesloten");
-      });
+    if (!boekingen2 || boekingen2.length === 0) {
+      setBbqConflicten(null);
+      return;
     }
-    function publiceerDagpakket2(doelStatus) {
-      var vandaag2 = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
-      var alleBoekingen = window._recrasBoekingen || [];
-      var stamMenus = window._stamMenus || [];
-      var stamGerechten = window._stamGerechten || [];
-      var stamKoppelingen = window._stamKoppelingen || [];
-      var westLocaties = ["Loods 2", "Loods 4", "Loods 5", "Loods 6", "Terras Loods 6", "Pup - Bar", "Ronde Tent", "Stretchtent", "Terrace", "Beachclub", "Beachclub 2", "Loods 7", "Loods 7 Patio", "Combinatie | Loods 1, 2, 3 & Terrace"];
-      var actiefWest = dagpakketStatusInfo["west"] && dagpakketStatusInfo["west"].status === "actief";
-      var actiefWeesp = dagpakketStatusInfo["weesp"] && dagpakketStatusInfo["weesp"].status === "actief";
-      if (doelStatus === "gepubliceerd" && (actiefWest || actiefWeesp)) {
-        var welke = [actiefWest ? "Amsterdam West" : "", actiefWeesp ? "Weesp" : ""].filter(Boolean).join(" en ");
-        if (!window.confirm("\u26A0 De keuken in " + welke + " werkt momenteel met dit dagpakket.\n\nAls je opnieuw publiceert worden de opzetlijsten bijgewerkt maar de voortgang (afgetekende boekingen) blijft bewaard.\n\nWil je doorgaan?")) return;
-      }
-      setDagpakketPubliceren(true);
-      var outletCodes = ["west", "weesp"];
-      var promises = outletCodes.map(function(code) {
-        var outletBoekingen = alleBoekingen.filter(function(b) {
-          if (code === "west") return westLocaties.indexOf(b.locatie || "") >= 0;
-          return westLocaties.indexOf(b.locatie || "") < 0;
-        });
-        var opzetLijst = [];
-        outletBoekingen.forEach(function(b) {
-          (b.regels || []).forEach(function(r) {
-            if ((r.menuNaam || "").toLowerCase().includes("add up")) return;
-            var kp = stamKoppelingen.find(function(k) {
-              return (k.recras_naam || "").trim() === (r.menuNaam || "").trim();
-            });
-            var m = kp ? stamMenus.find(function(mm) {
-              return mm.id === kp.menu_id;
-            }) : null;
-            if (!m) return;
-            var psNaam = "";
-            (window._stamProductgroepen || []).forEach(function(pg) {
-              (pg.soorten || []).forEach(function(ps) {
-                if (ps.id === m.productsoort_id) psNaam = pg.naam + " \u203A " + ps.naam;
-              });
-            });
-            var gerechtenLijst = (m.menu_gerechten || []).map(function(mg) {
-              var g = stamGerechten.find(function(x) {
-                return x.id === mg.gerecht_id;
-              });
-              if (!g) return null;
-              return { naam: g.naam, portiesPerPersoon: mg.porties_per_persoon || 1, portiesEff: Math.ceil(r.aantal * (mg.porties_per_persoon || 1)) };
-            }).filter(Boolean);
-            opzetLijst.push({ boekingId: b.id, boekingNaam: b.naam, menuNaam: m.naam, psNaam, deadline: b.deadline, deadlineTijd: b.deadlineTijd, deadlineDag: b.deadlineDag, locatie: b.locatie, personen: r.aantal, gerechten: gerechtenLijst });
-          });
-        });
-        var buffetLijst = outletBoekingen.filter(function(b) {
-          return (b.regels || []).some(function(r) {
-            return (r.menuNaam || "").toLowerCase().includes("bbq");
-          });
-        }).map(function(b) {
-          var bbqGerechten = [];
-          (b.regels || []).filter(function(r) {
-            return (r.menuNaam || "").toLowerCase().includes("bbq");
-          }).forEach(function(r) {
-            var kp = stamKoppelingen.find(function(k) {
-              return (k.recras_naam || "").trim() === (r.menuNaam || "").trim();
-            });
-            var m = kp ? stamMenus.find(function(mm) {
-              return mm.id === kp.menu_id;
-            }) : null;
-            if (!m) return;
-            (m.menu_gerechten || []).forEach(function(mg) {
-              var g = stamGerechten.find(function(x) {
-                return x.id === mg.gerecht_id;
-              });
-              if (!g) return;
-              bbqGerechten.push({ naam: g.naam, portiesEff: Math.ceil(r.aantal * (mg.porties_per_persoon || 1)), personen: r.aantal });
-            });
-          });
-          return { id: b.id, naam: b.naam, locatie: b.locatie, tijdLabel: b.deadlineTijd, deadlineDag: b.deadlineDag, gerechten: bbqGerechten };
-        });
-        var bestaand = dagpakketStatusInfo[code];
-        var versie = bestaand ? (bestaand.publicatie_versie || 1) + 1 : 1;
-        return window._supa.from("kiosk_dagpakketten").upsert({
-          outlet_code: code,
-          datum: vandaag2,
-          status: doelStatus,
-          boekingen_json: outletBoekingen,
-          opzet_json: opzetLijst,
-          tijden_json: outletBoekingen.map(function(b) {
-            return { boeking_id: b.id, naam: b.naam, tijd: b.deadlineTijd, dag: b.deadlineDag, locatie: b.locatie };
-          }),
-          buffet_json: buffetLijst,
-          gepubliceerd_op: (/* @__PURE__ */ new Date()).toISOString(),
-          gepubliceerd_door: "backoffice",
-          publicatie_versie: versie
-        }, { onConflict: "outlet_code,datum" });
-      });
-      Promise.all(promises).then(function() {
-        setDagpakketPubliceren(false);
-        laadDagpakketStatus();
-        if (doelStatus === "gepubliceerd") alert("✓ Gepubliceerd naar alle kiosks!");
-        else alert("✓ Concept opgeslagen");
-      }).catch(function(e) {
-        setDagpakketPubliceren(false);
-        alert("\u26A0 Fout: " + e.message);
-      });
-    }
-    if (!boekingen2 || boekingen2.length === 0) return;
     var locatieConfig = {
       // Weesp: 2 setups
       "Archery Tag WP": 2,
