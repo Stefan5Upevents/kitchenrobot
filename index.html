@@ -753,6 +753,14 @@ function AllergenenKaart({ boeking, onClose }) {
 
       /* Tabel */
       React.createElement("div", { style: { overflowY:"auto",padding:"0 22px 22px",flex:1 } },
+        /* LEGENDA */
+        React.createElement("div", { style: { display:"flex",gap:12,flexWrap:"wrap",marginBottom:12,marginTop:8,padding:"10px 14px",background:"#F8FAFC",borderRadius:9,border:"1px solid #D8E8EF" } },
+          React.createElement("span", { style: { fontSize:11,fontWeight:700,color:"#3D5166",marginRight:4 } }, "Legenda:"),
+          React.createElement("span", { style: { display:"inline-flex",alignItems:"center",gap:5,background:"#FFEBEE",border:"1px solid #EF9A9A",borderRadius:5,padding:"3px 9px",fontSize:11,fontWeight:700,color:"#C62828" } }, "⚠ Bevat"),
+          React.createElement("span", { style: { display:"inline-flex",alignItems:"center",gap:5,background:"#FFF8E1",border:"1px dashed #FFB74D",borderRadius:5,padding:"3px 9px",fontSize:11,fontWeight:700,color:"#E65100" } }, "? Mogelijk"),
+          React.createElement("span", { style: { display:"inline-flex",alignItems:"center",gap:5,background:"#E8F5E9",border:"1px solid #A5D6A7",borderRadius:5,padding:"3px 9px",fontSize:11,fontWeight:700,color:"#2E7D32" } }, "✓ Vrij"),
+          React.createElement("span", { style: { display:"inline-flex",alignItems:"center",gap:5,background:"#F5F5F5",border:"1px solid #E0E0E0",borderRadius:5,padding:"3px 9px",fontSize:11,fontWeight:700,color:"#6B8A9A" } }, "· Onbekend")
+        ),
         gerechtenInBoeking.length === 0 && React.createElement("div", { style: { padding:20,color:"#6B8A9A",fontSize:13 } }, "Geen gerechten gevonden. Zorg dat de menus gekoppeld zijn aan boekingen."),
         gerechtenInBoeking.length > 0 && React.createElement("div", { style: { overflowX:"auto",marginTop:16 } },
           React.createElement("table", { style: { width:"100%",borderCollapse:"collapse",fontSize:13 } },
@@ -762,9 +770,11 @@ function AllergenenKaart({ boeking, onClose }) {
                 React.createElement("th", { style: { background:"#002D41",color:"#DAEDF3",padding:"12px 16px",textAlign:"left",fontWeight:700,fontSize:11,letterSpacing:1,textTransform:"uppercase",minWidth:180,position:"sticky",left:0,zIndex:2 } }, "Gerecht"),
                 /* Per allergeen een kolom — breed genoeg voor emoji + naam */
                 ALLERGENEN_14.map(function(a) {
-                  return React.createElement("th", { key:a.key, style: { background:"#002D41",color:"#DAEDF3",padding:"10px 8px",textAlign:"center",fontWeight:700,fontSize:10,minWidth:70,borderLeft:"1px solid rgba(255,255,255,.1)" } },
-                    React.createElement("div", { style: { fontSize:18,marginBottom:2 } }, a.emoji),
-                    React.createElement("div", { style: { fontSize:9,lineHeight:1.2 } }, a.label)
+                  return React.createElement("th", { key:a.key, style: { background:"#002D41",color:"#DAEDF3",padding:"10px 8px",textAlign:"center",fontWeight:700,fontSize:10,minWidth:80,borderLeft:"1px solid rgba(255,255,255,.1)" } },
+                    React.createElement("div", { style: { display:"flex",flexDirection:"column",alignItems:"center",gap:2 } },
+                      React.createElement("span", { style: { fontSize:16 } }, a.emoji),
+                      React.createElement("span", { style: { fontSize:9,fontWeight:700,lineHeight:1.2,textAlign:"center",whiteSpace:"normal",maxWidth:60 } }, a.label)
+                    )
                   );
                 }),
                 React.createElement("th", { style: { background:"#002D41",color:"#DAEDF3",padding:"10px 8px",textAlign:"center",fontSize:10,minWidth:50,borderLeft:"1px solid rgba(255,255,255,.2)" } }, "Check")
@@ -2273,9 +2283,10 @@ function BuffetScreen({ actieve, setActieve }) {
           var isAct = d.dag === huidigDag;
           return React.createElement("button", {
             key: d.dag,
-            style: {background: isAct ? C.night : C.white, color: isAct ? C.white : C.night,
-              border: "1.5px solid "+(isAct ? C.night : C.border), borderRadius:7,
-              padding:"6px 14px", fontFamily:"inherit", fontWeight:700, fontSize:12, cursor:"pointer"},
+            style: {background: isAct ? C.hot : C.white, color: isAct ? C.white : C.night,
+              border: "1.5px solid "+(isAct ? C.hot : "#D8E8EF"), borderRadius:8,
+              padding:"8px 16px", fontFamily:"inherit", fontWeight:700, fontSize:12, cursor:"pointer",
+              boxShadow: isAct ? "0 2px 8px rgba(254,66,77,.25)" : "none"},
             onClick: function() {
               var f = formulieren.find(function(f2){ return f2.boekingDag === d.dag; });
               if (f) setActieve(f);
@@ -2302,7 +2313,7 @@ function BuffetScreen({ actieve, setActieve }) {
       "button",
       {
         key: ps_.id,
-        style: { background: isAct ? C.aqua : C.white, color: isAct ? C.white : C.night, border: "1.5px solid " + (isAct ? C.aqua : C.border), borderRadius: 6, padding: "5px 12px", fontFamily: "inherit", fontWeight: 700, fontSize: 11, cursor: "pointer" },
+        style: { background: isAct ? C.night : C.white, color: isAct ? C.white : C.night, border: "1.5px solid " + (isAct ? C.night : "#D8E8EF"), borderRadius: 6, padding: "6px 14px", fontFamily: "inherit", fontWeight: 700, fontSize: 11, cursor: "pointer" },
         onClick: function() {
           var f = formulieren.find(function(f2) {
             return f2.pgId === pgId && f2.psId === ps_.id;
@@ -6456,15 +6467,17 @@ function AllergenenOverzichtTab({ gerechten, sligro, productgroepen }) {
     XLSX.writeFile(wb, "KitchenRobot_Allergenen.xlsx");
   }
   function allergeenRij(bevat, mogelijk) {
-    return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 3 } }, ALLERGENEN_14.filter(function(a) {
-      return bevat.includes(a.key);
-    }).map(function(a) {
-      return /* @__PURE__ */ React.createElement("span", { key: a.key, title: a.label, style: { fontSize: 16, cursor: "default" } }, a.emoji);
-    }), ALLERGENEN_14.filter(function(a) {
-      return mogelijk.includes(a.key);
-    }).map(function(a) {
-      return /* @__PURE__ */ React.createElement("span", { key: a.key, title: "Mogelijk: " + a.label, style: { fontSize: 16, opacity: 0.55, cursor: "default" } }, a.emoji);
-    }), bevat.length === 0 && mogelijk.length === 0 && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.green } }, "\u2705 Vrij"));
+    return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 4 } },
+      ALLERGENEN_14.filter(function(a) { return bevat.includes(a.key); }).map(function(a) {
+        return /* @__PURE__ */ React.createElement("span", { key: a.key, style: { display:"inline-flex",alignItems:"center",gap:4,background:"#FFEBEE",color:"#C62828",border:"1px solid #EF9A9A",borderRadius:6,padding:"3px 8px",fontSize:11,fontWeight:700,whiteSpace:"nowrap" } },
+          React.createElement("span",{style:{fontSize:14}},a.emoji), a.label);
+      }),
+      ALLERGENEN_14.filter(function(a) { return mogelijk.includes(a.key); }).map(function(a) {
+        return /* @__PURE__ */ React.createElement("span", { key: a.key, style: { display:"inline-flex",alignItems:"center",gap:4,background:"#FFF8E1",color:"#E65100",border:"1px dashed #FFB74D",borderRadius:6,padding:"3px 8px",fontSize:11,fontWeight:700,whiteSpace:"nowrap" } },
+          React.createElement("span",{style:{fontSize:14}},a.emoji), a.label+"?");
+      }),
+      bevat.length === 0 && mogelijk.length === 0 && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.green, fontWeight:700 } }, "\u2705 Vrij van allergenen")
+    );
   }
   function renderDetail() {
     if (!detailItem) return null;
@@ -7678,6 +7691,7 @@ function AllergenenScreen() {
 function FinancieelScreen() {
   var [tab, setTab] = useState("samen");
   var [openBoeking, setOpenBoeking] = useState(null);
+  var [openMenuRegel, setOpenMenuRegel] = useState(null);
   var [menuEng, setMenuEng] = useState([]);
   var [omzetData, setOmzetData] = useState([]);
   var [engLaden, setEngLaden] = useState(false);
@@ -7975,7 +7989,53 @@ function FinancieelScreen() {
             }, 0);
           }, 0);
         })();
-        return /* @__PURE__ */ React.createElement("tr", { key: ri, style: { background: ri % 2 === 0 ? C2.white : "#F5F8FA" } }, /* @__PURE__ */ React.createElement("td", { style: { padding: "5px 10px", fontWeight: 700 } }, m3 ? m3.naam : r.menuNaam), /* @__PURE__ */ React.createElement("td", { style: { padding: "5px 10px" } }, r.aantal, "\xD7"), /* @__PURE__ */ React.createElement("td", { style: { padding: "5px 10px" } }, "€ " + rOmzetExcl.toFixed(2)), /* @__PURE__ */ React.createElement("td", { style: { padding: "5px 10px" } }, "€ " + rInkoop.toFixed(2)), /* @__PURE__ */ React.createElement("td", { style: { padding: "5px 10px", color: C2.green } }, "€ " + (rOmzetExcl - rInkoop).toFixed(2)));
+        var menuOpen2 = openMenuRegel === (b.id + "_" + ri);
+        return [
+          /* @__PURE__ */ React.createElement("tr", { key: ri, style: { background: ri%2===0?C2.white:"#F5F8FA", cursor:"pointer" }, onClick: function(e){e.stopPropagation();setOpenMenuRegel(menuOpen2?null:b.id+"_"+ri); } },
+            React.createElement("td", {style:{padding:"5px 10px",fontWeight:700}}, React.createElement("span",{style:{marginRight:6,fontSize:10,color:C2.aqua}},menuOpen2?"▼":"▶"), m3?m3.naam:r.menuNaam),
+            React.createElement("td", {style:{padding:"5px 10px"}}, r.aantal,"×"),
+            React.createElement("td", {style:{padding:"5px 10px"}}, "€ "+rOmzetExcl.toFixed(2)),
+            React.createElement("td", {style:{padding:"5px 10px"}}, "€ "+rInkoop.toFixed(2)),
+            React.createElement("td", {style:{padding:"5px 10px",color:C2.green,fontWeight:700}}, "€ "+(rOmzetExcl-rInkoop).toFixed(2))
+          ),
+          menuOpen2 && m3 && React.createElement("tr", {key:ri+"_g"},
+            React.createElement("td", {colSpan:5, style:{padding:"6px 12px 10px 32px",background:"#F0F5F8",borderLeft:"3px solid "+C2.aqua}},
+              React.createElement("div",{style:{fontWeight:700,fontSize:10,color:C2.muted,marginBottom:6,textTransform:"uppercase",letterSpacing:1}},"Gerechten & kostprijs"),
+              React.createElement("table",{style:{width:"100%",borderCollapse:"collapse",fontSize:11}},
+                React.createElement("thead",null,React.createElement("tr",null,
+                  ["Gerecht","Porties","Kostprijs/portie","Totaal inkoop"].map(function(h){return React.createElement("th",{key:h,style:{background:"#002D41",color:"#DAEDF3",padding:"5px 9px",textAlign:"left",fontSize:9,fontWeight:700,textTransform:"uppercase",letterSpacing:1}},h);})
+                )),
+                React.createElement("tbody",null,
+                  (m3.menu_gerechten||[]).map(function(mg,gi){
+                    var g3=(window._stamGerechten||[]).find(function(g){return g.id===mg.gerecht_id;});
+                    if(!g3) return null;
+                    var psPct2x=opzetPct2(r.aantal,m3.productsoort_id);
+                    var pEff3=r.aantal*(mg.porties_per_persoon||1)*psPct2x;
+                    var kpG=(g3.ingredienten||[]).reduce(function(is,ing){
+                      if(ing.zichtbaar==="nee"||ing.zichtbaar==="nooit") return is;
+                      var sp=(window._stamSligro||[]).find(function(p){return p.id===ing.sligro_id;});
+                      if(!sp) return is;
+                      return is+Math.ceil(pEff3*(parseFloat(ing.gebruik_per_portie)||0)/( parseFloat(sp.hoeveelheid||sp.hoev||1)||1))*(parseFloat(sp.prijs_excl||sp.prijs||0));
+                    },0);
+                    var kpPP=pEff3>0?kpG/pEff3:0;
+                    return React.createElement("tr",{key:gi,style:{background:gi%2===0?"#fff":"#F8FAFC"}},
+                      React.createElement("td",{style:{padding:"4px 9px",fontWeight:700}},
+                        g3.is_gn&&React.createElement("span",{style:{background:"#1AA6B7",color:"#fff",borderRadius:3,padding:"1px 5px",fontSize:8,marginRight:4,fontWeight:700}},"GN"),
+                        g3.naam),
+                      React.createElement("td",{style:{padding:"4px 9px",color:"#1AA6B7",fontWeight:700}},Math.round(pEff3)+"×"),
+                      React.createElement("td",{style:{padding:"4px 9px"}},kpPP>0?"€ "+kpPP.toFixed(3):"—"),
+                      React.createElement("td",{style:{padding:"4px 9px",fontWeight:700,color:kpG>0?"#002D41":"#999"}},kpG>0?"€ "+kpG.toFixed(2):"—")
+                    );
+                  }).filter(Boolean),
+                  React.createElement("tr",{style:{background:"#EEF5FA"}},
+                    React.createElement("td",{colSpan:3,style:{padding:"5px 9px",fontWeight:900,textAlign:"right",fontSize:11}},"Totaal inkoop:"),
+                    React.createElement("td",{style:{padding:"5px 9px",fontWeight:900,color:"#002D41",fontSize:12}},"€ "+rInkoop.toFixed(2))
+                  )
+                )
+              )
+            )
+          )
+        ];
       }))))))
     ];
   })))), tab === "eng" && /* @__PURE__ */ React.createElement("div", null, engLaden && /* @__PURE__ */ React.createElement("div", { style: { padding: 20, color: C.muted, textAlign: "center" } }, "Laden..."), !engLaden && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 16 } }, ["star", "plowhorse", "puzzle", "dog"].map(function(k) {
@@ -8478,7 +8538,147 @@ function GeboekteProductenTab({ standalone }) {
     })), /* @__PURE__ */ React.createElement("tfoot", null, /* @__PURE__ */ React.createElement("tr", { style: { background: C.light } }, /* @__PURE__ */ React.createElement("td", { colSpan: 5, style: { ...SS.td, fontWeight: 700, textAlign: "right" } }, "Totaal excl. BTW"), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 900, color: C.night, textAlign: "right" } }, "€", (rec.totaal_excl || 0).toFixed(2))))))));
   }));
 }
+function VoorraadCheckerTab() {
+  var [voorraad, setVoorraad] = useState([]);
+  var [laden, setLaden] = useState(false);
+  var [zoek, setZoek] = useState("");
+  var [nieuwNaam, setNieuwNaam] = useState("");
+  var [nieuwAantal, setNieuwAantal] = useState("");
+  var [nieuwEenheid, setNieuwEenheid] = useState("st");
+
+  function laad() {
+    if (!window._supa) return;
+    setLaden(true);
+    window._supa.from("voorraad_checker").select("*").order("naam").then(function(r) {
+      setVoorraad(r.data || []);
+      setLaden(false);
+    });
+  }
+  useEffect(function() { laad(); }, []);
+
+  function voegToe() {
+    if (!nieuwNaam.trim() || !window._supa) return;
+    window._supa.from("voorraad_checker").upsert(
+      { naam: nieuwNaam.trim(), hoeveelheid: parseFloat(nieuwAantal)||0, eenheid: nieuwEenheid, bijgewerkt_op: new Date().toISOString() },
+      { onConflict: "naam" }
+    ).then(function(r) { if (!r.error) { setNieuwNaam(""); setNieuwAantal(""); laad(); } });
+  }
+
+  function updateVoorraad(naam, hoeveelheid) {
+    if (!window._supa) return;
+    window._supa.from("voorraad_checker").update({ hoeveelheid: parseFloat(hoeveelheid)||0, bijgewerkt_op: new Date().toISOString() }).eq("naam", naam).then(function() { laad(); });
+  }
+
+  // Bereken benodigd per product vanuit geladen boekingen + stamdata
+  var benodigdMap = {};
+  (window._recrasBoekingen||[]).forEach(function(b) {
+    (b.regels||[]).forEach(function(r) {
+      if ((r.menuNaam||"").toLowerCase().includes("add up")) return;
+      var kp = (window._stamKoppelingen||[]).find(function(k){ return (k.recras_naam||"").trim()===(r.menuNaam||"").trim(); });
+      var m = kp ? (window._stamMenus||[]).find(function(mm){ return mm.id===kp.menu_id; }) : null;
+      if (!m) return;
+      (m.menu_gerechten||[]).forEach(function(mg){
+        var g = (window._stamGerechten||[]).find(function(x){ return x.id===mg.gerecht_id; });
+        if (!g) return;
+        var pEff = r.aantal*(mg.porties_per_persoon||1);
+        (g.ingredienten||[]).forEach(function(ing){
+          if (ing.zichtbaar==="nee"||ing.zichtbaar==="nooit") return;
+          var sp = (window._stamSligro||[]).find(function(p){ return p.id===ing.sligro_id; });
+          if (!sp) return;
+          var gebruikt = pEff*(parseFloat(ing.gebruik_per_portie)||0);
+          var vp = parseFloat(sp.hoeveelheid||sp.hoev||1)||1;
+          if (!benodigdMap[sp.naam]) benodigdMap[sp.naam] = 0;
+          benodigdMap[sp.naam] += Math.ceil(gebruikt/vp);
+        });
+      });
+    });
+  });
+
+  var gefilterd = voorraad.filter(function(v){ return v.naam.toLowerCase().includes(zoek.toLowerCase()); });
+
+  return React.createElement("div", null,
+    React.createElement("div", {style:{background:"#EFF9FB",border:"1.5px solid #1AA6B7",borderRadius:9,padding:"10px 14px",fontSize:12,fontWeight:700,color:"#002D41",marginBottom:14,display:"flex",gap:8}},
+      "ℹ️  Voer hier je huidige voorraad in. Per product zie je hoeveel er nodig is voor de geladen boekingen. De WhatsApp-assistent kan dit lezen om bestelvoorstellen te doen."
+    ),
+    // Nieuw product invoeren
+    React.createElement("div", {style:{background:"#fff",borderRadius:12,padding:18,border:"1.5px solid #D8E8EF",marginBottom:14}},
+      React.createElement("div",{style:{fontWeight:900,fontSize:14,color:"#002D41",marginBottom:12}},"Voorraad bijwerken"),
+      React.createElement("div",{style:{display:"flex",gap:8,flexWrap:"wrap",alignItems:"flex-end"}},
+        React.createElement("div",{style:{flex:2,minWidth:150}},
+          React.createElement("label",{style:{fontWeight:700,fontSize:11,color:"#002D41",marginBottom:4,display:"block"}},"Product"),
+          React.createElement("input",{style:{border:"1.5px solid #D8E8EF",borderRadius:8,padding:"9px 12px",fontFamily:"inherit",fontSize:12,color:"#002D41",width:"100%",outline:"none",boxSizing:"border-box"},
+            placeholder:"Naam (bijv. Kipsaté 200g)",value:nieuwNaam,onChange:function(e){setNieuwNaam(e.target.value);}})
+        ),
+        React.createElement("div",{style:{flex:1,minWidth:80}},
+          React.createElement("label",{style:{fontWeight:700,fontSize:11,color:"#002D41",marginBottom:4,display:"block"}},"Hoeveelheid"),
+          React.createElement("input",{style:{border:"1.5px solid #D8E8EF",borderRadius:8,padding:"9px 12px",fontFamily:"inherit",fontSize:12,color:"#002D41",width:"100%",outline:"none",boxSizing:"border-box"},
+            type:"number",placeholder:"0",value:nieuwAantal,onChange:function(e){setNieuwAantal(e.target.value);}})
+        ),
+        React.createElement("div",{style:{flex:1,minWidth:80}},
+          React.createElement("label",{style:{fontWeight:700,fontSize:11,color:"#002D41",marginBottom:4,display:"block"}},"Eenheid"),
+          React.createElement("select",{style:{border:"1.5px solid #D8E8EF",borderRadius:8,padding:"9px 12px",fontFamily:"inherit",fontSize:12,color:"#002D41",width:"100%",outline:"none",boxSizing:"border-box"},
+            value:nieuwEenheid,onChange:function(e){setNieuwEenheid(e.target.value);}},
+            ["st","kg","g","l","ml","zak","doos","rol","pak"].map(function(u){ return React.createElement("option",{key:u,value:u},u); })
+          )
+        ),
+        React.createElement("button",{style:{background:"#FE424D",color:"#fff",border:"none",borderRadius:8,padding:"9px 18px",fontFamily:"inherit",fontWeight:700,fontSize:12,cursor:"pointer"},
+          onClick:voegToe},"+ Opslaan")
+      )
+    ),
+    React.createElement("input",{style:{border:"1.5px solid #D8E8EF",borderRadius:8,padding:"9px 12px",fontFamily:"inherit",fontSize:12,color:"#002D41",width:"100%",outline:"none",boxSizing:"border-box",marginBottom:12},
+      placeholder:"Zoek product...",value:zoek,onChange:function(e){setZoek(e.target.value);}}),
+    laden ? React.createElement("div",{style:{textAlign:"center",padding:20,color:"#6B8A9A"}},"Laden...") :
+    React.createElement("div",{style:{overflowX:"auto"}},
+      React.createElement("table",{style:{width:"100%",borderCollapse:"collapse",fontSize:12}},
+        React.createElement("thead",null,
+          React.createElement("tr",null,
+            ["Product","Op voorraad","Eenheid","Bijgewerkt","Benodigd","Status"].map(function(h){
+              return React.createElement("th",{key:h,style:{background:"#002D41",color:"#DAEDF3",padding:"10px 12px",textAlign:"left",fontWeight:700,fontSize:10,letterSpacing:1.5,textTransform:"uppercase"}},h);
+            })
+          )
+        ),
+        React.createElement("tbody",null,
+          gefilterd.length===0 && React.createElement("tr",null,
+            React.createElement("td",{colSpan:6,style:{padding:"20px",textAlign:"center",color:"#6B8A9A",fontStyle:"italic"}},
+              "Nog geen voorraad. Voeg producten toe hierboven."
+            )
+          ),
+          gefilterd.map(function(item,i){
+            var benodigd = benodigdMap[item.naam]||0;
+            var hv = parseFloat(item.hoeveelheid)||0;
+            var status = benodigd===0?"ok":hv>=benodigd*1.5?"ok":hv>=benodigd?"laag":"kritiek";
+            var skl = {ok:"#10B981",laag:"#F59E0B",kritiek:"#FE424D"}[status];
+            var slabel = {ok:"✓ Voldoende",laag:"⚠ Krap",kritiek:"⛔ Te weinig"}[status];
+            return React.createElement("tr",{key:i,style:{background:status==="kritiek"?"#FFF0F0":status==="laag"?"#FFFBEB":i%2===0?"#fff":"#F8FAFC"}},
+              React.createElement("td",{style:{padding:"10px 12px",fontWeight:700,color:"#002D41"}},item.naam),
+              React.createElement("td",{style:{padding:"10px 12px"}},
+                React.createElement("input",{
+                  type:"number",
+                  style:{border:"1.5px solid #D8E8EF",borderRadius:6,padding:"4px 8px",width:70,fontFamily:"inherit",fontSize:12,background:status==="kritiek"?"#FFF0F0":"#fff"},
+                  defaultValue:item.hoeveelheid,
+                  onBlur:function(e){ updateVoorraad(item.naam, e.target.value); }
+                })
+              ),
+              React.createElement("td",{style:{padding:"10px 12px",color:"#6B8A9A"}},item.eenheid||""),
+              React.createElement("td",{style:{padding:"10px 12px",fontSize:10,color:"#6B8A9A"}},
+                item.bijgewerkt_op?new Date(item.bijgewerkt_op).toLocaleDateString("nl-NL",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}):"—"
+              ),
+              React.createElement("td",{style:{padding:"10px 12px",fontWeight:700,color:benodigd>0?"#002D41":"#6B8A9A"}},
+                benodigd>0?benodigd+"×":"—"
+              ),
+              React.createElement("td",{style:{padding:"10px 12px"}},
+                React.createElement("span",{style:{background:skl+"18",color:skl,border:"1px solid "+skl+"44",borderRadius:5,padding:"3px 9px",fontSize:10,fontWeight:700}},slabel)
+              )
+            );
+          })
+        )
+      )
+    )
+  );
+}
+
 function SligroBestellingScreen() {
+  var [sligroTab, setSligroTab] = useState("bestelling");
   var [keuken, setKeuken] = useState("");
   var [bevestigd, setBevestigd] = useState(false);
   var [bezig, setBezig] = useState(false);
@@ -8694,7 +8894,16 @@ function SligroBestellingScreen() {
   }
   var statusKl = { concept: "#FF9800", verstuurd: "#1AA6B7", bevestigd: "#27AE60", geleverd: "#9E9E9E" };
   var keukenKlr = { west: C.aqua, weesp: C.green };
-  return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 20 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 22, fontWeight: 800, color: C.night, marginBottom: 4 } }, "\u{1F6D2} Sligro Bestelling"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.muted } }, "Importeer je boekingen, zie per boeking wat nodig is, en genereer de Sligro-bestelling als CSV.")), /* @__PURE__ */ React.createElement("div", { style: { background: "linear-gradient(135deg,#002D41,#003D56)", borderRadius: 12, padding: 20, marginBottom: 20, color: "#fff" } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 900, fontSize: 14, color: C.aqua, marginBottom: 10 } }, "\u{1F4CB} Hoe kom je aan een bestelling?"), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12 } }, [
+  return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 20 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 22, fontWeight: 800, color: C.night, marginBottom: 4 } }, "\u{1F6D2} Sligro Bestelling"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.muted } }, "Importeer je boekingen, zie per boeking wat nodig is, en genereer de Sligro-bestelling als CSV."))),
+    /* Tabs */
+    React.createElement("div", {style:{display:"flex",gap:2,borderBottom:"2px solid #D8E8EF",marginBottom:16,flexWrap:"wrap"}},
+      [["bestelling","\uD83D\uDED2 Bestelling"],["voorraad","\uD83D\uDCE6 Voorraad checker"]].map(function(t){
+        var act=sligroTab===t[0];
+        return React.createElement("button",{key:t[0],style:{padding:"9px 16px",fontFamily:"inherit",fontWeight:700,fontSize:12,border:"none",background:act?"rgba(254,66,77,.05)":"transparent",cursor:"pointer",color:act?"#FE424D":"#6B8A9A",borderBottom:act?"2px solid #FE424D":"2px solid transparent",marginBottom:-2},onClick:function(){setSligroTab(t[0]);}},t[1]);
+      })
+    ),
+    sligroTab==="voorraad" && React.createElement(VoorraadCheckerTab, null),
+    sligroTab==="bestelling" && /* @__PURE__ */ React.createElement("div", { style: { background: "linear-gradient(135deg,#002D41,#003D56)", borderRadius: 12, padding: 20, marginBottom: 20, color: "#fff" } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 900, fontSize: 14, color: C.aqua, marginBottom: 10 } }, "\u{1F4CB} Hoe kom je aan een bestelling?"), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12 } }, [
     ["1", "\u{1F4C2}", "Importeer Excel", "Recras boekingenexport (.xlsx) uploaden — per keuken"],
     ["2", "\u{1F9EE}", "Berekening", "KitchenRobot berekent per gerecht hoeveel Sligro-producten nodig zijn"],
     ["3", "✓", "Controleer", "Bekijk per boeking en per artikel de volledige berekening"],
