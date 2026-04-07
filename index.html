@@ -9068,7 +9068,7 @@ function SligroBestellingScreen() {
     }))), /* @__PURE__ */ React.createElement("tbody", null, b.regels_json.map(function(r, i) {
       return /* @__PURE__ */ React.createElement("tr", { key: i }, /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, color: C.muted, fontSize: 10 } }, r.artnr || "—"), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 600 } }, r.naam), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 700, textAlign: "right" } }, r.totaal_verpakkingen || r.aantal), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, color: C.muted } }, r.eenheid || "—"), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, textAlign: "right" } }, "€", (r.totaal || 0).toFixed(2)));
     })))));
-  })));
+  }));
 }
 function OpzetLogboekScreen() {
   var [data, setData] = useState([]);
