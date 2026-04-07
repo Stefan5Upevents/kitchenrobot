@@ -10342,60 +10342,111 @@ function KioskApp() {
       },
       gedaan ? "✓ " + t.klaar : t.aftekenen + " (" + taak.naam + ")"
     ));
-  }))), actieveTab === "bbq" && /* @__PURE__ */ React.createElement("div", null,
-  /* Dag carousel BBQ */
-  (function() {
-    var boekDagen = [];
+  }))), actieveTab === "bbq" && /* @__PURE__ */ React.createElement("div", null, (function() {
+
+    /* ── Alle dagen met BBQ boekingen ────────────────────────────────── */
+    var bbqKoppelingen = (window._stamKoppelingen || []);
+    var bbqMenuIds = new Set((window._stamMenus || []).filter(function(m) {
+      return (m.naam || "").toLowerCase().includes("bbq");
+    }).map(function(m) { return m.id; }));
+
+    function isBBQRegel(r) {
+      var k = bbqKoppelingen.find(function(kp) { return kp.recras_naam === r.menuNaam; });
+      return k && bbqMenuIds.has(k.menu_id);
+    }
+
     var dagSet = {};
     (window._recrasBoekingen || []).forEach(function(b) {
-      var d = (b.deadline||"").split("T")[0].split(" ")[0];
-      if (d && !dagSet[d]) { dagSet[d]=true; boekDagen.push(d); }
+      if ((b.regels || []).some(isBBQRegel)) {
+        var d = (b.deadline || "").replace("T"," ").split(" ")[0];
+        if (d) dagSet[d] = true;
+      }
     });
-    boekDagen.sort();
-    if (boekDagen.length === 0) return null;
-    var activeDagBbq = bbqDag || boekDagen[0] || vandaag;
-    return React.createElement("div", { style:{ overflowX:"auto", display:"flex", gap:8, paddingBottom:8, marginBottom:12, WebkitOverflowScrolling:"touch" } },
-      boekDagen.map(function(d) {
-        var act = d===activeDagBbq;
-        var parts = d.split("-");
-        var label = parts[2]+"/"+parts[1];
-        return React.createElement("div", { key:d, onClick:function(){ setBbqDag(d); setBbqIdx(0); }, style:{ flexShrink:0, background:act?"#FE424D":"#001828", borderRadius:10, padding:"10px 14px", cursor:"pointer", border:"2px solid "+(act?"#FE424D":"rgba(254,66,61,.3)"), minWidth:80, textAlign:"center" } },
-          React.createElement("div", { style:{ fontWeight:900, fontSize:13, color:"#fff" } }, label),
-          React.createElement("div", { style:{ fontSize:9, color:act?"rgba(255,255,255,.85)":"rgba(255,255,255,.4)", textTransform:"uppercase" } }, "BBQ")
+    var bbqDagen = Object.keys(dagSet).sort();
+
+    if (bbqDagen.length === 0) {
+      return React.createElement("div", { style: { ...krt, textAlign:"center", color:"rgba(255,255,255,.4)", padding:24 } }, "Geen BBQ boekingen gevonden in de komende periode.");
+    }
+
+    var activeDag = bbqDag || bbqDagen[0];
+
+    /* ── Dag carousel ────────────────────────────────────────────────── */
+    var carousel = React.createElement("div", { style:{ overflowX:"auto", display:"flex", gap:8, paddingBottom:8, marginBottom:14, WebkitOverflowScrolling:"touch" } },
+      bbqDagen.map(function(d) {
+        var act = d === activeDag;
+        var p = d.split("-");
+        return React.createElement("div", {
+          key: d,
+          onClick: function() { setBbqDag(d); setBbqIdx(0); },
+          style: { flexShrink:0, background: act ? "#FE424D" : "#001828", borderRadius:10, padding:"10px 16px", cursor:"pointer", border:"2px solid "+(act?"#FE424D":"rgba(254,66,61,.3)"), minWidth:70, textAlign:"center" }
+        },
+          React.createElement("div", { style:{ fontWeight:900, fontSize:14, color:"#fff" } }, p[2]+"/"+p[1]),
+          React.createElement("div", { style:{ fontSize:9, color:act?"rgba(255,255,255,.9)":"rgba(255,255,255,.4)", textTransform:"uppercase", marginTop:2 } }, "BBQ")
         );
       })
     );
-  })(),
-  buffet.length === 0 && /* @__PURE__ */ React.createElement("div", { style: { ...krt, textAlign: "center", color: "rgba(255,255,255,.4)", padding: 20 } }, "Geen BBQ buffetlijsten. Publiceer dagpakket opnieuw."), buffet.length > 0 && /* @__PURE__ */ React.createElement("div", null, buffet.length > 1 && /* @__PURE__ */ React.createElement("div", { style: { overflowX: "auto", display: "flex", gap: 8, paddingBottom: 8, marginBottom: 10 } }, buffet.map(function(b, bi) {
-    var act = bi === bbqIdx;
-    return /* @__PURE__ */ React.createElement(
-      "div",
-      {
-        key: bi,
-        onClick: function() {
-          setBbqIdx(bi);
-        },
-        style: { flexShrink: 0, background: act ? "#FE424D" : "#001828", borderRadius: 10, padding: "10px 14px", cursor: "pointer", border: "2px solid " + (act ? "#FE424D" : "rgba(254,66,61,.3)"), minWidth: 110 }
-      },
-      /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 900, fontSize: 12, color: "#fff" } }, b.tijdLabel || "—"),
-      /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: act ? "rgba(255,255,255,.85)" : "rgba(255,255,255,.45)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 100 } }, b.naam)
-    );
-  })), (function() {
-    var b = buffet[Math.min(bbqIdx, buffet.length - 1)];
-    if (!b) return null;
-    if (b.bbqHtml) {
-      return React.createElement("iframe", {
-        srcDoc: b.bbqHtml,
-        style: { width: "100%", height: "70vh", border: "none", borderRadius: 10, background: "#fff" },
-        title: "BBQ formulier " + b.naam
-      });
+
+    /* ── Content voor geselecteerde dag ─────────────────────────────── */
+    var dagBoekingen = (window._recrasBoekingen || []).filter(function(b) {
+      var d = (b.deadline || "").replace("T"," ").split(" ")[0];
+      return d === activeDag && (b.regels || []).some(isBBQRegel);
+    });
+
+    /* Als het vandaag is en er is bbqHtml in het dagpakket → iframe */
+    var isVandaag = activeDag === vandaag;
+    var vandaagBuffet = isVandaag ? (buffet || []) : [];
+
+    var content;
+    if (isVandaag && vandaagBuffet.length > 0) {
+      /* Carousel van buffet-items + iframe */
+      var actBuf = vandaagBuffet[Math.min(bbqIdx, vandaagBuffet.length - 1)];
+      content = React.createElement("div", null,
+        vandaagBuffet.length > 1 && React.createElement("div", { style:{ overflowX:"auto", display:"flex", gap:6, marginBottom:10, WebkitOverflowScrolling:"touch" } },
+          vandaagBuffet.map(function(b, bi) {
+            var act = bi === bbqIdx;
+            return React.createElement("div", { key:bi, onClick:function(){ setBbqIdx(bi); }, style:{ flexShrink:0, background:act?"#FE424D":"#001828", borderRadius:8, padding:"8px 12px", cursor:"pointer", border:"1.5px solid "+(act?"#FE424D":"rgba(254,66,61,.3)") } },
+              React.createElement("div", { style:{ fontSize:11, fontWeight:700, color:"#fff" } }, b.tijdLabel || b.naam || "BBQ"),
+              React.createElement("div", { style:{ fontSize:9, color:act?"rgba(255,255,255,.8)":"rgba(255,255,255,.4)" } }, b.naam)
+            );
+          })
+        ),
+        actBuf && actBuf.bbqHtml
+          ? React.createElement("iframe", { srcDoc: actBuf.bbqHtml, style:{ width:"100%", height:"72vh", border:"none", borderRadius:10, background:"#fff" }, title:"BBQ" })
+          : React.createElement("div", { style:{ ...krt, color:"rgba(255,255,255,.45)", textAlign:"center", padding:20, fontSize:12 } }, "Geen BBQ formulier beschikbaar. Publiceer het dagpakket opnieuw.")
+      );
+    } else {
+      /* Toon BBQ boekingen uit recras_boekingen voor die dag */
+      content = React.createElement("div", null,
+        isVandaag && React.createElement("div", { style:{ background:"rgba(255,165,0,.15)", border:"1px solid rgba(255,165,0,.4)", borderRadius:8, padding:"8px 12px", marginBottom:10, fontSize:11, color:"rgba(255,200,100,.9)" } }, "Geen gepubliceerd dagpakket voor vandaag. Boekingsoverzicht:"),
+        dagBoekingen.length === 0
+          ? React.createElement("div", { style:{ ...krt, color:"rgba(255,255,255,.4)", textAlign:"center", padding:20, fontSize:12 } }, "Geen BBQ boekingen op "+activeDag)
+          : dagBoekingen.map(function(b) {
+              var bbqRegels = (b.regels || []).filter(isBBQRegel);
+              var totPax = bbqRegels.reduce(function(s,r){ return s+(r.aantal||0); }, 0);
+              var tijd = (b.deadlineTijd || (b.deadline||"").replace("T"," ").split(" ")[1]||"").slice(0,5);
+              return React.createElement("div", { key:b.id, style:{ ...krt, marginBottom:10, padding:14 } },
+                React.createElement("div", { style:{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 } },
+                  React.createElement("div", { style:{ fontWeight:900, fontSize:14, color:"#fff" } }, b.naam),
+                  React.createElement("div", { style:{ fontWeight:900, fontSize:18, color:"#FE424D" } }, tijd)
+                ),
+                React.createElement("div", { style:{ fontSize:11, color:"rgba(255,255,255,.5)", marginBottom:8 } }, b.locatie || ""),
+                React.createElement("div", { style:{ display:"flex", flexWrap:"wrap", gap:6 } },
+                  bbqRegels.map(function(r, ri) {
+                    return React.createElement("div", { key:ri, style:{ background:"rgba(254,66,77,.2)", border:"1px solid rgba(254,66,77,.4)", borderRadius:6, padding:"4px 10px", fontSize:11, color:"#fff" } },
+                      React.createElement("span", { style:{ color:"#FE424D", fontWeight:700, marginRight:4 } }, r.aantal+"×"),
+                      r.menuNaam
+                    );
+                  })
+                ),
+                React.createElement("div", { style:{ marginTop:8, fontSize:12, color:"#FE424D", fontWeight:700 } }, "Totaal: "+totPax+" personen BBQ")
+              );
+            })
+      );
     }
-    return React.createElement(
-      "div",
-      { style: { ...krt, color: "rgba(255,255,255,.5)", textAlign: "center", padding: 20 } },
-      "Publiceer het dagpakket opnieuw om de BBQ PDF te tonen."
-    );
-  })())), actieveTab === "tijden" && /* @__PURE__ */ React.createElement("div", null, (function() {
+
+    return React.createElement("div", null, carousel, content);
+  })()),
+  actieveTab === "tijden" && /* @__PURE__ */ React.createElement("div", null, (function() {
     var opzetItems = dagpakket ? dagpakket.opzet_json || [] : [];
     var boekingen2 = (dagpakket ? dagpakket.boekingen_json || [] : []).slice().sort(function(a, b) {
       return (a.deadlineTijd || "").localeCompare(b.deadlineTijd || "");
