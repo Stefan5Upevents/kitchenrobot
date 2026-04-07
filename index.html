@@ -472,7 +472,14 @@ function Header({ sc, setSc, user, logout }) {
       ["opzetlog", "\u2705", "Opzet Logboek"]
     ] },
     { label: "Beheer", items: [
-      ["stam", "\u2699\uFE0F", "Stamgegevens"]
+      ["stam:pg", "🏗", "Productgroepen"],
+      ["stam:gr", "🍽", "Gerechten"],
+      ["stam:mn", "📋", "Menus"],
+      ["stam:sl", "🛒", "Sligro Import"],
+      ["stam:ti", "⏱", "Buffet / Tijden"],
+      ["stam:al", "🏷", "Allergenen Stam"],
+      ["stam:re", "📥", "Recras Import"],
+      ["stam:ki", "📱", "Kiosk Instellingen"]
     ] }
   ];
   var huidigLabel = "KitchenRobot";
@@ -484,7 +491,13 @@ function Header({ sc, setSc, user, logout }) {
     });
   });
   function navKlik(id) {
-    setSc(id);
+    if (id.startsWith("stam:")) {
+      var tabId = id.split(":")[1];
+      setStamTab(tabId);
+      setSc("stam");
+    } else {
+      setSc(id);
+    }
     setMenuOpen(false);
   }
   function toggleGrp(lbl) {
@@ -506,7 +519,7 @@ function Header({ sc, setSc, user, logout }) {
         /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,.28)", letterSpacing: 1.5, textTransform: "uppercase" } }, grp.label),
         /* @__PURE__ */ React.createElement("span", { style: { color: "rgba(255,255,255,.28)", fontSize: 10, transform: open ? "rotate(0)" : "rotate(-90deg)", transition: "transform .15s" } }, "\u25BE")
       ), open && grp.items.map(function(item) {
-        var actief = sc === item[0];
+        var actief = sc === item[0] || (sc === "stam" && item[0].startsWith("stam:") && item[0] === "stam:" + (typeof stamTab !== "undefined" ? stamTab : "pg"));
         return /* @__PURE__ */ React.createElement(
           "button",
           {
@@ -3297,8 +3310,8 @@ function TijdenScreen() {
     return /* @__PURE__ */ React.createElement("tr", { key: ii, style: { background: item.isRecras ? "rgba(254,66,77,.07)" : ii % 2 === 0 ? C.white : "#F8FAFB", borderLeft: item.isRecras ? "4px solid " + C.hot : "4px solid transparent" } }, /* @__PURE__ */ React.createElement("td", { style: { padding: "9px 12px", fontWeight: 900, fontSize: 16, color: kleur, whiteSpace: "nowrap" } }, item.t), /* @__PURE__ */ React.createElement("td", { style: { padding: "9px 12px", fontWeight: 700, color: kleur } }, item.a), /* @__PURE__ */ React.createElement("td", { style: { padding: "9px 12px" } }, item.app && item.app !== "alle" && !item.isRecras && /* @__PURE__ */ React.createElement("span", { style: { background: ak[item.app] || C.muted, color: "#fff", borderRadius: 4, padding: "2px 7px", fontSize: 10, fontWeight: 700, textTransform: "uppercase" } }, item.app)), /* @__PURE__ */ React.createElement("td", { style: { padding: "9px 12px", fontSize: 12, fontWeight: 700, color: C.night } }, item.aantal > 0 ? item.aantal + "p" : ""), /* @__PURE__ */ React.createElement("td", { style: { padding: "9px 12px", fontSize: 11, color: C.muted } }, item.menuNaam || ""), /* @__PURE__ */ React.createElement("td", { style: { padding: "9px 12px", fontSize: 12, fontWeight: 700, color: C.night } }, item.aantal || ""), /* @__PURE__ */ React.createElement("td", { style: { padding: "9px 12px", fontSize: 12, color: C.muted } }, item.boeking), /* @__PURE__ */ React.createElement("td", { style: { padding: "9px 12px", fontSize: 11, color: C.muted } }, item.locatie || ""));
   })))));
 }
-function StamScreen() {
-  var [tab, setTab] = useState("pg");
+function StamScreen({ initTab }) {
+  var [tab, setTab] = useState(initTab || "pg");
   var [heeftWijzigingen, setHeeftWijzigingen] = useState(false);
   var [pendingTab, setPendingTab] = useState(null);
   var [opslaanBezig, setOpslaanBezig] = useState(false);
@@ -8023,7 +8036,7 @@ function FinancieelScreen() {
                 return p.id === ing.sligro_id;
               });
               if (!sp) return is;
-              return is + Math.ceil(pEff2 * (parseFloat(ing.gebruik_per_portie) || 0) / (parseFloat(sp.hoeveelheid || sp.hoev || 1) || 1)) * parseFloat(sp.prijs_excl || sp.prijs || 0);
+              return is + pEff2 * (parseFloat(ing.gebruik_per_portie) || 0) / (parseFloat(sp.hoeveelheid || sp.hoev || 1) || 1) * parseFloat(sp.prijs_excl || sp.prijs || 0);
             }, 0);
           }, 0);
         })();
@@ -9315,6 +9328,7 @@ function App({ supabaseInloggen, supabaseUitloggen, supabaseSessie, supabaseProf
   var mnRef = appMenus;
   var [user, setUser] = useState(null);
   var [sc, setSc] = useState("home");
+  var [stamTab, setStamTab] = useState("pg");
   var [actieve, setActieve] = useState(null);
   var useSupabase = typeof supabaseInloggen === "function";
   var [loginBevestigd, setLoginBevestigd] = React.useState(false);
@@ -9352,7 +9366,7 @@ function App({ supabaseInloggen, supabaseUitloggen, supabaseSessie, supabaseProf
   if (!user) {
     return /* @__PURE__ */ React.createElement(LoginScreen, { onLogin: handleLogin });
   }
-  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", minHeight: "100vh", background: "#F0F4F7" } }, /* @__PURE__ */ React.createElement(Header, { sc, setSc, user, logout: handleLogout }), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto", overflowX: "hidden" }, className: "mobile-padding" }, /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 1200, margin: "0 auto", padding: "28px 20px 60px" } }, sc === "home" && /* @__PURE__ */ React.createElement(HomeScreen, { setSc }), sc === "boekingen" && /* @__PURE__ */ React.createElement(BoekingenScreen, { setSc, setActieve }), sc === "buffet" && /* @__PURE__ */ React.createElement(BuffetScreen, { actieve, setActieve }), sc === "opzet" && /* @__PURE__ */ React.createElement(OpzetScreen, null), sc === "tijden" && /* @__PURE__ */ React.createElement(TijdenScreen, null), sc === "stam" && /* @__PURE__ */ React.createElement(StamScreen, null), sc === "fin" && /* @__PURE__ */ React.createElement(FinancieelScreen, null), sc === "allergenen" && /* @__PURE__ */ React.createElement(AllergenenScreen, null), sc === "inspiratie" && /* @__PURE__ */ React.createElement(InspiratieScreen, null), sc === "opzetlog" && /* @__PURE__ */ React.createElement(OpzetLogboekScreen, null), sc === "haccp" && /* @__PURE__ */ React.createElement(HACCPScreen, null), sc === "bestelling" && /* @__PURE__ */ React.createElement(SligroBestellingScreen, null))));
+  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", minHeight: "100vh", background: "#F0F4F7" } }, /* @__PURE__ */ React.createElement(Header, { sc, setSc, user, logout: handleLogout }), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto", overflowX: "hidden" }, className: "mobile-padding" }, /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 1200, margin: "0 auto", padding: "28px 20px 60px" } }, sc === "home" && /* @__PURE__ */ React.createElement(HomeScreen, { setSc }), sc === "boekingen" && /* @__PURE__ */ React.createElement(BoekingenScreen, { setSc, setActieve }), sc === "buffet" && /* @__PURE__ */ React.createElement(BuffetScreen, { actieve, setActieve }), sc === "opzet" && /* @__PURE__ */ React.createElement(OpzetScreen, null), sc === "tijden" && /* @__PURE__ */ React.createElement(TijdenScreen, null), sc === "stam" && /* @__PURE__ */ React.createElement(StamScreen, { initTab: stamTab }), sc === "fin" && /* @__PURE__ */ React.createElement(FinancieelScreen, null), sc === "allergenen" && /* @__PURE__ */ React.createElement(AllergenenScreen, null), sc === "inspiratie" && /* @__PURE__ */ React.createElement(InspiratieScreen, null), sc === "opzetlog" && /* @__PURE__ */ React.createElement(OpzetLogboekScreen, null), sc === "haccp" && /* @__PURE__ */ React.createElement(HACCPScreen, null), sc === "bestelling" && /* @__PURE__ */ React.createElement(SligroBestellingScreen, null))));
 }
 function InspiratieScreen() {
   var _a, _b;
@@ -10344,28 +10358,29 @@ function KioskApp() {
     ));
   }))), actieveTab === "bbq" && /* @__PURE__ */ React.createElement("div", null, (function() {
 
-    /* ── Alle dagen met BBQ boekingen ────────────────────────────────── */
-    var bbqKoppelingen = (window._stamKoppelingen || []);
-    var bbqMenuIds = new Set((window._stamMenus || []).filter(function(m) {
-      return (m.naam || "").toLowerCase().includes("bbq");
-    }).map(function(m) { return m.id; }));
+    /* ── BBQ data uit gepubliceerd dagpakket ─────────────────────────── */
+    var alleBBQBoekingen = [];
+    var boekJson = dagpakket ? (dagpakket.boekingen_json || []) : [];
+    var buffetJson = dagpakket ? (dagpakket.buffet_json || []) : [];
 
-    function isBBQRegel(r) {
-      var k = bbqKoppelingen.find(function(kp) { return kp.recras_naam === r.menuNaam; });
-      return k && bbqMenuIds.has(k.menu_id);
-    }
+    /* Vind BBQ boekingen via buffet_json (heeft bbqHtml) */
+    var buffetById = {};
+    buffetJson.forEach(function(bf) { buffetById[bf.id] = bf; });
 
+    /* Alle dagen met BBQ uit buffet_json */
     var dagSet = {};
-    (window._recrasBoekingen || []).forEach(function(b) {
-      if ((b.regels || []).some(isBBQRegel)) {
-        var d = (b.deadline || "").replace("T"," ").split(" ")[0];
-        if (d) dagSet[d] = true;
-      }
+    buffetJson.forEach(function(bf) {
+      /* Haal ISO datum uit boeking in boekingen_json */
+      var bk = boekJson.find(function(b) { return b.id === bf.id; });
+      var d = bk ? (bk.deadline||"").replace("T"," ").split(" ")[0] : null;
+      if (d) dagSet[d] = true;
     });
     var bbqDagen = Object.keys(dagSet).sort();
 
     if (bbqDagen.length === 0) {
-      return React.createElement("div", { style: { ...krt, textAlign:"center", color:"rgba(255,255,255,.4)", padding:24 } }, "Geen BBQ boekingen gevonden in de komende periode.");
+      return React.createElement("div", { style:{ ...krt, textAlign:"center", color:"rgba(255,255,255,.4)", padding:24, fontSize:12 } },
+        "Geen BBQ formulieren. Publiceer het dagpakket vanuit Import & Publiceer."
+      );
     }
 
     var activeDag = bbqDag || bbqDagen[0];
@@ -10375,72 +10390,38 @@ function KioskApp() {
       bbqDagen.map(function(d) {
         var act = d === activeDag;
         var p = d.split("-");
-        return React.createElement("div", {
-          key: d,
-          onClick: function() { setBbqDag(d); setBbqIdx(0); },
-          style: { flexShrink:0, background: act ? "#FE424D" : "#001828", borderRadius:10, padding:"10px 16px", cursor:"pointer", border:"2px solid "+(act?"#FE424D":"rgba(254,66,61,.3)"), minWidth:70, textAlign:"center" }
-        },
+        return React.createElement("div", { key:d, onClick:function(){ setBbqDag(d); setBbqIdx(0); }, style:{ flexShrink:0, background:act?"#FE424D":"#001828", borderRadius:10, padding:"10px 16px", cursor:"pointer", border:"2px solid "+(act?"#FE424D":"rgba(254,66,61,.3)"), minWidth:70, textAlign:"center" } },
           React.createElement("div", { style:{ fontWeight:900, fontSize:14, color:"#fff" } }, p[2]+"/"+p[1]),
           React.createElement("div", { style:{ fontSize:9, color:act?"rgba(255,255,255,.9)":"rgba(255,255,255,.4)", textTransform:"uppercase", marginTop:2 } }, "BBQ")
         );
       })
     );
 
-    /* ── Content voor geselecteerde dag ─────────────────────────────── */
-    var dagBoekingen = (window._recrasBoekingen || []).filter(function(b) {
-      var d = (b.deadline || "").replace("T"," ").split(" ")[0];
-      return d === activeDag && (b.regels || []).some(isBBQRegel);
+    /* ── BBQ items voor geselecteerde dag ────────────────────────────── */
+    var dagBuffetItems = buffetJson.filter(function(bf) {
+      var bk = boekJson.find(function(b) { return b.id === bf.id; });
+      var d = bk ? (bk.deadline||"").replace("T"," ").split(" ")[0] : null;
+      return d === activeDag;
     });
 
-    /* Als het vandaag is en er is bbqHtml in het dagpakket → iframe */
-    var isVandaag = activeDag === vandaag;
-    var vandaagBuffet = isVandaag ? (buffet || []) : [];
-
     var content;
-    if (isVandaag && vandaagBuffet.length > 0) {
-      /* Carousel van buffet-items + iframe */
-      var actBuf = vandaagBuffet[Math.min(bbqIdx, vandaagBuffet.length - 1)];
+    if (dagBuffetItems.length === 0) {
+      content = React.createElement("div", { style:{ ...krt, color:"rgba(255,255,255,.4)", textAlign:"center", padding:20, fontSize:12 } }, "Geen BBQ voor "+ activeDag +". Publiceer dagpakket opnieuw als dit niet klopt.");
+    } else {
+      var actBuf = dagBuffetItems[Math.min(bbqIdx, dagBuffetItems.length - 1)];
       content = React.createElement("div", null,
-        vandaagBuffet.length > 1 && React.createElement("div", { style:{ overflowX:"auto", display:"flex", gap:6, marginBottom:10, WebkitOverflowScrolling:"touch" } },
-          vandaagBuffet.map(function(b, bi) {
+        dagBuffetItems.length > 1 && React.createElement("div", { style:{ overflowX:"auto", display:"flex", gap:6, marginBottom:10, WebkitOverflowScrolling:"touch" } },
+          dagBuffetItems.map(function(bf, bi) {
             var act = bi === bbqIdx;
-            return React.createElement("div", { key:bi, onClick:function(){ setBbqIdx(bi); }, style:{ flexShrink:0, background:act?"#FE424D":"#001828", borderRadius:8, padding:"8px 12px", cursor:"pointer", border:"1.5px solid "+(act?"#FE424D":"rgba(254,66,61,.3)") } },
-              React.createElement("div", { style:{ fontSize:11, fontWeight:700, color:"#fff" } }, b.tijdLabel || b.naam || "BBQ"),
-              React.createElement("div", { style:{ fontSize:9, color:act?"rgba(255,255,255,.8)":"rgba(255,255,255,.4)" } }, b.naam)
+            return React.createElement("div", { key:bi, onClick:function(){ setBbqIdx(bi); }, style:{ flexShrink:0, background:act?"#FE424D":"#001828", borderRadius:8, padding:"8px 12px", cursor:"pointer", border:"1.5px solid "+(act?"#FE424D":"rgba(254,66,61,.3)"), minWidth:100 } },
+              React.createElement("div", { style:{ fontSize:11, fontWeight:900, color:"#fff", marginBottom:1 } }, bf.tijdLabel || "—"),
+              React.createElement("div", { style:{ fontSize:10, color:act?"rgba(255,255,255,.8)":"rgba(255,255,255,.4)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", maxWidth:120 } }, bf.naam)
             );
           })
         ),
         actBuf && actBuf.bbqHtml
-          ? React.createElement("iframe", { srcDoc: actBuf.bbqHtml, style:{ width:"100%", height:"72vh", border:"none", borderRadius:10, background:"#fff" }, title:"BBQ" })
-          : React.createElement("div", { style:{ ...krt, color:"rgba(255,255,255,.45)", textAlign:"center", padding:20, fontSize:12 } }, "Geen BBQ formulier beschikbaar. Publiceer het dagpakket opnieuw.")
-      );
-    } else {
-      /* Toon BBQ boekingen uit recras_boekingen voor die dag */
-      content = React.createElement("div", null,
-        isVandaag && React.createElement("div", { style:{ background:"rgba(255,165,0,.15)", border:"1px solid rgba(255,165,0,.4)", borderRadius:8, padding:"8px 12px", marginBottom:10, fontSize:11, color:"rgba(255,200,100,.9)" } }, "Geen gepubliceerd dagpakket voor vandaag. Boekingsoverzicht:"),
-        dagBoekingen.length === 0
-          ? React.createElement("div", { style:{ ...krt, color:"rgba(255,255,255,.4)", textAlign:"center", padding:20, fontSize:12 } }, "Geen BBQ boekingen op "+activeDag)
-          : dagBoekingen.map(function(b) {
-              var bbqRegels = (b.regels || []).filter(isBBQRegel);
-              var totPax = bbqRegels.reduce(function(s,r){ return s+(r.aantal||0); }, 0);
-              var tijd = (b.deadlineTijd || (b.deadline||"").replace("T"," ").split(" ")[1]||"").slice(0,5);
-              return React.createElement("div", { key:b.id, style:{ ...krt, marginBottom:10, padding:14 } },
-                React.createElement("div", { style:{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 } },
-                  React.createElement("div", { style:{ fontWeight:900, fontSize:14, color:"#fff" } }, b.naam),
-                  React.createElement("div", { style:{ fontWeight:900, fontSize:18, color:"#FE424D" } }, tijd)
-                ),
-                React.createElement("div", { style:{ fontSize:11, color:"rgba(255,255,255,.5)", marginBottom:8 } }, b.locatie || ""),
-                React.createElement("div", { style:{ display:"flex", flexWrap:"wrap", gap:6 } },
-                  bbqRegels.map(function(r, ri) {
-                    return React.createElement("div", { key:ri, style:{ background:"rgba(254,66,77,.2)", border:"1px solid rgba(254,66,77,.4)", borderRadius:6, padding:"4px 10px", fontSize:11, color:"#fff" } },
-                      React.createElement("span", { style:{ color:"#FE424D", fontWeight:700, marginRight:4 } }, r.aantal+"×"),
-                      r.menuNaam
-                    );
-                  })
-                ),
-                React.createElement("div", { style:{ marginTop:8, fontSize:12, color:"#FE424D", fontWeight:700 } }, "Totaal: "+totPax+" personen BBQ")
-              );
-            })
+          ? React.createElement("iframe", { srcDoc:actBuf.bbqHtml, style:{ width:"100%", height:"72vh", border:"none", borderRadius:10, background:"#fff" }, title:"BBQ "+actBuf.naam })
+          : React.createElement("div", { style:{ ...krt, color:"rgba(255,255,255,.4)", textAlign:"center", padding:20, fontSize:12 } }, "Geen BBQ HTML. Publiceer dagpakket opnieuw.")
       );
     }
 
