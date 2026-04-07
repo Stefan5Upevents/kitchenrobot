@@ -1872,7 +1872,7 @@ function HomeScreen({ setSc }) {
       if (!m) m = (window._stamMenus || []).find(function(m2) {
         return m2.naam === r.menuNaam;
       });
-      return /* @__PURE__ */ React.createElement("tr", { key: b.id + "_" + ri, style: { background: ri === 0 ? "#EFF9FB" : C.white, borderLeft: "3px solid " + C.aqua, borderTop: ri === 0 ? "2px solid " + C.aqua : "none" } }, /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontSize: 10, color: C.muted } }, ri === 0 ? b.id : ""), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, whiteSpace: "nowrap" } }, ri === 0 ? b.deadlineDatum || "—" : ""), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 700, color: C.hot, whiteSpace: "nowrap" } }, ri === 0 ? b.deadlineTijd || "—" : ""), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: ri === 0 ? 700 : 400 } }, ri === 0 ? b.naam : ""), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontSize: 10, color: C.muted } }, ri === 0 ? b.locatie : ""), /* @__PURE__ */ React.createElement("td", { style: SS.td }, r.menuNaam), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 700, textAlign: "center" } }, r.aantal), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td } }, m ? /* @__PURE__ */ React.createElement("span", { style: { color: C.green, fontWeight: 700 } }, "✓ ", m.naam) : /* @__PURE__ */ React.createElement("span", { style: { color: "#F57F17" } }, "\u26A0 Niet gekoppeld")));
+      return /* @__PURE__ */ React.createElement("tr", { key: b.id + "_" + ri, style: { background: ri === 0 ? "#EFF9FB" : C.white, borderLeft: "3px solid " + C.aqua, borderTop: ri === 0 ? "2px solid " + C.aqua : "none" } }, /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontSize: 10, color: C.muted } }, ri === 0 ? b.id : ""), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, whiteSpace: "nowrap" } }, ri === 0 ? b.deadlineDatum || "—" : ""), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 700, color: C.hot, whiteSpace: "nowrap" } }, (r.starttijdTijd && r.starttijdTijd !== b.deadlineTijd) ? r.starttijdTijd : ri === 0 ? b.deadlineTijd || "—" : ""), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: ri === 0 ? 700 : 400 } }, ri === 0 ? b.naam : ""), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontSize: 10, color: C.muted } }, ri === 0 ? b.locatie : ""), /* @__PURE__ */ React.createElement("td", { style: SS.td }, r.menuNaam), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 700, textAlign: "center" } }, r.aantal), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td } }, m ? /* @__PURE__ */ React.createElement("span", { style: { color: C.green, fontWeight: 700 } }, "✓ ", m.naam) : /* @__PURE__ */ React.createElement("span", { style: { color: "#F57F17" } }, "\u26A0 Niet gekoppeld")));
     });
   }))))))));
 }
@@ -3060,7 +3060,8 @@ function TijdenScreen() {
         }) : null;
         if (!m) return;
         var psId = m.productsoort_id || m.psId;
-        if (psId && !psIds[psId] && typeof psId === "string" && psId.length > 10) {
+        var psKey = psId + "_" + (r.starttijdTijd || recrasTijd);
+          if (psId && !psIds[psKey] && typeof psId === "string" && psId.length > 10) {
           var pg = (window._stamProductgroepen || []).find(function(g) {
             return g.soorten && g.soorten.some(function(s) {
               return s.id === psId;
@@ -3072,8 +3073,9 @@ function TijdenScreen() {
           var psTijdStr = r.starttijdTijd || recrasTijd;
           var psTP = psTijdStr.split(":");
           var psMinuten = parseInt(psTP[0] || 0) * 60 + parseInt(psTP[1] || 0);
-          psIds[psId] = {
+          psIds[psKey] = {
             psId,
+            psTijdKey: r.starttijdTijd || recrasTijd,
             psNaam: (pg ? pg.naam + " > " : "") + (ps ? ps.naam : psId),
             psDeadline: psTijdStr,
             psMinuten,
@@ -3136,9 +3138,12 @@ function TijdenScreen() {
           var m2 = kp2 ? (window._stamMenus || []).find(function(m) {
             return m.id === kp2.menu_id;
           }) : null;
-          return m2 && (m2.productsoort_id || m2.psId) === psInfo.psId;
+          if (!m2 || (m2.productsoort_id || m2.psId) !== psInfo.psId) return false;
+          // Gebruik de regel die overeenkomt met de opgeslagen psTijdKey
+          var rTijd = r.starttijdTijd || recrasTijd;
+          return rTijd === (psInfo.psTijdKey || recrasTijd);
         });
-        var psTijd = psRegel ? psRegel.starttijdTijd || recrasTijd : recrasTijd;
+        var psTijd = psRegel ? (psRegel.starttijdTijd || recrasTijd) : (psInfo.psTijdKey || recrasTijd);
         var psParts = psTijd.split(":");
         var psBase = parseInt(psParts[0] || 0) * 60 + parseInt(psParts[1] || 0);
         var nPers = totPers(b);
