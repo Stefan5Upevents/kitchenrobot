@@ -885,6 +885,7 @@ function HomeScreen({ setSc }) {
   var [bbqConflicten, setBbqConflicten] = useState(null);
   const [ovenTips, setOvenTips] = useState([]);
   const [frituurTips, setFrituurTips] = useState([]);
+  var [takenConflicten, setTakenConflicten] = useState(null);
   var [showBbqAnalyse, setShowBbqAnalyse] = useState(false);
   var [dagpakketStatus, setDagpakketStatus] = useState(null);
   var [dagpakketPubliceren, setDagpakketPubliceren] = useState(false);
@@ -1546,7 +1547,21 @@ function HomeScreen({ setSc }) {
     display: "flex",
     alignItems: "center",
     gap: 8
-  } }, "✓ Geen BBQ planningsconflicten gevonden"), ovenTips.length>0&&React.createElement("div",{style:{marginBottom:12,padding:"10px 14px",borderRadius:8,fontSize:12,background:"#FFF8E1",border:"1px solid #FFD54F",display:"flex",gap:8}},React.createElement("span",{style:{color:"#B8860B",fontWeight:700}},"Tip: ",ovenTips.length," oven-boeking"+(ovenTips.length>1?"en":"")+" met 50+ personen op hetzelfde tijdstip — check ovenruimte. (",ovenTips.map(function(t){return t.a.naam+" & "+t.b.naam+" ("+t.diffMin+" min)";}).join(", "),")")), frituurTips.length>0&&React.createElement("div",{style:{marginBottom:12,padding:"10px 14px",borderRadius:8,fontSize:12,background:"#FFF3E0",border:"1px solid #FFB74D",display:"flex",gap:8}},React.createElement("span",{style:{color:"#E65100",fontWeight:700}},"Tip: ",frituurTips.length," frituur-boeking"+(frituurTips.length>1?"en":"")+" met 50+ personen tegelijk — overweeg extra frituurcapaciteit. (",frituurTips.map(function(t){return t.a.naam+" & "+t.b.naam+" ("+t.diffMin+" min)";}).join(", "),")")), geladen.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 14, background: "#fff", borderRadius: 10, padding: 16, boxShadow: "0 1px 4px rgba(0,45,65,.07)", border: "1px solid #E8EEF3" } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 900, fontSize: 14, color: C.night, marginBottom: 12, display: "flex", alignItems: "center", gap: 8 } }, "\u{1F4F1} Dagpakket voor kiosks", dagpakketStatus === "actief" && /* @__PURE__ */ React.createElement("span", { style: { background: "#E8F5E9", color: C.green, borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 700 } }, "\u25CF Actief — keuken werkt ermee"), dagpakketStatus === "gepubliceerd" && /* @__PURE__ */ React.createElement("span", { style: { background: "#E3F2FD", color: "#1565C0", borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 700 } }, "\u25CF Gepubliceerd"), dagpakketStatus === "afgesloten" && /* @__PURE__ */ React.createElement("span", { style: { background: "#F3E5F5", color: "#6A1B9A", borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 700 } }, "Afgesloten")), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 } }, ["west", "weesp"].map(function(code_) {
+  } }, "✓ Geen BBQ planningsconflicten gevonden"), React.createElement("div",{style:{display:"flex",gap:8,marginBottom:8,alignItems:"center"}},
+          React.createElement("button",{
+            style:{background:takenConflicten&&takenConflicten.length>0?"#FE424D":"#fff",color:takenConflicten&&takenConflicten.length>0?"#fff":"#002D41",border:"1.5px solid "+(takenConflicten&&takenConflicten.length>0?"#FE424D":"#D8E8EF"),borderRadius:7,padding:"5px 12px",fontFamily:"inherit",fontWeight:700,fontSize:11,cursor:"pointer"},
+            onClick:function(){
+              if(!window._supa)return;
+              var van=new Date().toISOString().split("T")[0];
+              window._supa.functions.invoke("dagpakket-beheer",{body:{actie:"conflicten_check"}}).then(function(r){
+                if(r.data)setTakenConflicten(r.data.conflicten||[]);
+              });
+            }
+          },"🔍 Controleer taken conflicten"),
+          takenConflicten!==null&&React.createElement("span",{style:{fontSize:11,color:takenConflicten.length>0?"#FE424D":"#10B981",fontWeight:700}},
+            takenConflicten.length>0?takenConflicten.length+" conflicten gevonden":"✓ Geen conflicten"
+          )
+        ), ovenTips.length>0&&React.createElement("div",{style:{marginBottom:12,padding:"10px 14px",borderRadius:8,fontSize:12,background:"#FFF8E1",border:"1px solid #FFD54F",display:"flex",gap:8}},React.createElement("span",{style:{color:"#B8860B",fontWeight:700}},"Tip: ",ovenTips.length," oven-boeking"+(ovenTips.length>1?"en":"")+" met 50+ personen op hetzelfde tijdstip — check ovenruimte. (",ovenTips.map(function(t){return t.a.naam+" & "+t.b.naam+" ("+t.diffMin+" min)";}).join(", "),")")), frituurTips.length>0&&React.createElement("div",{style:{marginBottom:12,padding:"10px 14px",borderRadius:8,fontSize:12,background:"#FFF3E0",border:"1px solid #FFB74D",display:"flex",gap:8}},React.createElement("span",{style:{color:"#E65100",fontWeight:700}},"Tip: ",frituurTips.length," frituur-boeking"+(frituurTips.length>1?"en":"")+" met 50+ personen tegelijk — overweeg extra frituurcapaciteit. (",frituurTips.map(function(t){return t.a.naam+" & "+t.b.naam+" ("+t.diffMin+" min)";}).join(", "),")")), geladen.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 14, background: "#fff", borderRadius: 10, padding: 16, boxShadow: "0 1px 4px rgba(0,45,65,.07)", border: "1px solid #E8EEF3" } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 900, fontSize: 14, color: C.night, marginBottom: 12, display: "flex", alignItems: "center", gap: 8 } }, "\u{1F4F1} Dagpakket voor kiosks", dagpakketStatus === "actief" && /* @__PURE__ */ React.createElement("span", { style: { background: "#E8F5E9", color: C.green, borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 700 } }, "\u25CF Actief — keuken werkt ermee"), dagpakketStatus === "gepubliceerd" && /* @__PURE__ */ React.createElement("span", { style: { background: "#E3F2FD", color: "#1565C0", borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 700 } }, "\u25CF Gepubliceerd"), dagpakketStatus === "afgesloten" && /* @__PURE__ */ React.createElement("span", { style: { background: "#F3E5F5", color: "#6A1B9A", borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 700 } }, "Afgesloten")), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 } }, ["west", "weesp"].map(function(code_) {
     var info = dagpakketStatusInfo[code_] || {};
     var stKleur = { actief: C.green, gepubliceerd: "#1565C0", afgesloten: "#9E9E9E", concept: C.muted }[info.status] || C.muted;
     return /* @__PURE__ */ React.createElement("div", { key: code_, style: { background: "#F7F9FC", borderRadius: 8, padding: "10px 12px", border: "1px solid #E8EEF3" } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 12, color: C.night } }, code_ === "west" ? "\u{1F3D9} Amsterdam West" : "\u{1F3D8} Weesp"), info.status ? /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: stKleur, fontWeight: 700, marginTop: 4 } }, info.status === "actief" ? "\u25CF Actief — " + (info.activiteiten_count || 0) + " aftekeningen" : info.status === "gepubliceerd" ? "\u25CF Gepubliceerd" : info.status === "afgesloten" ? "Afgesloten" : info.status) : /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.muted, marginTop: 4 } }, "Nog niet gepubliceerd"));
@@ -2786,12 +2801,20 @@ function BuffetScreen({ actieve, setActieve }) {
 }
 function OpzetScreen() {
   var [psId, setPsId] = useState("");
+  var [datumVan, setDatumVan] = useState("");
+  var [datumTot, setDatumTot] = useState("");
+  var [multiDagModus, setMultiDagModus] = useState(false);
   var pg = (window._stamProductgroepen || []).find(function(g) {
     return g.soorten.some(function(s) {
       return s.id === psId;
     });
   });
   var boekingen = (window._recrasBoekingen || []).filter(function(b) {
+    // Datum range filter — alleen als multiDagModus aan en van/tot ingevuld
+    if (multiDagModus && datumVan && datumTot) {
+      var bDatum = (b.deadline || "").replace("T"," ").split(" ")[0];
+      if (bDatum < datumVan || bDatum > datumTot) return false;
+    }
     var heeftNormaal = b.regels.some(function(r) {
       return !(r.menuNaam || "").toLowerCase().includes("add up");
     });
@@ -2848,7 +2871,21 @@ function OpzetScreen() {
     setTimeout(function() {
       document.title = origTitle;
     }, 1e3);
-  } }, "\u{1F5A8} Print / PDF"))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" }, className: "no-print" }, (window._stamProductgroepen || []).reduce(function(acc, g) {
+  } }, "\u{1F5A8} Print / PDF"))), /* @__PURE__ */ React.createElement("div", { style: { display:"flex", gap:10, alignItems:"center", flexWrap:"wrap", marginBottom:10 }, className:"no-print" },
+  React.createElement("button", {
+    style: { background: multiDagModus ? "#FE424D" : "#fff", color: multiDagModus ? "#fff" : "#002D41", border:"1.5px solid "+(multiDagModus?"#FE424D":"#D8E8EF"), borderRadius:7, padding:"6px 14px", fontFamily:"inherit", fontWeight:700, fontSize:11, cursor:"pointer" },
+    onClick: function() { setMultiDagModus(!multiDagModus); }
+  }, multiDagModus ? "✕ Datumbereik aan" : "📅 Datumbereik instellen"),
+  multiDagModus && React.createElement("div", {style:{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}},
+    React.createElement("label",{style:{fontSize:11,fontWeight:700,color:"#002D41"}},"Van:"),
+    React.createElement("input",{type:"date",style:{border:"1.5px solid #D8E8EF",borderRadius:7,padding:"5px 10px",fontFamily:"inherit",fontSize:11,color:"#002D41"},value:datumVan,onChange:function(e){setDatumVan(e.target.value);}}),
+    React.createElement("label",{style:{fontSize:11,fontWeight:700,color:"#002D41"}},"Tot:"),
+    React.createElement("input",{type:"date",style:{border:"1.5px solid #D8E8EF",borderRadius:7,padding:"5px 10px",fontFamily:"inherit",fontSize:11,color:"#002D41"},value:datumTot,onChange:function(e){setDatumTot(e.target.value);}}),
+    datumVan&&datumTot&&React.createElement("span",{style:{fontSize:11,color:"#10B981",fontWeight:700}},
+      "✓ Gecombineerde opzet voor datumbereik"
+    )
+  )
+), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" }, className: "no-print" }, (window._stamProductgroepen || []).reduce(function(acc, g) {
     return acc.concat(g.soorten || []);
   }, []).map(function(ps_) {
     var isAct = ps_.id === psId;
@@ -3031,24 +3068,21 @@ function TijdenScreen() {
             aantal: r.aantal || 0,
             locatie: b.locatie || b.plaats || ""
           };
-          var psHasInst = (window._stamTijdenInst || []).some(function(inst) {
-            return inst && inst._psId === psId && !inst.geenTijden && inst.tijden && inst.tijden.length > 0;
+          // Altijd Recras deadline tonen — ongeacht tijdinstellingen
+          resultaat.push({
+            t: psTijdStr,
+            a: "Recras deadline",
+            boeking: b.naam,
+            boekingId: b.id,
+            psNaam: (pg ? pg.naam + " › " : "") + (ps ? ps.naam : psId),
+            menuNaam: m.naam,
+            app: "alle",
+            isRecras: true,
+            uur: psMinuten,
+            dag: b.deadlineDag,
+            locatie: b.locatie || b.plaats || "",
+            aantal: r.aantal || 0
           });
-          if (psHasInst) {
-            resultaat.push({
-              t: psTijdStr,
-              a: "Recras deadline",
-              boeking: b.naam,
-              psNaam: pg ? pg.naam + " > " : "" + (ps ? ps.naam : ""),
-              menuNaam: m.naam,
-              app: "alle",
-              isRecras: true,
-              uur: psMinuten,
-              dag: b.deadlineDag,
-              locatie: b.locatie || "",
-              aantal: r.aantal || 0
-            });
-          }
         }
       });
       Object.values(psIds).forEach(function(psInfo) {
@@ -8247,7 +8281,7 @@ function FinancieelGeboektTab() {
           });
           if (matchMenu) {
             var vp = parseFloat(matchMenu.verkoop_prijs) || 0;
-            if (kostRaw === 0 && pers > 0) {
+            if (pers > 0) { // Altijd herberekenen vanuit stamdata
               var stamGerechten = window._stamGerechten || [];
               var stamSligro = window._stamSligro || [];
               var ingKost = 0;
@@ -8269,7 +8303,7 @@ function FinancieelGeboektTab() {
               });
               if (ingKost > 0) kostRaw = Math.round(ingKost * 100) / 100;
             }
-            if (omzetRaw === 0 && pers > 0 && vp > 0) omzetRaw = pers * vp;
+            if (pers > 0 && vp > 0) omzetRaw = pers * vp; // Altijd stamdata gebruiken
           }
           var marge = margeRaw !== null ? margeRaw : omzetRaw - kostRaw;
           return {
