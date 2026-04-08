@@ -870,49 +870,29 @@ function HomeScreen({ setSc }) {
   function sortBoekIcon(veld) {
     return sortBoekVeld === veld ? sortBoekDir === "asc" ? " \u2191" : " \u2193" : " \u2195";
   }
-  var _boekBase = (window._recrasBoekingen || []).slice().sort(function(a, b) {
+  var boekingen = (window._recrasBoekingen || []).slice().sort(function(a, b) {
     var va = "", vb = "";
     if (sortBoekVeld === "id") {
-      va = a.id || ""; vb = b.id || "";
+      va = a.id || "";
+      vb = b.id || "";
     } else if (sortBoekVeld === "datum") {
-      va = a.deadline || ""; vb = b.deadline || "";
+      va = a.deadline || "";
+      vb = b.deadline || "";
     } else if (sortBoekVeld === "tijd") {
-      va = a.deadlineTijd || ""; vb = b.deadlineTijd || "";
+      va = a.deadlineTijd || "";
+      vb = b.deadlineTijd || "";
     } else if (sortBoekVeld === "naam") {
-      va = a.naam || ""; vb = b.naam || "";
+      va = a.naam || "";
+      vb = b.naam || "";
     } else if (sortBoekVeld === "locatie") {
       va = (a.locatie || "") + (a.plaats || "");
       vb = (b.locatie || "") + (b.plaats || "");
     } else {
-      va = a.deadline || ""; vb = b.deadline || "";
+      va = a.deadline || "";
+      vb = b.deadline || "";
     }
     var res = va.localeCompare(vb, "nl");
     return sortBoekDir === "asc" ? res : -res;
-  });
-  // Splits boekingen met meerdere starttijdTijden op per unieke tijd
-  var boekingen = [];
-  _boekBase.forEach(function(b) {
-    // Groepeer regels per unieke starttijdTijd
-    var tijdGroepen = {};
-    (b.regels || []).forEach(function(r) {
-      var t = r.starttijdTijd || b.deadlineTijd || "";
-      if (!tijdGroepen[t]) tijdGroepen[t] = [];
-      tijdGroepen[t].push(r);
-    });
-    var uniekeTijden = Object.keys(tijdGroepen).sort();
-    if (uniekeTijden.length <= 1) {
-      // Geen splitsing nodig
-      boekingen.push(b);
-    } else {
-      // Maak voor elke unieke tijd een apart display-object
-      uniekeTijden.forEach(function(t) {
-        boekingen.push(Object.assign({}, b, {
-          regels: tijdGroepen[t],
-          deadlineTijd: t,
-          _gesplitst: true
-        }));
-      });
-    }
   });
   var [emailStatus, setEmailStatus] = useState(null);
   var [bbqConflicten, setBbqConflicten] = useState(null);
@@ -1584,15 +1564,100 @@ function HomeScreen({ setSc }) {
           React.createElement("button",{
             style:{background:takenConflicten&&takenConflicten.length>0?"#FE424D":"#fff",color:takenConflicten&&takenConflicten.length>0?"#fff":"#002D41",border:"1.5px solid "+(takenConflicten&&takenConflicten.length>0?"#FE424D":"#D8E8EF"),borderRadius:7,padding:"5px 12px",fontFamily:"inherit",fontWeight:700,fontSize:11,cursor:"pointer"},
             onClick:function(){
-              if(!window._supa)return;
-              var van=new Date().toISOString().split("T")[0];
-              window._supa.functions.invoke("dagpakket-beheer",{body:{actie:"conflicten_check"}}).then(function(r){
-                if(r.data)setTakenConflicten(r.data.conflicten||[]);
+              // Frontend conflict detectie — geen edge function nodig
+              var bbqMenuNamen = new Set();
+              (window._stamMenus||[]).forEach(function(m){
+                if((m.naam||"").toLowerCase().includes("bbq")||(m.naam||"").toLowerCase().includes("grill"))
+                  bbqMenuNamen.add(m.id);
               });
+              function isBBQRegel(r){
+                if((r.menuNaam||"").toLowerCase().includes("add up")) return false;
+                var k=(window._stamKoppelingen||[]).find(function(kp){ return kp.recras_naam===(r.menuNaam||"").trim(); });
+                return k && bbqMenuNamen.has(k.menu_id);
+              }
+              // Zone lookup
+              var bbqLoc = window._stamBBQLocaties || [];
+              function getZone(locNaam){
+                var l=bbqLoc.find(function(x){ return x.locatie_naam===locNaam; });
+                return l ? l.site+"__"+l.zone : "onbekend__"+locNaam;
+              }
+              function getMaxSetups(locNaam){
+                var l=bbqLoc.find(function(x){ return x.locatie_naam===locNaam; });
+                return l ? (l.max_setups||1) : 1;
+              }
+              // Bouw BBQ tijdsloten
+              var dagTijdMap = {};
+              (window._recrasBoekingen||[]).forEach(function(b){
+                var datum=(b.deadline||"").replace("T"," ").split(" ")[0];
+                if(!datum) return;
+                var bbqTijden=new Set();
+                (b.regels||[]).forEach(function(r){
+                  if(isBBQRegel(r) && r.starttijdTijd) bbqTijden.add(r.starttijdTijd);
+                });
+                // Fallback: alle unieke non-add-up tijden
+                if(bbqTijden.size===0){
+                  (b.regels||[]).forEach(function(r){
+                    if(!(r.menuNaam||"").toLowerCase().includes("add up") && r.starttijdTijd)
+                      bbqTijden.add(r.starttijdTijd);
+                  });
+                }
+                bbqTijden.forEach(function(t){
+                  var key=datum+"_"+t;
+                  if(!dagTijdMap[key]) dagTijdMap[key]=[];
+                  dagTijdMap[key].push(b);
+                });
+              });
+              // Detecteer conflicten
+              var gevonden=[];
+              Object.keys(dagTijdMap).forEach(function(key){
+                var bks=dagTijdMap[key];
+                if(bks.length<2) return;
+                var parts=key.split("_");
+                var datum=parts[0], tijd=parts[1];
+                // Groepeer per zone
+                var zoneMap={};
+                bks.forEach(function(b){
+                  var z=getZone(b.locatie||"");
+                  if(!zoneMap[z]) zoneMap[z]=[];
+                  zoneMap[z].push(b);
+                });
+                Object.keys(zoneMap).forEach(function(zone){
+                  var zBks=zoneMap[zone];
+                  var maxS=getMaxSetups(zBks[0].locatie||"");
+                  if(zBks.length>maxS){
+                    gevonden.push({
+                      datum:datum, tijd:tijd, zone:zone,
+                      ernst:"hoog",
+                      omschrijving:"BBQ capaciteitsconflict: "+zBks.length+" setups in zone "+zone+" om "+tijd+" (max "+maxS+")",
+                      boekingen:zBks.map(function(b){ return {id:b.id,naam:b.naam,locatie:b.locatie}; })
+                    });
+                  }
+                });
+              });
+              setTakenConflicten(gevonden);
             }
-          },"🔍 Controleer taken conflicten"),
-          takenConflicten!==null&&React.createElement("span",{style:{fontSize:11,color:takenConflicten.length>0?"#FE424D":"#10B981",fontWeight:700}},
-            takenConflicten.length>0?takenConflicten.length+" conflicten gevonden":"✓ Geen conflicten"
+          },"🔍 Controleer BBQ conflicten"),
+          takenConflicten!==null&&React.createElement("div",{style:{marginTop:8}},
+            React.createElement("span",{style:{fontSize:12,color:takenConflicten.length>0?"#FE424D":"#10B981",fontWeight:700}},
+              takenConflicten.length>0?"🚫 "+takenConflicten.length+" BBQ conflict(en) gevonden":"✅ Geen BBQ conflicten"
+            ),
+            takenConflicten.length>0&&React.createElement("div",{style:{marginTop:8}},
+              takenConflicten.map(function(c,ci){
+                return React.createElement("div",{key:ci,style:{background:"#FFEBEE",border:"1.5px solid #FE424D",borderRadius:8,padding:"10px 14px",marginTop:6,fontSize:12}},
+                  React.createElement("div",{style:{fontWeight:700,color:"#FE424D",marginBottom:4}},
+                    c.datum+" om "+c.tijd+" — "+c.zone.replace("amsterdam_west__","AW ").replace("weesp__","Weesp ").replace("__"," / ")
+                  ),
+                  React.createElement("div",{style:{color:"#333",marginBottom:4}},c.omschrijving),
+                  React.createElement("div",{style:{display:"flex",flexWrap:"wrap",gap:4}},
+                    (c.boekingen||[]).map(function(b,bi){
+                      return React.createElement("span",{key:bi,style:{background:"#002D41",color:"#fff",borderRadius:5,padding:"2px 8px",fontSize:11}},
+                        "#"+b.id+" "+b.naam+" ("+b.locatie+")"
+                      );
+                    })
+                  )
+                );
+              })
+            )
           )
         ), ovenTips.length>0&&React.createElement("div",{style:{marginBottom:12,padding:"10px 14px",borderRadius:8,fontSize:12,background:"#FFF8E1",border:"1px solid #FFD54F",display:"flex",gap:8}},React.createElement("span",{style:{color:"#B8860B",fontWeight:700}},"Tip: ",ovenTips.length," oven-boeking"+(ovenTips.length>1?"en":"")+" met 50+ personen op hetzelfde tijdstip — check ovenruimte. (",ovenTips.map(function(t){return t.a.naam+" & "+t.b.naam+" ("+t.diffMin+" min)";}).join(", "),")")), frituurTips.length>0&&React.createElement("div",{style:{marginBottom:12,padding:"10px 14px",borderRadius:8,fontSize:12,background:"#FFF3E0",border:"1px solid #FFB74D",display:"flex",gap:8}},React.createElement("span",{style:{color:"#E65100",fontWeight:700}},"Tip: ",frituurTips.length," frituur-boeking"+(frituurTips.length>1?"en":"")+" met 50+ personen tegelijk — overweeg extra frituurcapaciteit. (",frituurTips.map(function(t){return t.a.naam+" & "+t.b.naam+" ("+t.diffMin+" min)";}).join(", "),")")), geladen.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 14, background: "#fff", borderRadius: 10, padding: 16, boxShadow: "0 1px 4px rgba(0,45,65,.07)", border: "1px solid #E8EEF3" } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 900, fontSize: 14, color: C.night, marginBottom: 12, display: "flex", alignItems: "center", gap: 8 } }, "📱 Dagpakket voor kiosks", dagpakketStatus === "actief" && /* @__PURE__ */ React.createElement("span", { style: { background: "#E8F5E9", color: C.green, borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 700 } }, "\u25CF Actief — keuken werkt ermee"), dagpakketStatus === "gepubliceerd" && /* @__PURE__ */ React.createElement("span", { style: { background: "#E3F2FD", color: "#1565C0", borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 700 } }, "\u25CF Gepubliceerd"), dagpakketStatus === "afgesloten" && /* @__PURE__ */ React.createElement("span", { style: { background: "#F3E5F5", color: "#6A1B9A", borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 700 } }, "Afgesloten")), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 } }, ["west", "weesp"].map(function(code_) {
     var info = dagpakketStatusInfo[code_] || {};
@@ -1892,7 +1957,7 @@ function HomeScreen({ setSc }) {
       if (!m) m = (window._stamMenus || []).find(function(m2) {
         return m2.naam === r.menuNaam;
       });
-      return /* @__PURE__ */ React.createElement("tr", { key: b.id + "_" + ri, style: { background: ri === 0 ? "#EFF9FB" : C.white, borderLeft: "3px solid " + C.aqua, borderTop: ri === 0 ? "2px solid " + C.aqua : "none" } }, /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontSize: 10, color: C.muted } }, ri === 0 ? b.id : ""), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, whiteSpace: "nowrap" } }, ri === 0 ? b.deadlineDatum || "—" : ""), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 700, color: C.hot, whiteSpace: "nowrap" } }, ri === 0 ? (b.deadlineTijd || "—") : ""), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: ri === 0 ? 700 : 400 } }, ri === 0 ? b.naam : ""), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontSize: 10, color: C.muted } }, ri === 0 ? b.locatie : ""), /* @__PURE__ */ React.createElement("td", { style: SS.td }, r.menuNaam), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 700, textAlign: "center" } }, r.aantal), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td } }, m ? /* @__PURE__ */ React.createElement("span", { style: { color: C.green, fontWeight: 700 } }, "✓ ", m.naam) : /* @__PURE__ */ React.createElement("span", { style: { color: "#F57F17" } }, "\u26A0 Niet gekoppeld")));
+      return /* @__PURE__ */ React.createElement("tr", { key: b.id + "_" + ri, style: { background: ri === 0 ? "#EFF9FB" : C.white, borderLeft: "3px solid " + C.aqua, borderTop: ri === 0 ? "2px solid " + C.aqua : "none" } }, /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontSize: 10, color: C.muted } }, ri === 0 ? b.id : ""), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, whiteSpace: "nowrap" } }, ri === 0 ? b.deadlineDatum || "—" : ""), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 700, color: C.hot, whiteSpace: "nowrap" } }, (r.starttijdTijd && r.starttijdTijd !== b.deadlineTijd) ? r.starttijdTijd : ri === 0 ? b.deadlineTijd || "—" : ""), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: ri === 0 ? 700 : 400 } }, ri === 0 ? b.naam : ""), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontSize: 10, color: C.muted } }, ri === 0 ? b.locatie : ""), /* @__PURE__ */ React.createElement("td", { style: SS.td }, r.menuNaam), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 700, textAlign: "center" } }, r.aantal), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td } }, m ? /* @__PURE__ */ React.createElement("span", { style: { color: C.green, fontWeight: 700 } }, "✓ ", m.naam) : /* @__PURE__ */ React.createElement("span", { style: { color: "#F57F17" } }, "\u26A0 Niet gekoppeld")));
     });
   }))))))));
 }
