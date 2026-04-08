@@ -485,13 +485,19 @@ function Header({ sc, setSc, user, logout }) {
   var huidigLabel = "KitchenRobot";
   navGroups.forEach(function(g) {
     g.items.forEach(function(it) {
-      if (it[0] === sc || it[0] === sc.split(":").slice(0,2).join(":")) {
+      if (it[0] === sc) {
         huidigLabel = it[1] + " " + it[2];
       }
     });
   });
   function navKlik(id) {
-    setSc(id);
+    if (id.startsWith("stam:")) {
+      var tabId = id.split(":")[1];
+      setStamTab(tabId);
+      setSc("stam");
+    } else {
+      setSc(id);
+    }
     setMenuOpen(false);
   }
   function toggleGrp(lbl) {
@@ -513,7 +519,7 @@ function Header({ sc, setSc, user, logout }) {
         /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,.28)", letterSpacing: 1.5, textTransform: "uppercase" } }, grp.label),
         /* @__PURE__ */ React.createElement("span", { style: { color: "rgba(255,255,255,.28)", fontSize: 10, transform: open ? "rotate(0)" : "rotate(-90deg)", transition: "transform .15s" } }, "\u25BE")
       ), open && grp.items.map(function(item) {
-        var actief = sc === item[0] || (sc.startsWith("stam:") && item[0] === sc);
+        var actief = sc === item[0] || (sc === "stam" && item[0].startsWith("stam:") && item[0] === "stam:" + (typeof stamTab !== "undefined" ? stamTab : "pg"));
         return /* @__PURE__ */ React.createElement(
           "button",
           {
@@ -864,29 +870,49 @@ function HomeScreen({ setSc }) {
   function sortBoekIcon(veld) {
     return sortBoekVeld === veld ? sortBoekDir === "asc" ? " \u2191" : " \u2193" : " \u2195";
   }
-  var boekingen = (window._recrasBoekingen || []).slice().sort(function(a, b) {
+  var _boekBase = (window._recrasBoekingen || []).slice().sort(function(a, b) {
     var va = "", vb = "";
     if (sortBoekVeld === "id") {
-      va = a.id || "";
-      vb = b.id || "";
+      va = a.id || ""; vb = b.id || "";
     } else if (sortBoekVeld === "datum") {
-      va = a.deadline || "";
-      vb = b.deadline || "";
+      va = a.deadline || ""; vb = b.deadline || "";
     } else if (sortBoekVeld === "tijd") {
-      va = a.deadlineTijd || "";
-      vb = b.deadlineTijd || "";
+      va = a.deadlineTijd || ""; vb = b.deadlineTijd || "";
     } else if (sortBoekVeld === "naam") {
-      va = a.naam || "";
-      vb = b.naam || "";
+      va = a.naam || ""; vb = b.naam || "";
     } else if (sortBoekVeld === "locatie") {
       va = (a.locatie || "") + (a.plaats || "");
       vb = (b.locatie || "") + (b.plaats || "");
     } else {
-      va = a.deadline || "";
-      vb = b.deadline || "";
+      va = a.deadline || ""; vb = b.deadline || "";
     }
     var res = va.localeCompare(vb, "nl");
     return sortBoekDir === "asc" ? res : -res;
+  });
+  // Splits boekingen met meerdere starttijdTijden op per unieke tijd
+  var boekingen = [];
+  _boekBase.forEach(function(b) {
+    // Groepeer regels per unieke starttijdTijd
+    var tijdGroepen = {};
+    (b.regels || []).forEach(function(r) {
+      var t = r.starttijdTijd || b.deadlineTijd || "";
+      if (!tijdGroepen[t]) tijdGroepen[t] = [];
+      tijdGroepen[t].push(r);
+    });
+    var uniekeTijden = Object.keys(tijdGroepen).sort();
+    if (uniekeTijden.length <= 1) {
+      // Geen splitsing nodig
+      boekingen.push(b);
+    } else {
+      // Maak voor elke unieke tijd een apart display-object
+      uniekeTijden.forEach(function(t) {
+        boekingen.push(Object.assign({}, b, {
+          regels: tijdGroepen[t],
+          deadlineTijd: t,
+          _gesplitst: true
+        }));
+      });
+    }
   });
   var [emailStatus, setEmailStatus] = useState(null);
   var [bbqConflicten, setBbqConflicten] = useState(null);
@@ -1035,7 +1061,7 @@ function HomeScreen({ setSc }) {
             id: b.id,
             naam: b.naam,
             datum: b.deadline ? b.deadline.replace("T", " ").split(" ")[0] : "",
-            deadlineTijd: (menusPs[0] && menusPs[0].starttijdTijd) || b.deadlineTijd || "—",
+            deadlineTijd: b.deadlineTijd || "—",
             locatie: b.locatie || "",
             totaalPers: pers,
             opzetPct: Math.round(pct * 100),
@@ -1866,7 +1892,7 @@ function HomeScreen({ setSc }) {
       if (!m) m = (window._stamMenus || []).find(function(m2) {
         return m2.naam === r.menuNaam;
       });
-      return /* @__PURE__ */ React.createElement("tr", { key: b.id + "_" + ri, style: { background: ri === 0 ? "#EFF9FB" : C.white, borderLeft: "3px solid " + C.aqua, borderTop: ri === 0 ? "2px solid " + C.aqua : "none" } }, /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontSize: 10, color: C.muted } }, ri === 0 ? b.id : ""), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, whiteSpace: "nowrap" } }, ri === 0 ? b.deadlineDatum || "—" : ""), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 700, color: C.hot, whiteSpace: "nowrap" } }, (r.starttijdTijd && r.starttijdTijd !== b.deadlineTijd) ? r.starttijdTijd : ri === 0 ? b.deadlineTijd || "—" : ""), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: ri === 0 ? 700 : 400 } }, ri === 0 ? b.naam : ""), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontSize: 10, color: C.muted } }, ri === 0 ? b.locatie : ""), /* @__PURE__ */ React.createElement("td", { style: SS.td }, r.menuNaam), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 700, textAlign: "center" } }, r.aantal), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td } }, m ? /* @__PURE__ */ React.createElement("span", { style: { color: C.green, fontWeight: 700 } }, "✓ ", m.naam) : /* @__PURE__ */ React.createElement("span", { style: { color: "#F57F17" } }, "\u26A0 Niet gekoppeld")));
+      return /* @__PURE__ */ React.createElement("tr", { key: b.id + "_" + ri, style: { background: ri === 0 ? "#EFF9FB" : C.white, borderLeft: "3px solid " + C.aqua, borderTop: ri === 0 ? "2px solid " + C.aqua : "none" } }, /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontSize: 10, color: C.muted } }, ri === 0 ? b.id : ""), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, whiteSpace: "nowrap" } }, ri === 0 ? b.deadlineDatum || "—" : ""), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 700, color: C.hot, whiteSpace: "nowrap" } }, ri === 0 ? (b.deadlineTijd || "—") : ""), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: ri === 0 ? 700 : 400 } }, ri === 0 ? b.naam : ""), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontSize: 10, color: C.muted } }, ri === 0 ? b.locatie : ""), /* @__PURE__ */ React.createElement("td", { style: SS.td }, r.menuNaam), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 700, textAlign: "center" } }, r.aantal), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td } }, m ? /* @__PURE__ */ React.createElement("span", { style: { color: C.green, fontWeight: 700 } }, "✓ ", m.naam) : /* @__PURE__ */ React.createElement("span", { style: { color: "#F57F17" } }, "\u26A0 Niet gekoppeld")));
     });
   }))))))));
 }
@@ -9365,7 +9391,7 @@ function App({ supabaseInloggen, supabaseUitloggen, supabaseSessie, supabaseProf
   if (!user) {
     return /* @__PURE__ */ React.createElement(LoginScreen, { onLogin: handleLogin });
   }
-  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", minHeight: "100vh", background: "#F0F4F7" } }, /* @__PURE__ */ React.createElement(Header, { sc, setSc, user, logout: handleLogout }), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto", overflowX: "hidden" }, className: "mobile-padding" }, /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 1200, margin: "0 auto", padding: "28px 20px 60px" } }, sc === "home" && /* @__PURE__ */ React.createElement(HomeScreen, { setSc }), sc === "boekingen" && /* @__PURE__ */ React.createElement(BoekingenScreen, { setSc, setActieve }), sc === "buffet" && /* @__PURE__ */ React.createElement(BuffetScreen, { actieve, setActieve }), sc === "opzet" && /* @__PURE__ */ React.createElement(OpzetScreen, null), sc === "tijden" && /* @__PURE__ */ React.createElement(TijdenScreen, null), sc.startsWith("stam:") && /* @__PURE__ */ React.createElement(StamScreen, { initTab: sc.split(":")[1] || "pg" }), sc === "fin" && /* @__PURE__ */ React.createElement(FinancieelScreen, null), sc === "allergenen" && /* @__PURE__ */ React.createElement(AllergenenScreen, null), sc === "inspiratie" && /* @__PURE__ */ React.createElement(InspiratieScreen, null), sc === "opzetlog" && /* @__PURE__ */ React.createElement(OpzetLogboekScreen, null), sc === "haccp" && /* @__PURE__ */ React.createElement(HACCPScreen, null), sc === "bestelling" && /* @__PURE__ */ React.createElement(SligroBestellingScreen, null))));
+  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", minHeight: "100vh", background: "#F0F4F7" } }, /* @__PURE__ */ React.createElement(Header, { sc, setSc, user, logout: handleLogout }), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto", overflowX: "hidden" }, className: "mobile-padding" }, /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 1200, margin: "0 auto", padding: "28px 20px 60px" } }, sc === "home" && /* @__PURE__ */ React.createElement(HomeScreen, { setSc }), sc === "boekingen" && /* @__PURE__ */ React.createElement(BoekingenScreen, { setSc, setActieve }), sc === "buffet" && /* @__PURE__ */ React.createElement(BuffetScreen, { actieve, setActieve }), sc === "opzet" && /* @__PURE__ */ React.createElement(OpzetScreen, null), sc === "tijden" && /* @__PURE__ */ React.createElement(TijdenScreen, null), sc === "stam" && /* @__PURE__ */ React.createElement(StamScreen, { initTab: stamTab }), sc === "fin" && /* @__PURE__ */ React.createElement(FinancieelScreen, null), sc === "allergenen" && /* @__PURE__ */ React.createElement(AllergenenScreen, null), sc === "inspiratie" && /* @__PURE__ */ React.createElement(InspiratieScreen, null), sc === "opzetlog" && /* @__PURE__ */ React.createElement(OpzetLogboekScreen, null), sc === "haccp" && /* @__PURE__ */ React.createElement(HACCPScreen, null), sc === "bestelling" && /* @__PURE__ */ React.createElement(SligroBestellingScreen, null))));
 }
 function InspiratieScreen() {
   var _a, _b;
