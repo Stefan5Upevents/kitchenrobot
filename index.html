@@ -6915,6 +6915,7 @@ function KioskBeheerTab() {
   var [apparaten, setApparaten] = useState([]);
   var [haccp, setHaccp] = useState([]);
   var [outlets, setOutlets] = useState([]);
+  var [sensoren, setSensoren] = useState([]);
   var [laden, setLaden] = useState(true);
   var [melding, setMelding] = useState("");
   var [bewerkItem, setBewerkItem] = useState(null);
@@ -6935,17 +6936,19 @@ function KioskBeheerTab() {
       window._supa.from("kiosk_medewerkers").select("*, kiosk_outlets(naam,code)").order("naam"),
       window._supa.from("kiosk_apparaten").select("*, kiosk_outlets(naam,code)").order("naam"),
       window._supa.from("kiosk_haccp_punten").select("*").order("outlet_code,volgorde"),
-      window._supa.from("kiosk_outlets").select("*").order("naam")
+      window._supa.from("kiosk_outlets").select("*").order("naam"),
+      window._supa.from("kiosk_sensoren").select("*").eq("outlet_code","weesp").order("naam")
     ]).then(function(results) {
       setTaken(results[0].data || []);
       setMedewerkers(results[1].data || []);
       setApparaten(results[2].data || []);
       setHaccp(results[3].data || []);
       setOutlets(results[4].data || []);
+      setSensoren(results[5].data || []);
       setLaden(false);
     });
   }, []);
-  var subTabs = [["taken", "📋 Taken"], ["medewerkers", "👤 Medewerkers"], ["apparaten", "📱 Apparaten"], ["haccp", "🌡 HACCP"], ["waste", "🗑 Waste"]];
+  var subTabs = [["taken", "📋 Taken"], ["medewerkers", "👤 Medewerkers"], ["apparaten", "📱 Apparaten"], ["haccp", "🌡 HACCP"], ["waste", "🗑 Waste"], ["sensoren", "📡 Sensoren"]];
   var catKleuren = { "Inkopen & ontvangen": "#1565C0", "Temperatuurbeheer": "#E65100", "Bereiden": "#2E7D32", "Opslag": "#6A1B9A", "Schoonmaak (periodiek)": "#00695C", "Schoonmaak": "#00695C", "Presenteren & serveren": "#AD1457", "Overig": "#546E7A" };
   var freqKleur = { "dagelijks": "#FE424D", "wekelijks": "#1AA6B7", "maandelijks": "#FF9800", "jaarlijks": "#9E9E9E" };
   async function voegMedewerkerToe() {
@@ -7028,7 +7031,8 @@ function KioskBeheerTab() {
       outlet_codes: taakBewerk.outlet_codes || ["west", "weesp"],
       min_temp: taakBewerk.min_temp || null,
       max_temp: taakBewerk.max_temp || null,
-      verplicht: taakBewerk.verplicht !== false
+      verplicht: taakBewerk.verplicht !== false,
+      pdf_url: taakBewerk.pdf_url || null
     };
     if (taakBewerk.id) {
       window._supa.from("kiosk_taak_templates").update(data).eq("id", taakBewerk.id).then(function(r) {
@@ -7210,7 +7214,7 @@ function KioskBeheerTab() {
           return Object.assign({}, p, { outlet_codes: codes });
         });
       } }), /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 700 } }, c === "west" ? "Amsterdam West" : "Weesp"));
-    }))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, marginTop: 16 } }, /* @__PURE__ */ React.createElement("button", { style: btnP, onClick: slaaTaakOp }, "Opslaan"), /* @__PURE__ */ React.createElement("button", { style: btnSG, onClick: function() {
+    }))), /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 12 } }, /* @__PURE__ */ React.createElement("div", { style: SS.lbl }, "📄 PDF instructiedocument (URL)"), /* @__PURE__ */ React.createElement("input", { style: SS.inp, placeholder: "https://... of leeg laten", value: taakBewerk.pdf_url || "", onChange: function(e) { setTaakBewerk(function(p) { return Object.assign({}, p, { pdf_url: e.target.value || null }); }); } }), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.muted, marginTop: 3 } }, "Upload PDF eerst naar Supabase Storage (kiosk-pdfs bucket) en plak hier de publieke URL")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, marginTop: 16 } }, /* @__PURE__ */ React.createElement("button", { style: btnP, onClick: slaaTaakOp }, "Opslaan"), /* @__PURE__ */ React.createElement("button", { style: btnSG, onClick: function() {
       setTaakBewerk(null);
     } }, "Annuleren"))))
   ), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 } }, /* @__PURE__ */ React.createElement("div", { style: SS.cT }, "Taak Templates (", taken.length, ")"), /* @__PURE__ */ React.createElement("button", { style: btnP, onClick: function() {
@@ -7366,7 +7370,7 @@ function KioskBeheerTab() {
         verwijderHaccp(p);
       }, title: "Verwijderen" }, "🗑"))));
     }))));
-  })), subtab === "waste" && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: SS.cT }, "Waste Module"), /* @__PURE__ */ React.createElement("div", { style: { ...alertW, margin: "12px 0" } }, "📱 Waste wordt geregistreerd via de kiosk of via WhatsApp foto's naar de waste bot. Hier stel je de redenen en drempelwaarden in."), /* @__PURE__ */ React.createElement("div", { style: { background: C.light, borderRadius: 8, padding: 14, marginBottom: 16 } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 12, marginBottom: 8 } }, "16 afvalredenen (uit Horeko)"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6 } }, [
+  })), subtab === "sensoren" && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 } }, /* @__PURE__ */ React.createElement("div", { style: SS.cT }, "Sensoren Weesp (" + sensoren.length + ")"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.muted } }, "Vul MAC-adressen in na ontvangst · Activeer per sensor")), /* @__PURE__ */ React.createElement("div", { style: { background: "#E3F2FD", borderRadius: 8, padding: "10px 14px", marginBottom: 14, fontSize: 12, color: "#1565C0" } }, "📱 MAC-adres vind je in de SwitchBot app: Apparaat → Instellingen → Apparaatinformatie. Formaat: AA:BB:CC:DD:EE:FF"), /* @__PURE__ */ React.createElement("table", { style: { ...SS.tbl, fontSize: 12 } }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, ["Naam", "Type", "Min", "Max", "MAC-adres", "Status"].map(function(h) { return /* @__PURE__ */ React.createElement("th", { key: h, style: SS.th }, h); }))), /* @__PURE__ */ React.createElement("tbody", null, sensoren.map(function(s) { var typeKl = { koeling: C.aqua, vriezer: "#5C6BC0", frituur: C.hot }[s.type] || C.muted; return /* @__PURE__ */ React.createElement("tr", { key: s.id, style: { background: s.actief ? "#E8F5E9" : C.white } }, /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 700 } }, s.naam), /* @__PURE__ */ React.createElement("td", { style: SS.td }, /* @__PURE__ */ React.createElement("span", { style: { background: typeKl + "22", color: typeKl, border: "1px solid " + typeKl + "44", borderRadius: 4, padding: "1px 6px", fontSize: 10, fontWeight: 700 } }, s.type || "switchbot")), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, color: C.aqua, fontWeight: 700 } }, s.min_norm !== null ? s.min_norm + "°C" : "—"), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, color: C.hot, fontWeight: 700 } }, s.max_norm !== null ? s.max_norm + "°C" : "—"), /* @__PURE__ */ React.createElement("td", { style: SS.td }, /* @__PURE__ */ React.createElement("input", { style: { ...SS.inp, fontFamily: "monospace", fontSize: 11, width: "100%", maxWidth: 160 }, placeholder: "AA:BB:CC:DD:EE:FF", value: s.mac_adres || "", onChange: function(e) { setSensoren(function(prev) { return prev.map(function(x) { return x.id === s.id ? Object.assign({}, x, { mac_adres: e.target.value }) : x; }); }); }, onBlur: function(e) { var mac = e.target.value.trim().toUpperCase(); if (!mac) return; window._supa.from("kiosk_sensoren").update({ mac_adres: mac }).eq("id", s.id).then(function(r) { if (!r.error) toon("MAC opgeslagen ✓"); else toon("Fout: " + r.error.message, true); }); } })), /* @__PURE__ */ React.createElement("td", { style: SS.td }, /* @__PURE__ */ React.createElement("button", { style: { ...btnSG, fontSize: 10, background: s.actief ? "#E8F5E9" : "#F5F5F5", color: s.actief ? C.green : C.muted }, onClick: function() { if (!s.mac_adres && !s.actief) { toon("Vul eerst een MAC-adres in", true); return; } window._supa.from("kiosk_sensoren").update({ actief: !s.actief }).eq("id", s.id).then(function(r) { if (!r.error) setSensoren(function(prev) { return prev.map(function(x) { return x.id === s.id ? Object.assign({}, x, { actief: !x.actief }) : x; }); }); }); } }, s.actief ? "✓ Actief" : "Activeer"))); })))), subtab === "waste" && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: SS.cT }, "Waste Module"), /* @__PURE__ */ React.createElement("div", { style: { ...alertW, margin: "12px 0" } }, "📱 Waste wordt geregistreerd via de kiosk of via WhatsApp foto's naar de waste bot. Hier stel je de redenen en drempelwaarden in."), /* @__PURE__ */ React.createElement("div", { style: { background: C.light, borderRadius: 8, padding: 14, marginBottom: 16 } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 12, marginBottom: 8 } }, "16 afvalredenen (uit Horeko)"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6 } }, [
     { naam: "Over datum", kleur: "#FE424D" },
     { naam: "Overgeproduceerd", kleur: "#FF9800" },
     { naam: "Smaak niet goed", kleur: "#FF9800" },
