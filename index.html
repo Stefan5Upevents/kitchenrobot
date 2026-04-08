@@ -485,19 +485,13 @@ function Header({ sc, setSc, user, logout }) {
   var huidigLabel = "KitchenRobot";
   navGroups.forEach(function(g) {
     g.items.forEach(function(it) {
-      if (it[0] === sc) {
+      if (it[0] === sc || it[0] === sc.split(":").slice(0,2).join(":")) {
         huidigLabel = it[1] + " " + it[2];
       }
     });
   });
   function navKlik(id) {
-    if (id.startsWith("stam:")) {
-      var tabId = id.split(":")[1];
-      setStamTab(tabId);
-      setSc("stam");
-    } else {
-      setSc(id);
-    }
+    setSc(id);
     setMenuOpen(false);
   }
   function toggleGrp(lbl) {
@@ -519,7 +513,7 @@ function Header({ sc, setSc, user, logout }) {
         /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,.28)", letterSpacing: 1.5, textTransform: "uppercase" } }, grp.label),
         /* @__PURE__ */ React.createElement("span", { style: { color: "rgba(255,255,255,.28)", fontSize: 10, transform: open ? "rotate(0)" : "rotate(-90deg)", transition: "transform .15s" } }, "\u25BE")
       ), open && grp.items.map(function(item) {
-        var actief = sc === item[0] || (sc === "stam" && item[0].startsWith("stam:") && item[0] === "stam:" + (typeof stamTab !== "undefined" ? stamTab : "pg"));
+        var actief = sc === item[0] || (sc.startsWith("stam:") && item[0] === sc);
         return /* @__PURE__ */ React.createElement(
           "button",
           {
@@ -1041,7 +1035,7 @@ function HomeScreen({ setSc }) {
             id: b.id,
             naam: b.naam,
             datum: b.deadline ? b.deadline.replace("T", " ").split(" ")[0] : "",
-            deadlineTijd: b.deadlineTijd || "—",
+            deadlineTijd: (menusPs[0] && menusPs[0].starttijdTijd) || b.deadlineTijd || "—",
             locatie: b.locatie || "",
             totaalPers: pers,
             opzetPct: Math.round(pct * 100),
@@ -9371,7 +9365,7 @@ function App({ supabaseInloggen, supabaseUitloggen, supabaseSessie, supabaseProf
   if (!user) {
     return /* @__PURE__ */ React.createElement(LoginScreen, { onLogin: handleLogin });
   }
-  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", minHeight: "100vh", background: "#F0F4F7" } }, /* @__PURE__ */ React.createElement(Header, { sc, setSc, user, logout: handleLogout }), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto", overflowX: "hidden" }, className: "mobile-padding" }, /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 1200, margin: "0 auto", padding: "28px 20px 60px" } }, sc === "home" && /* @__PURE__ */ React.createElement(HomeScreen, { setSc }), sc === "boekingen" && /* @__PURE__ */ React.createElement(BoekingenScreen, { setSc, setActieve }), sc === "buffet" && /* @__PURE__ */ React.createElement(BuffetScreen, { actieve, setActieve }), sc === "opzet" && /* @__PURE__ */ React.createElement(OpzetScreen, null), sc === "tijden" && /* @__PURE__ */ React.createElement(TijdenScreen, null), sc === "stam" && /* @__PURE__ */ React.createElement(StamScreen, { initTab: stamTab }), sc === "fin" && /* @__PURE__ */ React.createElement(FinancieelScreen, null), sc === "allergenen" && /* @__PURE__ */ React.createElement(AllergenenScreen, null), sc === "inspiratie" && /* @__PURE__ */ React.createElement(InspiratieScreen, null), sc === "opzetlog" && /* @__PURE__ */ React.createElement(OpzetLogboekScreen, null), sc === "haccp" && /* @__PURE__ */ React.createElement(HACCPScreen, null), sc === "bestelling" && /* @__PURE__ */ React.createElement(SligroBestellingScreen, null))));
+  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", minHeight: "100vh", background: "#F0F4F7" } }, /* @__PURE__ */ React.createElement(Header, { sc, setSc, user, logout: handleLogout }), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto", overflowX: "hidden" }, className: "mobile-padding" }, /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 1200, margin: "0 auto", padding: "28px 20px 60px" } }, sc === "home" && /* @__PURE__ */ React.createElement(HomeScreen, { setSc }), sc === "boekingen" && /* @__PURE__ */ React.createElement(BoekingenScreen, { setSc, setActieve }), sc === "buffet" && /* @__PURE__ */ React.createElement(BuffetScreen, { actieve, setActieve }), sc === "opzet" && /* @__PURE__ */ React.createElement(OpzetScreen, null), sc === "tijden" && /* @__PURE__ */ React.createElement(TijdenScreen, null), sc.startsWith("stam:") && /* @__PURE__ */ React.createElement(StamScreen, { initTab: sc.split(":")[1] || "pg" }), sc === "fin" && /* @__PURE__ */ React.createElement(FinancieelScreen, null), sc === "allergenen" && /* @__PURE__ */ React.createElement(AllergenenScreen, null), sc === "inspiratie" && /* @__PURE__ */ React.createElement(InspiratieScreen, null), sc === "opzetlog" && /* @__PURE__ */ React.createElement(OpzetLogboekScreen, null), sc === "haccp" && /* @__PURE__ */ React.createElement(HACCPScreen, null), sc === "bestelling" && /* @__PURE__ */ React.createElement(SligroBestellingScreen, null))));
 }
 function InspiratieScreen() {
   var _a, _b;
