@@ -1373,43 +1373,58 @@ function HomeScreen({ setSc }) {
       if (pax >= 80) return { min: 25, voorkeur: 45 };
       return { min: 15, voorkeur: 20 };
     }
+    // Haal BBQ service-tijd op (starttijdTijd van BBQ-regels, niet boeking deadline)
+    function getBBQServiceTijd(b) {
+      var datum = (b.deadline || "").replace("T", " ").split(" ")[0];
+      var bbqRegels = (b.regels || []).filter(function(r) {
+        var k = koppelingen.find(function(k2) { return k2.recras_naam === r.menuNaam; });
+        return k && bbqMenuNamen.indexOf(k.menu_id) >= 0;
+      });
+      // Gebruik vroegste BBQ starttijdTijd
+      var tijden = bbqRegels
+        .filter(function(r) { return r.starttijdTijd; })
+        .map(function(r) { return r.starttijdTijd; })
+        .sort();
+      if (tijden.length > 0) return datum + " " + tijden[0] + ":00";
+      return b.deadline || "";
+    }
     var gevonden = [];
-    var zoneGroepen = {};
+    var tijdZoneMap = {};
     boekingen2.forEach(function(b) {
       if (!isBBQ(b)) return;
       var zone = zonesMap[b.locatie || ""];
       if (!zone) return;
-      if (!zoneGroepen[zone]) zoneGroepen[zone] = [];
-      zoneGroepen[zone].push(Object.assign({}, b, { _pax: getPax(b), _maxSetups: locatieConfig[b.locatie] || 1 }));
+      var serviceTijd = getBBQServiceTijd(b);
+      var datum = serviceTijd.replace("T", " ").split(" ")[0];
+      var tijd = (serviceTijd.replace("T", " ").split(" ")[1] || "").substring(0, 5);
+      var key = datum + "_" + tijd + "_" + zone;
+      if (!tijdZoneMap[key]) tijdZoneMap[key] = [];
+      tijdZoneMap[key].push(Object.assign({}, b, {
+        _pax: getPax(b),
+        _maxSetups: locatieConfig[b.locatie] || 1,
+        _serviceTijd: serviceTijd,
+        _zone: zone
+      }));
     });
-    Object.keys(zoneGroepen).forEach(function(zone) {
-      var zoneBk = zoneGroepen[zone].slice().sort(function(a2, b2) {
-        return new Date(a2.deadline) - new Date(b2.deadline);
-      });
-      var maxSetups = zoneBk[0]._maxSetups;
-      for (var i = 0; i < zoneBk.length; i++) {
-        for (var j = i + 1; j < Math.min(zoneBk.length, i + maxSetups + 2); j++) {
-          var a = zoneBk[i], b = zoneBk[j];
-          var tA = new Date(a.deadline).getTime(), tB = new Date(b.deadline).getTime();
-          var verschilMin = Math.round((tB - tA) / 6e4);
-          if (verschilMin < 0) continue;
-          var maxPax = Math.max(a._pax, b._pax);
-          var reg = vereistMin(maxPax);
-          if (verschilMin < reg.min) {
-            var nieuweT = new Date(tA + reg.voorkeur * 6e4);
-            gevonden.push({
-              zone,
-              a,
-              b,
-              verschilMin,
-              vereistMin: reg.min,
-              voorkeur: reg.voorkeur,
-              maxPax,
-              nieuweDeadline: nieuweT.toISOString(),
-              type: maxPax >= 200 ? "200+ personen" : verschilMin < reg.min ? "Te weinig tijd" : "Krap"
-            });
-          }
-        }
+    Object.keys(tijdZoneMap).forEach(function(key) {
+      var bks = tijdZoneMap[key];
+      var maxSetups = bks[0]._maxSetups;
+      if (bks.length > maxSetups) {
+        var parts = key.split("_");
+        gevonden.push({
+          zone: bks[0]._zone,
+          datum: parts[0],
+          tijd: parts[1],
+          a: bks[0],
+          b: bks[1],
+          alleBoekingen: bks,
+          verschilMin: 0,
+          vereistMin: 0,
+          voorkeur: 0,
+          maxPax: bks.reduce(function(s, b2) { return Math.max(s, b2._pax); }, 0),
+          nieuweDeadline: bks[0]._serviceTijd,
+          type: "Capaciteitsconflict: " + bks.length + " BBQ setups om " + parts[1] + " in zone " + bks[0]._zone + " (max " + maxSetups + ")"
+        });
       }
     });
     setBbqConflicten(gevonden);
