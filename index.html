@@ -2183,12 +2183,12 @@ function BuffetScreen({ actieve, setActieve }) {
     if (acc.indexOf(f.pgId) < 0) acc.push(f.pgId);
     return acc;
   }, []);
-  var psInPg = pg ? pg.soorten.filter(function(ps_) {
+  var psInPg = pg && pg.soorten ? pg.soorten.filter(function(ps_) {
     return formulieren.some(function(f) {
       return f.pgId === pgId && f.psId === ps_.id;
     });
   }) : [];
-  var boekInPs = formulieren.filter(function(f) {
+  var boekInPs = (formulieren || []).filter(function(f) {
     return f.pgId === pgId && f.psId === psId;
   });
   var boekingUitDB = (window._recrasBoekingen || []).find(function(b) {
@@ -3390,7 +3390,7 @@ function StamScreen({ initTab }) {
         });
       }));
       setLaden(false);
-      window._stamProductgroepen = results[0].data || [];
+      window._stamProductgroepen = (results[0].data || []).map(function(pg) { return Object.assign({}, pg, { soorten: pg.productsoorten || [] }); });
       window._stamGerechten = results[1].data || [];
       window._stamMenus = results[2].data || [];
       window._stamSligro = (results[3].data || []).map(function(p) {
