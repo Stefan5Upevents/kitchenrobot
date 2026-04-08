@@ -1373,20 +1373,13 @@ function HomeScreen({ setSc }) {
       if (pax >= 80) return { min: 25, voorkeur: 45 };
       return { min: 15, voorkeur: 20 };
     }
-    // Haal BBQ service-tijd op (starttijdTijd van BBQ-regels, niet boeking deadline)
-    function getBBQServiceTijd(b) {
+    function getBBQTijd(b) {
       var datum = (b.deadline || "").replace("T", " ").split(" ")[0];
-      var bbqRegels = (b.regels || []).filter(function(r) {
+      var tijden = (b.regels || []).filter(function(r) {
         var k = koppelingen.find(function(k2) { return k2.recras_naam === r.menuNaam; });
-        return k && bbqMenuNamen.indexOf(k.menu_id) >= 0;
-      });
-      // Gebruik vroegste BBQ starttijdTijd
-      var tijden = bbqRegels
-        .filter(function(r) { return r.starttijdTijd; })
-        .map(function(r) { return r.starttijdTijd; })
-        .sort();
-      if (tijden.length > 0) return datum + " " + tijden[0] + ":00";
-      return b.deadline || "";
+        return k && bbqMenuNamen.indexOf(k.menu_id) >= 0 && r.starttijdTijd;
+      }).map(function(r) { return r.starttijdTijd; }).sort();
+      return datum + " " + (tijden[0] || (b.deadline || "").replace("T", " ").split(" ")[1] || "00:00") + ":00";
     }
     var gevonden = [];
     var tijdZoneMap = {};
@@ -1394,37 +1387,19 @@ function HomeScreen({ setSc }) {
       if (!isBBQ(b)) return;
       var zone = zonesMap[b.locatie || ""];
       if (!zone) return;
-      var serviceTijd = getBBQServiceTijd(b);
-      var datum = serviceTijd.replace("T", " ").split(" ")[0];
-      var tijd = (serviceTijd.replace("T", " ").split(" ")[1] || "").substring(0, 5);
+      var st = getBBQTijd(b);
+      var datum = st.replace("T", " ").split(" ")[0];
+      var tijd = (st.replace("T", " ").split(" ")[1] || "").substring(0, 5);
       var key = datum + "_" + tijd + "_" + zone;
       if (!tijdZoneMap[key]) tijdZoneMap[key] = [];
-      tijdZoneMap[key].push(Object.assign({}, b, {
-        _pax: getPax(b),
-        _maxSetups: locatieConfig[b.locatie] || 1,
-        _serviceTijd: serviceTijd,
-        _zone: zone
-      }));
+      tijdZoneMap[key].push(Object.assign({}, b, { _pax: getPax(b), _maxSetups: locatieConfig[b.locatie] || 1, _zone: zone, _tijd: tijd }));
     });
     Object.keys(tijdZoneMap).forEach(function(key) {
       var bks = tijdZoneMap[key];
       var maxSetups = bks[0]._maxSetups;
       if (bks.length > maxSetups) {
-        var parts = key.split("_");
-        gevonden.push({
-          zone: bks[0]._zone,
-          datum: parts[0],
-          tijd: parts[1],
-          a: bks[0],
-          b: bks[1],
-          alleBoekingen: bks,
-          verschilMin: 0,
-          vereistMin: 0,
-          voorkeur: 0,
-          maxPax: bks.reduce(function(s, b2) { return Math.max(s, b2._pax); }, 0),
-          nieuweDeadline: bks[0]._serviceTijd,
-          type: "Capaciteitsconflict: " + bks.length + " BBQ setups om " + parts[1] + " in zone " + bks[0]._zone + " (max " + maxSetups + ")"
-        });
+        var p = key.split("_");
+        gevonden.push({ zone: bks[0]._zone, datum: p[0], tijd: p[1], a: bks[0], b: bks[1], alleBoekingen: bks, verschilMin: 0, vereistMin: 0, voorkeur: 0, maxPax: bks.reduce(function(s, x) { return Math.max(s, x._pax); }, 0), nieuweDeadline: bks[0].deadline, type: bks.length + " BBQ setups om " + p[1] + " (" + bks[0]._zone + ", max " + maxSetups + ")" });
       }
     });
     setBbqConflicten(gevonden);
@@ -1926,7 +1901,7 @@ function HomeScreen({ setSc }) {
       if (!m) m = (window._stamMenus || []).find(function(m2) {
         return m2.naam === r.menuNaam;
       });
-      return /* @__PURE__ */ React.createElement("tr", { key: b.id + "_" + ri, style: { background: ri === 0 ? "#EFF9FB" : C.white, borderLeft: "3px solid " + C.aqua, borderTop: ri === 0 ? "2px solid " + C.aqua : "none" } }, /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontSize: 10, color: C.muted } }, ri === 0 ? b.id : ""), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, whiteSpace: "nowrap" } }, ri === 0 ? b.deadlineDatum || "—" : ""), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 700, color: C.hot, whiteSpace: "nowrap" } }, (r.starttijdTijd && r.starttijdTijd !== b.deadlineTijd) ? r.starttijdTijd : ri === 0 ? b.deadlineTijd || "—" : ""), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: ri === 0 ? 700 : 400 } }, ri === 0 ? b.naam : ""), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontSize: 10, color: C.muted } }, ri === 0 ? b.locatie : ""), /* @__PURE__ */ React.createElement("td", { style: SS.td }, r.menuNaam), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 700, textAlign: "center" } }, r.aantal), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td } }, m ? /* @__PURE__ */ React.createElement("span", { style: { color: C.green, fontWeight: 700 } }, "✓ ", m.naam) : /* @__PURE__ */ React.createElement("span", { style: { color: "#F57F17" } }, "\u26A0 Niet gekoppeld")));
+      return /* @__PURE__ */ React.createElement("tr", { key: b.id + "_" + ri, style: { background: ri === 0 ? "#EFF9FB" : C.white, borderLeft: "3px solid " + C.aqua, borderTop: ri === 0 ? "2px solid " + C.aqua : "none" } }, /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontSize: 10, color: C.muted } }, ri === 0 ? b.id : ""), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, whiteSpace: "nowrap" } }, ri === 0 ? b.deadlineDatum || "—" : ""), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 700, color: C.hot, whiteSpace: "nowrap" } }, (r.starttijdTijd && r.starttijdTijd !== b.deadlineTijd) ? r.starttijdTijd : ri === 0 ? b.deadlineTijd || "—" : ""), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: ri === 0 ? 700 : 400 } }, b.naam), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontSize: 10, color: C.muted } }, b.locatie || ""), /* @__PURE__ */ React.createElement("td", { style: SS.td }, r.menuNaam), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 700, textAlign: "center" } }, r.aantal), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td } }, m ? /* @__PURE__ */ React.createElement("span", { style: { color: C.green, fontWeight: 700 } }, "✓ ", m.naam) : /* @__PURE__ */ React.createElement("span", { style: { color: "#F57F17" } }, "\u26A0 Niet gekoppeld")));
     });
   }))))))));
 }
