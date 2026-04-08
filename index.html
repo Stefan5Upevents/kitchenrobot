@@ -1564,77 +1564,99 @@ function HomeScreen({ setSc }) {
           React.createElement("button",{
             style:{background:takenConflicten&&takenConflicten.length>0?"#FE424D":"#fff",color:takenConflicten&&takenConflicten.length>0?"#fff":"#002D41",border:"1.5px solid "+(takenConflicten&&takenConflicten.length>0?"#FE424D":"#D8E8EF"),borderRadius:7,padding:"5px 12px",fontFamily:"inherit",fontWeight:700,fontSize:11,cursor:"pointer"},
             onClick:function(){
-              // Frontend conflict detectie — geen edge function nodig
-              var bbqMenuNamen = new Set();
-              (window._stamMenus||[]).forEach(function(m){
-                if((m.naam||"").toLowerCase().includes("bbq")||(m.naam||"").toLowerCase().includes("grill"))
-                  bbqMenuNamen.add(m.id);
-              });
-              function isBBQRegel(r){
-                if((r.menuNaam||"").toLowerCase().includes("add up")) return false;
-                var k=(window._stamKoppelingen||[]).find(function(kp){ return kp.recras_naam===(r.menuNaam||"").trim(); });
-                return k && bbqMenuNamen.has(k.menu_id);
-              }
-              // Zone lookup
-              var bbqLoc = window._stamBBQLocaties || [];
-              function getZone(locNaam){
-                var l=bbqLoc.find(function(x){ return x.locatie_naam===locNaam; });
-                return l ? l.site+"__"+l.zone : "onbekend__"+locNaam;
-              }
-              function getMaxSetups(locNaam){
-                var l=bbqLoc.find(function(x){ return x.locatie_naam===locNaam; });
-                return l ? (l.max_setups||1) : 1;
-              }
-              // Bouw BBQ tijdsloten
-              var dagTijdMap = {};
-              (window._recrasBoekingen||[]).forEach(function(b){
-                var datum=(b.deadline||"").replace("T"," ").split(" ")[0];
-                if(!datum) return;
-                var bbqTijden=new Set();
-                (b.regels||[]).forEach(function(r){
-                  if(isBBQRegel(r) && r.starttijdTijd) bbqTijden.add(r.starttijdTijd);
+              if(!window._supa) return;
+              // Haal bbq_locaties altijd LIVE op — niet afhankelijk van async cache
+              window._supa.from("bbq_locaties").select("locatie_naam,site,zone,max_setups").then(function(locRes){
+                var bbqLoc = (locRes && locRes.data) ? locRes.data : [];
+
+                // BBQ menu IDs
+                var bbqMenuNamen = new Set();
+                (window._stamMenus||[]).forEach(function(m){
+                  if((m.naam||"").toLowerCase().includes("bbq")||(m.naam||"").toLowerCase().includes("grill"))
+                    bbqMenuNamen.add(m.id);
                 });
-                // Fallback: alle unieke non-add-up tijden
-                if(bbqTijden.size===0){
-                  (b.regels||[]).forEach(function(r){
-                    if(!(r.menuNaam||"").toLowerCase().includes("add up") && r.starttijdTijd)
-                      bbqTijden.add(r.starttijdTijd);
-                  });
+
+                function isBBQRegel(r){
+                  if((r.menuNaam||"").toLowerCase().includes("add up")) return false;
+                  // Check via koppeling
+                  var k=(window._stamKoppelingen||[]).find(function(kp){ return kp.recras_naam===(r.menuNaam||"").trim(); });
+                  if(k && bbqMenuNamen.has(k.menu_id)) return true;
+                  // Fallback: menuNaam zelf bevat 'bbq'
+                  return (r.menuNaam||"").toLowerCase().includes("bbq");
                 }
-                bbqTijden.forEach(function(t){
-                  var key=datum+"_"+t;
-                  if(!dagTijdMap[key]) dagTijdMap[key]=[];
-                  dagTijdMap[key].push(b);
+
+                function getZone(locNaam){
+                  var l=bbqLoc.find(function(x){ return x.locatie_naam===locNaam; });
+                  return l ? l.site+"__"+l.zone : null;
+                }
+                function getMaxSetups(zone){
+                  var l=bbqLoc.find(function(x){ return x.site+"__"+x.zone===zone; });
+                  return l ? (l.max_setups||1) : 1;
+                }
+
+                // Bouw BBQ tijdsloten: per boeking, per unieke BBQ starttijdTijd
+                var dagTijdMap = {};
+                (window._recrasBoekingen||[]).forEach(function(b){
+                  var datum=(b.deadline||"").replace("T"," ").split(" ")[0];
+                  if(!datum) return;
+                  var bbqTijden=new Set();
+                  (b.regels||[]).forEach(function(r){
+                    if(isBBQRegel(r) && r.starttijdTijd) bbqTijden.add(r.starttijdTijd);
+                  });
+                  if(bbqTijden.size===0) return; // Geen BBQ in deze boeking
+                  bbqTijden.forEach(function(t){
+                    var key=datum+"_"+t;
+                    if(!dagTijdMap[key]) dagTijdMap[key]=[];
+                    // Voorkom duplicaten
+                    if(!dagTijdMap[key].find(function(x){ return x.id===b.id; }))
+                      dagTijdMap[key].push(b);
+                  });
                 });
+
+                // Detecteer conflicten per tijdslot
+                var gevonden=[];
+                Object.keys(dagTijdMap).sort().forEach(function(key){
+                  var bks=dagTijdMap[key];
+                  if(bks.length<2) return;
+                  var parts=key.split("_");
+                  var datum=parts[0], tijd=parts[1];
+
+                  // Groepeer op zone (of op site als zone onbekend)
+                  var zoneMap={};
+                  bks.forEach(function(b){
+                    var z=getZone(b.locatie||"");
+                    // Als zone onbekend: gebruik de locatienaam zelf
+                    var zKey = z || ("direct__"+(b.locatie||"onbekend"));
+                    if(!zoneMap[zKey]) zoneMap[zKey]=[];
+                    zoneMap[zKey].push(b);
+                  });
+
+                  // Controleer ook SITE-niveau: Amsterdam West heeft 1 BBQ team
+                  var siteMap={};
+                  bks.forEach(function(b){
+                    var l=bbqLoc.find(function(x){ return x.locatie_naam===b.locatie; });
+                    var site=l ? l.site : ("onbekend_"+b.locatie);
+                    if(!siteMap[site]) siteMap[site]=[];
+                    siteMap[site].push(b);
+                  });
+
+                  // Check zone-conflicten (Loods 4 + Loods 6 = zelfde zone = conflict)
+                  Object.keys(zoneMap).forEach(function(zone){
+                    var zBks=zoneMap[zone];
+                    var maxS=getMaxSetups(zone);
+                    if(zBks.length>maxS){
+                      gevonden.push({
+                        datum:datum, tijd:tijd, zone:zone,
+                        ernst:"hoog",
+                        omschrijving:"⚠️ "+zBks.length+" BBQ setups in dezelfde zone om "+tijd+" (max "+maxS+")",
+                        boekingen:zBks.map(function(b){ return {id:b.id,naam:b.naam,locatie:b.locatie}; })
+                      });
+                    }
+                  });
+                });
+
+                setTakenConflicten(gevonden);
               });
-              // Detecteer conflicten
-              var gevonden=[];
-              Object.keys(dagTijdMap).forEach(function(key){
-                var bks=dagTijdMap[key];
-                if(bks.length<2) return;
-                var parts=key.split("_");
-                var datum=parts[0], tijd=parts[1];
-                // Groepeer per zone
-                var zoneMap={};
-                bks.forEach(function(b){
-                  var z=getZone(b.locatie||"");
-                  if(!zoneMap[z]) zoneMap[z]=[];
-                  zoneMap[z].push(b);
-                });
-                Object.keys(zoneMap).forEach(function(zone){
-                  var zBks=zoneMap[zone];
-                  var maxS=getMaxSetups(zBks[0].locatie||"");
-                  if(zBks.length>maxS){
-                    gevonden.push({
-                      datum:datum, tijd:tijd, zone:zone,
-                      ernst:"hoog",
-                      omschrijving:"BBQ capaciteitsconflict: "+zBks.length+" setups in zone "+zone+" om "+tijd+" (max "+maxS+")",
-                      boekingen:zBks.map(function(b){ return {id:b.id,naam:b.naam,locatie:b.locatie}; })
-                    });
-                  }
-                });
-              });
-              setTakenConflicten(gevonden);
             }
           },"🔍 Controleer BBQ conflicten"),
           takenConflicten!==null&&React.createElement("div",{style:{marginTop:8}},
