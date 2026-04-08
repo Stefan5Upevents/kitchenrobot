@@ -2283,8 +2283,13 @@ function BuffetScreen({ actieve, setActieve }) {
         return sf.is_max_vorm;
       }) || schf[schf.length - 1];
       if (!maxSchaal) {
-        var vrij = (g.presentatievormen || [])[0];
-        return vrij ? { type: "vrij", naam: vrij.naam || vrij } : null;
+        var vormen = (g.presentatievormen || []).filter(function(v) { return (v.porties_per_vorm || 1) > 0; }).sort(function(a,b) { return (a.porties_per_vorm||1) - (b.porties_per_vorm||1); });
+        var vrij = vormen[vormen.length - 1] || (g.presentatievormen || [])[0];
+        if (!vrij) return null;
+        var pPV = vrij.porties_per_vorm || 1;
+        var aantalVormen = pPV > 0 ? Math.ceil(portiesEff / pPV) : 0;
+        var vormenPerBuf = nBuf > 0 ? Math.ceil(aantalVormen / nBuf) : aantalVormen;
+        return { type: "vrij", naam: vrij.naam, portiesPerVorm: pPV, aantalVormen: aantalVormen, vormenPerBuf: vormenPerBuf };
       }
       var sfNaam = (maxSchaal.standaard_schaal_formaten || {}).naam || "?";
       var schalen = maxSchaal.porties_per_schaal > 0 ? Math.ceil(portiesEff / maxSchaal.porties_per_schaal) : 0;
@@ -2554,7 +2559,7 @@ function BuffetScreen({ actieve, setActieve }) {
         var presStr = "";
         if (pres2) {
           if (pres2.type === "gn") presStr = li ? li.formaat + (li.upgraded ? " \u2191" : "") : pres2.naam;
-          else presStr = nBuf + "\xD7 " + pres2.naam;
+          else if (pres2.type === "schaal") presStr = pres2.schalenPerBuf + "\xD7 " + pres2.naam + " (" + pres2.portiesPerSchaal + "p)"; else presStr = (pres2.vormenPerBuf || nBuf) + "\xD7 " + pres2.naam + (pres2.portiesPerVorm ? " (" + pres2.portiesPerVorm + "p)" : "");
         }
         var aant = g.altijd_afronden ? Math.ceil(pEff) : Math.round(pEff * 10) / 10;
         out += "<tr><td>" + g.naam + (g.is_gn ? '<span class="gn">GN</span>' : "") + (g.prio ? '<span class="prio">PRIO</span>' : "") + "</td>";
@@ -2806,7 +2811,7 @@ function BuffetScreen({ actieve, setActieve }) {
         },
         style: { width: 60, padding: "2px 4px", border: "1px solid " + C.border, borderRadius: 4, fontWeight: 700, color: C.aqua, textAlign: "center", fontSize: 12 }
       }
-    ) : /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 700, color: C.aqua } }, afgerondeEff) : bewerkModus ? /* @__PURE__ */ React.createElement("span", { style: { color: C.muted, fontSize: 10 } }, "zie Rauw") : "—"), /* @__PURE__ */ React.createElement("td", { style: { padding: "5px 8px", color: kleur } }, pres ? pres.type === "gn" ? layoutItem ? /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("strong", null, layoutItem.formaat), layoutItem.upgraded ? " \u2191" : "") : /* @__PURE__ */ React.createElement("span", null, pres.naam) : pres.type === "schaal" ? /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("strong", null, nBuf), "\xD7 ", pres.naam) : /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("strong", null, nBuf), "\xD7 ", pres.naam) : "—", bewerkModus && effData && /* @__PURE__ */ React.createElement(
+    ) : /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 700, color: C.aqua } }, afgerondeEff) : bewerkModus ? /* @__PURE__ */ React.createElement("span", { style: { color: C.muted, fontSize: 10 } }, "zie Rauw") : "—"), /* @__PURE__ */ React.createElement("td", { style: { padding: "5px 8px", color: kleur } }, pres ? pres.type === "gn" ? layoutItem ? /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("strong", null, layoutItem.formaat), layoutItem.upgraded ? " \u2191" : "") : /* @__PURE__ */ React.createElement("span", null, pres.naam) : pres.type === "schaal" ? /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("strong", null, pres.schalenPerBuf), "\xD7 ", pres.naam, " (", pres.portiesPerSchaal, "p)") : /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("strong", null, pres.vormenPerBuf), "\xD7 ", pres.naam, " (", pres.portiesPerVorm, "p)") : "—", bewerkModus && effData && /* @__PURE__ */ React.createElement(
       "select",
       {
         style: { ...SS.inp, fontSize: 9, padding: "1px 4px", marginTop: 3, width: "100%" },
