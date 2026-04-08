@@ -1270,149 +1270,109 @@ function HomeScreen({ setSc }) {
     });
   }
   function checkBBQConflicten(boekingen2) {
-    if (!boekingen2 || boekingen2.length === 0) {
-      setBbqConflicten(null);
-      return;
-    }
+    if (!boekingen2 || boekingen2.length === 0) { setBbqConflicten(null); return; }
     var locatieConfig = {
-      // Weesp: 2 setups
-      "Archery Tag WP": 2,
-      "Basisweg 2, Weesp": 2,
-      "Birdie": 2,
-      "Boardroom": 2,
-      "Bogey": 2,
-      "Jeu de Boules WP": 2,
-      "Boogschieten WP": 2,
-      "Bubbel voetbal WP": 2,
-      "CLUPhuis": 2,
-      "Driving range": 2,
-      "Eagle": 2,
-      "Golfbaan": 2,
-      "Robinson Crusoe WP": 2,
-      "Terrace WP": 2,
-      "The Barn": 2,
-      "UP Fairway": 2,
-      "UPstairs": 2,
-      // AW Voorterrein: 1
-      "Loods 2": 1,
-      "Loods 4": 1,
-      "Loods 5": 1,
-      "Loods 6": 1,
-      "Terras Loods 6": 1,
-      "Pup - Bar": 1,
-      "Ronde Tent": 1,
-      "Stretchtent": 1,
-      "Terrace": 1,
-      "Combinatie | Loods 1, 2, 3 & Terrace": 1,
-      // AW Middenterrein: 2
-      "Beachclub": 2,
-      "Beachclub 2": 2,
-      // AW Achterterrein: 1
-      "Loods 7": 1,
-      "Loods 7 Patio": 1
+      'Archery Tag WP':2,'Basisweg 2, Weesp':2,'Birdie':2,'Boardroom':2,'Bogey':2,
+      'Jeu de Boules WP':2,'Boogschieten WP':2,'Bubbel voetbal WP':2,'CLUPhuis':2,
+      'Driving range':2,'Eagle':2,'Golfbaan':2,'Robinson Crusoe WP':2,'Terrace WP':2,
+      'The Barn':2,'UP Fairway':2,'UPstairs':2,
+      'Loods 2':1,'Loods 4':1,'Loods 5':1,'Loods 6':1,'Terras Loods 6':1,
+      'Pup - Bar':1,'Ronde Tent':1,'Stretchtent':1,'Terrace':1,
+      'Combinatie | Loods 1, 2, 3 & Terrace':1,
+      'Beachclub':2,'Beachclub 2':2,
+      'Loods 7':1,'Loods 7 Patio':1,
     };
     var zonesMap = {
-      "Archery Tag WP": "weesp",
-      "Basisweg 2, Weesp": "weesp",
-      "Birdie": "weesp",
-      "Boardroom": "weesp",
-      "Bogey": "weesp",
-      "Jeu de Boules WP": "weesp",
-      "Boogschieten WP": "weesp",
-      "Bubbel voetbal WP": "weesp",
-      "CLUPhuis": "weesp",
-      "Driving range": "weesp",
-      "Eagle": "weesp",
-      "Golfbaan": "weesp",
-      "Robinson Crusoe WP": "weesp",
-      "Terrace WP": "weesp",
-      "The Barn": "weesp",
-      "UP Fairway": "weesp",
-      "UPstairs": "weesp",
-      "Loods 2": "aw_voor",
-      "Loods 4": "aw_voor",
-      "Loods 5": "aw_voor",
-      "Loods 6": "aw_voor",
-      "Terras Loods 6": "aw_voor",
-      "Pup - Bar": "aw_voor",
-      "Ronde Tent": "aw_voor",
-      "Stretchtent": "aw_voor",
-      "Terrace": "aw_voor",
-      "Combinatie | Loods 1, 2, 3 & Terrace": "aw_voor",
-      "Beachclub": "aw_midden",
-      "Beachclub 2": "aw_midden",
-      "Loods 7": "aw_achter",
-      "Loods 7 Patio": "aw_achter"
+      'Archery Tag WP':'weesp','Basisweg 2, Weesp':'weesp','Birdie':'weesp','Boardroom':'weesp',
+      'Bogey':'weesp','Jeu de Boules WP':'weesp','Boogschieten WP':'weesp','Bubbel voetbal WP':'weesp',
+      'CLUPhuis':'weesp','Driving range':'weesp','Eagle':'weesp','Golfbaan':'weesp',
+      'Robinson Crusoe WP':'weesp','Terrace WP':'weesp','The Barn':'weesp','UP Fairway':'weesp','UPstairs':'weesp',
+      'Loods 2':'aw_voor','Loods 4':'aw_voor','Loods 5':'aw_voor','Loods 6':'aw_voor',
+      'Terras Loods 6':'aw_voor','Pup - Bar':'aw_voor','Ronde Tent':'aw_voor',
+      'Stretchtent':'aw_voor','Terrace':'aw_voor','Combinatie | Loods 1, 2, 3 & Terrace':'aw_voor',
+      'Beachclub':'aw_midden','Beachclub 2':'aw_midden',
+      'Loods 7':'aw_achter','Loods 7 Patio':'aw_achter',
     };
-    var bbqMenuNamen = (window._stamMenus || []).filter(function(m) {
-      return (m.naam || "").toLowerCase().includes("bbq") || (m.naam || "").toLowerCase().includes("grill");
-    }).map(function(m) {
-      return m.id;
-    });
-    var koppelingen = window._stamKoppelingen || [];
+    var bbqMenuNamen = (window._stamMenus||[]).filter(function(m){
+      var n = (m.naam||'').toLowerCase();
+      return n.includes('bbq') || n.includes('grill') || n.includes('festival food market');
+    }).map(function(m){ return m.id; });
+    var koppelingen = window._stamKoppelingen||[];
+
     function isBBQ(b) {
-      return (b.regels || []).some(function(r) {
-        var k = koppelingen.find(function(k2) {
-          return k2.recras_naam === r.menuNaam;
-        });
+      return (b.regels||[]).some(function(r){
+        var mn = (r.menuNaam||'').toLowerCase();
+        if (mn.includes('festival food market')) return true;
+        var k = koppelingen.find(function(k){ return k.recras_naam===r.menuNaam; });
         return k && bbqMenuNamen.indexOf(k.menu_id) >= 0;
       });
     }
     function getPax(b) {
-      return (b.regels || []).reduce(function(s, r) {
-        var k = koppelingen.find(function(k2) {
-          return k2.recras_naam === r.menuNaam;
-        });
-        if (k && bbqMenuNamen.indexOf(k.menu_id) >= 0) return s + (r.aantal || 0);
+      return (b.regels||[]).reduce(function(s,r){
+        var mn = (r.menuNaam||'').toLowerCase();
+        if (mn.includes('festival food market')) return s+(r.aantal||0);
+        var k = koppelingen.find(function(k){ return k.recras_naam===r.menuNaam; });
+        if (k && bbqMenuNamen.indexOf(k.menu_id) >= 0) return s+(r.aantal||0);
         return s;
       }, 0);
     }
-    function vereistMin(pax) {
-      if (pax >= 200) return { min: 60, voorkeur: 120 };
-      if (pax >= 120) return { min: 60, voorkeur: 60 };
-      if (pax >= 80) return { min: 25, voorkeur: 45 };
-      return { min: 15, voorkeur: 20 };
-    }
-    // Gebruik BBQ service-tijd (starttijdTijd), NIET de boeking deadline
-    function getBBQServiceTijd(b) {
-      var datum = (b.deadline || "").replace("T", " ").split(" ")[0];
-      var tijden = (b.regels || []).filter(function(r) {
+    // Haal BBQ service-tijd op (starttijdTijd van BBQ-regels, niet boeking deadline)
+    function getServiceTijd(b) {
+      var tijden = (b.regels||[]).filter(function(r){
         if (!r.starttijdTijd) return false;
-        var mn = (r.menuNaam||"").toLowerCase();
-        if (mn.includes("festival food market")) return true;
-        var k = koppelingen.find(function(k2) { return k2.recras_naam === r.menuNaam; });
+        var mn = (r.menuNaam||'').toLowerCase();
+        if (mn.includes('festival food market')) return true;
+        var k = koppelingen.find(function(k){ return k.recras_naam===r.menuNaam; });
         return k && bbqMenuNamen.indexOf(k.menu_id) >= 0;
-      }).map(function(r) { return r.starttijdTijd; }).sort();
-      var tijd = tijden[0] || (b.deadline||"").replace("T"," ").split(" ")[1] || "00:00";
-      return { datum: datum, tijd: tijd.substring(0,5), iso: datum + " " + tijd.substring(0,5) + ":00" };
+      }).map(function(r){ return r.starttijdTijd; }).sort();
+      if (tijden.length > 0) {
+        var datum = (b.deadline||'').replace('T',' ').split(' ')[0];
+        return datum + ' ' + tijden[0] + ':00';
+      }
+      return b.deadline || '';
     }
+    function vereistMin(pax) {
+      if (pax>=200) return { min:60, voorkeur:120 };
+      if (pax>=120) return { min:60, voorkeur:60 };
+      if (pax>=80)  return { min:25, voorkeur:45 };
+      return { min:15, voorkeur:20 };
+    }
+
     var gevonden = [];
-    var tijdZoneMap = {};
-    boekingen2.forEach(function(b) {
+    var zoneGroepen = {};
+    boekingen2.forEach(function(b){
       if (!isBBQ(b)) return;
-      var zone = zonesMap[b.locatie || ""];
+      var zone = zonesMap[b.locatie||''];
       if (!zone) return;
-      var st = getBBQServiceTijd(b);
-      var key = st.datum + "_" + st.tijd + "_" + zone;
-      if (!tijdZoneMap[key]) tijdZoneMap[key] = [];
-      tijdZoneMap[key].push(Object.assign({}, b, {
-        _pax: getPax(b), _maxSetups: locatieConfig[b.locatie] || 1,
-        _zone: zone, _serviceTijd: st.iso, _bbqTijd: st.tijd
+      if (!zoneGroepen[zone]) zoneGroepen[zone] = [];
+      zoneGroepen[zone].push(Object.assign({}, b, {
+        _pax: getPax(b),
+        _maxSetups: locatieConfig[b.locatie]||1,
+        _serviceTijd: getServiceTijd(b)
       }));
     });
-    Object.keys(tijdZoneMap).forEach(function(key) {
-      var bks = tijdZoneMap[key];
-      var maxSetups = bks[0]._maxSetups;
-      if (bks.length > maxSetups) {
-        var p = key.split("_");
-        gevonden.push({
-          zone: bks[0]._zone, datum: p[0], tijd: p[1],
-          a: bks[0], b: bks[1], alleBoekingen: bks,
-          verschilMin: 0, vereistMin: 0, voorkeur: 0,
-          maxPax: bks.reduce(function(s,x){return Math.max(s,x._pax);},0),
-          nieuweDeadline: bks[0]._serviceTijd,
-          type: bks.length + " BBQ/Festival setups om " + p[1] + " in zone " + bks[0]._zone + " (max " + maxSetups + " tegelijk)"
-        });
+
+    Object.keys(zoneGroepen).forEach(function(zone) {
+      // Sorteer op SERVICE-TIJD, niet op deadline
+      var zoneBk = zoneGroepen[zone].slice().sort(function(a,b){
+        return new Date(a._serviceTijd) - new Date(b._serviceTijd);
+      });
+      var maxSetups = zoneBk[0]._maxSetups;
+      for (var i=0; i<zoneBk.length; i++) {
+        for (var j=i+1; j<Math.min(zoneBk.length, i+maxSetups+2); j++) {
+          var a=zoneBk[i], b=zoneBk[j];
+          var tA=new Date(a._serviceTijd).getTime(), tB=new Date(b._serviceTijd).getTime();
+          var verschilMin = Math.round((tB-tA)/60000);
+          if (verschilMin < 0) continue;
+          var maxPax = Math.max(a._pax, b._pax);
+          var reg = vereistMin(maxPax);
+          if (verschilMin < reg.min) {
+            var nieuweT = new Date(tA + reg.voorkeur*60000);
+            gevonden.push({ zone, a, b, verschilMin, vereistMin: reg.min, voorkeur: reg.voorkeur,
+              maxPax, nieuweDeadline: nieuweT.toISOString(),
+              type: maxPax>=200?'200+ personen':verschilMin<reg.min?'Te weinig tijd':'Krap' });
+          }
+        }
       }
     });
     setBbqConflicten(gevonden);
@@ -1668,7 +1628,7 @@ function HomeScreen({ setSc }) {
       var recrasBase = "https://upevents.recras.nl/boekingen/";
       var idA = String(c.a.id).split("-")[0];
       var idB = String(c.b.id).split("-")[0];
-      return /* @__PURE__ */ React.createElement("div", { key: i, style: { background: "#FFEBEE", border: "1px solid " + C.hot, borderRadius: 8, padding: 14, marginBottom: 12 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { style: { background: C.hot, color: "#fff", borderRadius: 4, padding: "2px 8px", fontSize: 11, fontWeight: 700, marginRight: 8 } }, c.type), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, fontWeight: 700, color: C.night } }, zoneLabels[c.zone] || c.zone)), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.hot, fontWeight: 700 } }, c.verschilMin, " min — min. ", c.vereistMin, " min vereist")), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { background: "#fff", borderRadius: 6, padding: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.muted, marginBottom: 2 } }, "Boeking 1"), /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 13 } }, /* @__PURE__ */ React.createElement("a", { href: recrasBase + idA, target: "_blank", rel: "noreferrer", style: { color: C.night, textDecoration: "none" } }, "#", idA, " ", c.a.naam)), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.muted } }, fmt(c.a._serviceTijd || c.a.deadline), " \u2022 ", c.a._pax, " pax \u2022 ", c.a.locatie)), /* @__PURE__ */ React.createElement("div", { style: { background: "#fff", borderRadius: 6, padding: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.muted, marginBottom: 2 } }, "Boeking 2"), /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 13 } }, /* @__PURE__ */ React.createElement("a", { href: recrasBase + idB, target: "_blank", rel: "noreferrer", style: { color: C.night, textDecoration: "none" } }, "#", idB, " ", c.b.naam)), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.muted } }, fmt(c.b._serviceTijd || c.b.deadline), " \u2022 ", c.b._pax, " pax \u2022 ", c.b.locatie))), /* @__PURE__ */ React.createElement("div", { style: { background: "#E8F5E9", borderRadius: 6, padding: 10, border: "1px solid #A5D6A7" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, fontWeight: 700, color: C.green } }, "💡 Advies: "), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.night } }, c.type || ("Beide boekingen om " + (c.tijd||"") + " — controleer of dit haalbaar is en pas indien nodig een van de boekingen aan"))));
+      return /* @__PURE__ */ React.createElement("div", { key: i, style: { background: "#FFEBEE", border: "1px solid " + C.hot, borderRadius: 8, padding: 14, marginBottom: 12 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("span", { style: { background: C.hot, color: "#fff", borderRadius: 4, padding: "2px 8px", fontSize: 11, fontWeight: 700, marginRight: 8 } }, c.type), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, fontWeight: 700, color: C.night } }, zoneLabels[c.zone] || c.zone)), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.hot, fontWeight: 700 } }, c.verschilMin, " min — min. ", c.vereistMin, " min vereist")), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { background: "#fff", borderRadius: 6, padding: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.muted, marginBottom: 2 } }, "Boeking 1"), /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 13 } }, /* @__PURE__ */ React.createElement("a", { href: recrasBase + idA, target: "_blank", rel: "noreferrer", style: { color: C.night, textDecoration: "none" } }, "#", idA, " ", c.a.naam)), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.muted } }, fmt(c.a.deadline), " \u2022 ", c.a._pax, " pax \u2022 ", c.a.locatie)), /* @__PURE__ */ React.createElement("div", { style: { background: "#fff", borderRadius: 6, padding: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.muted, marginBottom: 2 } }, "Boeking 2"), /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 13 } }, /* @__PURE__ */ React.createElement("a", { href: recrasBase + idB, target: "_blank", rel: "noreferrer", style: { color: C.night, textDecoration: "none" } }, "#", idB, " ", c.b.naam)), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.muted } }, fmt(c.b.deadline), " \u2022 ", c.b._pax, " pax \u2022 ", c.b.locatie))), /* @__PURE__ */ React.createElement("div", { style: { background: "#E8F5E9", borderRadius: 6, padding: 10, border: "1px solid #A5D6A7" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, fontWeight: 700, color: C.green } }, "💡 Advies: "), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.night } }, "Verschuif ", /* @__PURE__ */ React.createElement("strong", null, c.b.naam), " naar ", /* @__PURE__ */ React.createElement("strong", null, fmt(c.nieuweDeadline)), " ", "(", c.voorkeur, " min na boeking 1 — geeft voldoende ruimte)")));
     })))
   ), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 } }, /* @__PURE__ */ React.createElement("div", { style: SS.card }, /* @__PURE__ */ React.createElement("div", { style: SS.cS }, "Stap 1 — dagelijkse import"), /* @__PURE__ */ React.createElement("div", { style: SS.cT }, "Recras boekingenexport"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12, color: C.muted, margin: "0 0 12px" } }, "Importeer het .xlsx bestand vanuit Recras. Privacygevoelige kolommen L/M/N/O worden direct verwijderd."), /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 12 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: C.night, marginBottom: 6 } }, "Welke keuken importeer je?"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, [["west", "🏙 Amsterdam West"], ["weesp", "🌿 Weesp"]].map(function(opt) {
     var actief = importKeuken === opt[0];
