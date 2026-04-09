@@ -10583,6 +10583,85 @@ function KioskApp() {
       )
     );
   })()),
+  actieveTab === "bbq" && /* @__PURE__ */ React.createElement("div", null, (function() {
+    var boekJson = dagpakket ? (dagpakket.boekingen_json || []) : [];
+    var buffetJson = dagpakket ? (dagpakket.buffet_json || []) : [];
+    var bbqBoekingen = boekJson.filter(function(b) {
+      return (b.regels||[]).some(function(r){ return (r.menuNaam||"").toLowerCase().includes("bbq"); });
+    }).slice().sort(function(a, b2) {
+      function _t(bk) {
+        var r = (bk.regels||[]).find(function(r2){ return (r2.menuNaam||"").toLowerCase().includes("bbq"); });
+        return (bk.deadline||"").split("T")[0]+" "+(r?r.starttijdTijd||"":bk.deadlineTijd||"");
+      }
+      return _t(a).localeCompare(_t(b2));
+    });
+    if (bbqBoekingen.length === 0) {
+      return /* @__PURE__ */ React.createElement("div", { style:{ ...krt, textAlign:"center", color:"rgba(255,255,255,.4)", padding:24, fontSize:12 } },
+        dagpakket ? "Geen BBQ boekingen." : "Publiceer eerst het dagpakket.");
+    }
+    var dagMap = {};
+    bbqBoekingen.forEach(function(b) {
+      var d = (b.deadline||"").replace("T"," ").split(" ")[0]||"?";
+      if (!dagMap[d]) dagMap[d] = [];
+      dagMap[d].push(b);
+    });
+    var dagen = Object.keys(dagMap).sort();
+    var activeDag = bbqDag || dagen[0] || "";
+    var dagCarousel = /* @__PURE__ */ React.createElement("div", { style:{ overflowX:"auto", display:"flex", gap:8, paddingBottom:8, marginBottom:14 } },
+      dagen.map(function(d) {
+        var act = d === activeDag;
+        var p = d.split("-");
+        var hasSnap = (dagMap[d]||[]).some(function(b){ return bbqSnapshots.some(function(s){ return s.boeking_id===b.id; }); });
+        return /* @__PURE__ */ React.createElement("div", { key:d, onClick:function(){ setBbqDag(d); setBbqActieveBoeking(null); },
+          style:{ flexShrink:0, background:act?"#FE424D":"#001828", borderRadius:10, padding:"10px 14px", cursor:"pointer",
+            border:"2px solid "+(act?"#FE424D":"rgba(254,66,61,.3)"), minWidth:70, textAlign:"center" } },
+          /* @__PURE__ */ React.createElement("div", { style:{ fontWeight:900, fontSize:14, color:"#fff" } }, p[2]+"/"+p[1]),
+          /* @__PURE__ */ React.createElement("div", { style:{ fontSize:9, color:act?"rgba(255,255,255,.9)":"rgba(255,255,255,.4)", marginTop:2 } },
+            (dagMap[d]||[]).length+" BBQ"+(hasSnap?" ✓":""))
+        );
+      })
+    );
+    var dagBoekingen = dagMap[activeDag] || [];
+    if (bbqActieveBoeking) {
+      var actB = bbqBoekingen.find(function(b){ return b.id===bbqActieveBoeking; });
+      var snap = actB ? bbqSnapshots.find(function(s){ return s.boeking_id===actB.id; }) : null;
+      return /* @__PURE__ */ React.createElement("div", null,
+        dagCarousel,
+        /* @__PURE__ */ React.createElement("button", { style:{ background:"rgba(255,255,255,.08)", color:"rgba(255,255,255,.6)", border:"none", borderRadius:6, padding:"6px 12px", fontSize:11, cursor:"pointer", fontFamily:"inherit", marginBottom:12 },
+          onClick:function(){ setBbqActieveBoeking(null); } }, "← Terug"),
+        snap
+          ? /* @__PURE__ */ React.createElement("iframe", { srcDoc:snap.html, style:{ width:"100%", height:"75vh", border:"none", borderRadius:10, background:"#fff" }, title:"BBQ" })
+          : /* @__PURE__ */ React.createElement("div", { style:{ ...krt, textAlign:"center", padding:24 } },
+              /* @__PURE__ */ React.createElement("div", { style:{ fontSize:14, color:"rgba(255,255,255,.5)" } }, "Open dit BBQ formulier op de website om het hier op te slaan."))
+      );
+    }
+    return /* @__PURE__ */ React.createElement("div", null,
+      dagCarousel,
+      /* @__PURE__ */ React.createElement("div", { style:{ display:"flex", flexDirection:"column", gap:8 } },
+        dagBoekingen.map(function(b) {
+          var snap = bbqSnapshots.find(function(s){ return s.boeking_id===b.id; });
+          var bbqReg = (b.regels||[]).filter(function(r){ return (r.menuNaam||"").toLowerCase().includes("bbq"); });
+          var totP = bbqReg.reduce(function(s,r){ return s+(r.aantal||0); }, 0);
+          var bfi = buffetJson.find(function(bf){ return bf.id===b.id; });
+          var bbqTijd = bfi?(bfi.tijdLabel||b.deadlineTijd):b.deadlineTijd;
+          return /* @__PURE__ */ React.createElement("div", { key:b.id, onClick:function(){ setBbqActieveBoeking(b.id); },
+            style:{ ...krt, display:"flex", justifyContent:"space-between", alignItems:"center", padding:"14px 16px",
+              cursor:"pointer", border:"2px solid "+(snap?"rgba(26,166,183,.5)":"rgba(255,255,255,.1)") } },
+            /* @__PURE__ */ React.createElement("div", null,
+              /* @__PURE__ */ React.createElement("div", { style:{ fontWeight:900, fontSize:16, color:"#fff", marginBottom:3 } },
+                /* @__PURE__ */ React.createElement("span", { style:{ color:"#FE424D", marginRight:8, fontSize:18 } }, bbqTijd||"—"),
+                b.naam),
+              /* @__PURE__ */ React.createElement("div", { style:{ fontSize:11, color:"rgba(255,255,255,.5)" } },
+                (b.locatie||"")+" · "+totP+"p"+(bfi?" · "+bfi.nBuf+" buffet"+(bfi.nBuf>1?"ten":"")+(bfi.dishesPerBuf?" · "+bfi.dishesPerBuf+" chafingdishes":""):"")+(snap?" · ✓":"")),
+              snap&&/* @__PURE__ */ React.createElement("div", { style:{ fontSize:9, color:"rgba(26,166,183,.6)", marginTop:2 } },
+                "Opgeslagen: "+new Date(snap.updated_at).toLocaleString("nl-NL"))
+            ),
+            /* @__PURE__ */ React.createElement("div", { style:{ fontSize:22, color:snap?"#1AA6B7":"rgba(255,255,255,.2)" } }, snap?"→":"⚠")
+          );
+        })
+      )
+    );
+  })()),
   actieveTab === "tijden" && /* @__PURE__ */ React.createElement("div", null, (function() {
     var opzetItems = dagpakket ? dagpakket.opzet_json || [] : [];
     var boekingen2 = (dagpakket ? dagpakket.boekingen_json || [] : []).slice().sort(function(a, b) {
