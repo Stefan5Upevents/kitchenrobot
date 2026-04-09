@@ -10506,22 +10506,17 @@ function KioskApp() {
       var totaalPers = 0;
       var nBuf = 1;
       var geboekteMenus = [];
-      var _fo = formulierOverrides.find(function(_fov) { return _fov.boeking_id === b.id; });
-      var _foOvr = _fo ? (function() { try { return JSON.parse(_fo.overrides_json || "{}"); } catch(e) { return {}; } })() : {};
-
       (b.regels || []).filter(function(r) { return (r.menuNaam||"").toLowerCase().includes("bbq"); }).forEach(function(r) {
         totaalPers += r.aantal || 0;
         var kp = stamKoppelingen.find(function(k) { return (k.recras_naam||"").trim() === (r.menuNaam||"").trim(); });
         var m = kp ? stamMenus.find(function(mm) { return mm.id === kp.menu_id; }) : null;
         if (!m) return;
         geboekteMenus.push(r.aantal + "\xD7 " + m.naam);
-        var opzetF = m.opzetPct || 90;
-        nBuf = m.nBuf || nBuf;
+        nBuf = aantalBuf(r.aantal);
         (m.menu_gerechten || []).forEach(function(mg) {
           var g = stamGerechten.find(function(_g) { return _g.id === mg.gerecht_id; });
           if (!g) return;
-          var portiesBase = (mg.portie_per_persoon || 1) * (r.aantal || 1);
-          var portiesEff = (_foOvr[g.id] !== undefined && _foOvr[g.id] !== null) ? _foOvr[g.id] : Math.round(portiesBase * opzetF / 100 * 10) / 10;
+          var portiesEff = Math.ceil(r.aantal * (mg.porties_per_persoon || 1) * opzetPct(r.aantal));
           if (!portiesEff || portiesEff <= 0) return;
           var gnFormaten = (g.gerecht_gn_formaten || []).filter(function(gf) { return gf.porties_per_bak > 0; }).sort(function(a,b) { return a.porties_per_bak - b.porties_per_bak; });
           var gnMaxVorm = gnFormaten.find(function(gf) { return gf.is_max_vorm; }) || gnFormaten[gnFormaten.length-1];
