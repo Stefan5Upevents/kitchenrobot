@@ -2305,6 +2305,7 @@ function BuffetScreen({ actieve, setActieve }) {
       var schPerBuf = nBuf > 0 ? Math.ceil(totaalSchalen / nBuf) : totaalSchalen;
       return { type: "schaal", naam: sfNaam, vormNaam: pvNaam, aantalSchalen: totaalSchalen, schalenPerBuf: schPerBuf, portiesPerSchaal: gekozenSf.porties_per_schaal };
     }
+  }
   function getSligroVerpakkingen(g, portiesEff) {
     var items = [];
     (g.ingredienten || []).forEach(function(ing) {
