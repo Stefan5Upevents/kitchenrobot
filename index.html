@@ -9688,6 +9688,7 @@ function KioskApp() {
   var [dagpakket, setDagpakket] = useState(null);
   var [voortgang, setVoortgang] = useState([]);
   var [opzetVoortgang, setOpzetVoortgang] = useState([]);
+  var [formulierOverrides, setFormulierOverrides] = useState([]);
   var [medewerker, setMedewerker] = useState(adminOutletCode ? { naam: "Admin (" + adminOutletCode + ")", rol: "admin" } : null);
   var [pinInvoer, setPinInvoer] = useState("");
   var [pinFout, setPinFout] = useState(false);
@@ -9848,6 +9849,7 @@ function KioskApp() {
       if (results[0] && results[0].data) {
         setDagpakket(results[0].data);
         var dp = results[0].data;
+        window._supa.from("formulier_overrides").select("*").then(function(_fr) { setFormulierOverrides(_fr.data || []); });
         window._supa.from("formulier_overrides").select("*").then(function(_fr) { setFormulierOverrides(_fr.data || []); });
         window._supa.from("kiosk_boeking_voortgang").select("*").eq("dagpakket_id", dp.id).then(function(vr) {
           setVoortgang(vr.data || []);
