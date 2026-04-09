@@ -1117,13 +1117,43 @@ function HomeScreen({ setSc }) {
           } else {
             presStr = "—";
           }
-          bbqGerechten.push({ naam: g.naam, is_gn: !!g.is_gn, prio: !!g.prio, portiesEff, personen: r.aantal, gnFormaten, gnNaam: gnMaxVorm ? gnMaxVorm.naam : null, aantalBakken, presStr });
+          bbqGerechten.push({ naam: g.naam, is_gn: !!g.is_gn, prio: !!g.prio, portiesEff, personen: r.aantal, gnFormaten, gnNaam: gnMaxVorm ? gnMaxVorm.naam : null, aantalBakken, presStr, _sfRaw: g.gerecht_schaal_formaten || [] });
         });
       });
-      var gnGerechten = bbqGerechten.filter(function(g) {
+      // Aggregeer gerechten per naam (samenvoegen van meerdere menus)
+      var aggMap = {};
+      bbqGerechten.forEach(function(g) {
+        var key = g.naam;
+        if (!aggMap[key]) {
+          aggMap[key] = Object.assign({}, g, { portiesEff: 0, aantalBakken: 0 });
+        }
+        aggMap[key].portiesEff += g.portiesEff || 0;
+        aggMap[key].aantalBakken = (aggMap[key].aantalBakken || 0) + (g.aantalBakken || 0);
+      });
+      var aggGerechten = Object.values(aggMap);
+
+      // Herbereken presStr na aggregatie — zonder aantallen, alleen vormnaam
+      aggGerechten.forEach(function(g) {
+        if (g.is_gn) {
+          // GN: alleen de formaatnaam, geen getal
+          g.presStr = g.gnNaam || "—";
+        } else if (g.portiesEff > 0) {
+          // Niet-GN: zoek passende schaalvorm, toon alleen naam (geen getal/haakjes)
+          var _sfArr = (g._sfRaw || []).filter(function(_sf) { return _sf.porties_per_schaal != null; }).sort(function(_a,_b){ return (_a.volgorde||0)-(_b.volgorde||0); });
+          var _pPerBuf = nBuf > 0 ? g.portiesEff / nBuf : g.portiesEff;
+          var _gk = null;
+          for (var _i=0; _i<_sfArr.length; _i++) { var _s=_sfArr[_i]; if (!_s.is_max_vorm && _s.porties_per_schaal > 1 && _pPerBuf <= _s.porties_per_schaal) { _gk=_s; break; } }
+          if (!_gk) _gk = _sfArr[_sfArr.length-1];
+          g.presStr = _gk ? ((_gk.standaard_schaal_formaten||{}).naam || "schaal") : g.portiesEff + "×";
+        } else {
+          g.presStr = "—";
+        }
+      });
+
+      var gnGerechten = aggGerechten.filter(function(g) {
         return g.is_gn && g.portiesEff > 0;
       });
-      var andereGerechten = bbqGerechten.filter(function(g) {
+      var andereGerechten = aggGerechten.filter(function(g) {
         return !g.is_gn && g.portiesEff > 0;
       });
       function renderTabelHTML(lijst, titel) {
