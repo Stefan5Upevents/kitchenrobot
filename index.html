@@ -3,7 +3,7 @@
 <meta name='viewport' content='width=device-width,initial-scale=1.0,maximum-scale=5.0'/>
 <title>KitchenRobot</title>
 <link href='https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap' rel='stylesheet'/>
-<style>a
+<style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Roboto',-apple-system,sans-serif;background:#F4F7F9;color:#0d2233}
 input,select,button,textarea{font-family:inherit}
@@ -1185,7 +1185,12 @@ function HomeScreen({ setSc }) {
             + lay.counts[0] + '\u00D7 GN 1/3</p>';
         } catch(e) { return ""; }
       }()) + "</body></html>";
-      return { id: b.id, naam: b.naam, locatie: b.locatie, tijdLabel: bbqDeadlineTijd || b.deadlineTijd, deadlineDag: b.deadlineDag, totaalPers, nBuf, geboekteMenus, gerechten: bbqGerechten, bbqHtml };
+      // Bereken dishesPerBuf voor kiosk weergave
+      var _gnVL2 = aggGerechten.filter(function(g) { return g.is_gn && g.portiesEff > 0 && (g.gnFormaten||[]).length > 0; })
+        .map(function(g) { return { code: g.naam, naam: g.naam, ben: g.portiesEff, prio: !!g.prio, volgorde: g.volgorde||999, gnFormaten: (g.gnFormaten||[]).map(function(gf) { return { f: gf.naam, p: gf.porties_per_bak||1, isMax: !!gf.is_max_vorm }; }) }; });
+      var _lay2 = _gnVL2.length > 0 ? berekenBuffetLayout(_gnVL2, nBuf) : null;
+      var dishesPerBuf = _lay2 ? _lay2.dishesPerBuf : 0;
+      return { id: b.id, naam: b.naam, locatie: b.locatie, tijdLabel: bbqDeadlineTijd || b.deadlineTijd, deadlineDag: b.deadlineDag, totaalPers, nBuf, dishesPerBuf, geboekteMenus, gerechten: bbqGerechten, bbqHtml };
     });
     var opzetHtmlPerPs = {};
     (function() {
@@ -10670,7 +10675,12 @@ function KioskApp() {
     var bbqBoekingen = boekJson.filter(function(b) {
       return (b.regels||[]).some(function(r){ return (r.menuNaam||"").toLowerCase().includes("bbq"); });
     }).slice().sort(function(a,b2){
-      return ((a.deadline||"") + (a.deadlineTijd||"")).localeCompare((b2.deadline||"") + (b2.deadlineTijd||""));
+      // Sorteer op BBQ-specifieke starttijd (niet hoofd deadline)
+      function _bbqTijd(b) {
+        var r = (b.regels||[]).find(function(r){ return (r.menuNaam||"").toLowerCase().includes("bbq"); });
+        return (b.deadline||"").split("T")[0] + " " + (r ? r.starttijdTijd||"" : b.deadlineTijd||"");
+      }
+      return _bbqTijd(a).localeCompare(_bbqTijd(b2));
     });
 
     if (bbqBoekingen.length === 0) {
@@ -10760,7 +10770,9 @@ function KioskApp() {
               ),
               /* @__PURE__ */ React.createElement("div", { style:{ fontSize:11, color:"rgba(255,255,255,.5)" } },
                 (b.locatie||"") + " \xB7 " + totaalPers + "p"
-                + (snap ? " \xB7 \u2713 formulier aanwezig" : " \xB7 nog geen formulier")
+                + (buffetItem ? " \xB7 " + buffetItem.nBuf + " buffet" + (buffetItem.nBuf > 1 ? "ten" : "")
+                    + (buffetItem.dishesPerBuf ? " \xB7 " + buffetItem.dishesPerBuf + " chafingdishes" : "") : "")
+                + (snap ? " \xB7 \u2713 formulier" : "")
               ),
               snap && /* @__PURE__ */ React.createElement("div", { style:{ fontSize:9, color:"rgba(26,166,183,.6)", marginTop:2 } },
                 "Opgeslagen: " + new Date(snap.updated_at).toLocaleString("nl-NL")
