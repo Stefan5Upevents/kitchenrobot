@@ -1249,6 +1249,28 @@ function HomeScreen({ setSc }) {
       gepubliceerd_door: "backoffice",
       publicatie_versie: versie
     }, { onConflict: "outlet_code,datum" }).then(function() {
+      // Sla BBQ snapshots op (bbqHtml is nu correct via berekenBuffetLayout)
+      if (buffetLijst && window._supa) {
+        var _bbqPsId = opzetLijst.length > 0
+          ? ((opzetLijst.find(function(ps) { return (ps.psNaam||"").toLowerCase().includes("bbq"); }) || {}).psId || "")
+          : "";
+        var _bbqSnaps = buffetLijst.filter(function(bf) { return bf.bbqHtml; }).map(function(bf) {
+          return {
+            boeking_id: bf.id, boeking_naam: bf.naam, ps_id: _bbqPsId,
+            outlet_code: gekozenKeuken, deadline_dag: bf.deadlineDag || "",
+            deadline_tijd: bf.tijdLabel || "", locatie: bf.locatie || "",
+            html: bf.bbqHtml, updated_at: new Date().toISOString()
+          };
+        });
+        if (_bbqSnaps.length > 0) {
+          window._supa.from("kiosk_bbq_snapshots")
+            .upsert(_bbqSnaps, { onConflict: "boeking_id,ps_id" })
+            .then(function(r) {
+              if (!r.error) console.log("BBQ snapshots opgeslagen:", _bbqSnaps.length);
+              else console.warn("BBQ snapshot fout:", r.error);
+            });
+        }
+      }
       setDagpakketPubliceren(false);
       laadDagpakketStatus();
       var keukenNaam2 = gekozenKeuken === "west" ? "Amsterdam West" : "Weesp";
@@ -2670,6 +2692,69 @@ function BuffetScreen({ actieve, setActieve }) {
       w.document.close();
       w.document.title = "BBQ_Opzet_" + bbqNaam + "_" + bbqDag;
     }
+  } }, "\uD83D\uDDA8 Print BBQ"), /* @__PURE__ */ React.createElement("button", { style: { ...btnA, fontSize: 11, background: "rgba(26,166,183,.12)", color: "#1AA6B7" }, onClick: function() {
+    var html = '<html><head><meta charset="UTF-8"><title>BBQ Opzet \u2013 ' + boeking.naam + "</title><style>";
+    html += "body{font-family:Roboto,sans-serif;margin:0;padding:20px;color:#000}";
+    html += "h1{font-size:22px;font-weight:900;margin-bottom:4px}";
+    html += "h2{font-size:13px;color:#666;font-weight:400;margin-bottom:16px}";
+    html += "table{width:100%;border-collapse:collapse;font-size:13px}";
+    html += "th{background:#002D41;color:#fff;padding:10px 14px;text-align:left;font-size:12px}";
+    html += "td{padding:10px 14px;border-bottom:1px solid #ddd}";
+    html += "tr:nth-child(even) td{background:#f5f8fa}";
+    html += ".gn{background:#1AA6B7;color:#fff;border-radius:4px;padding:2px 6px;font-size:10px;margin-left:4px}";
+    html += ".prio{background:#FE424D;color:#fff;border-radius:4px;padding:2px 6px;font-size:10px;margin-left:2px}";
+    html += ".gray{color:#999}";
+    html += ".cnt{font-size:20px;font-weight:900;color:#002D41}";
+    html += "@media print{body{padding:10mm}@page{size:A4;margin:10mm}}";
+    html += "</style></head><body>";
+    html += "<h1>" + boeking.naam + "</h1>";
+    var menuInfoStr = geboekteMenus.map(function(gm) {
+      return gm.aantal + "\xD7 " + (gm.menu ? gm.menu.naam : gm.recrasNaam);
+    }).join(", ");
+    html += "<h2>" + boeking.deadlineDag + " &bull; " + (psDeadline || boeking.deadlineTijd || "") + " &bull; " + boeking.locatie + " &bull; " + totaalPers + " personen &bull; " + nBuf + " buffet" + (nBuf > 1 ? "ten" : "") + "</h2>";
+    html += '<p style="margin:-8px 0 16px;font-size:12px;color:#555">' + menuInfoStr + "</p>";
+    var pdfOvr = overschrijven[formKey] || {};
+    var pdfSvd = opgeslagenOverrides[formKey] || {};
+    function pdfPortiesEff(g) {
+      var man = pdfOvr[g.id] || pdfSvd[g.id] || 0;
+      return man > 0 ? man : berekenPorties(g) * opzetFactor;
+    }
+    var gnGerechten = alleGerechten.filter(function(g) {
+      return g.is_gn && pdfPortiesEff(g) > 0;
+    });
+    var nijGnGerechten = alleGerechten.filter(function(g) {
+      return !g.is_gn && pdfPortiesEff(g) > 0;
+    });
+    function renderTabel(lijst, titel) {
+      if (!lijst.length) return "";
+      var out = '<h3 style="margin:20px 0 8px;font-size:15px;font-weight:900;border-bottom:2px solid #002D41;padding-bottom:4px">' + titel + "</h3>";
+      out += '<table><thead><tr><th>Gerecht</th><th style="width:180px">Presentatievorm</th></tr></thead><tbody>';
+      lijst.forEach(function(g) {
+        var pEff = pdfPortiesEff(g);
+        var pres2 = getPresentatie(g, pEff);
+        var li = buffetLayout ? (buffetLayout.items || []).find(function(x) {
+          return x.code === (g.code || g.id);
+        }) : null;
+        var presStr = "";
+        if (pres2) {
+          if (pres2.type === "gn") presStr = li ? li.formaat + (li.upgraded ? " \u2191" : "") : pres2.naam;
+          else if (pres2.type === "schaal") presStr = pres2.schalenPerBuf + "\xD7 " + pres2.naam + (pres2.portiesPerSchaal ? " (" + pres2.portiesPerSchaal + "p)" : ""); else presStr = (pres2.vormenPerBuf || nBuf) + "\xD7 " + pres2.naam + (pres2.portiesPerVorm ? " (" + pres2.portiesPerVorm + "p)" : "");
+        }
+        var aant = g.altijd_afronden ? Math.ceil(pEff) : Math.round(pEff * 10) / 10;
+        out += "<tr><td>" + g.naam + (g.is_gn ? '<span class="gn">GN</span>' : "") + (g.prio ? '<span class="prio">PRIO</span>' : "") + "</td>";
+        out += '<td style="font-weight:900;font-size:16px">' + (presStr || "—") + "</td></tr>";
+      });
+      out += "</tbody></table>";
+      return out;
+    }
+    html += renderTabel(gnGerechten, "GN Bakken (Chafingdishes)");
+    html += renderTabel(nijGnGerechten, "Overige gerechten");
+    html += '<div style="display:none"><!-- old --></div>';
+    if (buffetLayout) html += '<p style="margin-top:16px;padding:10px;background:#f0f8ff;border-radius:6px;font-size:13px"><strong>Chafingdish layout:</strong> GN 1/3: ' + buffetLayout.counts[0] + " &bull; GN 1/2: " + buffetLayout.counts[1] + " &bull; GN 1/1: " + buffetLayout.counts[2] + " &bull; <strong>" + buffetLayout.dishesPerBuf + " dishes/buffet</strong></p>";
+    html += "<script>window.print();window.onafterprint=function(){window.close();};<\/script>";
+    html += "</body></html>";
+    var bbqNaam = boeking.naam.replace(/[^a-zA-Z0-9 \-_]/g, "").trim();
+    var bbqDag = (boeking.deadlineDag || "").replace(/ /g, "_");
     // Daarna asynchroon opslaan in kiosk
     if (window._supa) {
       window._supa.from("kiosk_bbq_snapshots").upsert({
@@ -2684,11 +2769,10 @@ function BuffetScreen({ actieve, setActieve }) {
         updated_at: new Date().toISOString(),
         updated_door: window.sbProfiel ? (supabaseProfiel ? supabaseProfiel.naam || supabaseProfiel.email || "" : "") : ""
       }, { onConflict: "boeking_id,ps_id" }).then(function(r) {
-        if (!r.error) console.log("BBQ snapshot opgeslagen voor", boeking.naam);
-        else console.warn("BBQ snapshot fout:", r.error);
+        if (!r.error) alert("\u2705 Opgeslagen in kiosk!"); else alert("Fout: " + (r.error.message || r.error));
       });
     }
-  } }, "🖨 PDF + 📲 Kiosk"), /* @__PURE__ */ React.createElement("button", { style: { ...btnSG, fontSize: 12 }, onClick: function() {
+  } }, "\uD83D\uDCF2 Opslaan in kiosk"), /* @__PURE__ */ React.createElement("button", { style: { ...btnSG, fontSize: 12 }, onClick: function() {
     setBoekingenAllergenen(boeking);
   } }, "🏷 Allergenenkaart"), /* @__PURE__ */ React.createElement("button", { style: btnA, onClick: function() {
     window.open("https://upevents.recras.nl/v2/customer/" + (boeking.id || "").split("-")[0], "_blank");
