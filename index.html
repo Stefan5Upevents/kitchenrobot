@@ -1121,11 +1121,23 @@ function HomeScreen({ setSc }) {
       });
       var aggGerechten = Object.values(aggMap);
 
-      // Herbereken presStr na aggregatie — zonder aantallen, alleen vormnaam
+      // Herbereken presStr na aggregatie — gebruik berekenBuffetLayout voor GN
+      // Bouw layout voor alle GN gerechten samen
+      var _gnVoorLayout = aggGerechten.filter(function(g) {
+        return g.is_gn && g.portiesEff > 0 && (g.gnFormaten || []).length > 0;
+      }).map(function(g) {
+        return { code: g.naam, naam: g.naam, ben: g.portiesEff, prio: !!g.prio, volgorde: g.volgorde || 999,
+          gnFormaten: (g.gnFormaten || []).map(function(gf) {
+            return { f: gf.naam, p: gf.porties_per_bak || 1, isMax: !!gf.is_max_vorm };
+          })
+        };
+      });
+      var _bbqLayout = _gnVoorLayout.length > 0 ? berekenBuffetLayout(_gnVoorLayout, nBuf) : null;
       aggGerechten.forEach(function(g) {
         if (g.is_gn) {
-          // GN: alleen de formaatnaam, geen getal
-          g.presStr = g.gnNaam || "—";
+          // GN: gebruik berekenBuffetLayout formaat (zelfde als website)
+          var _li = _bbqLayout ? (_bbqLayout.items || []).find(function(x) { return x.code === g.naam; }) : null;
+          g.presStr = _li ? _li.formaat + (_li.upgraded ? " \u2191" : "") : (g.gnNaam || "—");
         } else if (g.portiesEff > 0) {
           // Niet-GN: zoek passende schaalvorm, toon alleen naam (geen getal/haakjes)
           var _sfArr = (g._sfRaw || []).filter(function(_sf) { return _sf.porties_per_schaal != null; }).sort(function(_a,_b){ return (_a.volgorde||0)-(_b.volgorde||0); });
