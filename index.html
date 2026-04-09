@@ -2339,6 +2339,60 @@ function BuffetScreen({ actieve, setActieve }) {
     });
     return ben;
   }
+  // AUTO-SAVE: genereer zelfde HTML als Print knop en sla op in kiosk bij elke view
+  React.useEffect(function() {
+    if (!isPsBBQ) return;
+    if (!boeking || !psId || !window._supa) return;
+    if (!alleGerechten.length) return;
+    var timer = setTimeout(function() {
+      try {
+        var _ovr = overschrijven[formKey] || {};
+        var _svd = opgeslagenOverrides[formKey] || {};
+        function _portiesEff(g) {
+          var man = _ovr[g.id] || _svd[g.id] || 0;
+          return man > 0 ? man : berekenPorties(g) * opzetFactor;
+        }
+        var _gnGer = alleGerechten.filter(function(g) { return g.is_gn && _portiesEff(g) > 0; });
+        var _nijGer = alleGerechten.filter(function(g) { return !g.is_gn && _portiesEff(g) > 0; });
+        function _renderTbl(lijst, titel) {
+          if (!lijst.length) return "";
+          var rows = lijst.map(function(g) {
+            var pEff = _portiesEff(g);
+            var pres2 = getPresentatie(g, pEff);
+            var li = buffetLayout ? (buffetLayout.items || []).find(function(x) { return x.code === (g.code || g.id); }) : null;
+            var presStr = "";
+            if (pres2) {
+              if (pres2.type === "gn") presStr = li ? li.formaat + (li.upgraded ? " \u2191" : "") : pres2.naam;
+              else if (pres2.type === "schaal") presStr = pres2.schalenPerBuf + "\xD7 " + pres2.naam + (pres2.portiesPerSchaal ? " (" + pres2.portiesPerSchaal + "p)" : "");
+              else presStr = (pres2.vormenPerBuf || nBuf) + "\xD7 " + pres2.naam + (pres2.portiesPerVorm ? " (" + pres2.portiesPerVorm + "p)" : "");
+            }
+            return "<tr><td>" + g.naam + (g.is_gn ? '<span style="background:#1AA6B7;color:#fff;border-radius:4px;padding:2px 6px;font-size:10px;margin-left:4px">GN</span>' : "") + (g.prio ? '<span style="background:#FE424D;color:#fff;border-radius:4px;padding:2px 6px;font-size:10px;margin-left:2px">PRIO</span>' : "") + "</td><td style=\"font-weight:900;font-size:16px\">" + (presStr || "\u2014") + "</td></tr>";
+          }).join("");
+          return '<h3 style="margin:20px 0 8px;font-size:15px;font-weight:900;border-bottom:2px solid #002D41;padding-bottom:4px">' + titel + "</h3><table style=\"width:100%;border-collapse:collapse;font-size:13px\"><thead><tr><th style=\"background:#002D41;color:#fff;padding:10px 14px;text-align:left\">Gerecht</th><th style=\"background:#002D41;color:#fff;padding:10px 14px;text-align:left;width:180px\">Presentatievorm</th></tr></thead><tbody>" + rows + "</tbody></table>";
+        }
+        var _menuInfo = geboekteMenus.map(function(gm) { return gm.aantal + "\xD7 " + (gm.menu ? gm.menu.naam : gm.recrasNaam); }).join(", ");
+        var _h = "<html><head><meta charset=\"UTF-8\"><style>body{font-family:Roboto,sans-serif;margin:0;padding:20px;color:#000}h1{font-size:22px;font-weight:900;margin-bottom:4px}h2{font-size:13px;color:#666;font-weight:400;margin-bottom:8px}td{padding:10px 14px;border-bottom:1px solid #ddd}tr:nth-child(even) td{background:#f5f8fa}table{width:100%;border-collapse:collapse}@media print{body{padding:10mm}}</style></head><body>";
+        _h += "<h1>" + boeking.naam + "</h1>";
+        _h += "<h2>" + boeking.deadlineDag + " &bull; " + (psDeadline || boeking.deadlineTijd || "") + " &bull; " + boeking.locatie + " &bull; " + totaalPers + " personen &bull; " + nBuf + " buffet" + (nBuf > 1 ? "ten" : "") + "</h2>";
+        _h += '<p style="font-size:12px;color:#555;margin:0 0 16px">' + _menuInfo + "</p>";
+        _h += _renderTbl(_gnGer, "GN Bakken (Chafingdishes)");
+        _h += _renderTbl(_nijGer, "Overige gerechten");
+        if (buffetLayout) _h += '<p style="margin-top:16px;padding:10px 14px;background:#f0f8ff;border-radius:6px;font-size:13px;border-left:4px solid #1AA6B7"><strong>' + buffetLayout.dishesPerBuf + ' chafingdishes per buffet</strong> &bull; ' + buffetLayout.counts[2] + "\xD7 GN\u00A01/1 &bull; " + buffetLayout.counts[1] + "\xD7 GN\u00A01/2 &bull; " + buffetLayout.counts[0] + "\xD7 GN\u00A01/3</p>";
+        _h += "</body></html>";
+        if (_h.length < 400) return;
+        window._supa.from("kiosk_bbq_snapshots").upsert({
+          boeking_id: boeking.id, boeking_naam: boeking.naam,
+          ps_id: actieve ? (actieve.psId || "") : "",
+          outlet_code: boeking.outletCode || (window._importKeuken || ""),
+          deadline_dag: boeking.deadlineDag || "", deadline_tijd: psDeadline || boeking.deadlineTijd || "",
+          locatie: boeking.locatie || "", html: _h, updated_at: new Date().toISOString()
+        }, { onConflict: "boeking_id,ps_id" });
+      } catch(e) { console.warn("[kiosk] auto-save error:", e); }
+    }, 500);
+    return function() { clearTimeout(timer); };
+  }, [boeking && boeking.id, psId, JSON.stringify(opgeslagenOverrides[formKey])]);
+
+
   var isPsBBQ = !!(pg && (pg.naam || "").toLowerCase().includes("bbq")) || !!(ps && (ps.naam || "").toLowerCase().includes("bbq"));
   var gnGerechtenVoorLayout = alleGerechten.map(function(g) {
     var portiesRauw = berekenPorties(g);
