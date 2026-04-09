@@ -192,122 +192,90 @@ function berekenBuffetLayout(gnGerechtenMet, nBuf) {
     if (naam.indexOf("1/2") >= 0) return 1;
     return 2;
   }
+  // Stap 1: kies initieel formaat (1 slot per gerecht per buffet)
   var items = gnGerechtenMet.map(function(g) {
     var portiesPerBuf = g.ben / nBuf;
-    var formaten = (g.gnFormaten || []).filter(function(f) {
-      return !f.uit;
-    }).slice().sort(function(a, b) {
-      return a.p - b.p;
-    });
-    var natFormaten = formaten.filter(function(f) {
-      return !f.isMax;
-    });
-    var formaat = natFormaten.find(function(f) {
-      return f.p >= portiesPerBuf;
-    });
-    if (!formaat) formaat = formaten.filter(function(f) {
-      return !f.isMax;
-    }).slice(-1)[0] || formaten[formaten.length - 1];
+    var alle = (g.gnFormaten || []).filter(function(f) { return !f.uit; })
+      .slice().sort(function(a, b) { return a.p - b.p; });
+    var nonMax = alle.filter(function(f) { return !f.isMax; });
+    // Kleinste non-isMax die past
+    var formaat = nonMax.find(function(f) { return f.p >= portiesPerBuf; });
+    // Geen non-isMax past → gebruik isMax als fallback (grote bak, houdt alle porties)
+    if (!formaat) {
+      var isMaxFmts = alle.filter(function(f) { return f.isMax; })
+        .sort(function(a, b) { return grootteVan(b.f) - grootteVan(a.f); }); // grootst eerst
+      formaat = isMaxFmts[0] || nonMax[nonMax.length - 1] || alle[alle.length - 1];
+    }
     if (!formaat) return null;
     return {
-      code: g.code,
-      naam: g.naam,
-      prio: !!g.prio,
-      volgorde: g.volgorde || 999,
-      portiesPerBuf,
-      formaat: formaat.f,
-      portiesPerBak: formaat.p,
-      grootte: grootteVan(formaat.f),
-      upgraded: false,
-      gnFormaten: g.gnFormaten
+      code: g.code, naam: g.naam, prio: !!g.prio, volgorde: g.volgorde || 999,
+      portiesPerBuf: portiesPerBuf, formaat: formaat.f, portiesPerBak: formaat.p || 9999,
+      grootte: grootteVan(formaat.f), upgraded: false, gnFormaten: g.gnFormaten
     };
   }).filter(Boolean);
+
+  // Upgrade één item van vanGrootte naar vanGrootte+1
+  // Probeert eerst niet-isMax, daarna isMax
+  function upgradeItem(idx, naarGrootte) {
+    var item = items[idx];
+    var alle = (item.gnFormaten || []).filter(function(f) {
+      return !f.uit && grootteVan(f.f) === naarGrootte;
+    }).sort(function(a, b) { return (a.isMax ? 1 : 0) - (b.isMax ? 1 : 0) || a.p - b.p; });
+    if (alle.length > 0) {
+      items[idx] = Object.assign({}, item, {
+        formaat: alle[0].f, portiesPerBak: alle[0].p || 9999, grootte: naarGrootte, upgraded: true
+      });
+      return true;
+    }
+    return false;
+  }
+
   function getCounts() {
-    var c2 = [0, 0, 0];
-    items.forEach(function(x) {
-      c2[x.grootte]++;
-    });
-    return c2;
+    var c = [0, 0, 0];
+    items.forEach(function(x) { c[x.grootte]++; });
+    return c;
   }
-  function upgradeEen(vanGrootte) {
-    var naarGrootte = vanGrootte + 1;
-    if (naarGrootte > 2) return false;
-    var kandidaten = items.map(function(item, idx) {
-      return { item, idx };
-    }).filter(function(x) {
-      return x.item.grootte === vanGrootte;
-    }).sort(function(a, b) {
-      var pd = (b.item.prio ? 1 : 0) - (a.item.prio ? 1 : 0);
-      return pd !== 0 ? pd : a.idx - b.idx;
-    });
-    for (var ki = 0; ki < kandidaten.length; ki++) {
-      var kand = kandidaten[ki];
-      var nfs = (kand.item.gnFormaten || []).filter(function(f) {
-        return !f.uit && !f.isMax && grootteVan(f.f) === naarGrootte;
-      }).sort(function(a, b) {
-        return a.p - b.p;
-      });
-      if (nfs.length > 0) {
-        items[kand.idx] = Object.assign({}, kand.item, { formaat: nfs[0].f, portiesPerBak: nfs[0].p, grootte: naarGrootte, upgraded: true });
-        return true;
-      }
-    }
-    return false;
-  }
+
+  // Upgrade PRIO items eerste (gesorteerd op volgorde), daarna alle items
   function upgradePrio(vanGrootte) {
-    var naarGrootte = vanGrootte + 1;
-    if (naarGrootte > 2) return false;
-    var kandidaten = items.map(function(item, idx) {
-      return { item, idx };
-    }).filter(function(x) {
-      return x.item.grootte === vanGrootte && x.item.prio;
-    }).sort(function(a, b) {
-      return (a.item.volgorde || 999) - (b.item.volgorde || 999);
-    });
-    for (var ki = 0; ki < kandidaten.length; ki++) {
-      var kand = kandidaten[ki];
-      var nfs = (kand.item.gnFormaten || []).filter(function(f) {
-        return !f.uit && !f.isMax && grootteVan(f.f) === naarGrootte;
-      }).sort(function(a, b) {
-        return a.p - b.p;
-      });
-      if (nfs.length > 0) {
-        items[kand.idx] = Object.assign({}, kand.item, { formaat: nfs[0].f, portiesPerBak: nfs[0].p, grootte: naarGrootte, upgraded: true });
-        return true;
-      }
+    var kand = items.map(function(item, idx) { return { item: item, idx: idx }; })
+      .filter(function(x) { return x.item.grootte === vanGrootte && x.item.prio; })
+      .sort(function(a, b) { return a.item.volgorde - b.item.volgorde; });
+    for (var i = 0; i < kand.length; i++) {
+      if (upgradeItem(kand[i].idx, vanGrootte + 1)) return true;
     }
     return false;
   }
-  // Upgrade loop: eerst prio, dan alle items — tot hele chafingdishes
+
+  function upgradeEen(vanGrootte) {
+    var kand = items.map(function(item, idx) { return { item: item, idx: idx }; })
+      .filter(function(x) { return x.item.grootte === vanGrootte; })
+      .sort(function(a, b) {
+        var pd = (b.item.prio ? 1 : 0) - (a.item.prio ? 1 : 0);
+        return pd !== 0 ? pd : a.item.volgorde - b.item.volgorde;
+      });
+    for (var i = 0; i < kand.length; i++) {
+      if (upgradeItem(kand[i].idx, vanGrootte + 1)) return true;
+    }
+    return false;
+  }
+
+  // Stap 2: upgrade tot hele chafingdishes
   for (var iter = 0; iter < 120; iter++) {
     var c = getCounts();
     if (c[0] % 3 === 0 && c[1] % 2 === 0) break;
     var deed = false;
-    // Stap 1: upgrade prio-gerechten eerst (in volgorde)
     if (c[0] % 3 !== 0) deed = upgradePrio(0);
     if (!deed && c[1] % 2 !== 0) deed = upgradePrio(1);
-    // Stap 2: als prio niet helpt, upgrade elk item
     if (!deed && c[0] % 3 !== 0) deed = upgradeEen(0);
     if (!deed && c[1] % 2 !== 0) deed = upgradeEen(1);
     if (!deed) break;
   }
-  // Bereken bakkenPerBuf na upgrades, afgerond op hele chafingdishes
-  items.forEach(function(item) {
-    var slots = item.grootte === 0 ? 3 : item.grootte === 1 ? 2 : 1;
-    var rawBakken = item.portiesPerBak > 0 ? Math.ceil(item.portiesPerBuf / item.portiesPerBak) : 1;
-    var rounded = Math.max(slots, Math.ceil(rawBakken / slots) * slots);
-    item.bakkenPerBuf = rounded;
-    item.dishSlots = slots;
-  });
+
   var counts = getCounts();
-  // dishesPerBuf op basis van bakken-totalen (niet item-aantallen)
-  // Elk item heeft nu bakkenPerBuf als veelvoud van dishSlots → altijd hele dishes
-  var totalBakken = [0, 0, 0];
-  items.forEach(function(item) { totalBakken[item.grootte] += item.bakkenPerBuf; });
-  var dishesPerBuf = totalBakken[0] / 3 + totalBakken[1] / 2 + totalBakken[2];
-  // hasError alleen als er items zijn waarbij bakkenPerBuf nog steeds een half-dish oplevert
-  var hasError = (totalBakken[0] % 3 !== 0) || (totalBakken[1] % 2 !== 0);
-  return { items, counts, totalBakken, dishesPerBuf, hasError, totalDishes: dishesPerBuf * nBuf, nBuf };
+  var dishesPerBuf = Math.ceil(counts[0] / 3) + Math.ceil(counts[1] / 2) + counts[2];
+  var hasError = counts[0] % 3 !== 0 || counts[1] % 2 !== 0;
+  return { items: items, counts: counts, dishesPerBuf: dishesPerBuf, hasError: hasError, totalDishes: dishesPerBuf * nBuf, nBuf: nBuf };
 }
 function calcGerecht(boeking, gerecht, opzetPctOverride, filterPsId) {
   var ben = 0;
