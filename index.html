@@ -300,9 +300,14 @@ function berekenBuffetLayout(gnGerechtenMet, nBuf) {
     item.dishSlots = slots;
   });
   var counts = getCounts();
-  var dishesPerBuf = Math.floor(counts[0] / 3) + Math.floor(counts[1] / 2) + counts[2];
-  var hasError = counts[0] % 3 !== 0 || counts[1] % 2 !== 0;
-  return { items, counts, dishesPerBuf, hasError, totalDishes: dishesPerBuf * nBuf, nBuf };
+  // dishesPerBuf op basis van bakken-totalen (niet item-aantallen)
+  // Elk item heeft nu bakkenPerBuf als veelvoud van dishSlots → altijd hele dishes
+  var totalBakken = [0, 0, 0];
+  items.forEach(function(item) { totalBakken[item.grootte] += item.bakkenPerBuf; });
+  var dishesPerBuf = totalBakken[0] / 3 + totalBakken[1] / 2 + totalBakken[2];
+  // hasError alleen als er items zijn waarbij bakkenPerBuf nog steeds een half-dish oplevert
+  var hasError = (totalBakken[0] % 3 !== 0) || (totalBakken[1] % 2 !== 0);
+  return { items, counts, totalBakken, dishesPerBuf, hasError, totalDishes: dishesPerBuf * nBuf, nBuf };
 }
 function calcGerecht(boeking, gerecht, opzetPctOverride, filterPsId) {
   var ben = 0;
