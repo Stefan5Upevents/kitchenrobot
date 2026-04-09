@@ -1091,7 +1091,32 @@ function HomeScreen({ setSc }) {
             return gf.is_max_vorm;
           }) || gnFormaten[0];
           var aantalBakken = gnMaxVorm && gnMaxVorm.porties_per_bak > 0 ? Math.ceil(portiesEff / gnMaxVorm.porties_per_bak) : null;
-          var presStr = gnMaxVorm && aantalBakken ? aantalBakken + "\xD7 " + gnMaxVorm.naam : portiesEff > 0 ? portiesEff + "\xD7" : "—";
+          // Bereken presentatievorm voor niet-GN gerechten
+          var presStr;
+          if (gnMaxVorm && aantalBakken) {
+            presStr = aantalBakken + "\xD7 " + gnMaxVorm.naam;
+          } else if (portiesEff > 0) {
+            // Schaalvorm berekening (zelfde als BuffetScreen)
+            var _sfArr = (g.gerecht_schaal_formaten || []).filter(function(_sf) { return _sf.porties_per_schaal != null; }).sort(function(_a,_b){ return (_a.volgorde||0)-(_b.volgorde||0); });
+            var _pPerBuf = nBuf > 0 ? portiesEff / nBuf : portiesEff;
+            var _gekozenSf = null;
+            for (var _si=0; _si<_sfArr.length; _si++) { var _sf2=_sfArr[_si]; if (!_sf2.is_max_vorm && _sf2.porties_per_schaal > 1 && _pPerBuf <= _sf2.porties_per_schaal) { _gekozenSf=_sf2; break; } }
+            if (!_gekozenSf) _gekozenSf = _sfArr[_sfArr.length-1];
+            if (_gekozenSf) {
+              var _sfNaam = (_gekozenSf.standaard_schaal_formaten||{}).naam || "schaal";
+              if (_gekozenSf.is_max_vorm || _gekozenSf.porties_per_schaal <= 1) {
+                presStr = "1\xD7 " + _sfNaam;
+              } else {
+                var _totaalS = Math.ceil(portiesEff / _gekozenSf.porties_per_schaal);
+                var _sPerBuf = nBuf > 0 ? Math.ceil(_totaalS / nBuf) : _totaalS;
+                presStr = _sPerBuf + "\xD7 " + _sfNaam + " (" + _gekozenSf.porties_per_schaal + "p)";
+              }
+            } else {
+              presStr = portiesEff + "\xD7";
+            }
+          } else {
+            presStr = "—";
+          }
           bbqGerechten.push({ naam: g.naam, is_gn: !!g.is_gn, prio: !!g.prio, portiesEff, personen: r.aantal, gnFormaten, gnNaam: gnMaxVorm ? gnMaxVorm.naam : null, aantalBakken, presStr });
         });
       });
@@ -10465,12 +10490,13 @@ function KioskApp() {
     } else {
       var actBuf = dagBuffetItems[Math.min(bbqIdx, dagBuffetItems.length - 1)];
       content = React.createElement("div", null,
-        dagBuffetItems.length > 1 && React.createElement("div", { style:{ overflowX:"auto", display:"flex", gap:6, marginBottom:10, WebkitOverflowScrolling:"touch" } },
+        React.createElement("div", { style:{ overflowX:"auto", display:"flex", gap:8, marginBottom:12, WebkitOverflowScrolling:"touch", paddingBottom:4 } },
           dagBuffetItems.map(function(bf, bi) {
             var act = bi === bbqIdx;
-            return React.createElement("div", { key:bi, onClick:function(){ setBbqIdx(bi); }, style:{ flexShrink:0, background:act?"#FE424D":"#001828", borderRadius:8, padding:"8px 12px", cursor:"pointer", border:"1.5px solid "+(act?"#FE424D":"rgba(254,66,61,.3)"), minWidth:100 } },
-              React.createElement("div", { style:{ fontSize:11, fontWeight:900, color:"#fff", marginBottom:1 } }, bf.tijdLabel || "—"),
-              React.createElement("div", { style:{ fontSize:10, color:act?"rgba(255,255,255,.8)":"rgba(255,255,255,.4)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", maxWidth:120 } }, bf.naam)
+            return React.createElement("div", { key:bi, onClick:function(){ setBbqIdx(bi); }, style:{ flexShrink:0, background:act?"#FE424D":"rgba(254,66,77,0.12)", borderRadius:12, padding:"10px 14px", cursor:"pointer", border:"2px solid "+(act?"#FE424D":"rgba(254,66,61,.3)"), minWidth:140 } },
+              React.createElement("div", { style:{ fontSize:18, fontWeight:900, color:"#fff", lineHeight:1, marginBottom:3 } }, bf.tijdLabel || "—"),
+              React.createElement("div", { style:{ fontSize:12, fontWeight:700, color:act?"#fff":"rgba(255,255,255,.8)" } }, bf.naam),
+              React.createElement("div", { style:{ fontSize:10, color:act?"rgba(255,255,255,.8)":"rgba(255,255,255,.4)", marginTop:2 } }, (bf.locatie || "") + (bf.totaalPers ? " \xB7 " + bf.totaalPers + "p" : ""))
             );
           })
         ),
