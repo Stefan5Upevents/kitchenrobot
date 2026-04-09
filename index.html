@@ -1249,30 +1249,6 @@ function HomeScreen({ setSc }) {
       gepubliceerd_door: "backoffice",
       publicatie_versie: versie
     }, { onConflict: "outlet_code,datum" }).then(function() {
-      // Auto-save alle BBQ snapshots naar kiosk
-      if (buffetLijst && buffetLijst.length > 0) {
-        var bbqPsId = opzetLijst.length > 0 ? (opzetLijst.find(function(ps) { return (ps.psNaam||"").toLowerCase().includes("bbq"); }) || {}).psId || "" : "";
-        var bbqSnaps = buffetLijst.map(function(bf) {
-          return {
-            boeking_id: bf.id,
-            boeking_naam: bf.naam,
-            ps_id: bbqPsId,
-            outlet_code: gekozenKeuken,
-            deadline_dag: bf.deadlineDag || "",
-            deadline_tijd: bf.tijdLabel || "",
-            locatie: bf.locatie || "",
-            html: bf.bbqHtml || "",
-            updated_at: new Date().toISOString()
-          };
-        }).filter(function(s) { return s.html; });
-        if (bbqSnaps.length > 0 && window._supa) {
-          window._supa.from("kiosk_bbq_snapshots").upsert(bbqSnaps, { onConflict: "boeking_id,ps_id" })
-            .then(function(r) {
-              if (!r.error) console.log("BBQ snapshots auto-opgeslagen:", bbqSnaps.length, "boekingen");
-              else console.warn("BBQ snapshots fout:", r.error);
-            });
-        }
-      }
       setDagpakketPubliceren(false);
       laadDagpakketStatus();
       var keukenNaam2 = gekozenKeuken === "west" ? "Amsterdam West" : "Weesp";
