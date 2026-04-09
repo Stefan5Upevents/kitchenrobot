@@ -2637,7 +2637,7 @@ function BuffetScreen({ actieve, setActieve }) {
         }) : null;
         var presStr = "";
         if (pres2) {
-          if (pres2.type === "gn") presStr = li ? (li.bakkenPerBuf ? li.bakkenPerBuf + "\xD7 " + li.formaat : li.formaat) + (li.upgraded ? " \u2191" : "") : pres2.naam;
+          if (pres2.type === "gn") presStr = li ? li.formaat + (li.upgraded ? " \u2191" : "") : pres2.naam;
           else if (pres2.type === "schaal") presStr = pres2.schalenPerBuf + "\xD7 " + pres2.naam + (pres2.portiesPerSchaal ? " (" + pres2.portiesPerSchaal + "p)" : ""); else presStr = (pres2.vormenPerBuf || nBuf) + "\xD7 " + pres2.naam + (pres2.portiesPerVorm ? " (" + pres2.portiesPerVorm + "p)" : "");
         }
         var aant = g.altijd_afronden ? Math.ceil(pEff) : Math.round(pEff * 10) / 10;
@@ -2907,7 +2907,7 @@ function BuffetScreen({ actieve, setActieve }) {
         },
         style: { width: 60, padding: "2px 4px", border: "1px solid " + C.border, borderRadius: 4, fontWeight: 700, color: C.aqua, textAlign: "center", fontSize: 12 }
       }
-    ) : /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 700, color: C.aqua } }, afgerondeEff) : bewerkModus ? /* @__PURE__ */ React.createElement("span", { style: { color: C.muted, fontSize: 10 } }, "zie Rauw") : "—"), /* @__PURE__ */ React.createElement("td", { style: { padding: "5px 8px", color: kleur } }, pres ? pres.type === "gn" ? layoutItem ? /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("strong", null, layoutItem.bakkenPerBuf ? layoutItem.bakkenPerBuf + "\xD7 " + layoutItem.formaat : layoutItem.formaat), layoutItem.upgraded ? " \u2191" : "") : /* @__PURE__ */ React.createElement("span", null, pres.naam) : pres.type === "schaal" ? /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("strong", null, pres.schalenPerBuf), "\xD7 ", pres.naam, pres.portiesPerSchaal ? " (" + pres.portiesPerSchaal + "p)" : "") : /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("strong", null, pres.vormenPerBuf), "\xD7 ", pres.naam, " (", pres.portiesPerVorm, "p)") : "—", bewerkModus && effData && /* @__PURE__ */ React.createElement(
+    ) : /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 700, color: C.aqua } }, afgerondeEff) : bewerkModus ? /* @__PURE__ */ React.createElement("span", { style: { color: C.muted, fontSize: 10 } }, "zie Rauw") : "—"), /* @__PURE__ */ React.createElement("td", { style: { padding: "5px 8px", color: kleur } }, pres ? pres.type === "gn" ? layoutItem ? /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("strong", null, layoutItem.formaat), layoutItem.upgraded ? " \u2191" : "") : /* @__PURE__ */ React.createElement("span", null, pres.naam) : pres.type === "schaal" ? /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("strong", null, pres.schalenPerBuf), "\xD7 ", pres.naam, pres.portiesPerSchaal ? " (" + pres.portiesPerSchaal + "p)" : "") : /* @__PURE__ */ React.createElement("span", null, /* @__PURE__ */ React.createElement("strong", null, pres.vormenPerBuf), "\xD7 ", pres.naam, " (", pres.portiesPerVorm, "p)") : "—", bewerkModus && effData && /* @__PURE__ */ React.createElement(
       "select",
       {
         style: { ...SS.inp, fontSize: 9, padding: "1px 4px", marginTop: 3, width: "100%" },
