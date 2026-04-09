@@ -1228,6 +1228,30 @@ function HomeScreen({ setSc }) {
       gepubliceerd_door: "backoffice",
       publicatie_versie: versie
     }, { onConflict: "outlet_code,datum" }).then(function() {
+      // Auto-save alle BBQ snapshots naar kiosk
+      if (buffetLijst && buffetLijst.length > 0) {
+        var bbqPsId = opzetLijst.length > 0 ? (opzetLijst.find(function(ps) { return (ps.psNaam||"").toLowerCase().includes("bbq"); }) || {}).psId || "" : "";
+        var bbqSnaps = buffetLijst.map(function(bf) {
+          return {
+            boeking_id: bf.id,
+            boeking_naam: bf.naam,
+            ps_id: bbqPsId,
+            outlet_code: gekozenKeuken,
+            deadline_dag: bf.deadlineDag || "",
+            deadline_tijd: bf.tijdLabel || "",
+            locatie: bf.locatie || "",
+            html: bf.bbqHtml || "",
+            updated_at: new Date().toISOString()
+          };
+        }).filter(function(s) { return s.html; });
+        if (bbqSnaps.length > 0 && window._supa) {
+          window._supa.from("kiosk_bbq_snapshots").upsert(bbqSnaps, { onConflict: "boeking_id,ps_id" })
+            .then(function(r) {
+              if (!r.error) console.log("BBQ snapshots auto-opgeslagen:", bbqSnaps.length, "boekingen");
+              else console.warn("BBQ snapshots fout:", r.error);
+            });
+        }
+      }
       setDagpakketPubliceren(false);
       laadDagpakketStatus();
       var keukenNaam2 = gekozenKeuken === "west" ? "Amsterdam West" : "Weesp";
@@ -2665,23 +2689,7 @@ function BuffetScreen({ actieve, setActieve }) {
       w.document.close();
       w.document.title = "BBQ_Opzet_" + bbqNaam + "_" + bbqDag;
     }
-  } }, "🖨 BBQ Opzet PDF"), /* @__PURE__ */ React.createElement("button", {
-    style: { ...btnSG, fontSize: 12, background: "rgba(26,166,183,.15)", color: "#1AA6B7" },
-    onClick: function() {
-      // Genereer en sla op naar kiosk (zelfde html als PDF maar zonder print script)
-      if (!window._supa || !boeking) return;
-      var htmlK = html.replace("<script>window.print();window.onafterprint=function(){window.close();}<\/script>", "");
-      window._supa.from("kiosk_bbq_snapshots").upsert({
-        boeking_id: boeking.id, boeking_naam: boeking.naam,
-        ps_id: actieve ? (actieve.psId || "") : "",
-        outlet_code: boeking.outletCode || (window._importKeuken || ""),
-        deadline_dag: boeking.deadlineDag || "", deadline_tijd: psDeadline || boeking.deadlineTijd || "",
-        locatie: boeking.locatie || "", html: htmlK, updated_at: new Date().toISOString()
-      }, { onConflict: "boeking_id,ps_id" }).then(function(r) {
-        alert(r.error ? "Fout: " + r.error.message : "\u2705 Opgeslagen in kiosk!");
-      });
-    }
-  }, "📲 → Kiosk"), /* @__PURE__ */ React.createElement("button", { style: { ...btnSG, fontSize: 12 }, onClick: function() {
+  } }, "🖨 PDF + 📲 Kiosk"), /* @__PURE__ */ React.createElement("button", { style: { ...btnSG, fontSize: 12 }, onClick: function() {
     setBoekingenAllergenen(boeking);
   } }, "🏷 Allergenenkaart"), /* @__PURE__ */ React.createElement("button", { style: btnA, onClick: function() {
     window.open("https://upevents.recras.nl/v2/customer/" + (boeking.id || "").split("-")[0], "_blank");
@@ -10588,9 +10596,10 @@ function KioskApp() {
               style:{ width:"100%", height:"75vh", border:"none", borderRadius:10, background:"#fff" },
               title: "BBQ " + activeBoeking.naam
             })
-          : /* @__PURE__ */ React.createElement("div", { style:{ ...krt, textAlign:"center", padding:20 } },
-              /* @__PURE__ */ React.createElement("div", { style:{ fontSize:14, color:"rgba(255,255,255,.5)", marginBottom:12 } }, "Nog geen BBQ formulier opgeslagen."),
-              /* @__PURE__ */ React.createElement("div", { style:{ fontSize:11, color:"rgba(255,255,255,.35)" } }, "Klik op \"\uD83D\uDCF2 \u2192 Kiosk\" in de website om het formulier hier te zetten.")
+          : /* @__PURE__ */ React.createElement("div", { style:{ ...krt, textAlign:"center", padding:24 } },
+              /* @__PURE__ */ React.createElement("div", { style:{ fontSize:28, marginBottom:12 } }, "\u23F3"),
+              /* @__PURE__ */ React.createElement("div", { style:{ fontSize:14, fontWeight:700, color:"rgba(255,255,255,.7)", marginBottom:8 } }, "Formulier nog niet opgeslagen"),
+              /* @__PURE__ */ React.createElement("div", { style:{ fontSize:12, color:"rgba(255,255,255,.4)", lineHeight:1.5 } }, "Publiceer het dagpakket opnieuw via \u201EImport & Publiceer\u201D \u2014 dan worden alle BBQ formulieren automatisch opgeslagen.")
             )
       );
     }
