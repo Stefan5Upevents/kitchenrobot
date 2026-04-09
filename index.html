@@ -2274,40 +2274,37 @@ function BuffetScreen({ actieve, setActieve }) {
       var bakkenPerBuf = nBuf > 0 ? Math.ceil(bakken / nBuf) : bakken;
       return { type: "gn", naam: gfNaam, aantalBakken: bakken, bakkenPerBuf, portiesPerBak: maxVorm.porties_per_bak, perBuf: nBuf > 0 ? Math.ceil(portiesEff / maxVorm.porties_per_bak / nBuf) : 0 };
     } else {
-      var pvLijst = (g.presentatievormen || []).filter(function(v) { return v.naam; })
-        .sort(function(a, b) { return (a.volgorde || 0) - (b.volgorde || 0); });
       var sfLijst = (g.gerecht_schaal_formaten || []).filter(function(sf) { return sf.porties_per_schaal != null; })
         .sort(function(a, b) { return (a.volgorde || 0) - (b.volgorde || 0); });
-
-      if (pvLijst.length > 0) {
-        var gekozenVorm = pvLijst.find(function(v) { return portiesEff <= (v.porties_per_vorm || 9999); }) || pvLijst[pvLijst.length - 1];
-        var vormIdx = pvLijst.indexOf(gekozenVorm);
-        var gekozenSf = sfLijst[vormIdx] || sfLijst[sfLijst.length - 1];
-
-        if (!gekozenSf) {
-          return { type: "vrij", naam: gekozenVorm.naam, vormenPerBuf: 1, aantalVormen: 1, portiesPerVorm: null };
-        }
-
-        var sfNaam = (gekozenSf.standaard_schaal_formaten || {}).naam || gekozenVorm.naam;
-        if (gekozenSf.is_max_vorm || gekozenSf.porties_per_schaal <= 1) {
-          return { type: "schaal", naam: sfNaam, vormNaam: gekozenVorm.naam, aantalSchalen: 1, schalenPerBuf: 1, portiesPerSchaal: null };
-        }
-        var aantalS = Math.ceil(portiesEff / gekozenSf.porties_per_schaal);
-        var sPerBuf = nBuf > 0 ? Math.ceil(aantalS / nBuf) : aantalS;
-        return { type: "schaal", naam: sfNaam, vormNaam: gekozenVorm.naam, aantalSchalen: aantalS, schalenPerBuf: sPerBuf, portiesPerSchaal: gekozenSf.porties_per_schaal };
-      }
+      var pvLijst = (g.presentatievormen || []).filter(function(v) { return v.naam; })
+        .sort(function(a, b) { return (a.volgorde || 0) - (b.volgorde || 0); });
 
       if (sfLijst.length === 0) return null;
-      var maxSf = sfLijst.find(function(sf) { return sf.is_max_vorm; }) || sfLijst[sfLijst.length - 1];
-      var sfNaamF = (maxSf.standaard_schaal_formaten || {}).naam || "?";
-      if (maxSf.is_max_vorm || maxSf.porties_per_schaal <= 1) {
-        return { type: "schaal", naam: sfNaamF, aantalSchalen: 1, schalenPerBuf: 1, portiesPerSchaal: null };
+
+      var pPerBuf = nBuf > 0 ? portiesEff / nBuf : portiesEff;
+
+      var gekozenSf = null;
+      for (var si = 0; si < sfLijst.length; si++) {
+        var sf = sfLijst[si];
+        if (!sf.is_max_vorm && sf.porties_per_schaal > 1 && pPerBuf <= sf.porties_per_schaal) {
+          gekozenSf = sf;
+          break;
+        }
       }
-      var aantalSF = Math.ceil(portiesEff / maxSf.porties_per_schaal);
-      var sPBF = nBuf > 0 ? Math.ceil(aantalSF / nBuf) : aantalSF;
-      return { type: "schaal", naam: sfNaamF, aantalSchalen: aantalSF, schalenPerBuf: sPBF, portiesPerSchaal: maxSf.porties_per_schaal };
+      if (!gekozenSf) gekozenSf = sfLijst[sfLijst.length - 1];
+
+      var sfIdx = sfLijst.indexOf(gekozenSf);
+      var sfNaam = (gekozenSf.standaard_schaal_formaten || {}).naam || "?";
+      var gekozenPv = pvLijst[sfIdx] || null;
+      var pvNaam = gekozenPv ? gekozenPv.naam : null;
+
+      if (gekozenSf.is_max_vorm || gekozenSf.porties_per_schaal <= 1) {
+        return { type: "schaal", naam: sfNaam, vormNaam: pvNaam, aantalSchalen: 1, schalenPerBuf: 1, portiesPerSchaal: null };
+      }
+      var totaalSchalen = Math.ceil(portiesEff / gekozenSf.porties_per_schaal);
+      var schPerBuf = nBuf > 0 ? Math.ceil(totaalSchalen / nBuf) : totaalSchalen;
+      return { type: "schaal", naam: sfNaam, vormNaam: pvNaam, aantalSchalen: totaalSchalen, schalenPerBuf: schPerBuf, portiesPerSchaal: gekozenSf.porties_per_schaal };
     }
-  }
   function getSligroVerpakkingen(g, portiesEff) {
     var items = [];
     (g.ingredienten || []).forEach(function(ing) {
