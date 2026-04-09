@@ -2642,13 +2642,46 @@ function BuffetScreen({ actieve, setActieve }) {
     html += "</body></html>";
     var bbqNaam = boeking.naam.replace(/[^a-zA-Z0-9 \-_]/g, "").trim();
     var bbqDag = (boeking.deadlineDag || "").replace(/ /g, "_");
+    if (window._supa) {
+      window._supa.from("kiosk_bbq_snapshots").upsert({
+        boeking_id: boeking.id,
+        boeking_naam: boeking.naam,
+        ps_id: actieve ? (actieve.psId || "") : "",
+        outlet_code: boeking.outletCode || (window._importKeuken || ""),
+        deadline_dag: boeking.deadlineDag || "",
+        deadline_tijd: psDeadline || boeking.deadlineTijd || "",
+        locatie: boeking.locatie || "",
+        html: html,
+        updated_at: new Date().toISOString(),
+        updated_door: window.sbProfiel ? (supabaseProfiel ? supabaseProfiel.naam || supabaseProfiel.email || "" : "") : ""
+      }, { onConflict: "boeking_id,ps_id" }).then(function(r) {
+        if (!r.error) console.log("BBQ snapshot opgeslagen voor", boeking.naam);
+        else console.warn("BBQ snapshot fout:", r.error);
+      });
+    }
     var w = window.open("", "_blank", "width=900,height=700");
     if (w) {
       w.document.write(html);
       w.document.close();
       w.document.title = "BBQ_Opzet_" + bbqNaam + "_" + bbqDag;
     }
-  } }, "🖨 BBQ Opzet PDF"), /* @__PURE__ */ React.createElement("button", { style: { ...btnSG, fontSize: 12 }, onClick: function() {
+  } }, "🖨 BBQ Opzet PDF"), /* @__PURE__ */ React.createElement("button", {
+    style: { ...btnSG, fontSize: 12, background: "rgba(26,166,183,.15)", color: "#1AA6B7" },
+    onClick: function() {
+      // Genereer en sla op naar kiosk (zelfde html als PDF maar zonder print script)
+      if (!window._supa || !boeking) return;
+      var htmlK = html.replace("<script>window.print();window.onafterprint=function(){window.close();}<\/script>", "");
+      window._supa.from("kiosk_bbq_snapshots").upsert({
+        boeking_id: boeking.id, boeking_naam: boeking.naam,
+        ps_id: actieve ? (actieve.psId || "") : "",
+        outlet_code: boeking.outletCode || (window._importKeuken || ""),
+        deadline_dag: boeking.deadlineDag || "", deadline_tijd: psDeadline || boeking.deadlineTijd || "",
+        locatie: boeking.locatie || "", html: htmlK, updated_at: new Date().toISOString()
+      }, { onConflict: "boeking_id,ps_id" }).then(function(r) {
+        alert(r.error ? "Fout: " + r.error.message : "\u2705 Opgeslagen in kiosk!");
+      });
+    }
+  }, "📲 → Kiosk"), /* @__PURE__ */ React.createElement("button", { style: { ...btnSG, fontSize: 12 }, onClick: function() {
     setBoekingenAllergenen(boeking);
   } }, "🏷 Allergenenkaart"), /* @__PURE__ */ React.createElement("button", { style: btnA, onClick: function() {
     window.open("https://upevents.recras.nl/v2/customer/" + (boeking.id || "").split("-")[0], "_blank");
@@ -9695,6 +9728,7 @@ function KioskApp() {
   var [voortgang, setVoortgang] = useState([]);
   var [opzetVoortgang, setOpzetVoortgang] = useState([]);
   var [formulierOverrides, setFormulierOverrides] = useState([]);
+  var [bbqSnapshots, setBbqSnapshots] = useState([]);
   var [medewerker, setMedewerker] = useState(adminOutletCode ? { naam: "Admin (" + adminOutletCode + ")", rol: "admin" } : null);
   var [pinInvoer, setPinInvoer] = useState("");
   var [pinFout, setPinFout] = useState(false);
@@ -9716,6 +9750,7 @@ function KioskApp() {
   var [navPS, setNavPS] = useState(null);
   var [bbqIdx, setBbqIdx] = useState(0);
   var [bbqDag, setBbqDag] = useState(null);
+  var [bbqActieveBoeking, setBbqActieveBoeking] = useState(null);
   var [tijdenCat, setTijdenCat] = useState("alle");
   var [tijdenBoekIdx, setTijdenBoekIdx] = useState(0);
   var [wasteFormulier, setWasteFormulier] = useState(false);
@@ -9857,6 +9892,7 @@ function KioskApp() {
         var dp = results[0].data;
         window._supa.from("formulier_overrides").select("*").then(function(_fr) { setFormulierOverrides(_fr.data || []); });
         window._supa.from("formulier_overrides").select("*").then(function(_fr) { setFormulierOverrides(_fr.data || []); });
+        window._supa.from("kiosk_bbq_snapshots").select("*").then(function(_bs) { setBbqSnapshots(_bs.data || []); });
         window._supa.from("kiosk_boeking_voortgang").select("*").eq("dagpakket_id", dp.id).then(function(vr) {
           setVoortgang(vr.data || []);
         });
@@ -10191,6 +10227,7 @@ function KioskApp() {
       setActieveTab(item[0]);
       setNavLevel("carousel");
       setNavDag(null);
+      setBbqActieveBoeking(null);
       setNavPS(null);
     } }, item[1]);
   })), /* @__PURE__ */ React.createElement("div", { style: { padding: "10px 10px 80px", overflowY: "auto", maxHeight: "calc(100vh - 128px)" } }, actieveTab === "dag" && /* @__PURE__ */ React.createElement("div", null, navLevel === "carousel" && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { overflowX: "auto", display: "flex", gap: 10, paddingBottom: 8, marginBottom: 12 } }, alDagen.length === 0 && /* @__PURE__ */ React.createElement("div", { style: { color: "rgba(255,255,255,.4)", fontSize: 12 } }, "Geen boekingen in het dagpakket."), alDagen.map(function(d) {
@@ -10483,30 +10520,26 @@ function KioskApp() {
     ));
   }))), actieveTab === "bbq" && /* @__PURE__ */ React.createElement("div", null, (function() {
 
-    /* BBQ formulieren — links naar de website */
     var boekJson = dagpakket ? (dagpakket.boekingen_json || []) : [];
     var opzetJson = dagpakket ? (dagpakket.opzet_json || []) : [];
-
-    // Vind de BBQ productsoort ID uit opzet_json
     var bbqPsId = "";
     var bbqPs = opzetJson.find(function(ps) { return (ps.psNaam||"").toLowerCase().includes("bbq"); });
     if (bbqPs) bbqPsId = bbqPs.psId || "";
 
-    // Alle boekingen met BBQ regels
+    // Alle BBQ boekingen gesorteerd op datum/tijd
     var bbqBoekingen = boekJson.filter(function(b) {
       return (b.regels||[]).some(function(r){ return (r.menuNaam||"").toLowerCase().includes("bbq"); });
     }).slice().sort(function(a,b2){
-      var d1 = (a.deadline||""); var d2 = (b2.deadline||"");
-      return d1 < d2 ? -1 : d1 > d2 ? 1 : (a.deadlineTijd||"").localeCompare(b2.deadlineTijd||"");
+      return ((a.deadline||"") + (a.deadlineTijd||"")).localeCompare((b2.deadline||"") + (b2.deadlineTijd||""));
     });
 
-    if (!dagpakket) {
+    if (bbqBoekingen.length === 0) {
       return /* @__PURE__ */ React.createElement("div", { style: { ...krt, textAlign:"center", color:"rgba(255,255,255,.4)", padding:24, fontSize:12 } },
-        "Publiceer eerst het dagpakket vanuit Import & Publiceer."
+        dagpakket ? "Geen BBQ boekingen gevonden." : "Publiceer eerst het dagpakket."
       );
     }
 
-    // Groepeer per dag
+    // Groepeer op dag
     var dagMap = {};
     bbqBoekingen.forEach(function(b) {
       var d = (b.deadline||"").replace("T"," ").split(" ")[0] || "?";
@@ -10515,61 +10548,84 @@ function KioskApp() {
     });
     var dagen = Object.keys(dagMap).sort();
     var activeDag = bbqDag || dagen[0] || "";
-
-    if (dagen.length === 0) {
-      return /* @__PURE__ */ React.createElement("div", { style: { ...krt, textAlign:"center", color:"rgba(255,255,255,.4)", padding:24, fontSize:12 } },
-        "Geen BBQ boekingen gevonden."
-      );
-    }
+    var activeBoeking = bbqBoekingen.find(function(b) {
+      return b.id === bbqActieveBoeking;
+    }) || null;
 
     // Dag carousel
     var dagCarousel = /* @__PURE__ */ React.createElement("div", { style:{ overflowX:"auto", display:"flex", gap:8, paddingBottom:8, marginBottom:14, WebkitOverflowScrolling:"touch" } },
       dagen.map(function(d) {
         var act = d === activeDag;
         var p = d.split("-");
-        var dagBk = dagMap[d] || [];
+        var n = (dagMap[d]||[]).length;
+        var hasSnap = (dagMap[d]||[]).some(function(b){
+          return bbqSnapshots.some(function(s){ return s.boeking_id === b.id; });
+        });
         return /* @__PURE__ */ React.createElement("div", {
-          key:d,
-          onClick: function(){ setBbqDag(d); },
+          key:d, onClick: function(){ setBbqDag(d); setBbqActieveBoeking(null); },
           style:{ flexShrink:0, background:act?"#FE424D":"#001828", borderRadius:10, padding:"10px 14px", cursor:"pointer", border:"2px solid "+(act?"#FE424D":"rgba(254,66,61,.3)"), minWidth:70, textAlign:"center" }
         },
           /* @__PURE__ */ React.createElement("div", { style:{ fontWeight:900, fontSize:14, color:"#fff" } }, p[2]+"/"+p[1]),
-          /* @__PURE__ */ React.createElement("div", { style:{ fontSize:9, color:act?"rgba(255,255,255,.9)":"rgba(255,255,255,.4)", marginTop:2 } }, dagBk.length+" BBQ")
+          /* @__PURE__ */ React.createElement("div", { style:{ fontSize:9, color:act?"rgba(255,255,255,.9)":"rgba(255,255,255,.4)", marginTop:2 } }, n+" BBQ" + (hasSnap ? " \u2713" : ""))
         );
       })
     );
 
-    // Boekingen van geselecteerde dag
     var dagBoekingen = dagMap[activeDag] || [];
 
-    var boekingenCards = /* @__PURE__ */ React.createElement("div", { style:{ display:"flex", flexDirection:"column", gap:10 } },
-      dagBoekingen.map(function(b) {
-        var bbqRegels = (b.regels||[]).filter(function(r){ return (r.menuNaam||"").toLowerCase().includes("bbq"); });
-        var totaalPers = bbqRegels.reduce(function(s,r){ return s+(r.aantal||0); }, 0);
-        var link = "https://kitchenrobot.vercel.app/#buffet?boeking=" + encodeURIComponent(b.id) + "&ps=" + encodeURIComponent(bbqPsId);
+    // Als een boeking geselecteerd is, toon de snapshot
+    if (activeBoeking) {
+      var snap = bbqSnapshots.find(function(s){ return s.boeking_id === activeBoeking.id; });
+      return /* @__PURE__ */ React.createElement("div", null,
+        dagCarousel,
+        /* @__PURE__ */ React.createElement("button", {
+          style:{ background:"rgba(255,255,255,.08)", color:"rgba(255,255,255,.6)", border:"none", borderRadius:6, padding:"6px 12px", fontSize:11, cursor:"pointer", fontFamily:"inherit", marginBottom:12 },
+          onClick: function(){ setBbqActieveBoeking(null); }
+        }, "\u2190 Terug"),
+        snap
+          ? /* @__PURE__ */ React.createElement("iframe", {
+              srcDoc: snap.html,
+              style:{ width:"100%", height:"75vh", border:"none", borderRadius:10, background:"#fff" },
+              title: "BBQ " + activeBoeking.naam
+            })
+          : /* @__PURE__ */ React.createElement("div", { style:{ ...krt, textAlign:"center", padding:20 } },
+              /* @__PURE__ */ React.createElement("div", { style:{ fontSize:14, color:"rgba(255,255,255,.5)", marginBottom:12 } }, "Nog geen BBQ formulier opgeslagen."),
+              /* @__PURE__ */ React.createElement("div", { style:{ fontSize:11, color:"rgba(255,255,255,.35)" } }, "Klik op \"\uD83D\uDCF2 \u2192 Kiosk\" in de website om het formulier hier te zetten.")
+            )
+      );
+    }
 
-        return /* @__PURE__ */ React.createElement("div", {
-          key: b.id,
-          style:{ ...krt, display:"flex", justifyContent:"space-between", alignItems:"center", padding:"14px 16px" }
-        },
-          /* @__PURE__ */ React.createElement("div", null,
-            /* @__PURE__ */ React.createElement("div", { style:{ fontWeight:900, fontSize:16, color:"#fff", marginBottom:3 } },
-              /* @__PURE__ */ React.createElement("span", { style:{ color:"#FE424D", marginRight:8, fontSize:18 } }, b.deadlineTijd||"—"),
-              b.naam
+    // Boeking selectie lijst
+    return /* @__PURE__ */ React.createElement("div", null,
+      dagCarousel,
+      /* @__PURE__ */ React.createElement("div", { style:{ display:"flex", flexDirection:"column", gap:8 } },
+        dagBoekingen.map(function(b) {
+          var snap = bbqSnapshots.find(function(s){ return s.boeking_id === b.id; });
+          var bbqRegels = (b.regels||[]).filter(function(r){ return (r.menuNaam||"").toLowerCase().includes("bbq"); });
+          var totaalPers = bbqRegels.reduce(function(s,r){ return s+(r.aantal||0); }, 0);
+          return /* @__PURE__ */ React.createElement("div", {
+            key: b.id,
+            onClick: function(){ setBbqActieveBoeking(b.id); },
+            style:{ ...krt, display:"flex", justifyContent:"space-between", alignItems:"center", padding:"14px 16px", cursor:"pointer", border:"2px solid "+(snap?"rgba(26,166,183,.5)":"rgba(255,255,255,.1)") }
+          },
+            /* @__PURE__ */ React.createElement("div", null,
+              /* @__PURE__ */ React.createElement("div", { style:{ fontWeight:900, fontSize:16, color:"#fff", marginBottom:3 } },
+                /* @__PURE__ */ React.createElement("span", { style:{ color:"#FE424D", marginRight:8, fontSize:18 } }, b.deadlineTijd||"—"),
+                b.naam
+              ),
+              /* @__PURE__ */ React.createElement("div", { style:{ fontSize:11, color:"rgba(255,255,255,.5)" } },
+                (b.locatie||"") + " \xB7 " + totaalPers + "p"
+                + (snap ? " \xB7 \u2713 formulier aanwezig" : " \xB7 nog geen formulier")
+              ),
+              snap && /* @__PURE__ */ React.createElement("div", { style:{ fontSize:9, color:"rgba(26,166,183,.6)", marginTop:2 } },
+                "Opgeslagen: " + new Date(snap.updated_at).toLocaleString("nl-NL")
+              )
             ),
-            /* @__PURE__ */ React.createElement("div", { style:{ fontSize:11, color:"rgba(255,255,255,.5)" } }, (b.locatie||"") + " \xB7 " + totaalPers + "p \xB7 " + bbqRegels.map(function(r){return r.aantal+"\xD7 "+r.menuNaam;}).join(", "))
-          ),
-          /* @__PURE__ */ React.createElement("a", {
-            href: link,
-            target: "_blank",
-            rel: "noopener noreferrer",
-            style:{ display:"inline-block", background:"#FE424D", color:"#fff", borderRadius:10, padding:"12px 18px", fontSize:13, fontWeight:900, textDecoration:"none", whiteSpace:"nowrap", boxShadow:"0 4px 12px rgba(254,66,77,.35)" }
-          }, "Open formulier \u2192")
-        );
-      })
+            /* @__PURE__ */ React.createElement("div", { style:{ fontSize:22, color: snap ? "#1AA6B7" : "rgba(255,255,255,.2)" } }, snap ? "\u2192" : "\u26A0")
+          );
+        })
+      )
     );
-
-    return /* @__PURE__ */ React.createElement("div", null, dagCarousel, boekingenCards);
   })()),
   actieveTab === "tijden" && /* @__PURE__ */ React.createElement("div", null, (function() {
     var opzetItems = dagpakket ? dagpakket.opzet_json || [] : [];
