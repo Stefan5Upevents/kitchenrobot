@@ -2648,8 +2648,8 @@ function BuffetScreen({ actieve, setActieve }) {
         }) : null;
         var presStr = "";
         if (pres2) {
-          if (pres2.type === "gn") presStr = li ? li.formaat + (li.upgraded ? " \u2191" : "") : pres2.naam;
-          else if (pres2.type === "schaal") presStr = pres2.schalenPerBuf + "\xD7 " + pres2.naam + " (" + pres2.portiesPerSchaal + "p)"; else presStr = (pres2.vormenPerBuf || nBuf) + "\xD7 " + pres2.naam + (pres2.portiesPerVorm ? " (" + pres2.portiesPerVorm + "p)" : "");
+          if (pres2.type === "gn") presStr = pres2.naam + (li && li.upgraded && li.formaat !== pres2.naam ? " (layout: " + li.formaat + " \u2191)" : "");
+          else if (pres2.type === "schaal") presStr = pres2.schalenPerBuf + "\xD7 " + pres2.naam + (pres2.portiesPerSchaal ? " (" + pres2.portiesPerSchaal + "p)" : ""); else presStr = (pres2.vormenPerBuf || nBuf) + "\xD7 " + pres2.naam + (pres2.portiesPerVorm ? " (" + pres2.portiesPerVorm + "p)" : "");
         }
         var aant = g.altijd_afronden ? Math.ceil(pEff) : Math.round(pEff * 10) / 10;
         out += "<tr><td>" + g.naam + (g.is_gn ? '<span class="gn">GN</span>' : "") + (g.prio ? '<span class="prio">PRIO</span>' : "") + "</td>";
