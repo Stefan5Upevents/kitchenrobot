@@ -2364,6 +2364,11 @@ function BuffetScreen({ actieve, setActieve }) {
         var gekozenVorm = pvLijst.find(function(v) { return portiesEff <= (v.porties_per_vorm || 9999); }) || pvLijst[pvLijst.length - 1];
         var vormIdx = pvLijst.indexOf(gekozenVorm);
         var gekozenSf = sfLijst[vormIdx] || sfLijst[sfLijst.length - 1];
+        // Als gekozenSf is_max_vorm: val terug op de grootste niet-max schaal
+        if (gekozenSf && (gekozenSf.is_max_vorm || (gekozenSf.porties_per_schaal || 0) <= 1)) {
+          var nonMaxSchalen = sfLijst.filter(function(s) { return !s.is_max_vorm && (s.porties_per_schaal || 0) > 1; });
+          if (nonMaxSchalen.length > 0) gekozenSf = nonMaxSchalen[nonMaxSchalen.length - 1];
+        }
 
         if (!gekozenSf) {
           return { type: "vrij", naam: gekozenVorm.naam, vormenPerBuf: 1, aantalVormen: 1, portiesPerVorm: null };
