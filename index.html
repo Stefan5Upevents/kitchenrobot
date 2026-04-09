@@ -2355,44 +2355,29 @@ function BuffetScreen({ actieve, setActieve }) {
       var bakkenPerBuf = nBuf > 0 ? Math.ceil(bakken / nBuf) : bakken;
       return { type: "gn", naam: gfNaam, aantalBakken: bakken, bakkenPerBuf, portiesPerBak: maxVorm.porties_per_bak, perBuf: nBuf > 0 ? Math.ceil(portiesEff / maxVorm.porties_per_bak / nBuf) : 0 };
     } else {
-      var pvLijst = (g.presentatievormen || []).filter(function(v) { return v.naam; })
-        .sort(function(a, b) { return (a.volgorde || 0) - (b.volgorde || 0); });
+      // Schaal escalatie: XS → Schaal midden → Schaal groot
+      // Pak kleinste schaal waar portiesPerBuf <= pps. Als niets past: is_max (Schaal groot) → 1×
       var sfLijst = (g.gerecht_schaal_formaten || []).filter(function(sf) { return sf.porties_per_schaal != null; })
         .sort(function(a, b) { return (a.volgorde || 0) - (b.volgorde || 0); });
-
-      if (pvLijst.length > 0) {
-        var gekozenVorm = pvLijst.find(function(v) { return portiesEff <= (v.porties_per_vorm || 9999); }) || pvLijst[pvLijst.length - 1];
-        var vormIdx = pvLijst.indexOf(gekozenVorm);
-        var gekozenSf = sfLijst[vormIdx] || sfLijst[sfLijst.length - 1];
-        // Als gekozenSf is_max_vorm: val terug op de grootste niet-max schaal
-        if (gekozenSf && (gekozenSf.is_max_vorm || (gekozenSf.porties_per_schaal || 0) <= 1)) {
-          var nonMaxSchalen = sfLijst.filter(function(s) { return !s.is_max_vorm && (s.porties_per_schaal || 0) > 1; });
-          if (nonMaxSchalen.length > 0) gekozenSf = nonMaxSchalen[nonMaxSchalen.length - 1];
-        }
-
-        if (!gekozenSf) {
-          return { type: "vrij", naam: gekozenVorm.naam, vormenPerBuf: 1, aantalVormen: 1, portiesPerVorm: null };
-        }
-
-        var sfNaam = (gekozenSf.standaard_schaal_formaten || {}).naam || gekozenVorm.naam;
-        if (gekozenSf.is_max_vorm || gekozenSf.porties_per_schaal <= 1) {
-          return { type: "schaal", naam: sfNaam, vormNaam: gekozenVorm.naam, aantalSchalen: 1, schalenPerBuf: 1, portiesPerSchaal: null };
-        }
-        var aantalS = Math.ceil(portiesEff / gekozenSf.porties_per_schaal);
-        var sPerBuf = nBuf > 0 ? Math.ceil(aantalS / nBuf) : aantalS;
-        return { type: "schaal", naam: sfNaam, vormNaam: gekozenVorm.naam, aantalSchalen: aantalS, schalenPerBuf: sPerBuf, portiesPerSchaal: gekozenSf.porties_per_schaal };
+      var portiesPerBuf = nBuf > 0 ? portiesEff / nBuf : portiesEff;
+      // Zoek kleinste niet-max schaal die past (portiesPerBuf <= pps)
+      var gekozenSf = sfLijst.find(function(sf) {
+        return !sf.is_max_vorm && (sf.porties_per_schaal || 0) > 1 && portiesPerBuf <= sf.porties_per_schaal;
+      });
+      // Niets past → gebruik is_max schaal (grootste)
+      if (!gekozenSf) {
+        var maxSf = sfLijst.slice().reverse().find(function(sf) { return sf.is_max_vorm || (sf.porties_per_schaal || 0) <= 1; })
+          || sfLijst[sfLijst.length - 1];
+        if (!maxSf) return null;
+        var sfNaamMax = (maxSf.standaard_schaal_formaten || {}).naam || "Schaal";
+        return { type: "schaal", naam: sfNaamMax, schalenPerBuf: 1, portiesPerSchaal: null };
       }
-
-      if (sfLijst.length === 0) return null;
-      var maxSf = sfLijst.find(function(sf) { return sf.is_max_vorm; }) || sfLijst[sfLijst.length - 1];
-      var sfNaamF = (maxSf.standaard_schaal_formaten || {}).naam || "?";
-      if (maxSf.is_max_vorm || maxSf.porties_per_schaal <= 1) {
-        return { type: "schaal", naam: sfNaamF, aantalSchalen: 1, schalenPerBuf: 1, portiesPerSchaal: null };
-      }
-      var aantalSF = Math.ceil(portiesEff / maxSf.porties_per_schaal);
-      var sPBF = nBuf > 0 ? Math.ceil(aantalSF / nBuf) : aantalSF;
-      return { type: "schaal", naam: sfNaamF, aantalSchalen: aantalSF, schalenPerBuf: sPBF, portiesPerSchaal: maxSf.porties_per_schaal };
+      var sfNaam = (gekozenSf.standaard_schaal_formaten || {}).naam || "Schaal";
+      var aantalS = Math.ceil(portiesEff / gekozenSf.porties_per_schaal);
+      var sPerBuf = nBuf > 0 ? Math.ceil(aantalS / nBuf) : aantalS;
+      return { type: "schaal", naam: sfNaam, schalenPerBuf: sPerBuf, portiesPerSchaal: gekozenSf.porties_per_schaal };
     }
+
   }
   function getSligroVerpakkingen(g, portiesEff) {
     var items = [];
