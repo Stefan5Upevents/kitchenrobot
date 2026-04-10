@@ -9993,6 +9993,7 @@ function KioskApp() {
   var [formulierOverrides, setFormulierOverrides] = useState([]);
   var [bbqSnapshots, setBbqSnapshots] = useState([]);
   var [opzetSnapshots, setOpzetSnapshots] = useState({});
+  var [opzetAftekeningen, setOpzetAftekeningen] = useState([]);
   var [medewerker, setMedewerker] = useState(adminOutletCode ? { naam: "Admin (" + adminOutletCode + ")", rol: "admin" } : null);
   var [pinInvoer, setPinInvoer] = useState("");
   var [pinFout, setPinFout] = useState(false);
@@ -10157,6 +10158,7 @@ function KioskApp() {
         window._supa.from("formulier_overrides").select("*").then(function(_fr) { setFormulierOverrides(_fr.data || []); });
         window._supa.from("formulier_overrides").select("*").then(function(_fr) { setFormulierOverrides(_fr.data || []); });
         window._supa.from("kiosk_bbq_snapshots").select("*").then(function(_bs) { setBbqSnapshots(_bs.data || []); });
+        window._supa.from("kiosk_opzet_aftekeningen").select("*").then(function(_af) { setOpzetAftekeningen(_af.data || []); });
         window._supa.from("kiosk_opzet_snapshots").select("*").then(function(_os) {
           var map = {};
           (_os.data || []).forEach(function(s) {
@@ -10579,21 +10581,55 @@ function KioskApp() {
           style: { background: "rgba(255,255,255,.08)", color: "rgba(255,255,255,.6)", border: "none", borderRadius: 6, padding: "6px 12px", fontSize: 11, cursor: "pointer", fontFamily: "inherit", marginBottom: 12 },
           onClick: function() { setNavPS(null); }
         }, "← Terug"),
-        snap
-          ? /* @__PURE__ */ React.createElement("iframe", {
-              srcDoc: snap.html,
-              style: { width: "100%", height: "80vh", border: "none", borderRadius: 10, background: "#fff" },
-              title: "Opzetlijst"
-            })
-          : /* @__PURE__ */ React.createElement("div", { style: { ...krt, textAlign: "center", padding: 24 } },
-              /* @__PURE__ */ React.createElement("div", { style: { fontSize: 28, marginBottom: 12 } }, "⏳"),
-              /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "rgba(255,255,255,.6)" } }, "Nog niet opgeslagen."),
-              /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: "rgba(255,255,255,.35)", marginTop: 8 } },
-                "Open de opzetlijst op de website ("
-                + (psItem ? psItem.psNaam : navPS)
-                + ") om hem hier op te slaan."
+        /* @__PURE__ */ React.createElement("div", null,
+          (function() {
+            var afDatum = activeDagO, afPsId = navPS;
+            var lijstAf = opzetAftekeningen.find(function(a) {
+              return a.datum === afDatum && a.ps_id === afPsId && a.type === "lijst";
+            });
+            function tekAf() {
+              if (!window._supa) return;
+              window._supa.from("kiosk_opzet_aftekeningen").upsert({
+                datum: afDatum, ps_id: afPsId, type: "lijst", gerecht_naam: null,
+                afgetekend_door: medewerker || "kiosk", afgetekend_op: new Date().toISOString(),
+                outlet_code: dagpakket ? (dagpakket.outlet_code || "") : ""
+              }, { onConflict: "datum,ps_id,type,gerecht_naam" }).then(function() {
+                window._supa.from("kiosk_opzet_aftekeningen").select("*").then(function(r2) { setOpzetAftekeningen(r2.data || []); });
+              });
+            }
+            function ongedaan() {
+              if (!window._supa) return;
+              window._supa.from("kiosk_opzet_aftekeningen").delete()
+                .eq("datum", afDatum).eq("ps_id", afPsId).eq("type", "lijst")
+                .then(function() {
+                  window._supa.from("kiosk_opzet_aftekeningen").select("*").then(function(r2) { setOpzetAftekeningen(r2.data || []); });
+                });
+            }
+            return /* @__PURE__ */ React.createElement("div", {
+              style: { display:"flex", alignItems:"center", gap:10, marginBottom:10, padding:"10px 14px",
+                background: lijstAf ? "rgba(26,166,183,.2)" : "rgba(255,255,255,.06)",
+                borderRadius:10, border:"1px solid "+(lijstAf?"#1AA6B7":"rgba(255,255,255,.1)") }
+            },
+              lijstAf
+                ? /* @__PURE__ */ React.createElement("div", { style:{flex:1} },
+                    /* @__PURE__ */ React.createElement("div", { style:{color:"#1AA6B7",fontWeight:900,fontSize:14} }, "\u2713 Afgetekend"),
+                    /* @__PURE__ */ React.createElement("div", { style:{color:"rgba(255,255,255,.5)",fontSize:10,marginTop:2} },
+                      (lijstAf.afgetekend_door||"kiosk")+" \u2022 "+new Date(lijstAf.afgetekend_op).toLocaleString("nl-NL",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}))
+                  )
+                : /* @__PURE__ */ React.createElement("div", { style:{flex:1,color:"rgba(255,255,255,.5)",fontSize:12} }, "Nog niet afgetekend"),
+              lijstAf
+                ? /* @__PURE__ */ React.createElement("button", { onClick:ongedaan, style:{background:"rgba(255,80,80,.15)",color:"#ff7070",border:"1px solid rgba(255,80,80,.3)",borderRadius:7,padding:"7px 12px",fontSize:11,cursor:"pointer",fontFamily:"inherit"} }, "Ongedaan")
+                : /* @__PURE__ */ React.createElement("button", { onClick:tekAf, style:{background:"#1AA6B7",color:"#fff",border:"none",borderRadius:8,padding:"10px 20px",fontSize:14,fontWeight:900,cursor:"pointer",fontFamily:"inherit"} }, "\u2713 Aftekenen")
+            );
+          })(),
+          snap
+            ? /* @__PURE__ */ React.createElement("iframe", { srcDoc:snap.html, style:{width:"100%",height:"72vh",border:"none",borderRadius:10,background:"#fff"}, title:"Opzetlijst" })
+            : /* @__PURE__ */ React.createElement("div", { style:{...krt,textAlign:"center",padding:24} },
+                /* @__PURE__ */ React.createElement("div", { style:{fontSize:28,marginBottom:12} }, "\u23F3"),
+                /* @__PURE__ */ React.createElement("div", { style:{fontSize:13,color:"rgba(255,255,255,.6)"} }, "Nog niet opgeslagen."),
+                /* @__PURE__ */ React.createElement("div", { style:{fontSize:11,color:"rgba(255,255,255,.35)",marginTop:8} }, "Klik op \u201C\uD83D\uDCF2 Opslaan in kiosk\u201D op de website.")
               )
-            )
+        )
       );
     }
 
