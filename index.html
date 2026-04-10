@@ -8918,7 +8918,6 @@ function GeboekteProductenScreen() {
 function GeboekteProductenTab({ standalone }) {
   var [records, setRecords] = useState([]);
   var [laden, setLaden] = useState(true);
-  var [stamKlaar, setStamKlaar] = useState((window._stamGerechten||[]).length > 0);
   var [gekozen, setGekozen] = useState(null);
   var [filterOutlet, setFilterOutlet] = useState("beide");
   var [zoek, setZoek] = useState("");
@@ -9141,6 +9140,7 @@ function VoorraadCheckerTab() {
 
 function SligroBestellingScreen() {
   var [sligroTab, setSligroTab] = useState("bestelling");
+  var [stamKlaar, setStamKlaar] = useState(function(){ return (window._stamGerechten||[]).length > 0; });
   var [keuken, setKeuken] = useState("");
   var [bevestigd, setBevestigd] = useState(false);
   var [bezig, setBezig] = useState(false);
