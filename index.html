@@ -3248,7 +3248,9 @@ function OpzetScreen() {
     style: { ...btnSG, background: "rgba(26,166,183,.12)", color: "#1AA6B7" },
     className: "no-print",
     onClick: function() {
-      if (!psId || !boekingen.length || !window._supa) { alert("Geen data om op te slaan."); return; }
+      if (!psId) { alert("Selecteer eerst een productsoort."); return; }
+      if (!boekingen.length) { alert("Geen boekingen gevonden voor deze productsoort."); return; }
+      if (!window._supa) { alert("Geen verbinding met database."); return; }
       var tbl = document.getElementById("opzet-tabel-" + psId);
       if (!tbl) { alert("Tabel niet gevonden."); return; }
       var _datum = (boekingen[0].deadline || "").replace("T", " ").split(" ")[0] || "";
@@ -3315,7 +3317,7 @@ function OpzetScreen() {
       });
     }, null);
     return psO ? "- " + psO.naam : "";
-  })()), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: "#7A8FA6", marginTop: 2 } }, "Afgedrukt op ", (/* @__PURE__ */ new Date()).toLocaleDateString("nl-NL", { weekday: "long", day: "numeric", month: "long", year: "numeric" }))), /* @__PURE__ */ React.createElement("div", { style: { overflowX: "auto" } }, /* @__PURE__ */ React.createElement("table", { style: SS.tbl }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", { style: { ...SS.th, minWidth: 160, background: "#001828" } }, "Gerecht"), boekingen.map(function(b, idx) {
+  })()), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: "#7A8FA6", marginTop: 2 } }, "Afgedrukt op ", (/* @__PURE__ */ new Date()).toLocaleDateString("nl-NL", { weekday: "long", day: "numeric", month: "long", year: "numeric" }))), /* @__PURE__ */ React.createElement("div", { style: { overflowX: "auto" } }, /* @__PURE__ */ React.createElement("table", { id: "opzet-tabel-" + psId, style: SS.tbl }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", { style: { ...SS.th, minWidth: 160, background: "#001828" } }, "Gerecht"), boekingen.map(function(b, idx) {
     var kleur = kleuren[idx % kleuren.length];
     var nBuf = aantalBuf(totPers(b));
     var pct = opzetPct(totPers(b));
