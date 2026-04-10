@@ -3244,7 +3244,42 @@ function OpzetScreen() {
     setTimeout(function() {
       document.title = origTitle;
     }, 1e3);
-  } }, "🖨 Print / PDF"))), /* @__PURE__ */ React.createElement("div", { style: { display:"flex", gap:10, alignItems:"center", flexWrap:"wrap", marginBottom:10 }, className:"no-print" },
+  } }, "🖨 Print / PDF"), /* @__PURE__ */ React.createElement("button", {
+    style: { ...btnSG, background: "rgba(26,166,183,.12)", color: "#1AA6B7" },
+    className: "no-print",
+    onClick: function() {
+      if (!psId || !boekingen.length || !window._supa) { alert("Geen data om op te slaan."); return; }
+      var tbl = document.getElementById("opzet-tabel-" + psId);
+      if (!tbl) { alert("Tabel niet gevonden."); return; }
+      var _datum = (boekingen[0].deadline || "").replace("T", " ").split(" ")[0] || "";
+      if (!_datum) { alert("Geen datum gevonden."); return; }
+      var psObj = (window._stamProductgroepen || []).reduce(function(f, pg2) {
+        return f || (pg2.soorten || []).find(function(s) { return s.id === psId; });
+      }, null);
+      var psNm2 = pg ? ((pg.naam || "") + " \u203A " + (psObj ? psObj.naam : psId)) : (psObj ? psObj.naam : psId);
+      var _styles = [
+        "body{font-family:Roboto,sans-serif;margin:0;padding:12px;background:#fff;color:#002D41;font-size:12px}",
+        "h2{font-size:14px;font-weight:900;margin:0 0 6px}",
+        "table{width:100%;border-collapse:collapse}",
+        "th{background:#001828;color:#fff;padding:8px 10px;text-align:left;font-size:11px}",
+        "td{padding:8px 10px;border-bottom:1px solid #eee;font-size:11px}",
+        "tr:nth-child(even) td{background:#f9fafb}"
+      ].join("");
+      var _h = "<html><head><meta charset=\"UTF-8\"><style>" + _styles + "</style></head><body>";
+      _h += "<h2>Opzetoverzicht \u2014 " + psNm2 + "</h2>";
+      _h += "<div style=\"font-size:11px;color:#555;margin-bottom:10px\">" + (boekingen[0].deadlineDag || _datum) + "</div>";
+      _h += tbl.outerHTML;
+      _h += "</body></html>";
+      window._supa.from("kiosk_opzet_snapshots").upsert({
+        datum: _datum, ps_id: psId, ps_naam: psNm2,
+        outlet_code: window._importKeuken || "",
+        html: _h, updated_at: new Date().toISOString()
+      }, { onConflict: "datum,ps_id" }).then(function(r) {
+        if (r && r.error) alert("Fout: " + r.error.message);
+        else alert("\u2705 Opgeslagen in kiosk!");
+      });
+    }
+  }, "\uD83D\uDCF2 Opslaan in kiosk"))), /* @__PURE__ */ React.createElement("div", { style: { display:"flex", gap:10, alignItems:"center", flexWrap:"wrap", marginBottom:10 }, className:"no-print" },
   React.createElement("button", {
     style: { background: multiDagModus ? "#FE424D" : "#fff", color: multiDagModus ? "#fff" : "#002D41", border:"1.5px solid "+(multiDagModus?"#FE424D":"#D8E8EF"), borderRadius:7, padding:"6px 14px", fontFamily:"inherit", fontWeight:700, fontSize:11, cursor:"pointer" },
     onClick: function() { setMultiDagModus(!multiDagModus); }
