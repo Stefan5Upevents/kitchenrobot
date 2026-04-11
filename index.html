@@ -1438,9 +1438,9 @@ function HomeScreen({ setSc }) {
           var tA = geadv[a.id], tB = geadv[b.id];
           var verschilMin = Math.round((tB - tA) / 6e4);
           if (verschilMin < 0) continue;
-          var maxPax = Math.max(a._pax, b._pax);
-          var reg = vereistMin(maxPax);
+          var reg = vereistMin(b._pax);
           if (verschilMin >= reg.min) continue;
+          var maxPax = Math.max(a._pax, b._pax);
           var tv = (b._pax <= a._pax) ? b : a;
           var tvPax = tv._pax;
           var ankertijd = (tv.id === b.id ? a : b)._bbqTijd;
@@ -1465,7 +1465,7 @@ function HomeScreen({ setSc }) {
           conflictenOpDag.push({
             zone: groep.zone, dag: groep.dag, a: a, b: b,
             verschilMin: verschilMin, vereistMin: reg.min, voorkeur: reg.voorkeur, maxPax: maxPax,
-            uitleg: uitlegMin(maxPax),
+            uitleg: uitlegMin(b._pax) + " (voor " + b._pax + "p)",
             nieuweDeadline: new Date(geadv[b.id]).toISOString(),
             type: maxPax > 200 ? "200+ personen" : "Te weinig tijd",
             teVerplaatsen: tv, vrijeSlots: uniek.slice(0, 3)
@@ -1481,7 +1481,7 @@ function HomeScreen({ setSc }) {
             var ptA = geadvFin[pa.id], ptB = geadvFin[pb.id];
             var pVerschil = Math.round((ptB - ptA) / 6e4);
             if (pVerschil < 0) continue;
-            var pReg = vereistMin(Math.max(pa._pax, pb._pax));
+            var pReg = vereistMin(pb._pax);
             if (pVerschil < pReg.min) geadvFin[pb.id] = ptA + pReg.voorkeur * 6e4;
           }
         }
