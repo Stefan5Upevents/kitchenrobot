@@ -1528,41 +1528,54 @@ function HomeScreen({ setSc }) {
     if (!window._supa) { alert("Niet ingelogd."); return; }
     var header = document.getElementById("bbq-conflict-header");
     if (!header) { alert("Upload eerst een bestand — conflictmeter is nog leeg."); return; }
-    // Verzamel: conflict-header + alle siblings (dag-headers, dagplanningen, conflict-kaarten)
-    // tot de volgende sectie (import-uitleg grid)
-    var delen = [header.outerHTML];
-    var el = header.nextElementSibling;
-    var teller = 0;
-    while (el && teller < 80) {
-      var stl = el.style || {};
-      // Stop bij de "Stap 1/2" import-uitleg grid
-      if (stl.display === "grid" || (stl.gridTemplateColumns && stl.gridTemplateColumns.length > 0)) break;
-      delen.push(el.outerHTML);
-      el = el.nextElementSibling;
-      teller++;
+
+    // Pak alle sibling-nodes van de header t/m de conflict-kaarten
+    // Gebruik node-indices zodat we precies de juiste sectie pakken
+    var parent = header.parentElement;
+    var children = Array.from(parent.children);
+    var startIdx = children.indexOf(header);
+    // Zoek einde: eerste child NA header die een grid-layout heeft (= import-uitleg sectie)
+    var endIdx = children.length;
+    for (var ci = startIdx + 1; ci < children.length; ci++) {
+      var st = children[ci].style;
+      if (st && (st.display === "grid" || st.gridTemplateColumns)) {
+        endIdx = ci;
+        break;
+      }
     }
-    var sectieHtml = delen.join("");
+
+    // Clone de relevante children in een tijdelijke container
+    var container = document.createElement("div");
+    for (var ci = startIdx; ci < endIdx; ci++) {
+      container.appendChild(children[ci].cloneNode(true));
+    }
+    // Verwijder knoppen uit de kopie (niet in email)
+    Array.from(container.querySelectorAll("button")).forEach(function(b){ b.remove(); });
+
+    var sectieHtml = container.innerHTML;
     var aantalC = conflicten.filter(function(c){return c.type!=="onbekende_locatie";}).length;
     var onderwerp = "KitchenRobot \u2014 \uD83D\uDD25 "+aantalC+" BBQ conflict"+(aantalC!==1?"en":"");
-    var emailHtml = '<!DOCTYPE html><html><head><meta charset="utf-8">'
-      + '<style>'
-      + 'body{font-family:Arial,sans-serif;background:#F4F7FA;padding:20px;margin:0;color:#002D41}'
-      + '*{box-sizing:border-box}'
-      + 'a{color:#002D41;text-decoration:none}'
-      + 'button{display:none!important}'  // verberg alle knoppen
-      + '</style></head><body>'
-      + '<div style="max-width:720px;margin:0 auto">'
-      + '<div style="background:#002D41;color:#fff;padding:16px 20px;border-radius:8px 8px 0 0">'
-      + '<div style="font-size:20px;font-weight:800">&#128293; BBQ Conflicten</div>'
-      + '<div style="font-size:12px;color:#1AA6B7;margin-top:2px">KitchenRobot &mdash; ' + new Date().toLocaleDateString('nl-NL', {weekday:'long',day:'numeric',month:'long'}) + '</div>'
-      + '</div>'
-      + '<div style="background:#fff;padding:16px;border-radius:0 0 8px 8px;border:1px solid #D8E8EF;border-top:none">'
+    var emailHtml = "<!DOCTYPE html><html><head><meta charset=\"utf-8\">"
+      + "<style>"
+      + "body{font-family:Arial,sans-serif;background:#F4F7FA;padding:20px;margin:0;color:#002D41}"
+      + "*{box-sizing:border-box}"
+      + "a{color:#002D41;text-decoration:none}"
+      + "</style></head><body>"
+      + "<div style=\"max-width:720px;margin:0 auto\">"
+      + "<div style=\"background:#002D41;color:#fff;padding:16px 20px;border-radius:8px 8px 0 0\">"
+      + "<div style=\"font-size:20px;font-weight:800\">&#128293; BBQ Conflicten</div>"
+      + "<div style=\"font-size:12px;color:#1AA6B7;margin-top:2px\">KitchenRobot &mdash; "
+      + new Date().toLocaleDateString("nl-NL",{weekday:"long",day:"numeric",month:"long"})
+      + "</div></div>"
+      + "<div style=\"background:#fff;padding:16px;border-radius:0 0 8px 8px;border:1px solid #D8E8EF;border-top:none\">"
       + sectieHtml
-      + '</div></div></body></html>';
+      + "</div></div></body></html>";
+
     window._supa.auth.getSession().then(function(sessRes) {
       var token = sessRes.data&&sessRes.data.session ? sessRes.data.session.access_token : "";
       fetch("https://aezatnwsrhlwtykpixsq.supabase.co/functions/v1/stuur-opzetmail", {
-        method: "POST", headers: {"Content-Type":"application/json","Authorization":"Bearer "+token},
+        method: "POST",
+        headers: {"Content-Type":"application/json","Authorization":"Bearer "+token},
         body: JSON.stringify({actie:"verstuur", dag:new Date().toISOString().split("T")[0],
           hash:"bbq-"+Date.now(), html:emailHtml, onderwerp:onderwerp})
       }).then(function(r){return r.json();})
