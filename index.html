@@ -1441,9 +1441,18 @@ function HomeScreen({ setSc }) {
           var reg = vereistMin(b._pax);
           if (verschilMin >= reg.min) continue;
           var maxPax = Math.max(a._pax, b._pax);
-          var tv = (b._pax <= a._pax) ? b : a;
+          // Selecteer welke boeking te verplaatsen:
+          // 1. Voorkeur: OPTIE boven DEF (minder klantimpact)
+          // 2. Daarna: kleinste groep
+          var aIsOptie = a._status.includes("optie");
+          var bIsOptie = b._status.includes("optie");
+          var tv, vast;
+          if (aIsOptie && !bIsOptie) { tv = a; vast = b; }
+          else if (bIsOptie && !aIsOptie) { tv = b; vast = a; }
+          else { tv = (b._pax <= a._pax) ? b : a; vast = (tv === b) ? a : b; }
           var tvPax = tv._pax;
-          var ankertijd = (tv.id === b.id ? a : b)._bbqTijd;
+          var ankertijd = vast._bbqTijd;
+          // Vrije slots: zowel eerder (negatieve delta) als later (positieve delta) tov de vaste boeking
           var kandidaten = [];
           [-180,-150,-120,-90,-75,-60,-50,-45,-40,-35,-30,30,35,40,45,50,60,75,90,120,150,180].forEach(function(delta) {
             var k = ankertijd + delta * 6e4;
@@ -1460,8 +1469,14 @@ function HomeScreen({ setSc }) {
           var orig = tv._bbqTijd;
           var uniek = [];
           kandidaten.forEach(function(v) { if (uniek.indexOf(v) < 0) uniek.push(v); });
+          // Sorteer op minste verschuiving (dichtst bij originele tijd)
           uniek.sort(function(x, y) { return Math.abs(x - orig) - Math.abs(y - orig); });
-          geadv[b.id] = tA + reg.voorkeur * 6e4;
+          // Geadv: verplaats de gekozen boeking (eerder of later, afhankelijk van beste slot)
+          if (tv === b) {
+            geadv[b.id] = tA + reg.min * 6e4;
+          } else {
+            geadv[a.id] = tB - reg.min * 6e4;
+          }
           conflictenOpDag.push({
             zone: groep.zone, dag: groep.dag, a: a, b: b,
             verschilMin: verschilMin, vereistMin: reg.min, voorkeur: reg.voorkeur, maxPax: maxPax,
@@ -1482,7 +1497,16 @@ function HomeScreen({ setSc }) {
             var pVerschil = Math.round((ptB - ptA) / 6e4);
             if (pVerschil < 0) continue;
             var pReg = vereistMin(pb._pax);
-            if (pVerschil < pReg.min) geadvFin[pb.id] = ptA + pReg.voorkeur * 6e4;
+            if (pVerschil < pReg.min) {
+              var paOptie = pa._status.includes("optie");
+              var pbOptie = pb._status.includes("optie");
+              // Verplaats OPTIE voorkeur, anders kleinste groep
+              if (paOptie && !pbOptie) {
+                geadvFin[pa.id] = ptB - pReg.min * 6e4; // A eerder
+              } else {
+                geadvFin[pb.id] = ptA + pReg.min * 6e4; // B later
+              }
+            }
           }
         }
         var dagPlanning = sorted.map(function(bk) {
@@ -1893,7 +1917,11 @@ function HomeScreen({ setSc }) {
                   /* @__PURE__ */ React.createElement("div", { style: { fontSize:11, color:C.night, marginBottom:4 } }, "Vrije momenten (min-tijd tov alle BBQ\u2019s die dag):"),
                   /* @__PURE__ */ React.createElement("div", { style: { display:"flex", gap:8, flexWrap:"wrap" } },
                     c.vrijeSlots.map(function(slot, si) {
-                      return /* @__PURE__ */ React.createElement("span", { key:si, style:{background:"#fff",border:"2px solid "+C.green,borderRadius:6,padding:"4px 12px",fontSize:13,fontWeight:900,color:C.green} }, fmtMs(slot));
+                      var isEerder = slot < c.teVerplaatsen._bbqTijd;
+                      return /* @__PURE__ */ React.createElement("span", { key:si, style:{background:"#fff",border:"2px solid "+C.green,borderRadius:6,padding:"4px 10px",fontSize:12,fontWeight:900,color:C.green,display:"flex",alignItems:"center",gap:4} },
+                        /* @__PURE__ */ React.createElement("span", { style:{fontSize:10,opacity:0.7} }, isEerder ? "\u2191 eerder" : "\u2193 later"),
+                        fmtMs(slot)
+                      );
                     })
                   )
                 )
