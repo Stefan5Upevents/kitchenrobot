@@ -1348,19 +1348,34 @@ function HomeScreen({ setSc }) {
     if (!conflicten || conflicten.length === 0) { alert("Geen conflicten om te versturen."); return; }
     if (!window._supa) { alert("Niet ingelogd."); return; }
     var header = document.getElementById("bbq-conflict-header");
-    if (!header) { alert("Conflict-sectie niet zichtbaar — upload eerst een bestand."); return; }
-    // parentElement bevat de volledige conflict sectie (header + alle kaarten)
-    var sectieHtml = header.parentElement.innerHTML;
+    if (!header) { alert("Upload eerst een bestand — conflictmeter is nog leeg."); return; }
+    // Pak de conflict-header + alle volgende siblings (dag-headers + conflictkaarten)
+    // totdat we de Stap 1/2 grid bereiken
+    var delen = [header.outerHTML];
+    var el = header.nextElementSibling;
+    var teller = 0;
+    while (el && teller < 60) {
+      var st = el.style || {};
+      // Stop bij de "Stap 1/Stap 2" instructie-grid
+      if (st.gridTemplateColumns && st.gridTemplateColumns.indexOf("1fr") >= 0 && st.gridTemplateColumns.indexOf("1fr 1fr") >= 0) break;
+      // Stop bij een groene "geen conflicten" banner
+      if (st.background && st.background === "#E8F5E9" && !el.id) break;
+      delen.push(el.outerHTML);
+      el = el.nextElementSibling;
+      teller++;
+    }
+    var sectieHtml = delen.join("");
     var aantalC = conflicten.filter(function(c){return c.type!=="onbekende_locatie";}).length;
-    var onderwerp = "KitchenRobot \u2014 \uD83D\uDD25 "+aantalC+" BBQ conflict"+(aantalC!==1?"en":"")+(label?" ("+label+")":"");
+    var onderwerp = "KitchenRobot \u2014 \uD83D\uDD25 " + aantalC + " BBQ conflict" + (aantalC!==1?"en":"") + (label?" ("+label+")":"");
     var emailHtml = '<!DOCTYPE html><html><head><meta charset="utf-8">'
       + '<style>body{font-family:Arial,sans-serif;background:#F4F7FA;padding:20px;margin:0;color:#002D41}'
-      + '*{box-sizing:border-box}a{color:#002D41}'
+      + '*{box-sizing:border-box}a{color:#002D41;text-decoration:none}'
+      + 'button{display:none}'
       + '</style></head><body>'
       + '<div style="max-width:720px;margin:0 auto">'
       + '<div style="background:#002D41;color:#fff;padding:16px 20px;border-radius:8px 8px 0 0">'
       + '<div style="font-size:20px;font-weight:800">&#128293; BBQ Conflicten</div>'
-      + '<div style="font-size:12px;color:#1AA6B7;margin-top:2px">KitchenRobot &#8212; '+(label||"Importoverzicht")+'</div>'
+      + '<div style="font-size:12px;color:#1AA6B7;margin-top:2px">KitchenRobot &#8212; ' + (label||"Importoverzicht") + '</div>'
       + '</div>'
       + '<div style="background:#fff;padding:16px;border-radius:0 0 8px 8px;border:1px solid #D8E8EF;border-top:none">'
       + sectieHtml
@@ -1372,10 +1387,11 @@ function HomeScreen({ setSc }) {
         body: JSON.stringify({actie:"verstuur", dag:new Date().toISOString().split("T")[0],
           hash:"bbq-"+Date.now(), html:emailHtml, onderwerp:onderwerp})
       }).then(function(r){return r.json();})
-      .then(function(d){ alert(d.succes ? "\u2713 BBQ conflicten verstuurd per mail!" : "Fout: "+(d.fout||"Onbekend")); })
+      .then(function(d){ alert(d.succes ? "\u2713 Conflicten verstuurd naar stefan@upevents.nl!" : "Fout: "+(d.fout||"Onbekend")); })
       .catch(function(e){ alert("Fout: "+e.message); });
     });
   }
+
   function checkEnStuurEmail(boekingen2) {
     if (!boekingen2 || boekingen2.length === 0 || !window._supa) return;
     var morgen = /* @__PURE__ */ new Date();
@@ -1502,16 +1518,7 @@ function HomeScreen({ setSc }) {
     alignItems: "center",
     justifyContent: "space-between",
     gap: 8
-  } }, /* @__PURE__ */ React.createElement("span", { style: { color: C.hot } }, "🚫 ", bbqConflicten.length, " BBQ planning conflict", bbqConflicten.length !== 1 ? "en" : "", " gevonden — boekingen zitten te dicht op elkaar"), /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      style: { ...btnP, fontSize: 11, padding: "5px 12px" },
-      onClick: function() {
-        setShowBbqAnalyse(true);
-      }
-    },
-    "Bekijk analyse"
-  )), /* @__PURE__ */ React.createElement("button", { style: { ...btnP, fontSize: 11, padding: "5px 12px", marginLeft: 6 }, onClick: function() { stuurBBQConflictEmail(bbqConflicten, importLabel); } }, "📧 Stuur per mail"), /* @__PURE__ */ React.createElement("button", { style: { ...btnP, fontSize: 11, padding: "5px 12px", marginLeft: 6 }, onClick: function() { stuurBBQConflictEmail(bbqConflicten, importLabel); } }, "📧 Stuur per mail"), bbqConflicten !== null && bbqConflicten.length === 0 && /* @__PURE__ */ React.createElement("div", { style: {
+  } }, /* @__PURE__ */ React.createElement("span", { style: { color: C.hot } }, "🚫 ", bbqConflicten.length, " BBQ planning conflict", bbqConflicten.length !== 1 ? "en" : "", " gevonden — boekingen zitten te dicht op elkaar"), /* @__PURE__ */ React.createElement("button", { style: { ...btnP, fontSize: 11, padding: "5px 12px" }, onClick: function() { stuurBBQConflictEmail(bbqConflicten, importLabel); } }, "📧 Naar Stefan")), bbqConflicten !== null && bbqConflicten.length === 0 && /* @__PURE__ */ React.createElement("div", { style: {
     marginBottom: 12,
     padding: "8px 14px",
     borderRadius: 8,
