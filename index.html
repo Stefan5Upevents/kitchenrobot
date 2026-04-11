@@ -1526,90 +1526,47 @@ function HomeScreen({ setSc }) {
   function stuurBBQConflictEmail(conflicten, label) {
     if (!conflicten || conflicten.length === 0) { alert("Geen conflicten om te versturen."); return; }
     if (!window._supa) { alert("Niet ingelogd."); return; }
-    var dagN = ["zo","ma","di","wo","do","vr","za"];
-    var maandN = ["jan","feb","mrt","apr","mei","jun","jul","aug","sep","okt","nov","dec"];
-    function fmtMs(ms) { var d = new Date(ms); return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"); }
-    function fmtDag(dag) { var d = new Date(dag+"T12:00:00"); return dagN[d.getDay()]+" "+d.getDate()+" "+maandN[d.getMonth()]+" "+d.getFullYear(); }
-    var zL = { weesp:"Weesp", voorterrein:"AW Voorterrein", middenterrein:"AW Middenterrein", achterterrein:"AW Achterterrein" };
-    var N="#002D41",AQ="#1AA6B7",RD="#FE424D",GR="#27AE60",MU="#7A8FA6",OR="#FF9800";
-    function bdg(s) {
-      var isO=(s||"").includes("optie");
-      return '<span style="background:'+(isO?OR:AQ)+';color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;margin-right:4px">'+(isO?"OPTIE":"DEF")+"</span>";
+    var header = document.getElementById("bbq-conflict-header");
+    if (!header) { alert("Upload eerst een bestand — conflictmeter is nog leeg."); return; }
+    // Verzamel: conflict-header + alle siblings (dag-headers, dagplanningen, conflict-kaarten)
+    // tot de volgende sectie (import-uitleg grid)
+    var delen = [header.outerHTML];
+    var el = header.nextElementSibling;
+    var teller = 0;
+    while (el && teller < 80) {
+      var stl = el.style || {};
+      // Stop bij de "Stap 1/2" import-uitleg grid
+      if (stl.display === "grid" || (stl.gridTemplateColumns && stl.gridTemplateColumns.length > 0)) break;
+      delen.push(el.outerHTML);
+      el = el.nextElementSibling;
+      teller++;
     }
+    var sectieHtml = delen.join("");
     var aantalC = conflicten.filter(function(c){return c.type!=="onbekende_locatie";}).length;
-    var h = '<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#F4F7FA;padding:20px;color:'+N+'">'
-      +'<div style="max-width:680px;margin:0 auto">'
-      +'<div style="background:'+N+';color:#fff;padding:16px 20px;border-radius:8px 8px 0 0">'
-      +'<div style="font-size:20px;font-weight:800">&#128293; BBQ Conflicten</div>'
-      +'<div style="font-size:12px;color:'+AQ+'">KitchenRobot &mdash; '+(label||"Importoverzicht")+'</div></div>'
-      +'<div style="background:#fff;border-radius:0 0 8px 8px;padding:16px">';
-    var onbek = conflicten.find(function(c){return c.type==="onbekende_locatie";});
-    if (onbek) {
-      h += '<div style="background:#FFF3E0;border:1px solid '+OR+';padding:12px;margin-bottom:12px;border-radius:6px">'
-        +'<div style="font-weight:700;font-size:13px;color:#E65100;margin-bottom:6px">&#9888; Locatie onbekend &mdash; niet gecheckt</div>';
-      Object.keys(onbek.onbekend).forEach(function(loc){ h += '<div style="font-size:11px;color:'+MU+'">&bull; <strong>'+loc+'</strong> &mdash; '+onbek.onbekend[loc].slice(0,3).join(", ")+"</div>"; });
-      h += "</div>";
-    }
-    var hDag=null, hZone=null;
-    conflicten.filter(function(c){return c.type!=="onbekende_locatie";}).forEach(function(c) {
-      if (c.dag!==hDag || c.zone!==hZone) {
-        hDag=c.dag; hZone=c.zone;
-        h += '<div style="margin:16px 0 8px"><span style="background:'+N+';color:#fff;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:900">'+fmtDag(c.dag)+'</span> '
-          +'<span style="background:#E1F5EE;color:'+AQ+';border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700">'+(zL[c.zone]||c.zone)+'</span></div>';
-        if (c.dagPlanning) {
-          h += '<div style="background:#F0F7FF;border:1px solid #B3D4F5;border-radius:6px;padding:12px;margin-bottom:12px">'
-            +'<div style="font-size:11px;font-weight:700;color:#1565C0;margin-bottom:8px">&#128197; Geoptimaliseerde dagplanning &mdash; zo min mogelijk verschuiven</div>';
-          c.dagPlanning.forEach(function(bk) {
-            var gew=bk.nieuweTijd!==null;
-            h += '<div style="display:flex;align-items:center;gap:8px;padding:5px 8px;margin-bottom:3px;border-radius:5px;background:'+(gew?"#FFF8E1":"#fff")+';border:1px solid '+(gew?"#FFD54F":"#E8E8E8")+'">'
-              +'<span style="min-width:38px;font-weight:900;font-size:13px;color:'+(gew?RD:N)+'">'+fmtMs(bk.nieuweTijd||bk.origTijd)+'</span>'
-              +(gew?'<span style="font-size:10px;color:'+MU+';text-decoration:line-through;margin-right:4px">'+fmtMs(bk.origTijd)+'</span>':"")
-              +bdg(bk.status)
-              +'<span style="font-size:12px;font-weight:700">'+bk.naam+'</span>'
-              +'<span style="font-size:11px;color:'+MU+';margin-left:auto">'+bk.pax+'p &bull; '+bk.locatie+'</span></div>';
-          });
-          h += "</div>";
-        }
-      }
-      var idA=String(c.a.id).split("-")[0], idB=String(c.b.id).split("-")[0];
-      var tv=c.teVerplaatsen||c.b;
-      h += '<div style="background:#FFEBEE;border:1px solid '+RD+';border-radius:8px;padding:14px;margin-bottom:10px">'
-        +'<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:10px;align-items:center">'
-        +'<span style="background:'+RD+';color:#fff;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700">'+c.type+'</span>'
-        +'<span style="font-size:11px;color:'+RD+';font-weight:700">'+c.verschilMin+' min &mdash; min. '+c.vereistMin+' min vereist</span>'
-        +'<span style="font-size:10px;color:'+MU+';background:#fff;border-radius:4px;padding:2px 6px;border:1px solid #EECDD0">'+(c.uitleg||"")+'</span></div>'
-        +'<table style="width:100%;border-collapse:separate;border-spacing:5px;margin-bottom:10px"><tr>'
-        +'<td style="width:50%;vertical-align:top;background:#fff;border-radius:6px;padding:10px">'
-        +'<div style="font-size:11px;color:'+MU+';margin-bottom:4px">Boeking 1</div>'
-        +'<div style="font-weight:700;font-size:13px;margin-bottom:2px">'+bdg(c.a._status)
-        +'<a href="https://upevents.recras.nl/boekingen/'+idA+'" style="color:'+N+';text-decoration:none">#'+idA+" "+c.a.naam+'</a></div>'
-        +'<div style="font-size:11px;color:'+MU+'">'+fmtMs(c.a._bbqTijd)+' &bull; '+c.a._pax+'p &bull; '+c.a._canonical+'</div></td>'
-        +'<td style="width:50%;vertical-align:top;background:#fff;border-radius:6px;padding:10px">'
-        +'<div style="font-size:11px;color:'+MU+';margin-bottom:4px">Boeking 2</div>'
-        +'<div style="font-weight:700;font-size:13px;margin-bottom:2px">'+bdg(c.b._status)
-        +'<a href="https://upevents.recras.nl/boekingen/'+idB+'" style="color:'+N+';text-decoration:none">#'+idB+" "+c.b.naam+'</a></div>'
-        +'<div style="font-size:11px;color:'+MU+'">'+fmtMs(c.b._bbqTijd)+' &bull; '+c.b._pax+'p &bull; '+c.b._canonical+'</div></td></tr></table>'
-        +'<div style="background:#E8F5E9;border-radius:6px;padding:10px;border:1px solid #A5D6A7">'
-        +'<div style="font-size:11px;font-weight:700;color:'+GR+';margin-bottom:6px">Verplaats: '+bdg(tv._status)+tv.naam+' ('+tv._pax+'p)</div>';
-      if (c.vrijeSlots && c.vrijeSlots.length>0) {
-        h += '<div style="font-size:11px;color:'+N+';margin-bottom:4px">Vrije momenten:</div><div>';
-        c.vrijeSlots.forEach(function(slot){ h += '<span style="display:inline-block;background:#fff;border:2px solid '+GR+';border-radius:6px;padding:4px 12px;font-size:13px;font-weight:900;color:'+GR+';margin-right:6px">'+fmtMs(slot)+'</span>'; });
-        h += "</div>";
-      } else {
-        h += '<div style="font-size:11px;color:#E65100">&#9888; Geen vrije momenten &mdash; handmatig afstemmen</div>';
-      }
-      h += "</div></div>";
-    });
-    h += "</div></div></body></html>";
-    var onderwerp = "KitchenRobot \u2014 \uD83D\uDD25 "+aantalC+" BBQ conflict"+(aantalC!==1?"en":"")+(label?" ("+label+")":"");
+    var onderwerp = "KitchenRobot \u2014 \uD83D\uDD25 "+aantalC+" BBQ conflict"+(aantalC!==1?"en":"");
+    var emailHtml = '<!DOCTYPE html><html><head><meta charset="utf-8">'
+      + '<style>'
+      + 'body{font-family:Arial,sans-serif;background:#F4F7FA;padding:20px;margin:0;color:#002D41}'
+      + '*{box-sizing:border-box}'
+      + 'a{color:#002D41;text-decoration:none}'
+      + 'button{display:none!important}'  // verberg alle knoppen
+      + '</style></head><body>'
+      + '<div style="max-width:720px;margin:0 auto">'
+      + '<div style="background:#002D41;color:#fff;padding:16px 20px;border-radius:8px 8px 0 0">'
+      + '<div style="font-size:20px;font-weight:800">&#128293; BBQ Conflicten</div>'
+      + '<div style="font-size:12px;color:#1AA6B7;margin-top:2px">KitchenRobot &mdash; ' + new Date().toLocaleDateString('nl-NL', {weekday:'long',day:'numeric',month:'long'}) + '</div>'
+      + '</div>'
+      + '<div style="background:#fff;padding:16px;border-radius:0 0 8px 8px;border:1px solid #D8E8EF;border-top:none">'
+      + sectieHtml
+      + '</div></div></body></html>';
     window._supa.auth.getSession().then(function(sessRes) {
       var token = sessRes.data&&sessRes.data.session ? sessRes.data.session.access_token : "";
       fetch("https://aezatnwsrhlwtykpixsq.supabase.co/functions/v1/stuur-opzetmail", {
         method: "POST", headers: {"Content-Type":"application/json","Authorization":"Bearer "+token},
         body: JSON.stringify({actie:"verstuur", dag:new Date().toISOString().split("T")[0],
-          hash:"bbq-"+Date.now(), html:h, onderwerp:onderwerp})
+          hash:"bbq-"+Date.now(), html:emailHtml, onderwerp:onderwerp})
       }).then(function(r){return r.json();})
-      .then(function(d){ alert(d.succes ? "\u2713 BBQ conflicten verstuurd!" : "Fout: "+(d.fout||"Onbekend")); })
+      .then(function(d){ alert(d.succes ? "\u2713 Conflicten verstuurd naar stefan@upevents.nl!" : "Fout: "+(d.fout||"Onbekend")); })
       .catch(function(e){ alert("Fout: "+e.message); });
     });
   }
@@ -1884,7 +1841,27 @@ function HomeScreen({ setSc }) {
           /* @__PURE__ */ React.createElement("div", { style: { background:"rgba(26,166,183,.15)", color:C.aqua, borderRadius:6, padding:"4px 10px", fontSize:11, fontWeight:700 } }, zoneLabels[c.zone]||c.zone),
           /* @__PURE__ */ React.createElement("div", { style: { flex:1, height:1, background:"#D8E8EF" } })
         ),
-        /* @__PURE__ */ React.createElement("div", { style: { background:"#FFEBEE", border:"1px solid "+C.hot, borderRadius:8, padding:14, marginBottom:10 } },
+        toonDagHeader && c.dagPlanning && /* @__PURE__ */ React.createElement("div", { style: { background:"#F0F7FF", border:"1px solid #B3D4F5", borderRadius:8, padding:12, marginBottom:10 } },
+        /* @__PURE__ */ React.createElement("div", { style: { fontSize:12, fontWeight:700, color:"#1565C0", marginBottom:8 } }, "\uD83D\uDCC5 Geoptimaliseerde dagplanning \u2014 zo min mogelijk verschuiven"),
+        c.dagPlanning.map(function(bk, bi) {
+          var gewijzigd = bk.nieuweTijd !== null;
+          return /* @__PURE__ */ React.createElement("div", { key: bi, style: {
+            display:"flex", alignItems:"center", gap:8, padding:"5px 8px", marginBottom:3,
+            borderRadius:5, background: gewijzigd?"#FFF8E1":"#fff",
+            border:"1px solid "+(gewijzigd?"#FFD54F":"#E8E8E8")
+          } },
+            /* @__PURE__ */ React.createElement("div", { style: { minWidth:38, fontWeight:900, fontSize:13, color:gewijzigd?C.hot:C.night } }, fmtMs(bk.nieuweTijd||bk.origTijd)),
+            gewijzigd
+              ? /* @__PURE__ */ React.createElement("div", { style: { fontSize:10, color:C.muted, textDecoration:"line-through", minWidth:32 } }, fmtMs(bk.origTijd))
+              : /* @__PURE__ */ React.createElement("div", { style: { minWidth:32 } }),
+            sBadge(bk.status),
+            /* @__PURE__ */ React.createElement("div", { style: { flex:1, fontSize:12, fontWeight:700, color:C.night, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" } }, bk.naam),
+            /* @__PURE__ */ React.createElement("div", { style: { fontSize:11, color:C.muted, whiteSpace:"nowrap" } }, bk.pax, "p"),
+            /* @__PURE__ */ React.createElement("div", { style: { fontSize:10, color:C.muted, whiteSpace:"nowrap", maxWidth:90, overflow:"hidden", textOverflow:"ellipsis" } }, bk.locatie)
+          );
+        })
+      ),
+      /* @__PURE__ */ React.createElement("div", { style: { background:"#FFEBEE", border:"1px solid "+C.hot, borderRadius:8, padding:14, marginBottom:10 } },
           /* @__PURE__ */ React.createElement("div", { style: { display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10, flexWrap:"wrap", gap:6 } },
             /* @__PURE__ */ React.createElement("span", { style: { background:C.hot, color:"#fff", borderRadius:4, padding:"2px 8px", fontSize:11, fontWeight:700 } }, c.type),
             /* @__PURE__ */ React.createElement("span", { style: { fontSize:11, color:C.hot, fontWeight:700 } }, c.verschilMin, " min \u2014 min. ", c.vereistMin, " min vereist"),
@@ -1908,7 +1885,7 @@ function HomeScreen({ setSc }) {
               /* @__PURE__ */ React.createElement("div", { style: { fontSize:11, color:C.muted } }, fmtMs(c.b._bbqTijd), " \u2022 ", c.b._pax, "p \u2022 ", c.b._canonical)
             )
           ),
-          /* @__PURE__ */ React.createElement("div", { style: { background:"#E8F5E9", borderRadius:6, padding:10, border:"1px solid #A5D6A7", marginBottom: c.dagPlanning && toonDagHeader ? 10 : 0 } },
+          /* @__PURE__ */ React.createElement("div", { style: { background:"#E8F5E9", borderRadius:6, padding:10, border:"1px solid #A5D6A7", marginBottom: 0 } },
             /* @__PURE__ */ React.createElement("div", { style: { fontSize:11, fontWeight:700, color:C.green, marginBottom:6, display:"flex", alignItems:"center", gap:6 } },
               "Verplaats: ", sBadge(tv._status), tv.naam, " (", tv._pax, "p)"
             ),
@@ -1927,27 +1904,7 @@ function HomeScreen({ setSc }) {
                 )
               : /* @__PURE__ */ React.createElement("div", { style: { fontSize:11, color:"#E65100" } }, "\u26A0 Geen vrije momenten \u2014 handmatig afstemmen")
           ),
-          c.dagPlanning && toonDagHeader && /* @__PURE__ */ React.createElement("div", { style: { background:"#F0F7FF", border:"1px solid #B3D4F5", borderRadius:6, padding:10 } },
-            /* @__PURE__ */ React.createElement("div", { style: { fontSize:11, fontWeight:700, color:"#1565C0", marginBottom:8 } }, "\uD83D\uDCC5 Geoptimaliseerde dagplanning \u2014 zo min mogelijk verschuiven"),
-            c.dagPlanning.map(function(bk, bi) {
-              var gewijzigd = bk.nieuweTijd !== null;
-              return /* @__PURE__ */ React.createElement("div", { key: bi, style: {
-                display:"flex", alignItems:"center", gap:8, padding:"5px 8px", marginBottom:3,
-                borderRadius:5, background: gewijzigd?"#FFF8E1":"#fff",
-                border:"1px solid "+(gewijzigd?"#FFD54F":"#E8E8E8")
-              } },
-                /* @__PURE__ */ React.createElement("div", { style: { minWidth:38, fontWeight:900, fontSize:13, color:gewijzigd?C.hot:C.night } }, fmtMs(bk.nieuweTijd||bk.origTijd)),
-                gewijzigd
-                  ? /* @__PURE__ */ React.createElement("div", { style: { fontSize:10, color:C.muted, textDecoration:"line-through", minWidth:32 } }, fmtMs(bk.origTijd))
-                  : /* @__PURE__ */ React.createElement("div", { style: { minWidth:32 } }),
-                sBadge(bk.status),
-                /* @__PURE__ */ React.createElement("div", { style: { flex:1, fontSize:12, fontWeight:700, color:C.night, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" } }, bk.naam),
-                /* @__PURE__ */ React.createElement("div", { style: { fontSize:11, color:C.muted, whiteSpace:"nowrap" } }, bk.pax, "p"),
-                /* @__PURE__ */ React.createElement("div", { style: { fontSize:10, color:C.muted, whiteSpace:"nowrap", maxWidth:90, overflow:"hidden", textOverflow:"ellipsis" } }, bk.locatie)
-              );
-            })
-          )
-        )
+                  )
       );
     })))
   ), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 } }, /* @__PURE__ */ React.createElement("div", { style: SS.card }, /* @__PURE__ */ React.createElement("div", { style: SS.cS }, "Stap 1 — dagelijkse import"), /* @__PURE__ */ React.createElement("div", { style: SS.cT }, "Recras boekingenexport"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 12, color: C.muted, margin: "0 0 12px" } }, "Importeer het .xlsx bestand vanuit Recras. Privacygevoelige kolommen L/M/N/O worden direct verwijderd."), /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 12 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: C.night, marginBottom: 6 } }, "Welke keuken importeer je?"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, [["west", "🏙 Amsterdam West"], ["weesp", "🌿 Weesp"]].map(function(opt) {
