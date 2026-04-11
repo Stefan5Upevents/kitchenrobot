@@ -1346,6 +1346,7 @@ function HomeScreen({ setSc }) {
   }
   function checkBBQConflicten(boekingen2) {
     if (!boekingen2 || boekingen2.length === 0) { setBbqConflicten(null); return; }
+    // Locaties + aliassen (exact uit bbq_locaties + Supabase aliassen kolom)
     var locatieMap = {};
     [
       ["Archery Tag WP","weesp",2,[]],["Basisweg 2, Weesp","weesp",2,[]],["Birdie","weesp",2,[]],
@@ -1366,12 +1367,14 @@ function HomeScreen({ setSc }) {
       locatieMap[r[0]] = obj;
       (r[3] || []).forEach(function(a) { locatieMap[a] = obj; });
     });
+    // BBQ menu-ids via koppelingen (Festival Food Market ook)
     var bbqMenuIds = {};
     (window._stamMenus || []).forEach(function(m) {
       var n = (m.naam || "").toLowerCase();
       if (n.includes("bbq") || n.includes("grill") || n.includes("festival food market")) bbqMenuIds[m.id] = true;
     });
     var koppelingen = window._stamKoppelingen || [];
+    // Gebruik BBQ-starttijd van de regel (niet eerste boekingsregel)
     function getBbqTijdEnPax(b) {
       var bbqTijd = null, pax = 0;
       (b.regels || []).forEach(function(r) {
@@ -1384,28 +1387,18 @@ function HomeScreen({ setSc }) {
       return { bbqTijd: bbqTijd || new Date(b.deadline).getTime(), pax: pax };
     }
     function vereistMin(pax) {
-      if (pax > 200)  return { min: 70, voorkeur: 100 };
-      if (pax > 100)  return { min: 60, voorkeur: 80  };
-      if (pax > 75)   return { min: 30, voorkeur: 45  };
-      if (pax > 50)   return { min: 25, voorkeur: 35  };
-      if (pax > 30)   return { min: 20, voorkeur: 30  };
-      if (pax > 15)   return { min: 15, voorkeur: 20  };
-      return          { min: 10, voorkeur: 15 };
-    }
-    function uitlegMin(pax) {
-      if (pax > 200)  return ">" + 200 + "p = min. 70 min";
-      if (pax > 100)  return ">" + 100 + "p = min. 60 min";
-      if (pax > 75)   return ">" + 75  + "p = min. 30 min";
-      if (pax > 50)   return ">" + 50  + "p = min. 25 min";
-      if (pax > 30)   return ">" + 30  + "p = min. 20 min";
-      if (pax > 15)   return ">" + 15  + "p = min. 15 min";
-      return "\u226415p = min. 10 min";
+      if (pax >= 200) return { min: 60, voorkeur: 120 };
+      if (pax >= 120) return { min: 60, voorkeur: 60 };
+      if (pax >= 80)  return { min: 25, voorkeur: 45 };
+      return { min: 15, voorkeur: 20 };
     }
     function rond5(ms) {
       var d = new Date(ms);
       var m = Math.ceil(d.getMinutes() / 5) * 5;
-      if (m >= 60) { d.setHours(d.getHours() + 1); d.setMinutes(0); } else { d.setMinutes(m); }
-      d.setSeconds(0); d.setMilliseconds(0); return d.getTime();
+      if (m >= 60) { d.setHours(d.getHours() + 1); d.setMinutes(0); }
+      else { d.setMinutes(m); }
+      d.setSeconds(0); d.setMilliseconds(0);
+      return d.getTime();
     }
     var onbekend = {}, zoneGroepen = {};
     boekingen2.forEach(function(b) {
@@ -1432,7 +1425,6 @@ function HomeScreen({ setSc }) {
       var maxSetups = groep.maxSetups;
       var geadv = {};
       sorted.forEach(function(bk) { geadv[bk.id] = bk._bbqTijd; });
-      var conflictenOpDag = [];
       for (var i = 0; i < sorted.length; i++) {
         for (var j = i + 1; j < Math.min(sorted.length, i + maxSetups + 2); j++) {
           var a = sorted[i], b = sorted[j];
@@ -1442,9 +1434,11 @@ function HomeScreen({ setSc }) {
           var maxPax = Math.max(a._pax, b._pax);
           var reg = vereistMin(maxPax);
           if (verschilMin >= reg.min) continue;
+          // Kleinste groep verplaatsen
           var tv = (b._pax <= a._pax) ? b : a;
           var tvPax = tv._pax;
           var ankertijd = (tv.id === b.id ? a : b)._bbqTijd;
+          // Vrije slots: respecteer min-tijd tov ALLE bbq's die dag
           var kandidaten = [];
           [-180,-150,-120,-90,-75,-60,-50,-45,-40,-35,-30,30,35,40,45,50,60,75,90,120,150,180].forEach(function(delta) {
             var k = ankertijd + delta * 6e4;
@@ -1463,39 +1457,14 @@ function HomeScreen({ setSc }) {
           kandidaten.forEach(function(v) { if (uniek.indexOf(v) < 0) uniek.push(v); });
           uniek.sort(function(x, y) { return Math.abs(x - orig) - Math.abs(y - orig); });
           geadv[b.id] = tA + reg.voorkeur * 6e4;
-          conflictenOpDag.push({
+          gevonden.push({
             zone: groep.zone, dag: groep.dag, a: a, b: b,
             verschilMin: verschilMin, vereistMin: reg.min, voorkeur: reg.voorkeur, maxPax: maxPax,
-            uitleg: uitlegMin(maxPax),
             nieuweDeadline: new Date(geadv[b.id]).toISOString(),
-            type: maxPax > 200 ? "200+ personen" : "Te weinig tijd",
+            type: maxPax >= 200 ? "200+ personen" : "Te weinig tijd",
             teVerplaatsen: tv, vrijeSlots: uniek.slice(0, 3)
           });
         }
-      }
-      if (conflictenOpDag.length > 0) {
-        // Bereken geoptimaliseerde dagplanning: pas geadv toe en sorteer chronologisch
-        var geadvFin = {};
-        sorted.forEach(function(bk) { geadvFin[bk.id] = bk._bbqTijd; });
-        for (var pi = 0; pi < sorted.length; pi++) {
-          for (var pj = pi + 1; pj < Math.min(sorted.length, pi + maxSetups + 2); pj++) {
-            var pa = sorted[pi], pb = sorted[pj];
-            var ptA = geadvFin[pa.id], ptB = geadvFin[pb.id];
-            var pVerschil = Math.round((ptB - ptA) / 6e4);
-            if (pVerschil < 0) continue;
-            var pReg = vereistMin(Math.max(pa._pax, pb._pax));
-            if (pVerschil < pReg.min) geadvFin[pb.id] = ptA + pReg.voorkeur * 6e4;
-          }
-        }
-        // Sorteer dagplanning op nieuwe (geoptimaliseerde) tijd, chronologisch
-        var dagPlanning = sorted.map(function(bk) {
-          var nieuwT = geadvFin[bk.id] !== bk._bbqTijd ? geadvFin[bk.id] : null;
-          return { naam: bk.naam, pax: bk._pax, locatie: bk._canonical,
-            status: bk._status, id: bk.id, origTijd: bk._bbqTijd, nieuweTijd: nieuwT,
-            sortTijd: nieuwT || bk._bbqTijd };
-        }).sort(function(a, b) { return a.sortTijd - b.sortTijd; });
-        conflictenOpDag.forEach(function(c) { c.dagPlanning = dagPlanning; });
-        gevonden = gevonden.concat(conflictenOpDag);
       }
     });
     if (Object.keys(onbekend).length > 0) gevonden.unshift({ type: "onbekende_locatie", onbekend: onbekend });
@@ -1752,86 +1721,50 @@ function HomeScreen({ setSc }) {
           })
         );
       }
+      var zoneLabels = { weesp: "Weesp", voorterrein: "AW Voorterrein", middenterrein: "AW Middenterrein", achterterrein: "AW Achterterrein" };
       var dagN = ["zo","ma","di","wo","do","vr","za"];
       var maandN = ["jan","feb","mrt","apr","mei","jun","jul","aug","sep","okt","nov","dec"];
-      var zoneLabels = { weesp: "Weesp", voorterrein: "AW Voorterrein", middenterrein: "AW Middenterrein", achterterrein: "AW Achterterrein" };
+      function fmt(iso) { var d = new Date(iso); return dagN[d.getDay()]+" "+d.getDate()+" "+maandN[d.getMonth()]+" "+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"); }
       function fmtMs(ms) { var d = new Date(ms); return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"); }
-      function fmtDag(dag) { var d = new Date(dag+"T12:00:00"); return dagN[d.getDay()]+" "+d.getDate()+" "+maandN[d.getMonth()]+" "+d.getFullYear(); }
-      function sBadge(s) {
-        var isO = (s||"").includes("optie");
-        return /* @__PURE__ */ React.createElement("span", { style: { background: isO?"#FF9800":C.aqua, color:"#fff", borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700, marginRight:4, flexShrink:0 } }, isO?"OPTIE":"DEF");
+      function sBadge(status) {
+        var isO = (status||"").includes("optie");
+        return /* @__PURE__ */ React.createElement("span", { style: { background: isO?"#FF9800":C.aqua, color:"#fff", borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700, marginRight:6 } }, isO?"OPTIE":"DEF");
       }
       var recrasBase = "https://upevents.recras.nl/boekingen/";
       var idA = String(c.a.id).split("-")[0], idB = String(c.b.id).split("-")[0];
       var tv = c.teVerplaatsen || c.b;
-      var vorigeC = bbqConflicten[i - 1];
-      var toonDagHeader = !vorigeC || vorigeC.type === "onbekende_locatie" || vorigeC.dag !== c.dag || vorigeC.zone !== c.zone;
-      return /* @__PURE__ */ React.createElement(React.Fragment, { key: i },
-        toonDagHeader && /* @__PURE__ */ React.createElement("div", { style: { display:"flex", alignItems:"center", gap:10, margin:"16px 0 8px" } },
-          /* @__PURE__ */ React.createElement("div", { style: { background:C.night, color:"#fff", borderRadius:6, padding:"4px 12px", fontSize:12, fontWeight:900 } }, fmtDag(c.dag)),
-          /* @__PURE__ */ React.createElement("div", { style: { background:"rgba(26,166,183,.15)", color:C.aqua, borderRadius:6, padding:"4px 10px", fontSize:11, fontWeight:700 } }, zoneLabels[c.zone]||c.zone),
-          /* @__PURE__ */ React.createElement("div", { style: { flex:1, height:1, background:"#D8E8EF" } })
+      return /* @__PURE__ */ React.createElement("div", { key: i, style: { background: "#FFEBEE", border: "1px solid "+C.hot, borderRadius:8, padding:14, marginBottom:12 } },
+        /* @__PURE__ */ React.createElement("div", { style: { display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:10 } },
+          /* @__PURE__ */ React.createElement("div", null,
+            /* @__PURE__ */ React.createElement("span", { style: { background:C.hot, color:"#fff", borderRadius:4, padding:"2px 8px", fontSize:11, fontWeight:700, marginRight:8 } }, c.type),
+            /* @__PURE__ */ React.createElement("span", { style: { fontSize:12, fontWeight:700, color:C.night } }, zoneLabels[c.zone]||c.zone)
+          ),
+          /* @__PURE__ */ React.createElement("span", { style: { fontSize:11, color:C.hot, fontWeight:700 } }, c.verschilMin, " min \u2014 min. ", c.vereistMin, " min vereist")
         ),
-        /* @__PURE__ */ React.createElement("div", { style: { background:"#FFEBEE", border:"1px solid "+C.hot, borderRadius:8, padding:14, marginBottom:10 } },
-          /* @__PURE__ */ React.createElement("div", { style: { display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 } },
-            /* @__PURE__ */ React.createElement("span", { style: { background:C.hot, color:"#fff", borderRadius:4, padding:"2px 8px", fontSize:11, fontWeight:700 } }, c.type),
-            /* @__PURE__ */ React.createElement("span", { style: { fontSize:11, color:C.hot, fontWeight:700 } }, c.verschilMin, " min \u2014 min. ", c.vereistMin, " min vereist"),
-            c.uitleg && /* @__PURE__ */ React.createElement("span", { style: { fontSize:10, color:C.muted, background:"#fff", borderRadius:4, padding:"2px 6px", border:"1px solid #EECDD0" } }, c.uitleg)
+        /* @__PURE__ */ React.createElement("div", { style: { display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:10 } },
+          /* @__PURE__ */ React.createElement("div", { style: { background:"#fff", borderRadius:6, padding:10 } },
+            /* @__PURE__ */ React.createElement("div", { style: { fontSize:11, color:C.muted, marginBottom:4 } }, "Boeking 1"),
+            /* @__PURE__ */ React.createElement("div", { style: { fontWeight:700, fontSize:13, marginBottom:2 } }, sBadge(c.a._status), /* @__PURE__ */ React.createElement("a", { href:recrasBase+idA, target:"_blank", rel:"noreferrer", style:{color:C.night,textDecoration:"none"} }, "#",idA," ",c.a.naam)),
+            /* @__PURE__ */ React.createElement("div", { style: { fontSize:11, color:C.muted } }, fmtMs(c.a._bbqTijd), " \u2022 ", c.a._pax, "p \u2022 ", c.a._canonical)
           ),
-          /* @__PURE__ */ React.createElement("div", { style: { display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:10 } },
-            /* @__PURE__ */ React.createElement("div", { style: { background:"#fff", borderRadius:6, padding:10 } },
-              /* @__PURE__ */ React.createElement("div", { style: { fontSize:11, color:C.muted, marginBottom:4 } }, "Boeking 1"),
-              /* @__PURE__ */ React.createElement("div", { style: { fontWeight:700, fontSize:13, marginBottom:2, display:"flex", alignItems:"center", flexWrap:"wrap", gap:3 } },
-                sBadge(c.a._status),
-                /* @__PURE__ */ React.createElement("a", { href:recrasBase+idA, target:"_blank", rel:"noreferrer", style:{color:C.night,textDecoration:"none"} }, "#",idA," ",c.a.naam)
-              ),
-              /* @__PURE__ */ React.createElement("div", { style: { fontSize:11, color:C.muted } }, fmtMs(c.a._bbqTijd), " \u2022 ", c.a._pax, "p \u2022 ", c.a._canonical)
-            ),
-            /* @__PURE__ */ React.createElement("div", { style: { background:"#fff", borderRadius:6, padding:10 } },
-              /* @__PURE__ */ React.createElement("div", { style: { fontSize:11, color:C.muted, marginBottom:4 } }, "Boeking 2"),
-              /* @__PURE__ */ React.createElement("div", { style: { fontWeight:700, fontSize:13, marginBottom:2, display:"flex", alignItems:"center", flexWrap:"wrap", gap:3 } },
-                sBadge(c.b._status),
-                /* @__PURE__ */ React.createElement("a", { href:recrasBase+idB, target:"_blank", rel:"noreferrer", style:{color:C.night,textDecoration:"none"} }, "#",idB," ",c.b.naam)
-              ),
-              /* @__PURE__ */ React.createElement("div", { style: { fontSize:11, color:C.muted } }, fmtMs(c.b._bbqTijd), " \u2022 ", c.b._pax, "p \u2022 ", c.b._canonical)
-            )
-          ),
-          /* @__PURE__ */ React.createElement("div", { style: { background:"#E8F5E9", borderRadius:6, padding:10, border:"1px solid #A5D6A7", marginBottom: c.dagPlanning ? 10 : 0 } },
-            /* @__PURE__ */ React.createElement("div", { style: { fontSize:11, fontWeight:700, color:C.green, marginBottom:6, display:"flex", alignItems:"center", gap:6 } },
-              "Verplaats: ", sBadge(tv._status), tv.naam, " (", tv._pax, "p)"
-            ),
-            c.vrijeSlots && c.vrijeSlots.length > 0
-              ? /* @__PURE__ */ React.createElement("div", null,
-                  /* @__PURE__ */ React.createElement("div", { style: { fontSize:11, color:C.night, marginBottom:4 } }, "Vrije momenten (min-tijd tov alle BBQ\u2019s die dag):"),
-                  /* @__PURE__ */ React.createElement("div", { style: { display:"flex", gap:8, flexWrap:"wrap" } },
-                    c.vrijeSlots.map(function(slot, si) {
-                      return /* @__PURE__ */ React.createElement("span", { key:si, style:{background:"#fff",border:"2px solid "+C.green,borderRadius:6,padding:"4px 12px",fontSize:13,fontWeight:900,color:C.green} }, fmtMs(slot));
-                    })
-                  )
-                )
-              : /* @__PURE__ */ React.createElement("div", { style: { fontSize:11, color:"#E65100" } }, "\u26A0 Geen vrije momenten \u2014 handmatig afstemmen")
-          ),
-          c.dagPlanning && toonDagHeader && /* @__PURE__ */ React.createElement("div", { style: { background:"#F0F7FF", border:"1px solid #B3D4F5", borderRadius:6, padding:10 } },
-            /* @__PURE__ */ React.createElement("div", { style: { fontSize:11, fontWeight:700, color:"#1565C0", marginBottom:8 } }, "\uD83D\uDCC5 Geoptimaliseerde dagplanning \u2014 zo min mogelijk verschuiven"),
-            c.dagPlanning.map(function(bk, bi) {
-              var gewijzigd = bk.nieuweTijd !== null;
-              return /* @__PURE__ */ React.createElement("div", { key:bi, style: {
-                display:"flex", alignItems:"center", gap:8, padding:"5px 8px", marginBottom:3,
-                borderRadius:5,
-                background: gewijzigd ? "#FFF8E1" : "#fff",
-                border: "1px solid " + (gewijzigd ? "#FFD54F" : "#E8E8E8")
-              } },
-                /* @__PURE__ */ React.createElement("div", { style: { minWidth:38, fontWeight:900, fontSize:13, color: gewijzigd ? C.hot : C.night } }, fmtMs(bk.nieuweTijd || bk.origTijd)),
-                gewijzigd
-                  ? /* @__PURE__ */ React.createElement("div", { style: { fontSize:10, color:C.muted, textDecoration:"line-through", minWidth:32 } }, fmtMs(bk.origTijd))
-                  : /* @__PURE__ */ React.createElement("div", { style: { minWidth:32 } }),
-                sBadge(bk.status),
-                /* @__PURE__ */ React.createElement("div", { style: { flex:1, fontSize:12, fontWeight:700, color:C.night, minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" } }, bk.naam),
-                /* @__PURE__ */ React.createElement("div", { style: { fontSize:11, color:C.muted, whiteSpace:"nowrap" } }, bk.pax, "p"),
-                /* @__PURE__ */ React.createElement("div", { style: { fontSize:10, color:C.muted, whiteSpace:"nowrap", maxWidth:90, overflow:"hidden", textOverflow:"ellipsis" } }, bk.locatie)
-              );
-            })
+          /* @__PURE__ */ React.createElement("div", { style: { background:"#fff", borderRadius:6, padding:10 } },
+            /* @__PURE__ */ React.createElement("div", { style: { fontSize:11, color:C.muted, marginBottom:4 } }, "Boeking 2"),
+            /* @__PURE__ */ React.createElement("div", { style: { fontWeight:700, fontSize:13, marginBottom:2 } }, sBadge(c.b._status), /* @__PURE__ */ React.createElement("a", { href:recrasBase+idB, target:"_blank", rel:"noreferrer", style:{color:C.night,textDecoration:"none"} }, "#",idB," ",c.b.naam)),
+            /* @__PURE__ */ React.createElement("div", { style: { fontSize:11, color:C.muted } }, fmtMs(c.b._bbqTijd), " \u2022 ", c.b._pax, "p \u2022 ", c.b._canonical)
           )
+        ),
+        /* @__PURE__ */ React.createElement("div", { style: { background:"#E8F5E9", borderRadius:6, padding:10, border:"1px solid #A5D6A7" } },
+          /* @__PURE__ */ React.createElement("div", { style: { fontSize:11, fontWeight:700, color:C.green, marginBottom:6 } }, "Verplaats: ", sBadge(tv._status), tv.naam, " (", tv._pax, "p)"),
+          c.vrijeSlots && c.vrijeSlots.length > 0
+            ? /* @__PURE__ */ React.createElement("div", null,
+                /* @__PURE__ */ React.createElement("div", { style: { fontSize:11, color:C.night, marginBottom:4 } }, "Vrije momenten (min-tijd tov alle BBQ\u2019s die dag):"),
+                /* @__PURE__ */ React.createElement("div", { style: { display:"flex", gap:8 } },
+                  c.vrijeSlots.map(function(slot, si) {
+                    return /* @__PURE__ */ React.createElement("span", { key:si, style:{background:"#fff",border:"2px solid "+C.green,borderRadius:6,padding:"4px 12px",fontSize:13,fontWeight:900,color:C.green} }, fmtMs(slot));
+                  })
+                )
+              )
+            : /* @__PURE__ */ React.createElement("div", { style: { fontSize:11, color:"#E65100" } }, "\u26A0 Geen vrije momenten \u2014 handmatig afstemmen")
         )
       );
     })))
@@ -1901,6 +1834,8 @@ function HomeScreen({ setSc }) {
           var locatie = String(r[6] || "").trim();
           var plaats = String(r[9] || "").trim();
           var groepsnaam = String(r[11] || "").trim();
+          var boekingsnaam = String(r[18] || "").trim();
+          var statusRij = String(r[17] || "").trim().toLowerCase();
           if (!bid || !productNaam) return;
           var deadlineTijd = "";
           var deadlineDag = "";
@@ -1943,14 +1878,14 @@ function HomeScreen({ setSc }) {
           if (!boekingenMap[bid]) {
             boekingenMap[bid] = {
               id: bid,
-              naam: groepsnaam || bid,
+              naam: boekingsnaam || groepsnaam || bid,
               deadline: datum,
               deadlineDatum,
               deadlineTijd,
               deadlineDag,
               locatie,
               plaats,
-              status: "Bevestigd",
+              status: statusRij || "bevestigd",
               regels: [],
               aantalLen: 0,
               aantalSum: 0
