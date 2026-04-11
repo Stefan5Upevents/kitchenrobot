@@ -1384,19 +1384,19 @@ function HomeScreen({ setSc }) {
       return { bbqTijd: bbqTijd || new Date(b.deadline).getTime(), pax: pax };
     }
     function vereistMin(pax) {
-      if (pax > 200) return { min: 70, voorkeur: 100 };
-      if (pax > 100) return { min: 60, voorkeur: 80  };
-      if (pax > 75)  return { min: 30, voorkeur: 45  };
-      if (pax > 50)  return { min: 25, voorkeur: 35  };
-      if (pax > 30)  return { min: 20, voorkeur: 30  };
-      if (pax > 15)  return { min: 15, voorkeur: 20  };
-      return         { min: 10, voorkeur: 15 };
+      if (pax > 200) return { min: 60, voorkeur: 60 };
+      if (pax > 100) return { min: 40, voorkeur: 40 };
+      if (pax > 75)  return { min: 25, voorkeur: 25 };
+      if (pax > 50)  return { min: 20, voorkeur: 20 };
+      if (pax > 30)  return { min: 20, voorkeur: 20 };
+      if (pax > 15)  return { min: 15, voorkeur: 15 };
+      return         { min: 10, voorkeur: 10 };
     }
     function uitlegMin(pax) {
-      if (pax > 200) return ">200p = min. 70 min";
-      if (pax > 100) return ">100p = min. 60 min";
-      if (pax > 75)  return ">75p = min. 30 min";
-      if (pax > 50)  return ">50p = min. 25 min";
+      if (pax > 200) return ">200p = min. 60 min";
+      if (pax > 100) return ">100p = min. 40 min";
+      if (pax > 75)  return ">75p = min. 25 min";
+      if (pax > 50)  return ">50p = min. 20 min";
       if (pax > 30)  return ">30p = min. 20 min";
       if (pax > 15)  return ">15p = min. 15 min";
       return "\u226415p = min. 10 min";
