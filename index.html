@@ -1344,252 +1344,38 @@ function HomeScreen({ setSc }) {
       else console.log("Geboekte producten gegenereerd:", regels.length, "producten voor", outletCode);
     });
   }
-  function checkBBQConflicten(boekingen2) {
-    if (!boekingen2 || boekingen2.length === 0) { setBbqConflicten(null); return; }
-    var locatieMap = {};
-    [
-      ["Archery Tag WP","weesp",2,[]],["Basisweg 2, Weesp","weesp",2,[]],["Birdie","weesp",2,[]],
-      ["Boardroom","weesp",2,[]],["Bogey","weesp",2,[]],["Boogschieten WP","weesp",2,[]],
-      ["Bubbel voetbal WP","weesp",2,[]],["CLUPhuis","weesp",2,[]],["Driving range","weesp",2,[]],
-      ["Eagle","weesp",2,[]],["Golfbaan","weesp",2,[]],["Jeu de Boules WP","weesp",2,[]],
-      ["Robinson Crusoe WP","weesp",2,[]],["Terrace WP","weesp",2,[]],["The Barn","weesp",2,[]],
-      ["UP Fairway","weesp",2,[]],["UPstairs","weesp",2,[]],
-      ["Combinatie | Loods 1, 2, 3 & Terrace","voorterrein",1,[]],
-      ["Loods 2","voorterrein",1,[]],["Loods 4","voorterrein",1,[]],["Loods 5","voorterrein",1,[]],
-      ["Loods 6","voorterrein",1,[]],["Pup - Bar","voorterrein",1,[]],["Ronde Tent","voorterrein",1,[]],
-      ["Stretchtent","voorterrein",1,[]],["Terrace","voorterrein",1,[]],["Terras Loods 6","voorterrein",1,[]],
-      ["Beachclub","middenterrein",2,["Beach CLUP","Beach Clup","Beachclub1"]],
-      ["Beachclub 2","middenterrein",2,["Beach Clup 2","Beachclub2"]],
-      ["Loods 7","achterterrein",1,[]],["Loods 7 Patio","achterterrein",1,[]]
-    ].forEach(function(r) {
-      var obj = { zone: r[1], maxSetups: r[2], canonical: r[0] };
-      locatieMap[r[0]] = obj;
-      (r[3] || []).forEach(function(a) { locatieMap[a] = obj; });
-    });
-    var bbqMenuIds = {};
-    (window._stamMenus || []).forEach(function(m) {
-      var n = (m.naam || "").toLowerCase();
-      if (n.includes("bbq") || n.includes("grill") || n.includes("festival food market")) bbqMenuIds[m.id] = true;
-    });
-    var koppelingen = window._stamKoppelingen || [];
-    function getBbqTijdEnPax(b) {
-      var bbqTijd = null, pax = 0;
-      (b.regels || []).forEach(function(r) {
-        var k = koppelingen.find(function(k2) { return k2.recras_naam === r.menuNaam; });
-        if (!k || !bbqMenuIds[k.menu_id]) return;
-        pax += (r.aantal || 0);
-        var t = r.starttijd ? new Date(r.starttijd).getTime() : new Date(b.deadline).getTime();
-        if (bbqTijd === null || t < bbqTijd) bbqTijd = t;
-      });
-      return { bbqTijd: bbqTijd || new Date(b.deadline).getTime(), pax: pax };
-    }
-    function vereistMin(pax) {
-      if (pax > 200) return { min: 60, voorkeur: 60 };
-      if (pax > 100) return { min: 40, voorkeur: 40 };
-      if (pax > 75)  return { min: 25, voorkeur: 25 };
-      if (pax > 50)  return { min: 20, voorkeur: 20 };
-      if (pax > 30)  return { min: 20, voorkeur: 20 };
-      if (pax > 15)  return { min: 15, voorkeur: 15 };
-      return         { min: 10, voorkeur: 10 };
-    }
-    function uitlegMin(pax) {
-      if (pax > 200) return ">200p = min. 60 min";
-      if (pax > 100) return ">100p = min. 40 min";
-      if (pax > 75)  return ">75p = min. 25 min";
-      if (pax > 50)  return ">50p = min. 20 min";
-      if (pax > 30)  return ">30p = min. 20 min";
-      if (pax > 15)  return ">15p = min. 15 min";
-      return "\u226415p = min. 10 min";
-    }
-    function rond5(ms) {
-      var d = new Date(ms); var m = Math.ceil(d.getMinutes() / 5) * 5;
-      if (m >= 60) { d.setHours(d.getHours() + 1); d.setMinutes(0); } else { d.setMinutes(m); }
-      d.setSeconds(0); d.setMilliseconds(0); return d.getTime();
-    }
-    var onbekend = {}, zoneGroepen = {};
-    boekingen2.forEach(function(b) {
-      var tp = getBbqTijdEnPax(b);
-      if (tp.pax === 0) return;
-      var locConf = locatieMap[b.locatie || ""];
-      if (!locConf) {
-        if (b.locatie) { onbekend[b.locatie] = onbekend[b.locatie] || []; onbekend[b.locatie].push(b.naam); }
-        return;
-      }
-      var dag = new Date(tp.bbqTijd).toISOString().split("T")[0];
-      var key = locConf.zone + "|" + dag;
-      if (!zoneGroepen[key]) zoneGroepen[key] = { zone: locConf.zone, dag: dag, maxSetups: locConf.maxSetups, bk: [] };
-      zoneGroepen[key].bk.push(Object.assign({}, b, {
-        _bbqTijd: tp.bbqTijd, _pax: tp.pax,
-        _canonical: locConf.canonical, _status: (b.status || "").toLowerCase()
-      }));
-    });
-    var gevonden = [];
-    Object.keys(zoneGroepen).forEach(function(key) {
-      var groep = zoneGroepen[key];
-      if (groep.bk.length < 2) return;
-      var sorted = groep.bk.slice().sort(function(a, b) { return a._bbqTijd - b._bbqTijd; });
-      var maxSetups = groep.maxSetups;
-      var geadv = {};
-      sorted.forEach(function(bk) { geadv[bk.id] = bk._bbqTijd; });
-      var conflictenOpDag = [];
-      for (var i = 0; i < sorted.length; i++) {
-        for (var j = i + 1; j < Math.min(sorted.length, i + maxSetups + 2); j++) {
-          var a = sorted[i], b = sorted[j];
-          var tA = geadv[a.id], tB = geadv[b.id];
-          var verschilMin = Math.round((tB - tA) / 6e4);
-          if (verschilMin < 0) continue;
-          var reg = vereistMin(b._pax);
-          if (verschilMin >= reg.min) continue;
-          var maxPax = Math.max(a._pax, b._pax);
-          var tv = (b._pax <= a._pax) ? b : a;
-          var tvPax = tv._pax;
-          var ankertijd = (tv.id === b.id ? a : b)._bbqTijd;
-          var kandidaten = [];
-          [-180,-150,-120,-90,-75,-60,-50,-45,-40,-35,-30,30,35,40,45,50,60,75,90,120,150,180].forEach(function(delta) {
-            var k = ankertijd + delta * 6e4;
-            var kuur = new Date(k).getHours();
-            if (kuur < 11 || kuur > 22) return;
-            var vrij = true;
-            for (var si = 0; si < sorted.length; si++) {
-              if (sorted[si].id === tv.id) continue;
-              var reg2 = vereistMin(Math.max(tvPax, sorted[si]._pax));
-              if (Math.abs(k - sorted[si]._bbqTijd) / 6e4 < reg2.min) { vrij = false; break; }
-            }
-            if (vrij) kandidaten.push(rond5(k));
-          });
-          var orig = tv._bbqTijd;
-          var uniek = [];
-          kandidaten.forEach(function(v) { if (uniek.indexOf(v) < 0) uniek.push(v); });
-          uniek.sort(function(x, y) { return Math.abs(x - orig) - Math.abs(y - orig); });
-          geadv[b.id] = tA + reg.voorkeur * 6e4;
-          conflictenOpDag.push({
-            zone: groep.zone, dag: groep.dag, a: a, b: b,
-            verschilMin: verschilMin, vereistMin: reg.min, voorkeur: reg.voorkeur, maxPax: maxPax,
-            uitleg: uitlegMin(b._pax) + " (voor " + b._pax + "p)",
-            nieuweDeadline: new Date(geadv[b.id]).toISOString(),
-            type: maxPax > 200 ? "200+ personen" : "Te weinig tijd",
-            teVerplaatsen: tv, vrijeSlots: uniek.slice(0, 3)
-          });
-        }
-      }
-      if (conflictenOpDag.length > 0) {
-        var geadvFin = {};
-        sorted.forEach(function(bk) { geadvFin[bk.id] = bk._bbqTijd; });
-        for (var pi = 0; pi < sorted.length; pi++) {
-          for (var pj = pi + 1; pj < Math.min(sorted.length, pi + maxSetups + 2); pj++) {
-            var pa = sorted[pi], pb = sorted[pj];
-            var ptA = geadvFin[pa.id], ptB = geadvFin[pb.id];
-            var pVerschil = Math.round((ptB - ptA) / 6e4);
-            if (pVerschil < 0) continue;
-            var pReg = vereistMin(pb._pax);
-            if (pVerschil < pReg.min) geadvFin[pb.id] = ptA + pReg.voorkeur * 6e4;
-          }
-        }
-        var dagPlanning = sorted.map(function(bk) {
-          var nieuwT = geadvFin[bk.id] !== bk._bbqTijd ? geadvFin[bk.id] : null;
-          return { naam: bk.naam, pax: bk._pax, locatie: bk._canonical,
-            status: bk._status, id: bk.id, origTijd: bk._bbqTijd, nieuweTijd: nieuwT,
-            sortTijd: nieuwT || bk._bbqTijd };
-        }).sort(function(x, y) { return x.sortTijd - y.sortTijd; });
-        conflictenOpDag.forEach(function(c) { c.dagPlanning = dagPlanning; });
-        gevonden = gevonden.concat(conflictenOpDag);
-      }
-    });
-    if (Object.keys(onbekend).length > 0) gevonden.unshift({ type: "onbekende_locatie", onbekend: onbekend });
-    setBbqConflicten(gevonden);
-  }
-
   function stuurBBQConflictEmail(conflicten, label) {
     if (!conflicten || conflicten.length === 0) { alert("Geen conflicten om te versturen."); return; }
     if (!window._supa) { alert("Niet ingelogd."); return; }
-    var dagN = ["zo","ma","di","wo","do","vr","za"];
-    var maandN = ["jan","feb","mrt","apr","mei","jun","jul","aug","sep","okt","nov","dec"];
-    function fmtMs(ms) { var d = new Date(ms); return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"); }
-    function fmtDag(dag) { var d = new Date(dag+"T12:00:00"); return dagN[d.getDay()]+" "+d.getDate()+" "+maandN[d.getMonth()]+" "+d.getFullYear(); }
-    var zL = { weesp:"Weesp", voorterrein:"AW Voorterrein", middenterrein:"AW Middenterrein", achterterrein:"AW Achterterrein" };
-    var N="#002D41",AQ="#1AA6B7",RD="#FE424D",GR="#27AE60",MU="#7A8FA6",OR="#FF9800";
-    function bdg(s) {
-      var isO=(s||"").includes("optie");
-      return '<span style="background:'+(isO?OR:AQ)+';color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:700;margin-right:4px">'+(isO?"OPTIE":"DEF")+"</span>";
-    }
+    var header = document.getElementById("bbq-conflict-header");
+    if (!header) { alert("Conflict-sectie niet zichtbaar — upload eerst een bestand."); return; }
+    // parentElement bevat de volledige conflict sectie (header + alle kaarten)
+    var sectieHtml = header.parentElement.innerHTML;
     var aantalC = conflicten.filter(function(c){return c.type!=="onbekende_locatie";}).length;
-    var h = '<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;background:#F4F7FA;padding:20px;color:'+N+'">'
-      +'<div style="max-width:680px;margin:0 auto">'
-      +'<div style="background:'+N+';color:#fff;padding:16px 20px;border-radius:8px 8px 0 0">'
-      +'<div style="font-size:20px;font-weight:800">&#128293; BBQ Conflicten</div>'
-      +'<div style="font-size:12px;color:'+AQ+'">KitchenRobot &mdash; '+(label||"Importoverzicht")+'</div></div>'
-      +'<div style="background:#fff;border-radius:0 0 8px 8px;padding:16px">';
-    var onbek = conflicten.find(function(c){return c.type==="onbekende_locatie";});
-    if (onbek) {
-      h += '<div style="background:#FFF3E0;border:1px solid '+OR+';padding:12px;margin-bottom:12px;border-radius:6px">'
-        +'<div style="font-weight:700;font-size:13px;color:#E65100;margin-bottom:6px">&#9888; Locatie onbekend &mdash; niet gecheckt</div>';
-      Object.keys(onbek.onbekend).forEach(function(loc){ h += '<div style="font-size:11px;color:'+MU+'">&bull; <strong>'+loc+'</strong> &mdash; '+onbek.onbekend[loc].slice(0,3).join(", ")+"</div>"; });
-      h += "</div>";
-    }
-    var hDag=null, hZone=null;
-    conflicten.filter(function(c){return c.type!=="onbekende_locatie";}).forEach(function(c) {
-      if (c.dag!==hDag || c.zone!==hZone) {
-        hDag=c.dag; hZone=c.zone;
-        h += '<div style="margin:16px 0 8px"><span style="background:'+N+';color:#fff;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:900">'+fmtDag(c.dag)+'</span> '
-          +'<span style="background:#E1F5EE;color:'+AQ+';border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700">'+(zL[c.zone]||c.zone)+'</span></div>';
-        if (c.dagPlanning) {
-          h += '<div style="background:#F0F7FF;border:1px solid #B3D4F5;border-radius:6px;padding:12px;margin-bottom:12px">'
-            +'<div style="font-size:11px;font-weight:700;color:#1565C0;margin-bottom:8px">&#128197; Geoptimaliseerde dagplanning &mdash; zo min mogelijk verschuiven</div>';
-          c.dagPlanning.forEach(function(bk) {
-            var gew=bk.nieuweTijd!==null;
-            h += '<div style="display:flex;align-items:center;gap:8px;padding:5px 8px;margin-bottom:3px;border-radius:5px;background:'+(gew?"#FFF8E1":"#fff")+';border:1px solid '+(gew?"#FFD54F":"#E8E8E8")+'">'
-              +'<span style="min-width:38px;font-weight:900;font-size:13px;color:'+(gew?RD:N)+'">'+fmtMs(bk.nieuweTijd||bk.origTijd)+'</span>'
-              +(gew?'<span style="font-size:10px;color:'+MU+';text-decoration:line-through;margin-right:4px">'+fmtMs(bk.origTijd)+'</span>':"")
-              +bdg(bk.status)
-              +'<span style="font-size:12px;font-weight:700">'+bk.naam+'</span>'
-              +'<span style="font-size:11px;color:'+MU+';margin-left:auto">'+bk.pax+'p &bull; '+bk.locatie+'</span></div>';
-          });
-          h += "</div>";
-        }
-      }
-      var idA=String(c.a.id).split("-")[0], idB=String(c.b.id).split("-")[0];
-      var tv=c.teVerplaatsen||c.b;
-      h += '<div style="background:#FFEBEE;border:1px solid '+RD+';border-radius:8px;padding:14px;margin-bottom:10px">'
-        +'<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:10px;align-items:center">'
-        +'<span style="background:'+RD+';color:#fff;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700">'+c.type+'</span>'
-        +'<span style="font-size:11px;color:'+RD+';font-weight:700">'+c.verschilMin+' min &mdash; min. '+c.vereistMin+' min vereist</span>'
-        +'<span style="font-size:10px;color:'+MU+';background:#fff;border-radius:4px;padding:2px 6px;border:1px solid #EECDD0">'+(c.uitleg||"")+'</span></div>'
-        +'<table style="width:100%;border-collapse:separate;border-spacing:5px;margin-bottom:10px"><tr>'
-        +'<td style="width:50%;vertical-align:top;background:#fff;border-radius:6px;padding:10px">'
-        +'<div style="font-size:11px;color:'+MU+';margin-bottom:4px">Boeking 1</div>'
-        +'<div style="font-weight:700;font-size:13px;margin-bottom:2px">'+bdg(c.a._status)
-        +'<a href="https://upevents.recras.nl/boekingen/'+idA+'" style="color:'+N+';text-decoration:none">#'+idA+" "+c.a.naam+'</a></div>'
-        +'<div style="font-size:11px;color:'+MU+'">'+fmtMs(c.a._bbqTijd)+' &bull; '+c.a._pax+'p &bull; '+c.a._canonical+'</div></td>'
-        +'<td style="width:50%;vertical-align:top;background:#fff;border-radius:6px;padding:10px">'
-        +'<div style="font-size:11px;color:'+MU+';margin-bottom:4px">Boeking 2</div>'
-        +'<div style="font-weight:700;font-size:13px;margin-bottom:2px">'+bdg(c.b._status)
-        +'<a href="https://upevents.recras.nl/boekingen/'+idB+'" style="color:'+N+';text-decoration:none">#'+idB+" "+c.b.naam+'</a></div>'
-        +'<div style="font-size:11px;color:'+MU+'">'+fmtMs(c.b._bbqTijd)+' &bull; '+c.b._pax+'p &bull; '+c.b._canonical+'</div></td></tr></table>'
-        +'<div style="background:#E8F5E9;border-radius:6px;padding:10px;border:1px solid #A5D6A7">'
-        +'<div style="font-size:11px;font-weight:700;color:'+GR+';margin-bottom:6px">Verplaats: '+bdg(tv._status)+tv.naam+' ('+tv._pax+'p)</div>';
-      if (c.vrijeSlots && c.vrijeSlots.length>0) {
-        h += '<div style="font-size:11px;color:'+N+';margin-bottom:4px">Vrije momenten:</div><div>';
-        c.vrijeSlots.forEach(function(slot){ h += '<span style="display:inline-block;background:#fff;border:2px solid '+GR+';border-radius:6px;padding:4px 12px;font-size:13px;font-weight:900;color:'+GR+';margin-right:6px">'+fmtMs(slot)+'</span>'; });
-        h += "</div>";
-      } else {
-        h += '<div style="font-size:11px;color:#E65100">&#9888; Geen vrije momenten &mdash; handmatig afstemmen</div>';
-      }
-      h += "</div></div>";
-    });
-    h += "</div></div></body></html>";
     var onderwerp = "KitchenRobot \u2014 \uD83D\uDD25 "+aantalC+" BBQ conflict"+(aantalC!==1?"en":"")+(label?" ("+label+")":"");
+    var emailHtml = '<!DOCTYPE html><html><head><meta charset="utf-8">'
+      + '<style>body{font-family:Arial,sans-serif;background:#F4F7FA;padding:20px;margin:0;color:#002D41}'
+      + '*{box-sizing:border-box}a{color:#002D41}'
+      + '</style></head><body>'
+      + '<div style="max-width:720px;margin:0 auto">'
+      + '<div style="background:#002D41;color:#fff;padding:16px 20px;border-radius:8px 8px 0 0">'
+      + '<div style="font-size:20px;font-weight:800">&#128293; BBQ Conflicten</div>'
+      + '<div style="font-size:12px;color:#1AA6B7;margin-top:2px">KitchenRobot &#8212; '+(label||"Importoverzicht")+'</div>'
+      + '</div>'
+      + '<div style="background:#fff;padding:16px;border-radius:0 0 8px 8px;border:1px solid #D8E8EF;border-top:none">'
+      + sectieHtml
+      + '</div></div></body></html>';
     window._supa.auth.getSession().then(function(sessRes) {
       var token = sessRes.data&&sessRes.data.session ? sessRes.data.session.access_token : "";
       fetch("https://aezatnwsrhlwtykpixsq.supabase.co/functions/v1/stuur-opzetmail", {
         method: "POST", headers: {"Content-Type":"application/json","Authorization":"Bearer "+token},
         body: JSON.stringify({actie:"verstuur", dag:new Date().toISOString().split("T")[0],
-          hash:"bbq-"+Date.now(), html:h, onderwerp:onderwerp})
+          hash:"bbq-"+Date.now(), html:emailHtml, onderwerp:onderwerp})
       }).then(function(r){return r.json();})
-      .then(function(d){ alert(d.succes ? "\u2713 BBQ conflicten verstuurd!" : "Fout: "+(d.fout||"Onbekend")); })
+      .then(function(d){ alert(d.succes ? "\u2713 BBQ conflicten verstuurd per mail!" : "Fout: "+(d.fout||"Onbekend")); })
       .catch(function(e){ alert("Fout: "+e.message); });
     });
   }
-
   function checkEnStuurEmail(boekingen2) {
     if (!boekingen2 || boekingen2.length === 0 || !window._supa) return;
     var morgen = /* @__PURE__ */ new Date();
@@ -1704,7 +1490,7 @@ function HomeScreen({ setSc }) {
     display: "flex",
     alignItems: "center",
     gap: 8
-  } }, emailStatus === "verstuurd" ? "✓ Opzetoverzicht morgen verstuurd naar stefan@upevents.nl" : emailStatus === "al_verstuurd" ? "✓ Opzetoverzicht al eerder vandaag verstuurd" : emailStatus === "geen_key" ? "\u26A0 Voeg RESEND_API_KEY toe in Supabase secrets om emails te versturen" : "\u26A0 Email versturen mislukt — controleer Supabase secrets"), bbqConflicten !== null && bbqConflicten.length > 0 && /* @__PURE__ */ React.createElement("div", { style: {
+  } }, emailStatus === "verstuurd" ? "✓ Opzetoverzicht morgen verstuurd naar stefan@upevents.nl" : emailStatus === "al_verstuurd" ? "✓ Opzetoverzicht al eerder vandaag verstuurd" : emailStatus === "geen_key" ? "\u26A0 Voeg RESEND_API_KEY toe in Supabase secrets om emails te versturen" : "\u26A0 Email versturen mislukt — controleer Supabase secrets"), bbqConflicten !== null && bbqConflicten.length > 0 && /* @__PURE__ */ React.createElement("div", { id: "bbq-conflict-header", style: {
     marginBottom: 12,
     padding: "10px 14px",
     borderRadius: 8,
@@ -1725,7 +1511,7 @@ function HomeScreen({ setSc }) {
       }
     },
     "Bekijk analyse"
-  )), /* @__PURE__ */ React.createElement("button", { style: { ...btnP, fontSize: 11, padding: "5px 12px", marginLeft: 6 }, onClick: function() { stuurBBQConflictEmail(bbqConflicten, importLabel); } }, "📧 Stuur per mail"), bbqConflicten !== null && bbqConflicten.length === 0 && /* @__PURE__ */ React.createElement("div", { style: {
+  )), /* @__PURE__ */ React.createElement("button", { style: { ...btnP, fontSize: 11, padding: "5px 12px", marginLeft: 6 }, onClick: function() { stuurBBQConflictEmail(bbqConflicten, importLabel); } }, "📧 Stuur per mail"), /* @__PURE__ */ React.createElement("button", { style: { ...btnP, fontSize: 11, padding: "5px 12px", marginLeft: 6 }, onClick: function() { stuurBBQConflictEmail(bbqConflicten, importLabel); } }, "📧 Stuur per mail"), bbqConflicten !== null && bbqConflicten.length === 0 && /* @__PURE__ */ React.createElement("div", { style: {
     marginBottom: 12,
     padding: "8px 14px",
     borderRadius: 8,
