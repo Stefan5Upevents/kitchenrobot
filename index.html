@@ -1712,18 +1712,7 @@ function HomeScreen({ setSc }) {
     ].map(function(s) {
       return /* @__PURE__ */ React.createElement("div", { key: s.label, style: { background: "#fff", borderRadius: 10, padding: "14px 18px", border: "1px solid #E8EEF3", boxShadow: "0 1px 3px rgba(0,45,65,.04)" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 } }, s.label), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 28, fontWeight: 900, color: s.kleur, lineHeight: 1 } }, s.waarde), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.muted, marginTop: 4 } }, s.sub));
     }));
-  })(), emailStatus && emailStatus !== "checking" && /* @__PURE__ */ React.createElement("div", { style: {
-    marginBottom: 12,
-    padding: "8px 14px",
-    borderRadius: 8,
-    fontSize: 12,
-    fontWeight: 700,
-    background: emailStatus === "verstuurd" ? "#E8F5E9" : emailStatus === "al_verstuurd" ? "#E3F2FD" : emailStatus === "geen_key" ? "#FFF3E0" : "#FFEBEE",
-    color: emailStatus === "verstuurd" ? C.green : emailStatus === "al_verstuurd" ? "#1565C0" : emailStatus === "geen_key" ? "#E65100" : C.hot,
-    display: "flex",
-    alignItems: "center",
-    gap: 8
-  } }, emailStatus === "verstuurd" ? "✓ Opzetoverzicht morgen verstuurd naar stefan@upevents.nl" : emailStatus === "al_verstuurd" ? "✓ Opzetoverzicht al eerder vandaag verstuurd" : emailStatus === "geen_key" ? "\u26A0 Voeg RESEND_API_KEY toe in Supabase secrets om emails te versturen" : "\u26A0 Email versturen mislukt — controleer Supabase secrets"), bbqConflicten !== null && bbqConflicten.length > 0 && /* @__PURE__ */ React.createElement("div", { style: {
+  })(),  bbqConflicten !== null && bbqConflicten.length > 0 && /* @__PURE__ */ React.createElement("div", { style: {
     marginBottom: 12,
     padding: "10px 14px",
     borderRadius: 8,
@@ -1755,60 +1744,7 @@ function HomeScreen({ setSc }) {
     display: "flex",
     alignItems: "center",
     gap: 8
-  } }, "✓ Geen BBQ planningsconflicten gevonden"), React.createElement("div",{style:{display:"flex",gap:8,marginBottom:8,alignItems:"center"}},
-          React.createElement("button",{
-            style:{background:takenConflicten&&takenConflicten.length>0?"#FE424D":"#fff",color:takenConflicten&&takenConflicten.length>0?"#fff":"#002D41",border:"1.5px solid "+(takenConflicten&&takenConflicten.length>0?"#FE424D":"#D8E8EF"),borderRadius:7,padding:"5px 12px",fontFamily:"inherit",fontWeight:700,fontSize:11,cursor:"pointer"},
-            onClick:function(){
-              var bbqMap={};
-              (window._recrasBoekingen||[]).forEach(function(b){
-                if(!b||!b.deadline)return;
-                var datum=b.deadline.replace("T"," ").split(" ")[0];
-                (b.regels||[]).forEach(function(r){
-                  var mn=(r.menuNaam||"").toLowerCase();
-                  if(!mn.includes("bbq")||mn.includes("add up"))return;
-                  var t=r.starttijdTijd||b.deadlineTijd||"";
-                  if(!t)return;
-                  var key=datum+"|"+t;
-                  if(!bbqMap[key])bbqMap[key]=[];
-                  if(!bbqMap[key].find(function(x){return x.id===b.id;}))
-                    bbqMap[key].push({id:b.id,naam:b.naam||b.id,locatie:b.locatie||""});
-                });
-              });
-              var gevonden=[];
-              Object.keys(bbqMap).sort().forEach(function(key){
-                var bks=bbqMap[key];
-                if(bks.length<2)return;
-                var p=key.split("|");
-                gevonden.push({datum:p[0],tijd:p[1],ernst:"hoog",
-                  omschrijving:bks.length+" BBQ boekingen op "+p[0]+" om "+p[1],
-                  boekingen:bks});
-              });
-              setTakenConflicten(gevonden);
-            }
-          },"🔍 Controleer BBQ conflicten"),
-          takenConflicten!==null&&React.createElement("div",{style:{marginTop:8}},
-            React.createElement("span",{style:{fontSize:12,color:takenConflicten.length>0?"#FE424D":"#10B981",fontWeight:700}},
-              takenConflicten.length>0?"🚫 "+takenConflicten.length+" BBQ conflict(en) gevonden":"✅ Geen BBQ conflicten"
-            ),
-            takenConflicten.length>0&&React.createElement("div",{style:{marginTop:8}},
-              takenConflicten.map(function(c,ci){
-                return React.createElement("div",{key:ci,style:{background:"#FFEBEE",border:"1.5px solid #FE424D",borderRadius:8,padding:"10px 14px",marginTop:6,fontSize:12}},
-                  React.createElement("div",{style:{fontWeight:700,color:"#FE424D",marginBottom:4}},
-                    c.datum+" om "+c.tijd+" — "+c.zone.replace("amsterdam_west__","AW ").replace("weesp__","Weesp ").replace("__"," / ")
-                  ),
-                  React.createElement("div",{style:{color:"#333",marginBottom:4}},c.omschrijving),
-                  React.createElement("div",{style:{display:"flex",flexWrap:"wrap",gap:4}},
-                    (c.boekingen||[]).map(function(b,bi){
-                      return React.createElement("span",{key:bi,style:{background:"#002D41",color:"#fff",borderRadius:5,padding:"2px 8px",fontSize:11}},
-                        "#"+b.id+" "+b.naam+" ("+b.locatie+")"
-                      );
-                    })
-                  )
-                );
-              })
-            )
-          )
-        ), ovenTips.length>0&&React.createElement("div",{style:{marginBottom:12,padding:"10px 14px",borderRadius:8,fontSize:12,background:"#FFF8E1",border:"1px solid #FFD54F",display:"flex",gap:8}},React.createElement("span",{style:{color:"#B8860B",fontWeight:700}},"Tip: ",ovenTips.length," oven-boeking"+(ovenTips.length>1?"en":"")+" met 50+ personen op hetzelfde tijdstip — check ovenruimte. (",ovenTips.map(function(t){return t.a.naam+" & "+t.b.naam+" ("+t.diffMin+" min)";}).join(", "),")")), frituurTips.length>0&&React.createElement("div",{style:{marginBottom:12,padding:"10px 14px",borderRadius:8,fontSize:12,background:"#FFF3E0",border:"1px solid #FFB74D",display:"flex",gap:8}},React.createElement("span",{style:{color:"#E65100",fontWeight:700}},"Tip: ",frituurTips.length," frituur-boeking"+(frituurTips.length>1?"en":"")+" met 50+ personen tegelijk — overweeg extra frituurcapaciteit. (",frituurTips.map(function(t){return t.a.naam+" & "+t.b.naam+" ("+t.diffMin+" min)";}).join(", "),")")), geladen.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 14, background: "#fff", borderRadius: 10, padding: 16, boxShadow: "0 1px 4px rgba(0,45,65,.07)", border: "1px solid #E8EEF3" } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 900, fontSize: 14, color: C.night, marginBottom: 12, display: "flex", alignItems: "center", gap: 8 } }, "📱 Dagpakket voor kiosks", dagpakketStatus === "actief" && /* @__PURE__ */ React.createElement("span", { style: { background: "#E8F5E9", color: C.green, borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 700 } }, "\u25CF Actief — keuken werkt ermee"), dagpakketStatus === "gepubliceerd" && /* @__PURE__ */ React.createElement("span", { style: { background: "#E3F2FD", color: "#1565C0", borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 700 } }, "\u25CF Gepubliceerd"), dagpakketStatus === "afgesloten" && /* @__PURE__ */ React.createElement("span", { style: { background: "#F3E5F5", color: "#6A1B9A", borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 700 } }, "Afgesloten")), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 } }, ["west", "weesp"].map(function(code_) {
+  } }, "✓ Geen BBQ planningsconflicten gevonden"),  ovenTips.length>0&&React.createElement("div",{style:{marginBottom:12,padding:"10px 14px",borderRadius:8,fontSize:12,background:"#FFF8E1",border:"1px solid #FFD54F",display:"flex",gap:8}},React.createElement("span",{style:{color:"#B8860B",fontWeight:700}},"Tip: ",ovenTips.length," oven-boeking"+(ovenTips.length>1?"en":"")+" met 50+ personen op hetzelfde tijdstip — check ovenruimte. (",ovenTips.map(function(t){return t.a.naam+" & "+t.b.naam+" ("+t.diffMin+" min)";}).join(", "),")")), frituurTips.length>0&&React.createElement("div",{style:{marginBottom:12,padding:"10px 14px",borderRadius:8,fontSize:12,background:"#FFF3E0",border:"1px solid #FFB74D",display:"flex",gap:8}},React.createElement("span",{style:{color:"#E65100",fontWeight:700}},"Tip: ",frituurTips.length," frituur-boeking"+(frituurTips.length>1?"en":"")+" met 50+ personen tegelijk — overweeg extra frituurcapaciteit. (",frituurTips.map(function(t){return t.a.naam+" & "+t.b.naam+" ("+t.diffMin+" min)";}).join(", "),")")), geladen.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 14, background: "#fff", borderRadius: 10, padding: 16, boxShadow: "0 1px 4px rgba(0,45,65,.07)", border: "1px solid #E8EEF3" } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 900, fontSize: 14, color: C.night, marginBottom: 12, display: "flex", alignItems: "center", gap: 8 } }, "📱 Dagpakket voor kiosks", dagpakketStatus === "actief" && /* @__PURE__ */ React.createElement("span", { style: { background: "#E8F5E9", color: C.green, borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 700 } }, "\u25CF Actief — keuken werkt ermee"), dagpakketStatus === "gepubliceerd" && /* @__PURE__ */ React.createElement("span", { style: { background: "#E3F2FD", color: "#1565C0", borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 700 } }, "\u25CF Gepubliceerd"), dagpakketStatus === "afgesloten" && /* @__PURE__ */ React.createElement("span", { style: { background: "#F3E5F5", color: "#6A1B9A", borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 700 } }, "Afgesloten")), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 } }, ["west", "weesp"].map(function(code_) {
     var info = dagpakketStatusInfo[code_] || {};
     var stKleur = { actief: C.green, gepubliceerd: "#1565C0", afgesloten: "#9E9E9E", concept: C.muted }[info.status] || C.muted;
     return /* @__PURE__ */ React.createElement("div", { key: code_, style: { background: "#F7F9FC", borderRadius: 8, padding: "10px 12px", border: "1px solid #E8EEF3" } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 12, color: C.night } }, code_ === "west" ? "🏙 Amsterdam West" : "🏘 Weesp"), info.status ? /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: stKleur, fontWeight: 700, marginTop: 4 } }, info.status === "actief" ? "\u25CF Actief — " + (info.activiteiten_count || 0) + " aftekeningen" : info.status === "gepubliceerd" ? "\u25CF Gepubliceerd" : info.status === "afgesloten" ? "Afgesloten" : info.status) : /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.muted, marginTop: 4 } }, "Nog niet gepubliceerd"));
