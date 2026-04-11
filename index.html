@@ -1384,10 +1384,22 @@ function HomeScreen({ setSc }) {
       return { bbqTijd: bbqTijd || new Date(b.deadline).getTime(), pax: pax };
     }
     function vereistMin(pax) {
-      if (pax >= 200) return { min: 60, voorkeur: 120 };
-      if (pax >= 120) return { min: 60, voorkeur: 60 };
-      if (pax >= 80)  return { min: 25, voorkeur: 45 };
-      return { min: 15, voorkeur: 20 };
+      if (pax > 200)  return { min: 70, voorkeur: 100 };
+      if (pax > 100)  return { min: 60, voorkeur: 80  };
+      if (pax > 75)   return { min: 30, voorkeur: 45  };
+      if (pax > 50)   return { min: 25, voorkeur: 35  };
+      if (pax > 30)   return { min: 20, voorkeur: 30  };
+      if (pax > 15)   return { min: 15, voorkeur: 20  };
+      return          { min: 10, voorkeur: 15 };
+    }
+    function uitlegMin(pax) {
+      if (pax > 200)  return ">" + 200 + "p = min. 70 min";
+      if (pax > 100)  return ">" + 100 + "p = min. 60 min";
+      if (pax > 75)   return ">" + 75  + "p = min. 30 min";
+      if (pax > 50)   return ">" + 50  + "p = min. 25 min";
+      if (pax > 30)   return ">" + 30  + "p = min. 20 min";
+      if (pax > 15)   return ">" + 15  + "p = min. 15 min";
+      return "\u226415p = min. 10 min";
     }
     function rond5(ms) {
       var d = new Date(ms);
@@ -1454,38 +1466,34 @@ function HomeScreen({ setSc }) {
           conflictenOpDag.push({
             zone: groep.zone, dag: groep.dag, a: a, b: b,
             verschilMin: verschilMin, vereistMin: reg.min, voorkeur: reg.voorkeur, maxPax: maxPax,
+            uitleg: uitlegMin(maxPax),
             nieuweDeadline: new Date(geadv[b.id]).toISOString(),
-            type: maxPax >= 200 ? "200+ personen" : "Te weinig tijd",
+            type: maxPax > 200 ? "200+ personen" : "Te weinig tijd",
             teVerplaatsen: tv, vrijeSlots: uniek.slice(0, 3)
           });
         }
       }
       if (conflictenOpDag.length > 0) {
-        // Bereken dagPlanning: geoptimaliseerde volgorde van alle BBQs die dag
-        var geadvFinal = {};
-        sorted.forEach(function(bk) { geadvFinal[bk.id] = bk._bbqTijd; });
-        // Pas geadviseerde tijden toe op basis van volgorde
+        // Bereken geoptimaliseerde dagplanning: pas geadv toe en sorteer chronologisch
+        var geadvFin = {};
+        sorted.forEach(function(bk) { geadvFin[bk.id] = bk._bbqTijd; });
         for (var pi = 0; pi < sorted.length; pi++) {
           for (var pj = pi + 1; pj < Math.min(sorted.length, pi + maxSetups + 2); pj++) {
             var pa = sorted[pi], pb = sorted[pj];
-            var ptA = geadvFinal[pa.id], ptB = geadvFinal[pb.id];
+            var ptA = geadvFin[pa.id], ptB = geadvFin[pb.id];
             var pVerschil = Math.round((ptB - ptA) / 6e4);
             if (pVerschil < 0) continue;
-            var pMaxPax = Math.max(pa._pax, pb._pax);
-            var pReg = vereistMin(pMaxPax);
-            if (pVerschil < pReg.min) {
-              geadvFinal[pb.id] = ptA + pReg.voorkeur * 6e4;
-            }
+            var pReg = vereistMin(Math.max(pa._pax, pb._pax));
+            if (pVerschil < pReg.min) geadvFin[pb.id] = ptA + pReg.voorkeur * 6e4;
           }
         }
+        // Sorteer dagplanning op nieuwe (geoptimaliseerde) tijd, chronologisch
         var dagPlanning = sorted.map(function(bk) {
-          return {
-            naam: bk.naam, pax: bk._pax, locatie: bk._canonical,
-            status: bk._status, id: bk.id,
-            origTijd: bk._bbqTijd,
-            nieuweTijd: geadvFinal[bk.id] !== bk._bbqTijd ? geadvFinal[bk.id] : null
-          };
-        });
+          var nieuwT = geadvFin[bk.id] !== bk._bbqTijd ? geadvFin[bk.id] : null;
+          return { naam: bk.naam, pax: bk._pax, locatie: bk._canonical,
+            status: bk._status, id: bk.id, origTijd: bk._bbqTijd, nieuweTijd: nieuwT,
+            sortTijd: nieuwT || bk._bbqTijd };
+        }).sort(function(a, b) { return a.sortTijd - b.sortTijd; });
         conflictenOpDag.forEach(function(c) { c.dagPlanning = dagPlanning; });
         gevonden = gevonden.concat(conflictenOpDag);
       }
@@ -1751,29 +1759,29 @@ function HomeScreen({ setSc }) {
       function fmtDag(dag) { var d = new Date(dag+"T12:00:00"); return dagN[d.getDay()]+" "+d.getDate()+" "+maandN[d.getMonth()]+" "+d.getFullYear(); }
       function sBadge(s) {
         var isO = (s||"").includes("optie");
-        return /* @__PURE__ */ React.createElement("span", { style: { background: isO?"#FF9800":C.aqua, color:"#fff", borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700, marginRight:6, flexShrink:0 } }, isO?"OPTIE":"DEF");
+        return /* @__PURE__ */ React.createElement("span", { style: { background: isO?"#FF9800":C.aqua, color:"#fff", borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700, marginRight:4, flexShrink:0 } }, isO?"OPTIE":"DEF");
       }
       var recrasBase = "https://upevents.recras.nl/boekingen/";
       var idA = String(c.a.id).split("-")[0], idB = String(c.b.id).split("-")[0];
       var tv = c.teVerplaatsen || c.b;
-      // Dag-scheidslijn: toon alleen als vorige conflict een andere dag was
-      var vorigeConflict = bbqConflicten[i - 1];
-      var toonDagHeader = !vorigeConflict || vorigeConflict.type === "onbekende_locatie" || vorigeConflict.dag !== c.dag || vorigeConflict.zone !== c.zone;
+      var vorigeC = bbqConflicten[i - 1];
+      var toonDagHeader = !vorigeC || vorigeC.type === "onbekende_locatie" || vorigeC.dag !== c.dag || vorigeC.zone !== c.zone;
       return /* @__PURE__ */ React.createElement(React.Fragment, { key: i },
         toonDagHeader && /* @__PURE__ */ React.createElement("div", { style: { display:"flex", alignItems:"center", gap:10, margin:"16px 0 8px" } },
           /* @__PURE__ */ React.createElement("div", { style: { background:C.night, color:"#fff", borderRadius:6, padding:"4px 12px", fontSize:12, fontWeight:900 } }, fmtDag(c.dag)),
-          /* @__PURE__ */ React.createElement("div", { style: { background:"rgba(26,166,183,.12)", color:C.aqua, borderRadius:6, padding:"4px 10px", fontSize:11, fontWeight:700 } }, zoneLabels[c.zone]||c.zone),
+          /* @__PURE__ */ React.createElement("div", { style: { background:"rgba(26,166,183,.15)", color:C.aqua, borderRadius:6, padding:"4px 10px", fontSize:11, fontWeight:700 } }, zoneLabels[c.zone]||c.zone),
           /* @__PURE__ */ React.createElement("div", { style: { flex:1, height:1, background:"#D8E8EF" } })
         ),
         /* @__PURE__ */ React.createElement("div", { style: { background:"#FFEBEE", border:"1px solid "+C.hot, borderRadius:8, padding:14, marginBottom:10 } },
           /* @__PURE__ */ React.createElement("div", { style: { display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 } },
             /* @__PURE__ */ React.createElement("span", { style: { background:C.hot, color:"#fff", borderRadius:4, padding:"2px 8px", fontSize:11, fontWeight:700 } }, c.type),
-            /* @__PURE__ */ React.createElement("span", { style: { fontSize:11, color:C.hot, fontWeight:700 } }, c.verschilMin, " min \u2014 min. ", c.vereistMin, " min vereist")
+            /* @__PURE__ */ React.createElement("span", { style: { fontSize:11, color:C.hot, fontWeight:700 } }, c.verschilMin, " min \u2014 min. ", c.vereistMin, " min vereist"),
+            c.uitleg && /* @__PURE__ */ React.createElement("span", { style: { fontSize:10, color:C.muted, background:"#fff", borderRadius:4, padding:"2px 6px", border:"1px solid #EECDD0" } }, c.uitleg)
           ),
           /* @__PURE__ */ React.createElement("div", { style: { display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:10 } },
             /* @__PURE__ */ React.createElement("div", { style: { background:"#fff", borderRadius:6, padding:10 } },
               /* @__PURE__ */ React.createElement("div", { style: { fontSize:11, color:C.muted, marginBottom:4 } }, "Boeking 1"),
-              /* @__PURE__ */ React.createElement("div", { style: { fontWeight:700, fontSize:13, marginBottom:2, display:"flex", alignItems:"center", flexWrap:"wrap", gap:4 } },
+              /* @__PURE__ */ React.createElement("div", { style: { fontWeight:700, fontSize:13, marginBottom:2, display:"flex", alignItems:"center", flexWrap:"wrap", gap:3 } },
                 sBadge(c.a._status),
                 /* @__PURE__ */ React.createElement("a", { href:recrasBase+idA, target:"_blank", rel:"noreferrer", style:{color:C.night,textDecoration:"none"} }, "#",idA," ",c.a.naam)
               ),
@@ -1781,7 +1789,7 @@ function HomeScreen({ setSc }) {
             ),
             /* @__PURE__ */ React.createElement("div", { style: { background:"#fff", borderRadius:6, padding:10 } },
               /* @__PURE__ */ React.createElement("div", { style: { fontSize:11, color:C.muted, marginBottom:4 } }, "Boeking 2"),
-              /* @__PURE__ */ React.createElement("div", { style: { fontWeight:700, fontSize:13, marginBottom:2, display:"flex", alignItems:"center", flexWrap:"wrap", gap:4 } },
+              /* @__PURE__ */ React.createElement("div", { style: { fontWeight:700, fontSize:13, marginBottom:2, display:"flex", alignItems:"center", flexWrap:"wrap", gap:3 } },
                 sBadge(c.b._status),
                 /* @__PURE__ */ React.createElement("a", { href:recrasBase+idB, target:"_blank", rel:"noreferrer", style:{color:C.night,textDecoration:"none"} }, "#",idB," ",c.b.naam)
               ),
@@ -1803,20 +1811,24 @@ function HomeScreen({ setSc }) {
                 )
               : /* @__PURE__ */ React.createElement("div", { style: { fontSize:11, color:"#E65100" } }, "\u26A0 Geen vrije momenten \u2014 handmatig afstemmen")
           ),
-          c.dagPlanning && /* @__PURE__ */ React.createElement("div", { style: { background:"#F3F8FF", border:"1px solid #B3D4F5", borderRadius:6, padding:10 } },
+          c.dagPlanning && toonDagHeader && /* @__PURE__ */ React.createElement("div", { style: { background:"#F0F7FF", border:"1px solid #B3D4F5", borderRadius:6, padding:10 } },
             /* @__PURE__ */ React.createElement("div", { style: { fontSize:11, fontWeight:700, color:"#1565C0", marginBottom:8 } }, "\uD83D\uDCC5 Geoptimaliseerde dagplanning \u2014 zo min mogelijk verschuiven"),
             c.dagPlanning.map(function(bk, bi) {
               var gewijzigd = bk.nieuweTijd !== null;
               return /* @__PURE__ */ React.createElement("div", { key:bi, style: {
-                display:"flex", alignItems:"center", gap:8, padding:"5px 8px", marginBottom:4,
-                borderRadius:5, background: gewijzigd ? "#FFF8E1" : "#fff",
-                border: "1px solid " + (gewijzigd ? "#FFD54F" : "#E0E0E0")
+                display:"flex", alignItems:"center", gap:8, padding:"5px 8px", marginBottom:3,
+                borderRadius:5,
+                background: gewijzigd ? "#FFF8E1" : "#fff",
+                border: "1px solid " + (gewijzigd ? "#FFD54F" : "#E8E8E8")
               } },
-                /* @__PURE__ */ React.createElement("div", { style: { minWidth:42, fontWeight:900, fontSize:13, color: gewijzigd ? C.hot : C.night } }, fmtMs(bk.nieuweTijd || bk.origTijd)),
-                gewijzigd && /* @__PURE__ */ React.createElement("div", { style: { fontSize:10, color:C.muted, textDecoration:"line-through", minWidth:34 } }, fmtMs(bk.origTijd)),
+                /* @__PURE__ */ React.createElement("div", { style: { minWidth:38, fontWeight:900, fontSize:13, color: gewijzigd ? C.hot : C.night } }, fmtMs(bk.nieuweTijd || bk.origTijd)),
+                gewijzigd
+                  ? /* @__PURE__ */ React.createElement("div", { style: { fontSize:10, color:C.muted, textDecoration:"line-through", minWidth:32 } }, fmtMs(bk.origTijd))
+                  : /* @__PURE__ */ React.createElement("div", { style: { minWidth:32 } }),
                 sBadge(bk.status),
-                /* @__PURE__ */ React.createElement("div", { style: { flex:1, fontSize:12, fontWeight:700, color:C.night } }, bk.naam),
-                /* @__PURE__ */ React.createElement("div", { style: { fontSize:11, color:C.muted, whiteSpace:"nowrap" } }, bk.pax, "p \u2022 ", bk.locatie)
+                /* @__PURE__ */ React.createElement("div", { style: { flex:1, fontSize:12, fontWeight:700, color:C.night, minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" } }, bk.naam),
+                /* @__PURE__ */ React.createElement("div", { style: { fontSize:11, color:C.muted, whiteSpace:"nowrap" } }, bk.pax, "p"),
+                /* @__PURE__ */ React.createElement("div", { style: { fontSize:10, color:C.muted, whiteSpace:"nowrap", maxWidth:90, overflow:"hidden", textOverflow:"ellipsis" } }, bk.locatie)
               );
             })
           )
