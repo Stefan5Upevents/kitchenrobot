@@ -1527,61 +1527,86 @@ function HomeScreen({ setSc }) {
     if (!conflicten || conflicten.length === 0) { alert("Geen conflicten om te versturen."); return; }
     if (!window._supa) { alert("Niet ingelogd."); return; }
     var header = document.getElementById("bbq-conflict-header");
-    if (!header) { alert("Upload eerst een bestand — conflictmeter is nog leeg."); return; }
+    if (!header) { alert("Upload eerst een bestand."); return; }
 
-    // Pak alle sibling-nodes van de header t/m de conflict-kaarten
-    // Gebruik node-indices zodat we precies de juiste sectie pakken
+    // Pak de conflict-sectie: header + siblings t/m de conflict-kaarten
     var parent = header.parentElement;
     var children = Array.from(parent.children);
     var startIdx = children.indexOf(header);
-    // Zoek einde: eerste child NA header die een grid-layout heeft (= import-uitleg sectie)
     var endIdx = children.length;
     for (var ci = startIdx + 1; ci < children.length; ci++) {
       var st = children[ci].style;
-      if (st && (st.display === "grid" || st.gridTemplateColumns)) {
+      if (st && (st.display === "grid" || (st.gridTemplateColumns && st.gridTemplateColumns.length > 0))) {
         endIdx = ci;
         break;
       }
     }
 
-    // Clone de relevante children in een tijdelijke container
-    var container = document.createElement("div");
+    // Maak tijdelijke wrapper om screenshot van te maken
+    var wrapper = document.createElement("div");
+    wrapper.style.cssText = "position:fixed;top:0;left:0;width:720px;background:#F4F7FA;padding:16px;z-index:-9999;pointer-events:none";
     for (var ci = startIdx; ci < endIdx; ci++) {
-      container.appendChild(children[ci].cloneNode(true));
+      wrapper.appendChild(children[ci].cloneNode(true));
     }
-    // Verwijder knoppen uit de kopie (niet in email)
-    Array.from(container.querySelectorAll("button")).forEach(function(b){ b.remove(); });
+    document.body.appendChild(wrapper);
 
-    var sectieHtml = container.innerHTML;
-    var aantalC = conflicten.filter(function(c){return c.type!=="onbekende_locatie";}).length;
-    var onderwerp = "KitchenRobot \u2014 \uD83D\uDD25 "+aantalC+" BBQ conflict"+(aantalC!==1?"en":"");
-    var emailHtml = "<!DOCTYPE html><html><head><meta charset=\"utf-8\">"
-      + "<style>"
-      + "body{font-family:Arial,sans-serif;background:#F4F7FA;padding:20px;margin:0;color:#002D41}"
-      + "*{box-sizing:border-box}"
-      + "a{color:#002D41;text-decoration:none}"
-      + "</style></head><body>"
-      + "<div style=\"max-width:720px;margin:0 auto\">"
-      + "<div style=\"background:#002D41;color:#fff;padding:16px 20px;border-radius:8px 8px 0 0\">"
-      + "<div style=\"font-size:20px;font-weight:800\">&#128293; BBQ Conflicten</div>"
-      + "<div style=\"font-size:12px;color:#1AA6B7;margin-top:2px\">KitchenRobot &mdash; "
-      + new Date().toLocaleDateString("nl-NL",{weekday:"long",day:"numeric",month:"long"})
-      + "</div></div>"
-      + "<div style=\"background:#fff;padding:16px;border-radius:0 0 8px 8px;border:1px solid #D8E8EF;border-top:none\">"
-      + sectieHtml
-      + "</div></div></body></html>";
+    // Laad html2canvas dynamisch
+    function doScreenshot() {
+      window.html2canvas(wrapper, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#F4F7FA",
+        width: 720,
+        windowWidth: 720
+      }).then(function(canvas) {
+        document.body.removeChild(wrapper);
+        canvas.toBlob(function(blob) {
+          var fileName = "bbq-conflicten-" + Date.now() + ".png";
+          window._supa.storage.from("email-screenshots")
+            .upload(fileName, blob, { contentType: "image/png", upsert: true })
+            .then(function(res) {
+              if (res.error) { alert("Upload fout: " + res.error.message); return; }
+              var imgUrl = "https://aezatnwsrhlwtykpixsq.supabase.co/storage/v1/object/public/email-screenshots/" + fileName;
+              var aantalC = conflicten.filter(function(c){return c.type!=="onbekende_locatie";}).length;
+              var onderwerp = "KitchenRobot \u2014 \uD83D\uDD25 "+aantalC+" BBQ conflict"+(aantalC!==1?"en":"");
+              var emailHtml = "<!DOCTYPE html><html><head><meta charset=\"utf-8\"></head><body style=\"font-family:Arial,sans-serif;background:#F4F7FA;padding:20px;margin:0\">"
+                + "<div style=\"max-width:720px;margin:0 auto\">"
+                + "<div style=\"background:#002D41;color:#fff;padding:16px 20px;border-radius:8px 8px 0 0\">"
+                + "<div style=\"font-size:20px;font-weight:800\">&#128293; BBQ Conflicten</div>"
+                + "<div style=\"font-size:12px;color:#1AA6B7;margin-top:2px\">KitchenRobot &mdash; "
+                + new Date().toLocaleDateString("nl-NL",{weekday:"long",day:"numeric",month:"long"})
+                + "</div></div>"
+                + "<div style=\"background:#fff;padding:16px;border-radius:0 0 8px 8px;border:1px solid #D8E8EF;border-top:none\">"
+                + "<img src=\"" + imgUrl + "\" style=\"width:100%;max-width:688px;display:block;border-radius:4px\" alt=\"BBQ Conflicten\">"
+                + "</div></div></body></html>";
+              window._supa.auth.getSession().then(function(sessRes) {
+                var token = sessRes.data&&sessRes.data.session ? sessRes.data.session.access_token : "";
+                fetch("https://aezatnwsrhlwtykpixsq.supabase.co/functions/v1/stuur-opzetmail", {
+                  method: "POST",
+                  headers: {"Content-Type":"application/json","Authorization":"Bearer "+token},
+                  body: JSON.stringify({actie:"verstuur", dag:new Date().toISOString().split("T")[0],
+                    hash:"bbq-"+Date.now(), html:emailHtml, onderwerp:onderwerp})
+                }).then(function(r){return r.json();})
+                .then(function(d){ alert(d.succes ? "\u2713 Screenshot verstuurd naar stefan@upevents.nl!" : "Fout: "+(d.fout||"Onbekend")); })
+                .catch(function(e){ alert("Fout: "+e.message); });
+              });
+            });
+        }, "image/png");
+      }).catch(function(e){
+        document.body.removeChild(wrapper);
+        alert("Screenshot mislukt: "+e.message);
+      });
+    }
 
-    window._supa.auth.getSession().then(function(sessRes) {
-      var token = sessRes.data&&sessRes.data.session ? sessRes.data.session.access_token : "";
-      fetch("https://aezatnwsrhlwtykpixsq.supabase.co/functions/v1/stuur-opzetmail", {
-        method: "POST",
-        headers: {"Content-Type":"application/json","Authorization":"Bearer "+token},
-        body: JSON.stringify({actie:"verstuur", dag:new Date().toISOString().split("T")[0],
-          hash:"bbq-"+Date.now(), html:emailHtml, onderwerp:onderwerp})
-      }).then(function(r){return r.json();})
-      .then(function(d){ alert(d.succes ? "\u2713 Conflicten verstuurd naar stefan@upevents.nl!" : "Fout: "+(d.fout||"Onbekend")); })
-      .catch(function(e){ alert("Fout: "+e.message); });
-    });
+    if (window.html2canvas) {
+      doScreenshot();
+    } else {
+      var s = document.createElement("script");
+      s.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
+      s.onload = doScreenshot;
+      s.onerror = function() { alert("Kon html2canvas niet laden."); document.body.removeChild(wrapper); };
+      document.head.appendChild(s);
+    }
   }
 
   function checkEnStuurEmail(boekingen2) {
