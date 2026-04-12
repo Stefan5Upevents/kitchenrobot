@@ -1460,7 +1460,9 @@ function HomeScreen({ setSc }) {
             var vrij = true;
             for (var si = 0; si < sorted.length; si++) {
               if (sorted[si].id === tv.id) continue;
-              var reg2 = vereistMin(Math.max(tvPax, sorted[si]._pax));
+              // Richting bepaalt wie de 2de is: de 2de boeking heeft de minimumtijd nodig
+              var tweedePax = k < sorted[si]._bbqTijd ? sorted[si]._pax : tvPax;
+              var reg2 = vereistMin(tweedePax);
               if (Math.abs(k - sorted[si]._bbqTijd) / 6e4 < reg2.min) { vrij = false; break; }
             }
             if (vrij) kandidaten.push(rond5(k));
@@ -11149,7 +11151,7 @@ window._toonBbqPopup = function(conflicten, emailFn) {
       // Type + tijdsverschil
       html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
       html += '<span style="background:'+C.hot+';color:#fff;border-radius:4px;padding:2px 7px;font-size:11px;font-weight:700">'+c.type+'</span>';
-      html += '<span style="font-size:11px;color:'+C.hot+';font-weight:700">'+c.verschilMin+' min — min. '+c.vereistMin+' min vereist</span>';
+      html += '<span style="font-size:11px;color:'+C.hot+';font-weight:700">'+c.verschilMin+' min huidig — 2de boeking ('+c.b._pax+'p) heeft min. '+c.vereistMin+' min nodig</span>';
       html += '</div>';
       // Twee boekingen
       html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">';
