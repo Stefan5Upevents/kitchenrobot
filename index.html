@@ -11032,102 +11032,154 @@ function AppWrapper(){
 }
 ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(AppErrorBoundary,null,React.createElement(AppWrapper)));
 
-// ──── BBQ ANALYSE POPUP (vanilla DOM, buiten React) ────────────────────────
+// ──── BBQ ANALYSE POPUP (vanilla DOM) ────────────────────────────────────────
 window._toonBbqPopup = function(conflicten, emailFn) {
   var old = document.getElementById('bbq-popup-overlay');
   if (old) old.remove();
   if (!conflicten || !conflicten.length) return;
-  var C = { night:'#002D41', aqua:'#1AA6B7', hot:'#FE424D', green:'#2E7D32', muted:'#78909C', white:'#fff' };
+
+  var C = { night:'#002D41', aqua:'#1AA6B7', hot:'#FE424D', green:'#2E7D32', muted:'#78909C' };
   var zL = { weesp:'Weesp', voorterrein:'AW Voorterrein', middenterrein:'AW Middenterrein', achterterrein:'AW Achterterrein' };
+  var dagN = ['zo','ma','di','wo','do','vr','za'];
+  var maandN = ['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
+
   function fmtT(ms) { var d=new Date(ms); return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); }
-  function fmtD(iso) {
-    var d=new Date(iso+'T00:00:00');
-    var dn=['zo','ma','di','wo','do','vr','za'], mn=['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
-    return dn[d.getDay()]+' '+d.getDate()+' '+mn[d.getMonth()];
+  function fmtD(iso) { var d=new Date(iso+'T00:00:00'); return dagN[d.getDay()]+' '+d.getDate()+' '+maandN[d.getMonth()]; }
+  function vereistMin(pax) {
+    if (pax > 200) return 60;
+    if (pax > 100) return 40;
+    if (pax > 75)  return 25;
+    if (pax > 50)  return 20;
+    if (pax > 30)  return 20;
+    if (pax > 15)  return 15;
+    return 10;
   }
   function badge(st) {
-    var isO=(st||'').includes('optie');
+    var isO = (st||'').includes('optie');
     return '<span style="background:'+(isO?'#FF9800':C.aqua)+';color:#fff;border-radius:3px;padding:1px 5px;font-size:10px;font-weight:700;margin-right:5px">'+(isO?'OPTIE':'DEF')+'</span>';
   }
+
+  var items = conflicten.filter(function(c){ return c.type !== 'onbekende_locatie'; });
+  var onb   = conflicten.find(function(c){ return c.type === 'onbekende_locatie'; });
+
+  // Groepeer per dag+zone (voor dagplanning deduplicate)
+  var dagZoneKeys = [];
+  var dagZoneMap  = {};
+  items.forEach(function(c) {
+    var key = c.dag + '|' + c.zone;
+    if (!dagZoneMap[key]) { dagZoneMap[key] = { dag:c.dag, zone:c.zone, plan:c.dagPlanning||[], conflicten:[] }; dagZoneKeys.push(key); }
+    dagZoneMap[key].conflicten.push(c);
+  });
+
   var overlay = document.createElement('div');
   overlay.id = 'bbq-popup-overlay';
   overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,45,65,0.78);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;font-family:Roboto,Arial,sans-serif';
   overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.remove(); });
 
-  var items = conflicten.filter(function(c){ return c.type!=='onbekende_locatie'; });
-  var html = '<div style="background:#fff;border-radius:14px;width:min(760px,97vw);max-height:90vh;display:flex;flex-direction:column;overflow:hidden">';
-  // Header
-  html += '<div style="background:'+C.night+';color:#fff;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;border-radius:14px 14px 0 0">';
+  var html = '<div style="background:#fff;border-radius:14px;width:min(780px,97vw);max-height:90vh;display:flex;flex-direction:column;overflow:hidden">';
+
+  // ── Header ──
+  html += '<div style="background:'+C.night+';color:#fff;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;border-radius:14px 14px 0 0;flex-shrink:0">';
   html += '<div><div style="font-size:16px;font-weight:700">🔥 BBQ Conflicten</div>';
-  html += '<div style="font-size:11px;color:'+C.aqua+';margin-top:2px">'+items.length+' conflict(en)</div></div>';
+  html += '<div style="font-size:11px;color:'+C.aqua+';margin-top:2px">'+items.length+' conflict(en) op '+dagZoneKeys.length+' dag/zone combinatie(s)</div></div>';
   html += '<div style="display:flex;gap:8px;align-items:center">';
   html += '<button id="bbq-stuur-btn" style="background:'+C.aqua+';color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer">📧 Stuur naar Stefan</button>';
   html += '<button id="bbq-close-btn" style="background:transparent;border:none;color:#fff;font-size:24px;cursor:pointer;line-height:1;padding:0 4px">×</button>';
   html += '</div></div>';
-  // Body
+
+  // ── Body ──
   html += '<div style="overflow-y:auto;padding:14px 16px">';
+
   // Onbekende locaties
-  var onb = conflicten.find(function(c){ return c.type==='onbekende_locatie'; });
   if (onb) {
-    html += '<div style="background:#FFF3E0;border:1px solid #FF9800;border-radius:8px;padding:12px;margin-bottom:10px">';
-    html += '<div style="font-weight:700;font-size:12px;color:#E65100;margin-bottom:6px">⚠ Locatie onbekend</div>';
+    html += '<div style="background:#FFF3E0;border:1px solid #FF9800;border-radius:8px;padding:12px;margin-bottom:12px">';
+    html += '<div style="font-weight:700;font-size:12px;color:#E65100;margin-bottom:6px">⚠ Locatie onbekend — niet gecheckt op conflicten</div>';
+    html += '<div style="font-size:11px;color:#555">Voeg toe in bbq_locaties of corrigeer in Recras:</div>';
     Object.keys(onb.onbekend).forEach(function(loc){
-      html += '<div style="font-size:11px;color:#666;margin-left:8px">• '+loc+' — '+(onb.onbekend[loc]||[]).slice(0,3).join(', ')+'</div>';
+      html += '<div style="font-size:11px;color:#666;margin-left:8px;margin-top:2px">• <strong>'+loc+'</strong> — '+(onb.onbekend[loc]||[]).slice(0,3).join(', ')+'</div>';
     });
     html += '</div>';
   }
-  items.forEach(function(c) {
-    var idA=String(c.a.id).split('-')[0], idB=String(c.b.id).split('-')[0];
-    var tv=c.teVerplaatsen||c.b;
-    html += '<div style="display:flex;align-items:center;gap:8px;margin:12px 0 6px">';
-    html += '<div style="background:'+C.night+';color:#fff;border-radius:4px;padding:3px 10px;font-size:11px;font-weight:700">'+fmtD(c.dag)+'</div>';
+
+  // Per dag/zone: eerst dagplanning, dan conflictkaarten
+  dagZoneKeys.forEach(function(key) {
+    var groep = dagZoneMap[key];
+
+    // ── Dag + zone header ──
+    html += '<div style="display:flex;align-items:center;gap:8px;margin:14px 0 8px">';
+    html += '<div style="background:'+C.night+';color:#fff;border-radius:4px;padding:3px 10px;font-size:12px;font-weight:700">'+fmtD(groep.dag)+'</div>';
     html += '<div style="flex:1;height:1px;background:#D8E8EF"></div>';
-    html += '<div style="background:#E8F2F5;color:'+C.aqua+';border-radius:4px;padding:3px 10px;font-size:11px;font-weight:700">'+(zL[c.zone]||c.zone)+'</div></div>';
-    html += '<div style="background:#FFEBEE;border:1px solid '+C.hot+';border-radius:8px;padding:12px;margin-bottom:8px">';
-    html += '<div style="display:flex;justify-content:space-between;margin-bottom:8px">';
-    html += '<span style="background:'+C.hot+';color:#fff;border-radius:4px;padding:2px 7px;font-size:11px;font-weight:700">'+c.type+'</span>';
-    html += '<span style="font-size:11px;color:'+C.hot+';font-weight:700">'+c.verschilMin+' min — min. '+c.vereistMin+' min vereist</span></div>';
-    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">';
-    html += '<div style="background:#fff;border-radius:6px;padding:8px">';
-    html += '<div style="font-size:10px;color:'+C.muted+';margin-bottom:3px">Boeking 1</div>';
-    html += '<div style="font-weight:700;font-size:12px;margin-bottom:2px">'+badge(c.a._status)+'<a href="https://upevents.recras.nl/boekingen/'+idA+'" target="_blank" style="color:'+C.night+';text-decoration:none">#'+idA+' '+c.a.naam+'</a></div>';
-    html += '<div style="font-size:11px;color:'+C.muted+'">'+fmtT(c.a._bbqTijd)+' • '+c.a._pax+'p • '+c.a._canonical+'</div></div>';
-    html += '<div style="background:#fff;border-radius:6px;padding:8px">';
-    html += '<div style="font-size:10px;color:'+C.muted+';margin-bottom:3px">Boeking 2</div>';
-    html += '<div style="font-weight:700;font-size:12px;margin-bottom:2px">'+badge(c.b._status)+'<a href="https://upevents.recras.nl/boekingen/'+idB+'" target="_blank" style="color:'+C.night+';text-decoration:none">#'+idB+' '+c.b.naam+'</a></div>';
-    html += '<div style="font-size:11px;color:'+C.muted+'">'+fmtT(c.b._bbqTijd)+' • '+c.b._pax+'p • '+c.b._canonical+'</div></div></div>';
-    html += '<div style="background:#E8F5E9;border-radius:6px;padding:8px;border:1px solid #A5D6A7">';
-    html += '<div style="font-size:11px;font-weight:700;color:'+C.green+';margin-bottom:'+(c.vrijeSlots&&c.vrijeSlots.length?4:0)+'px">Verplaats: '+badge(tv._status)+tv.naam+' ('+tv._pax+'p)</div>';
-    if (c.vrijeSlots && c.vrijeSlots.length) {
-      html += '<div style="display:flex;gap:6px;flex-wrap:wrap">';
-      c.vrijeSlots.forEach(function(sl){ html += '<span style="background:#fff;border:2px solid '+C.green+';border-radius:5px;padding:3px 10px;font-size:13px;font-weight:900;color:'+C.green+'">'+fmtT(sl)+'</span>'; });
-      html += '</div>';
-    }
+    html += '<div style="background:#E8F2F5;color:'+C.aqua+';border-radius:4px;padding:3px 10px;font-size:12px;font-weight:700">'+(zL[groep.zone]||groep.zone)+'</div>';
     html += '</div>';
-    if (c.dagPlanning && c.dagPlanning.length) {
-      html += '<div style="background:#F0F7FF;border:1px solid #B3D4F5;border-radius:8px;padding:10px;margin-top:8px">';
-      html += '<div style="font-size:11px;font-weight:700;color:#1565C0;margin-bottom:6px">📅 Geoptimaliseerde dagplanning</div>';
-      c.dagPlanning.forEach(function(bk){
-        html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">';
-        if (bk.nieuweTijd !== null) {
-          html += '<span style="font-size:11px;color:#9E9E9E;text-decoration:line-through">'+fmtT(bk.origTijd)+'</span>';
-          html += '<span style="font-size:12px;font-weight:900;color:'+C.hot+'">→</span>';
-          html += '<span style="font-size:11px;font-weight:700;background:'+C.hot+';color:#fff;border-radius:3px;padding:1px 5px">'+fmtT(bk.nieuweTijd)+'</span>';
+
+    // ── Geoptimaliseerde dagplanning (EERST) ──
+    if (groep.plan && groep.plan.length) {
+      html += '<div style="background:#F0F7FF;border:1px solid #B3D4F5;border-radius:8px;padding:12px;margin-bottom:10px">';
+      html += '<div style="font-size:12px;font-weight:700;color:#1565C0;margin-bottom:8px">📅 Geoptimaliseerde dagplanning — zo min mogelijk verschuiven</div>';
+      html += '<div style="display:flex;flex-direction:column;gap:4px">';
+      groep.plan.forEach(function(bk) {
+        var gewijzigd = bk.nieuweTijd !== null;
+        var minTijd   = vereistMin(bk.pax);
+        html += '<div style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:#fff;border-radius:5px;border:1px solid '+(gewijzigd?C.hot+'44':'#D8E8EF')+'">';
+        // Tijden
+        if (gewijzigd) {
+          html += '<span style="font-size:11px;color:#9E9E9E;text-decoration:line-through;min-width:34px">'+fmtT(bk.origTijd)+'</span>';
+          html += '<span style="font-size:13px;color:'+C.hot+'">→</span>';
+          html += '<span style="font-size:12px;font-weight:900;background:'+C.hot+';color:#fff;border-radius:4px;padding:1px 6px;min-width:34px;text-align:center">'+fmtT(bk.nieuweTijd)+'</span>';
         } else {
-          html += '<span style="font-size:11px;font-weight:700;color:'+C.green+'">'+fmtT(bk.origTijd)+'</span>';
+          html += '<span style="font-size:12px;font-weight:700;color:'+C.green+';min-width:82px">'+fmtT(bk.origTijd)+'</span>';
         }
-        html += '<span style="font-size:11px;color:'+C.night+'">'+bk.naam+'</span>';
-        html += '<span style="font-size:10px;color:'+C.muted+'">('+bk.pax+'p)</span></div>';
+        // DEF/OPTIE badge
+        html += badge(bk.status);
+        // Naam
+        html += '<span style="font-size:12px;color:'+C.night+';font-weight:'+(gewijzigd?700:400)+';flex:1">'+bk.naam+'</span>';
+        // Pax + min-tijd
+        html += '<span style="font-size:10px;color:'+C.muted+';white-space:nowrap">'+bk.pax+'p</span>';
+        html += '<span style="font-size:10px;background:#E8F2F5;color:'+C.aqua+';border-radius:3px;padding:1px 5px;white-space:nowrap;font-weight:600">min. '+minTijd+' min</span>';
+        html += '</div>';
+      });
+      html += '</div></div>';
+    }
+
+    // ── Conflictkaarten ──
+    groep.conflicten.forEach(function(c) {
+      var idA = String(c.a.id).split('-')[0], idB = String(c.b.id).split('-')[0];
+      var tv  = c.teVerplaatsen || c.b;
+      html += '<div style="background:#FFEBEE;border:1px solid '+C.hot+';border-radius:8px;padding:12px;margin-bottom:8px">';
+      // Type + tijdsverschil
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
+      html += '<span style="background:'+C.hot+';color:#fff;border-radius:4px;padding:2px 7px;font-size:11px;font-weight:700">'+c.type+'</span>';
+      html += '<span style="font-size:11px;color:'+C.hot+';font-weight:700">'+c.verschilMin+' min — min. '+c.vereistMin+' min vereist</span>';
+      html += '</div>';
+      // Twee boekingen
+      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">';
+      [['a',idA],['b',idB]].forEach(function(pair,pi){
+        var bk = c[pair[0]];
+        html += '<div style="background:#fff;border-radius:6px;padding:8px">';
+        html += '<div style="font-size:10px;color:'+C.muted+';margin-bottom:3px">Boeking '+(pi+1)+'</div>';
+        html += '<div style="font-weight:700;font-size:12px;margin-bottom:2px">'+badge(bk._status)+'<a href="https://upevents.recras.nl/boekingen/'+pair[1]+'" target="_blank" style="color:'+C.night+';text-decoration:none">#'+pair[1]+' '+bk.naam+'</a></div>';
+        html += '<div style="font-size:11px;color:'+C.muted+'">'+fmtT(bk._bbqTijd)+' • '+bk._pax+'p • '+bk._canonical+'</div>';
+        html += '</div>';
       });
       html += '</div>';
-    }
-    html += '</div>';
+      // Verplaats blok
+      html += '<div style="background:#E8F5E9;border-radius:6px;padding:8px;border:1px solid #A5D6A7">';
+      html += '<div style="font-size:11px;font-weight:700;color:'+C.green+';margin-bottom:'+(c.vrijeSlots&&c.vrijeSlots.length?4:0)+'px">';
+      html += 'Verplaats: '+badge(tv._status)+tv.naam+' ('+tv._pax+'p)</div>';
+      if (c.vrijeSlots && c.vrijeSlots.length) {
+        html += '<div style="font-size:10px;color:'+C.night+';margin-bottom:4px">Vrije momenten (min-tijd tov alle BBQ\'s die dag):</div>';
+        html += '<div style="display:flex;gap:6px;flex-wrap:wrap">';
+        c.vrijeSlots.forEach(function(sl){ html += '<span style="background:#fff;border:2px solid '+C.green+';border-radius:5px;padding:3px 10px;font-size:13px;font-weight:900;color:'+C.green+'">'+fmtT(sl)+'</span>'; });
+        html += '</div>';
+      }
+      html += '</div></div>';
+    });
   });
+
   html += '</div></div>';
   overlay.innerHTML = html;
   document.body.appendChild(overlay);
   document.getElementById('bbq-close-btn').onclick = function(){ overlay.remove(); };
   document.getElementById('bbq-stuur-btn').onclick = function(){ emailFn(conflicten, null); };
 };
-
 </script></body></html>
