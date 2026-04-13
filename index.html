@@ -1517,6 +1517,30 @@ function HomeScreen({ setSc }) {
             sortTijd: nieuwT || bk._bbqTijd };
         }).sort(function(x, y) { return x.sortTijd - y.sortTijd; });
         conflictenOpDag.forEach(function(c) { c.dagPlanning = dagPlanning; });
+        // Middenterrein tip: check voor voorterrein-conflicten of middenterrein vrij is
+        if (groep.zone === "voorterrein") {
+          conflictenOpDag.forEach(function(c) {
+            var dag = groep.dag;
+            var bbqTijd = c.a._bbqTijd; // starttijd van het conflict
+            var mKeys = ["middenterrein|" + dag];
+            var tips = [];
+            mKeys.forEach(function(mk) {
+              var mg = zoneGroepen[mk];
+              if (!mg) return;
+              // Tel hoeveel setups op middenterrein bezet zijn op dit tijdstip
+              var bezet = mg.bk.filter(function(bk) {
+                return Math.abs(bk._bbqTijd - bbqTijd) / 6e4 < vereistMin(bk._pax).min;
+              });
+              var vrij = mg.maxSetups - bezet.length;
+              if (vrij > 0) {
+                var locaties = mg.bk.map(function(bk){ return bk._canonical; });
+                var uniekeLoc = locaties.filter(function(l,i){ return locaties.indexOf(l)===i; });
+                tips.push({ vrij: vrij, locaties: uniekeLoc });
+              }
+            });
+            if (tips.length > 0) c.middenterreinTip = tips[0];
+          });
+        }
         gevonden = gevonden.concat(conflictenOpDag);
       }
     });
@@ -11173,6 +11197,18 @@ window._toonBbqPopup = function(conflicten, emailFn) {
         html += '<div style="display:flex;gap:6px;flex-wrap:wrap">';
         c.vrijeSlots.forEach(function(sl){ html += '<span style="background:#fff;border:2px solid '+C.green+';border-radius:5px;padding:3px 10px;font-size:13px;font-weight:900;color:'+C.green+'">'+fmtT(sl)+'</span>'; });
         html += '</div>';
+      }
+      // Middenterrein tip (alleen voor voorterrein-conflicten)
+      if (c.middenterreinTip) {
+        var mt = c.middenterreinTip;
+        html += '<div style="background:#E8F5E9;border:1px solid #66BB6A;border-radius:6px;padding:8px;margin-top:8px;display:flex;align-items:flex-start;gap:8px">';
+        html += '<span style="font-size:16px;line-height:1.2">💡</span>';
+        html += '<div>';
+        html += '<div style="font-size:11px;font-weight:700;color:#2E7D32;margin-bottom:2px">Alternatief: BBQ verplaatsen naar Middenterrein</div>';
+        html += '<div style="font-size:11px;color:#1B5E20">Op dit moment '+( mt.vrij > 1 ? mt.vrij+' setups vrij' : '1 setup vrij')+' op het middenterrein';
+        if (mt.locaties && mt.locaties.length) html += ' ('+mt.locaties.join(', ')+')';
+        html += '. Gast hoeft niet te verplaatsen — alleen de BBQ-locatie wijzigt.</div>';
+        html += '</div></div>';
       }
       html += '</div></div>';
     });
