@@ -907,7 +907,7 @@ function HomeScreen({ setSc }) {
     var stamMenus = window._stamMenus || [];
     var stamGerechten = window._stamGerechten || [];
     var stamKoppelingen = window._stamKoppelingen || [];
-    var westLocaties = ["Loods 2", "Loods 4", "Loods 5", "Loods 6", "Terras Loods 6", "Pup - Bar", "Ronde Tent", "Stretchtent", "Terrace", "Beachclub", "Beachclub 2", "Loods 7", "Loods 7 Patio", "Combinatie | Loods 1, 2, 3 & Terrace"];
+    var westLocaties = ["Loods 2", "Loods 4", "Loods 5", "Loods 6", "Terras Loods 6", "Pup - Bar", "Ronde Tent", "Stretchtent", "Terrace", "Beachclub", "Beachclub 2", "Loods 7", "Loods 7 Patio", "Combinatie | Loods 1, 2, 3 & Terrace", "Beach CLUP", "Beach Clup", "Beachclub1", "Beach Clup 2", "Beachclub2"];
     var gekozenKeuken = window._importKeuken || importKeuken || null;
     if (!gekozenKeuken) {
       alert("\u26A0 Kies eerst een keuken bij de import (West of Weesp) voordat je publiceert.");
@@ -1941,7 +1941,7 @@ function HomeScreen({ setSc }) {
           alert("Geen boekingen herkend. Controleer het bestand.");
           return;
         }
-        var westLocaties = ["Loods 2", "Loods 4", "Loods 5", "Loods 6", "Terras Loods 6", "Pup - Bar", "Ronde Tent", "Stretchtent", "Terrace", "Beachclub", "Beachclub 2", "Loods 7", "Loods 7 Patio", "Combinatie | Loods 1, 2, 3 & Terrace"];
+        var westLocaties = ["Loods 2", "Loods 4", "Loods 5", "Loods 6", "Terras Loods 6", "Pup - Bar", "Ronde Tent", "Stretchtent", "Terrace", "Beachclub", "Beachclub 2", "Loods 7", "Loods 7 Patio", "Combinatie | Loods 1, 2, 3 & Terrace", "Beach CLUP", "Beach Clup", "Beachclub1", "Beach Clup 2", "Beachclub2"];
         var gekeuzenKeuken = importKeuken || "west";
         var lijstGefilterd = lijst.filter(function(b) {
           var isWest = westLocaties.indexOf(b.locatie || "") >= 0;
