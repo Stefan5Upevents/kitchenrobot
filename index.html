@@ -1900,9 +1900,16 @@ function HomeScreen({ setSc }) {
         }
         var westLocaties = ["Loods 2", "Loods 4", "Loods 5", "Loods 6", "Terras Loods 6", "Pup - Bar", "Ronde Tent", "Stretchtent", "Terrace", "Beachclub", "Beachclub 2", "Loods 7", "Loods 7 Patio", "Combinatie | Loods 1, 2, 3 & Terrace", "Beach CLUP", "Beach Clup", "Beachclub1", "Beach Clup 2", "Beachclub2"];
         var gekeuzenKeuken = importKeuken || "west";
+        // Weesp-locaties: alles wat in locatieMap staat als zone=weesp
+        var weespLocaties = ["Archery Tag WP","Basisweg 2, Weesp","Birdie","Boardroom","Bogey","Boogschieten WP","Bubbel voetbal WP","CLUPhuis","Driving range","Eagle","Golfbaan","Jeu de Boules WP","Robinson Crusoe WP","Terrace WP","The Barn","UP Fairway","UPstairs"];
         var lijstGefilterd = lijst.filter(function(b) {
-          var isWest = westLocaties.indexOf(b.locatie || "") >= 0;
-          return gekeuzenKeuken === "west" ? isWest : !isWest;
+          var loc = b.locatie || "";
+          var isWest = westLocaties.indexOf(loc) >= 0;
+          var isWeesp = weespLocaties.indexOf(loc) >= 0;
+          // Onbekende locatie (niet west, niet weesp): meesturen voor West
+          // zodat hij als "onbekende locatie" in de conflictcheck verschijnt
+          var isOnbekend = loc !== "" && !isWest && !isWeesp;
+          return gekeuzenKeuken === "west" ? (isWest || isOnbekend) : isWeesp;
         });
         lijstGefilterd.forEach(function(b) {
           b.outlet_code = gekeuzenKeuken;
