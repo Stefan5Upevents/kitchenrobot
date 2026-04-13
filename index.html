@@ -1546,11 +1546,8 @@ function HomeScreen({ setSc }) {
     });
     if (Object.keys(onbekend).length > 0) gevonden.unshift({ type: "onbekende_locatie", onbekend: onbekend });
     setBbqConflicten(gevonden);
-    // Auto-email: stuur 1x per week als er conflicten zijn
-    var heeftConflicten = gevonden.some(function(c){ return c.type !== "onbekende_locatie"; });
-    if (heeftConflicten) {
-      setTimeout(function(){ stuurBBQConflictEmail(gevonden, null, true); }, 1500);
-    }
+    // Email wordt wekelijks automatisch verstuurd via de bbq-analyse cron (elke vrijdag)
+    // Gebruik de handmatige "Stuur naar Stefan" knop in de popup voor on-demand
   }
 
   function stuurBBQConflictEmail(conflicten, label, autoMode) {
