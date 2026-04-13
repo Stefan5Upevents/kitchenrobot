@@ -1546,141 +1546,68 @@ function HomeScreen({ setSc }) {
     });
     if (Object.keys(onbekend).length > 0) gevonden.unshift({ type: "onbekende_locatie", onbekend: onbekend });
     setBbqConflicten(gevonden);
+    // Auto-email: stuur 1x per week als er conflicten zijn
+    var heeftConflicten = gevonden.some(function(c){ return c.type !== "onbekende_locatie"; });
+    if (heeftConflicten) {
+      setTimeout(function(){ stuurBBQConflictEmail(gevonden, null, true); }, 1500);
+    }
   }
 
-  function stuurBBQConflictEmail(conflicten, label) {
-    if (!conflicten || conflicten.length === 0) { alert("Geen conflicten om te versturen."); return; }
-    if (!window._supa) { alert("Niet ingelogd."); return; }
+  function stuurBBQConflictEmail(conflicten, label, autoMode) {
+    if (!conflicten || conflicten.length === 0) { if (!autoMode) alert("Geen conflicten om te versturen."); return; }
+    if (!window._supa) { if (!autoMode) alert("Niet ingelogd."); return; }
 
-    // Bouw HTML identiek aan de conflictkaarten op het scherm (zoals kiosk opzet-aanpak)
-    var zoneLabels = { weesp: "Weesp", voorterrein: "AW Voorterrein", middenterrein: "AW Middenterrein", achterterrein: "AW Achterterrein" };
-    var dagN = ["zo","ma","di","wo","do","vr","za"];
-    var maandN = ["jan","feb","mrt","apr","mei","jun","jul","aug","sep","okt","nov","dec"];
-    function fmtMs(ms) { var d = new Date(ms); return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"); }
-    function fmtDag(isoStr) { var d = new Date(isoStr+"T00:00:00"); return dagN[d.getDay()]+" "+d.getDate()+" "+maandN[d.getMonth()]; }
-    function sBadgeHtml(status) {
-      var isO = (status||"").includes("optie");
-      var bg = isO ? "#FF9800" : "#1AA6B7";
-      var lbl = isO ? "OPTIE" : "DEF";
-      return '<span style="background:'+bg+';color:#fff;border-radius:3px;padding:1px 6px;font-size:10px;font-weight:700;margin-right:6px">'+lbl+'</span>';
-    }
-
-    var emailHtml = '<div style="font-family:Roboto,Arial,sans-serif;max-width:700px;margin:0 auto;background:#F0F4F6;padding:16px">';
-    emailHtml += '<div style="background:#002D41;color:#fff;padding:16px 20px;border-radius:8px 8px 0 0;margin-bottom:2px">';
-    emailHtml += '<div style="font-size:18px;font-weight:700">&#128293; BBQ Conflictmelding</div>';
-    emailHtml += '<div style="font-size:12px;color:#1AA6B7;margin-top:4px">KitchenRobot UP Events &mdash; '+(label||new Date().toLocaleDateString("nl-NL"))+'</div>';
-    emailHtml += '</div>';
-
-    // Onbekende locaties
-    var onbekendEntry = conflicten.find(function(c){ return c.type === "onbekende_locatie"; });
-    if (onbekendEntry) {
-      emailHtml += '<div style="background:#FFF3E0;border:1px solid #FF9800;border-radius:6px;padding:12px;margin-bottom:12px">';
-      emailHtml += '<div style="font-weight:700;font-size:12px;color:#E65100;margin-bottom:6px">&#9888; Locatie onbekend &mdash; niet gecheckt op conflicten</div>';
-      Object.keys(onbekendEntry.onbekend).forEach(function(loc) {
-        emailHtml += '<div style="font-size:11px;color:#666;margin-left:8px">&bull; <strong>'+loc+'</strong> &mdash; '+onbekendEntry.onbekend[loc].slice(0,3).join(", ")+'</div>';
-      });
-      emailHtml += '</div>';
-    }
+    // Gebruik de gedeelde HTML-builder (identiek aan popup)
+    var emailHtml = window._bouwBbqHtml ? window._bouwBbqHtml(conflicten) : "<p>Geen HTML beschikbaar</p>";
 
     var conflictItems = conflicten.filter(function(c){ return c.type !== "onbekende_locatie"; });
-    conflictItems.forEach(function(c) {
-      var dagLabel = fmtDag(c.dag);
-      var recrasBase = "https://upevents.recras.nl/boekingen/";
-      var idA = String(c.a.id).split("-")[0], idB = String(c.b.id).split("-")[0];
-      var tv = c.teVerplaatsen || c.b;
+    var nConflicten = conflictItems.length;
+    var weekLabel = (function() {
+      var d = new Date();
+      var jan1 = new Date(d.getFullYear(), 0, 1);
+      var week = Math.ceil(((d - jan1) / 86400000 + jan1.getDay() + 1) / 7);
+      return "Week " + week + " " + d.getFullYear();
+    }());
+    var onderwerp = "BBQ Conflicten " + weekLabel + " — " + nConflicten + " conflict" + (nConflicten !== 1 ? "en" : "");
+    var weekKey = "bbq-week-" + (function(){ var d=new Date(); var jan1=new Date(d.getFullYear(),0,1); return Math.ceil(((d-jan1)/86400000+jan1.getDay()+1)/7)+"-"+d.getFullYear(); }());
 
-      // Dag-header
-      emailHtml += '<div style="display:flex;align-items:center;gap:8px;margin:16px 0 6px">';
-      emailHtml += '<div style="background:#002D41;color:#fff;border-radius:4px;padding:3px 10px;font-size:12px;font-weight:700">'+dagLabel+'</div>';
-      emailHtml += '<div style="flex:1;height:1px;background:#D8E8EF"></div>';
-      emailHtml += '<div style="background:#E8F2F5;color:#1AA6B7;border-radius:4px;padding:3px 10px;font-size:11px;font-weight:700">'+(zoneLabels[c.zone]||c.zone)+'</div>';
-      emailHtml += '</div>';
-
-      // Conflictkaart
-      emailHtml += '<div style="background:#FFEBEE;border:1px solid #FE424D;border-radius:8px;padding:14px;margin-bottom:10px">';
-
-      // Header: type + tijdsverschil
-      emailHtml += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">';
-      emailHtml += '<div><span style="background:#FE424D;color:#fff;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700;margin-right:8px">'+c.type+'</span>';
-      emailHtml += '<span style="font-size:12px;font-weight:700;color:#002D41">'+(zoneLabels[c.zone]||c.zone)+'</span></div>';
-      emailHtml += '<span style="font-size:11px;color:#FE424D;font-weight:700">'+c.verschilMin+' min &mdash; min. '+c.vereistMin+' min vereist</span>';
-      emailHtml += '</div>';
-
-      // Twee boekingen naast elkaar
-      emailHtml += '<table style="width:100%;border-collapse:collapse;margin-bottom:10px"><tr>';
-      emailHtml += '<td style="width:50%;background:#fff;border-radius:6px;padding:10px;vertical-align:top">';
-      emailHtml += '<div style="font-size:10px;color:#78909C;margin-bottom:4px">Boeking 1</div>';
-      emailHtml += '<div style="font-weight:700;font-size:12px;margin-bottom:2px">'+sBadgeHtml(c.a._status);
-      emailHtml += '<a href="'+recrasBase+idA+'" style="color:#002D41;text-decoration:none">#'+idA+' '+c.a.naam+'</a></div>';
-      emailHtml += '<div style="font-size:11px;color:#78909C">'+fmtMs(c.a._bbqTijd)+' &bull; '+c.a._pax+'p &bull; '+c.a._canonical+'</div>';
-      emailHtml += '</td>';
-      emailHtml += '<td style="width:12px"></td>';
-      emailHtml += '<td style="width:50%;background:#fff;border-radius:6px;padding:10px;vertical-align:top">';
-      emailHtml += '<div style="font-size:10px;color:#78909C;margin-bottom:4px">Boeking 2</div>';
-      emailHtml += '<div style="font-weight:700;font-size:12px;margin-bottom:2px">'+sBadgeHtml(c.b._status);
-      emailHtml += '<a href="'+recrasBase+idB+'" style="color:#002D41;text-decoration:none">#'+idB+' '+c.b.naam+'</a></div>';
-      emailHtml += '<div style="font-size:11px;color:#78909C">'+fmtMs(c.b._bbqTijd)+' &bull; '+c.b._pax+'p &bull; '+c.b._canonical+'</div>';
-      emailHtml += '</td></tr></table>';
-
-      // Groen verplaats-blok met vrije momenten
-      emailHtml += '<div style="background:#E8F5E9;border-radius:6px;padding:10px;border:1px solid #A5D6A7">';
-      emailHtml += '<div style="font-size:11px;font-weight:700;color:#2E7D32;margin-bottom:6px">Verplaats: '+sBadgeHtml(tv._status)+tv.naam+' ('+tv._pax+'p)</div>';
-      if (c.vrijeSlots && c.vrijeSlots.length > 0) {
-        emailHtml += '<div style="font-size:11px;color:#002D41;margin-bottom:4px">Vrije momenten (min-tijd tov alle BBQ&#x2019;s die dag):</div>';
-        emailHtml += '<div style="display:flex;gap:8px">';
-        c.vrijeSlots.forEach(function(slot) {
-          emailHtml += '<span style="background:#fff;border:2px solid #2E7D32;border-radius:6px;padding:4px 12px;font-size:13px;font-weight:900;color:#2E7D32">'+fmtMs(slot)+'</span>';
-        });
-        emailHtml += '</div>';
-      } else {
-        emailHtml += '<div style="font-size:11px;color:#E65100">&#9888; Geen vrije momenten &mdash; handmatig afstemmen</div>';
-      }
-      emailHtml += '</div>';
-      emailHtml += '</div>';
-    });
-
-    // Dagplanning blok (geoptimaliseerde planning per dag/zone)
-    var dagZoneSeen = {};
-    conflictItems.forEach(function(c) {
-      var key = c.dag + "|" + c.zone;
-      if (dagZoneSeen[key] || !c.a.dagPlanning) return;
-      dagZoneSeen[key] = true;
-      var dp = c.a.dagPlanning;
-      emailHtml += '<div style="background:#F0F7FF;border:1px solid #B3D4F5;border-radius:8px;padding:12px;margin-bottom:10px">';
-      emailHtml += '<div style="font-size:12px;font-weight:700;color:#1565C0;margin-bottom:8px">&#128197; Geoptimaliseerde dagplanning &mdash; zo min mogelijk verschuiven</div>';
-      dp.forEach(function(bk) {
-        var gewijzigd = bk.nieuweTijd !== null;
-        emailHtml += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">';
-        if (gewijzigd) {
-          emailHtml += '<span style="font-size:12px;color:#9E9E9E;text-decoration:line-through">'+fmtMs(bk.origTijd)+'</span>';
-          emailHtml += '<span style="font-size:13px;font-weight:900;color:#FE424D">&rarr;</span>';
-          emailHtml += '<span style="font-size:12px;font-weight:700;background:#FE424D;color:#fff;border-radius:4px;padding:1px 6px">'+fmtMs(bk.nieuweTijd)+'</span>';
-        } else {
-          emailHtml += '<span style="font-size:12px;font-weight:700;color:#2E7D32">'+fmtMs(bk.origTijd)+'</span>';
-        }
-        emailHtml += '<span style="font-size:11px;color:#002D41">'+bk.naam+'</span>';
-        emailHtml += '<span style="font-size:10px;color:#78909C">('+bk.pax+'p &bull; '+bk.locatie+')</span>';
-        emailHtml += '</div>';
+    function verstuur() {
+      window._supa.auth.getSession().then(function(sessRes) {
+        var token = sessRes.data && sessRes.data.session ? sessRes.data.session.access_token : "";
+        fetch("https://aezatnwsrhlwtykpixsq.supabase.co/functions/v1/stuur-opzetmail", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+          body: JSON.stringify({ actie: "verstuur", dag: weekKey, hash: weekKey, html: emailHtml, onderwerp: onderwerp })
+        }).then(function(r){ return r.json(); })
+          .then(function(d){
+            if (!autoMode) alert(d.succes ? "✓ BBQ conflicten verstuurd naar stefan@upevents.nl" : "⚠ Versturen mislukt: " + (d.fout || "onbekend"));
+          })
+          .catch(function(e){ if (!autoMode) alert("⚠ Versturen mislukt: " + e.message); });
       });
-      emailHtml += '</div>';
-    });
+    }
 
-    emailHtml += '<div style="font-size:10px;color:#78909C;text-align:center;padding:8px">Gegenereerd door KitchenRobot &mdash; '+new Date().toLocaleString("nl-NL")+'</div>';
-    emailHtml += '</div>';
-
-    // Stuur via edge function
-    window._supa.auth.getSession().then(function(sessRes) {
-      var token = sessRes.data && sessRes.data.session ? sessRes.data.session.access_token : "";
-      var nConflicten = conflictItems.length;
-      var onderwerp = "BBQ Conflicten " + (label || new Date().toLocaleDateString("nl-NL")) + " — " + nConflicten + " conflict" + (nConflicten !== 1 ? "en" : "");
-      fetch("https://aezatnwsrhlwtykpixsq.supabase.co/functions/v1/stuur-opzetmail", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
-        body: JSON.stringify({ actie: "verstuur", dag: new Date().toISOString().split("T")[0]+"-bbq", hash: "bbq-"+Date.now(), html: emailHtml, onderwerp: onderwerp })
-      }).then(function(r){ return r.json(); })
-        .then(function(d){ alert(d.succes ? "✓ BBQ conflicten verstuurd naar stefan@upevents.nl" : "⚠ Versturen mislukt: " + (d.fout || "onbekend")); })
-        .catch(function(e){ alert("⚠ Versturen mislukt: " + e.message); });
-    });
+    if (autoMode) {
+      // Wekelijkse check: alleen sturen als deze week nog niet gestuurd
+      window._supa.auth.getSession().then(function(sessRes) {
+        var token = sessRes.data && sessRes.data.session ? sessRes.data.session.access_token : "";
+        fetch("https://aezatnwsrhlwtykpixsq.supabase.co/functions/v1/stuur-opzetmail", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+          body: JSON.stringify({ actie: "check", dag: weekKey, hash: weekKey })
+        }).then(function(r){ return r.json(); })
+          .then(function(d){
+            if (d.reeds_verstuurd && d.zelfde_data) {
+              console.log("BBQ conflicten email al verstuurd deze week, overgeslagen.");
+            } else {
+              verstuur();
+            }
+          })
+          .catch(function(){ verstuur(); }); // bij fout toch versturen
+      });
+    } else {
+      // Handmatig: altijd sturen
+      verstuur();
+    }
   }
 
   function checkEnStuurEmail(boekingen2) {
@@ -11059,11 +10986,9 @@ function AppWrapper(){
 ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(AppErrorBoundary,null,React.createElement(AppWrapper)));
 
 // ──── BBQ ANALYSE POPUP (vanilla DOM) ────────────────────────────────────────
-window._toonBbqPopup = function(conflicten, emailFn) {
-  var old = document.getElementById('bbq-popup-overlay');
-  if (old) old.remove();
-  if (!conflicten || !conflicten.length) return;
 
+// Gedeelde HTML-builder — gebruikt door popup EN email
+window._bouwBbqHtml = function(conflicten) {
   var C = { night:'#002D41', aqua:'#1AA6B7', hot:'#FE424D', green:'#2E7D32', muted:'#78909C' };
   var zL = { weesp:'Weesp', voorterrein:'AW Voorterrein', middenterrein:'AW Middenterrein', achterterrein:'AW Achterterrein' };
   var dagN = ['zo','ma','di','wo','do','vr','za'];
@@ -11215,7 +11140,134 @@ window._toonBbqPopup = function(conflicten, emailFn) {
   });
 
   html += '</div></div>';
-  overlay.innerHTML = html;
+  var html = '<div style="background:#fff;border-radius:14px;width:min(780px,97vw);max-height:90vh;display:flex;flex-direction:column;overflow:hidden">';
+
+  // ── Header ──
+  html += '<div style="background:'+C.night+';color:#fff;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;border-radius:14px 14px 0 0;flex-shrink:0">';
+  html += '<div><div style="font-size:16px;font-weight:700">🔥 BBQ Conflicten</div>';
+  html += '<div style="font-size:11px;color:'+C.aqua+';margin-top:2px">'+items.length+' conflict(en) op '+dagZoneKeys.length+' dag/zone combinatie(s)</div></div>';
+  html += '<div style="display:flex;gap:8px;align-items:center">';
+  html += '<button id="bbq-stuur-btn" style="background:'+C.aqua+';color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer">📧 Stuur naar Stefan</button>';
+  html += '<button id="bbq-close-btn" style="background:transparent;border:none;color:#fff;font-size:24px;cursor:pointer;line-height:1;padding:0 4px">×</button>';
+  html += '</div></div>';
+
+  // ── Body ──
+  html += '<div style="overflow-y:auto;padding:14px 16px">';
+
+  // Onbekende locaties
+  if (onb) {
+    html += '<div style="background:#FFF3E0;border:1px solid #FF9800;border-radius:8px;padding:12px;margin-bottom:12px">';
+    html += '<div style="font-weight:700;font-size:12px;color:#E65100;margin-bottom:6px">⚠ Locatie onbekend — niet gecheckt op conflicten</div>';
+    html += '<div style="font-size:11px;color:#555">Voeg toe in bbq_locaties of corrigeer in Recras:</div>';
+    Object.keys(onb.onbekend).forEach(function(loc){
+      html += '<div style="font-size:11px;color:#666;margin-left:8px;margin-top:2px">• <strong>'+loc+'</strong> — '+(onb.onbekend[loc]||[]).slice(0,3).join(', ')+'</div>';
+    });
+    html += '</div>';
+  }
+
+  // Per dag/zone: eerst dagplanning, dan conflictkaarten
+  dagZoneKeys.forEach(function(key) {
+    var groep = dagZoneMap[key];
+
+    // ── Dag + zone header ──
+    html += '<div style="display:flex;align-items:center;gap:8px;margin:14px 0 8px">';
+    html += '<div style="background:'+C.night+';color:#fff;border-radius:4px;padding:3px 10px;font-size:12px;font-weight:700">'+fmtD(groep.dag)+'</div>';
+    html += '<div style="flex:1;height:1px;background:#D8E8EF"></div>';
+    html += '<div style="background:#E8F2F5;color:'+C.aqua+';border-radius:4px;padding:3px 10px;font-size:12px;font-weight:700">'+(zL[groep.zone]||groep.zone)+'</div>';
+    html += '</div>';
+
+    // ── Geoptimaliseerde dagplanning (EERST) ──
+    if (groep.plan && groep.plan.length) {
+      html += '<div style="background:#F0F7FF;border:1px solid #B3D4F5;border-radius:8px;padding:12px;margin-bottom:10px">';
+      html += '<div style="font-size:12px;font-weight:700;color:#1565C0;margin-bottom:8px">📅 Geoptimaliseerde dagplanning — zo min mogelijk verschuiven</div>';
+      html += '<div style="display:flex;flex-direction:column;gap:4px">';
+      groep.plan.forEach(function(bk) {
+        var gewijzigd = bk.nieuweTijd !== null;
+        var minTijd   = vereistMin(bk.pax);
+        html += '<div style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:#fff;border-radius:5px;border:1px solid '+(gewijzigd?C.hot+'44':'#D8E8EF')+'">';
+        // Tijden
+        if (gewijzigd) {
+          html += '<span style="font-size:11px;color:#9E9E9E;text-decoration:line-through;min-width:34px">'+fmtT(bk.origTijd)+'</span>';
+          html += '<span style="font-size:13px;color:'+C.hot+'">→</span>';
+          html += '<span style="font-size:12px;font-weight:900;background:'+C.hot+';color:#fff;border-radius:4px;padding:1px 6px;min-width:34px;text-align:center">'+fmtT(bk.nieuweTijd)+'</span>';
+        } else {
+          html += '<span style="font-size:12px;font-weight:700;color:'+C.green+';min-width:82px">'+fmtT(bk.origTijd)+'</span>';
+        }
+        // DEF/OPTIE badge
+        html += badge(bk.status);
+        // Naam
+        html += '<span style="font-size:12px;color:'+C.night+';font-weight:'+(gewijzigd?700:400)+';flex:1">'+bk.naam+'</span>';
+        // Pax + min-tijd
+        html += '<span style="font-size:10px;color:'+C.muted+';white-space:nowrap">'+bk.pax+'p</span>';
+        html += '<span style="font-size:10px;background:#E8F2F5;color:'+C.aqua+';border-radius:3px;padding:1px 5px;white-space:nowrap;font-weight:600">min. '+minTijd+' min</span>';
+        html += '</div>';
+      });
+      html += '</div></div>';
+    }
+
+    // ── Conflictkaarten ──
+    groep.conflicten.forEach(function(c) {
+      var idA = String(c.a.id).split('-')[0], idB = String(c.b.id).split('-')[0];
+      var tv  = c.teVerplaatsen || c.b;
+      html += '<div style="background:#FFEBEE;border:1px solid '+C.hot+';border-radius:8px;padding:12px;margin-bottom:8px">';
+      // Type + tijdsverschil
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
+      html += '<span style="background:'+C.hot+';color:#fff;border-radius:4px;padding:2px 7px;font-size:11px;font-weight:700">'+c.type+'</span>';
+      html += '<span style="font-size:11px;color:'+C.hot+';font-weight:700">'+c.verschilMin+' min huidig — 2de boeking ('+c.b._pax+'p) heeft min. '+c.vereistMin+' min nodig</span>';
+      html += '</div>';
+      // Twee boekingen
+      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">';
+      [['a',idA],['b',idB]].forEach(function(pair,pi){
+        var bk = c[pair[0]];
+        html += '<div style="background:#fff;border-radius:6px;padding:8px">';
+        html += '<div style="font-size:10px;color:'+C.muted+';margin-bottom:3px">Boeking '+(pi+1)+'</div>';
+        html += '<div style="font-weight:700;font-size:12px;margin-bottom:2px">'+badge(bk._status)+'<a href="https://upevents.recras.nl/boekingen/'+pair[1]+'" target="_blank" style="color:'+C.night+';text-decoration:none">#'+pair[1]+' '+bk.naam+'</a></div>';
+        html += '<div style="font-size:11px;color:'+C.muted+'">'+fmtT(bk._bbqTijd)+' • '+bk._pax+'p • '+bk._canonical+'</div>';
+        html += '</div>';
+      });
+      html += '</div>';
+      // Verplaats blok
+      html += '<div style="background:#E8F5E9;border-radius:6px;padding:8px;border:1px solid #A5D6A7">';
+      html += '<div style="font-size:11px;font-weight:700;color:'+C.green+';margin-bottom:'+(c.vrijeSlots&&c.vrijeSlots.length?4:0)+'px">';
+      html += 'Verplaats: '+badge(tv._status)+tv.naam+' ('+tv._pax+'p)</div>';
+      if (c.vrijeSlots && c.vrijeSlots.length) {
+        html += '<div style="font-size:10px;color:'+C.night+';margin-bottom:4px">Vrije momenten (min-tijd tov alle BBQ\'s die dag):</div>';
+        html += '<div style="display:flex;gap:6px;flex-wrap:wrap">';
+        c.vrijeSlots.forEach(function(sl){ html += '<span style="background:#fff;border:2px solid '+C.green+';border-radius:5px;padding:3px 10px;font-size:13px;font-weight:900;color:'+C.green+'">'+fmtT(sl)+'</span>'; });
+        html += '</div>';
+      }
+      // Middenterrein tip (alleen voor voorterrein-conflicten)
+      if (c.middenterreinTip) {
+        var mt = c.middenterreinTip;
+        html += '<div style="background:#E8F5E9;border:1px solid #66BB6A;border-radius:6px;padding:8px;margin-top:8px;display:flex;align-items:flex-start;gap:8px">';
+        html += '<span style="font-size:16px;line-height:1.2">💡</span>';
+        html += '<div>';
+        html += '<div style="font-size:11px;font-weight:700;color:#2E7D32;margin-bottom:2px">Alternatief: BBQ verplaatsen naar Middenterrein</div>';
+        html += '<div style="font-size:11px;color:#1B5E20">Op dit moment '+( mt.vrij > 1 ? mt.vrij+' setups vrij' : '1 setup vrij')+' op het middenterrein';
+        if (mt.locaties && mt.locaties.length) html += ' ('+mt.locaties.join(', ')+')';
+        html += '. Gast hoeft niet te verplaatsen — alleen de BBQ-locatie wijzigt.</div>';
+        html += '</div></div>';
+      }
+      html += '</div></div>';
+    });
+  });
+
+  html += '</div></div>';
+
+  return html;
+};
+
+window._toonBbqPopup = function(conflicten, emailFn) {
+  var old = document.getElementById('bbq-popup-overlay');
+  if (old) old.remove();
+  if (!conflicten || !conflicten.length) return;
+
+  var overlay = document.createElement('div');
+  overlay.id = 'bbq-popup-overlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,45,65,0.78);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;font-family:Roboto,Arial,sans-serif';
+  overlay.addEventListener('click', function(e){ if(e.target===overlay) overlay.remove(); });
+
+  overlay.innerHTML = window._bouwBbqHtml(conflicten);
   document.body.appendChild(overlay);
   document.getElementById('bbq-close-btn').onclick = function(){ overlay.remove(); };
   document.getElementById('bbq-stuur-btn').onclick = function(){ emailFn(conflicten, null); };
