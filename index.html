@@ -1559,6 +1559,12 @@ function HomeScreen({ setSc }) {
 
     // Gebruik de gedeelde HTML-builder (identiek aan popup)
     var emailHtml = window._bouwBbqHtml ? window._bouwBbqHtml(conflicten) : "<p>Geen HTML beschikbaar</p>";
+    // Email-mode: verwijder hoogte-beperkingen zodat volledige content getoond wordt
+    emailHtml = emailHtml
+      .replace(/max-height:[^;]+;/g, '')
+      .replace(/overflow:hidden/g, '')
+      .replace(/overflow-y:auto;/g, '')
+      .replace(/display:flex;flex-direction:column;/g, '');
 
     var conflictItems = conflicten.filter(function(c){ return c.type !== "onbekende_locatie"; });
     var nConflicten = conflictItems.length;
@@ -10988,7 +10994,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(
 // ──── BBQ ANALYSE POPUP (vanilla DOM) ────────────────────────────────────────
 
 // Gedeelde HTML-builder — gebruikt door popup EN email
-window._bouwBbqHtml = function(conflicten) {
+window._bouwBbqHtml = function(conflicten, emailMode) {
   var C = { night:'#002D41', aqua:'#1AA6B7', hot:'#FE424D', green:'#2E7D32', muted:'#78909C' };
   var zL = { weesp:'Weesp', voorterrein:'AW Voorterrein', middenterrein:'AW Middenterrein', achterterrein:'AW Achterterrein' };
   var dagN = ['zo','ma','di','wo','do','vr','za'];
