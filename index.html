@@ -450,6 +450,7 @@ function Header({ sc, setSc, user, logout }) {
       ["opzet", "📊", "Opzetoverzicht"],
       ["tijden", "\u23F0", "Tijden"],
       ["chef", "\uD83D\uDC68\u200D\uD83C\uDF73", "Chef Review"],
+      ["financieel", "\uD83D\uDCB6", "Financieel"],
       ["inspiratie", "\u2728", "Inspiratie"]
     ] },
     { label: "Analyse", items: [
@@ -8169,481 +8170,444 @@ function AllergenenScreen() {
   }
   return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: SS.pT }, "🏷 Allergenen"), /* @__PURE__ */ React.createElement("div", { style: SS.pD }, "Overzicht per productsoort — gerechten en Sligro producten"), /* @__PURE__ */ React.createElement(AllergenenOverzichtTab, { gerechten, sligro, productgroepen }));
 }
-function FinancieelScreen() {
-  var [tab, setTab] = useState("samen");
-  var [openBoeking, setOpenBoeking] = useState(null);
-  var [openMenuRegel, setOpenMenuRegel] = useState(null);
-  var [menuEng, setMenuEng] = useState([]);
-  var [omzetData, setOmzetData] = useState([]);
-  var [engLaden, setEngLaden] = useState(false);
-  var [importBezig, setImportBezig] = useState(false);
-  var [importLog, setImportLog] = useState([]);
-  var [filterKlasse, setFilterKlasse] = useState("alle");
-  var [margeAlerts, setMargeAlerts] = useState([]);
-  var [haccpMetingen, setHaccpMetingen] = useState([]);
-  var [haccpLaden, setHaccpLaden] = useState(false);
-  var [haccpPeriodeVan, setHaccpPeriodeVan] = useState(function() {
-    var d = /* @__PURE__ */ new Date();
-    d.setMonth(d.getMonth() - 1);
-    return d.toISOString().split("T")[0];
-  });
-  var [haccpPeriodeTot, setHaccpPeriodeTot] = useState((/* @__PURE__ */ new Date()).toISOString().split("T")[0]);
-  var [haccpOutlet, setHaccpOutlet] = useState("alle");
-  var [margeCheckBezig, setMargeCheckBezig] = useState(false);
-  var tabItems = [["samen", "Samenvatting"], ["bk", "Boekingen"], ["eng", "📊 Menu-engineering"], ["omzet", "💰 Omzet"], ["alerts", "\u26A0 Marge alerts"], ["geboekt", "🛒 Geboekte producten"]];
-  var BTW = 0.09;
-  var C2 = { night: "#002D41", white: "#fff", aqua: "#1AA6B7", green: "#27AE60", hot: "#E74C3C", muted: "#7A8FA6", light: "#EEF2F6" };
-  function opzetPct2(n, psId) {
-    var inst = (window._stamTijdenInst || []).find(function(x) {
-      return x._psId === psId;
-    });
-    if (!inst) inst = (window._stamTijdenInst || [])[0] || {};
-    var bufs = inst.bufs || inst.marges || [];
-    var found = bufs.slice().sort(function(a, b) {
-      return a.tot - b.tot;
-    }).find(function(b) {
-      return n <= b.tot;
-    });
-    return found ? (found.pct || 100) / 100 : 1;
-  }
-  function berekenInkoop(b) {
-    var tot = 0;
-    (b.regels || []).forEach(function(r) {
-      if ((r.menuNaam || "").toLowerCase().includes("add up")) return;
-      var kp = (window._stamKoppelingen || []).find(function(k) {
-        return (k.recras_naam || "").trim() === (r.menuNaam || "").trim();
-      });
-      var m = kp ? (window._stamMenus || []).find(function(m2) {
-        return m2.id === kp.menu_id;
-      }) : null;
-      if (!m) return;
-      var psPct = opzetPct2(r.aantal, m.productsoort_id);
-      (m.menu_gerechten || []).forEach(function(mg) {
-        var g = (window._stamGerechten || []).find(function(x) {
-          return x.id === mg.gerecht_id;
-        });
-        if (!g) return;
-        var pEff = r.aantal * (mg.porties_per_persoon || 1) * psPct;
-        (g.ingredienten || []).forEach(function(ing) {
-          if (ing.zichtbaar === "nee" || ing.zichtbaar === "nooit") return;
-          var sp = (window._stamSligro || []).find(function(p) {
-            return p.id === ing.sligro_id;
-          });
-          if (!sp) return;
-          var hoev = parseFloat(sp.hoeveelheid || sp.hoev || 1) || 1;
-          var prijs = parseFloat(sp.prijs_excl || sp.prijs || 0);
-          var gebruik = parseFloat(ing.gebruik_per_portie) || 0;
-          tot += Math.ceil(pEff * gebruik / hoev) * prijs;
-        });
-      });
-    });
-    return tot;
-  }
-  function berekenOmzet(b) {
-    return (b.regels || []).reduce(function(s, r) {
-      var kp = (window._stamKoppelingen || []).find(function(k) {
-        return (k.recras_naam || "").trim() === (r.menuNaam || "").trim();
-      });
-      var m = kp ? (window._stamMenus || []).find(function(mm) {
-        return mm.id === kp.menu_id;
-      }) : null;
-      return s + (m ? (parseFloat(m.verkoop_prijs) || 0) * r.aantal : 0);
-    }, 0);
-  }
-  function totPers2(b) {
-    return (b.regels || []).filter(function(r) {
-      return !(r.menuNaam || "").toLowerCase().includes("add up");
-    }).reduce(function(s, r) {
-      return s + r.aantal;
-    }, 0);
-  }
-  var excludeWords = ["locatiebezoek", "bananenbrood", "twist", "add up"];
-  var gefilterd = (window._recrasBoekingen || []).filter(function(b) {
-    var naam = (b.naam || "").toLowerCase();
-    var menus = (b.regels || []).map(function(r) {
-      return (r.menuNaam || "").toLowerCase();
-    }).join(" ");
-    return !excludeWords.some(function(w) {
-      return naam.includes(w) || menus.includes(w);
-    });
-  });
-  useEffect(function() {
-    if (tab !== "eng" && tab !== "omzet" && tab !== "alerts" && tab !== "geboekt" || !window._supa) return;
-    if (tab === "alerts") {
-      window._supa.from("marge_alerts").select("*").order("aangemaakt_op", { ascending: false }).limit(100).then(function(r) {
-        setMargeAlerts(r.data || []);
-      });
-      return;
-    }
-    if (tab === "geboekt") {
-      return;
-    }
-    setEngLaden(true);
+
+function FinancieelScreen({ setSc }) {
+  var supa = window._supa;
+  var C = window._C || { night:'#002D41', aqua:'#1AA6B7', hot:'#FE424D', green:'#2E7D32', muted:'#78909C', white:'#fff' };
+
+  // State
+  var [periode, setPeriode] = React.useState('week');       // 'week' | 'maand'
+  var [outlet, setOutlet] = React.useState('beide');         // 'west' | 'weesp' | 'beide'
+  var [jaar, setJaar] = React.useState(new Date().getFullYear());
+  var [laden, setLaden] = React.useState(true);
+  var [importBezig, setImportBezig] = React.useState(false);
+  var [importBericht, setImportBericht] = React.useState(null);
+  var [regels, setRegels] = React.useState([]);
+  var [imports, setImports] = React.useState([]);
+  var [tab, setTab] = React.useState('overzicht'); // 'overzicht' | 'menus' | 'productsoort' | 'boekingen'
+
+  // Data laden
+  React.useEffect(function() {
+    if (!supa) return;
+    setLaden(true);
+    // Laad regels voor geselecteerd jaar
+    var query = supa.from('fin_regels').select('*').eq('jaar', jaar);
+    if (outlet !== 'beide') query = query.eq('outlet_code', outlet);
     Promise.all([
-      window._supa.from("menu_engineering").select("*, menus(naam,verkoop_prijs,productsoort_id)").order("totaal_personen", { ascending: false }),
-      window._supa.from("omzet_registraties").select("*").order("datum", { ascending: false }).limit(500)
+      query,
+      supa.from('fin_imports').select('*').order('aangemaakt_op', { ascending: false }).limit(10)
     ]).then(function(results) {
-      setMenuEng(results[0].data || []);
-      setOmzetData(results[1].data || []);
-      setEngLaden(false);
+      setRegels(results[0].data || []);
+      setImports(results[1].data || []);
+      setLaden(false);
     });
-  }, [tab]);
-  function importeerOmzetVanRecras() {
-    var boekingen = window._recrasBoekingen || [];
-    if (!boekingen.length) {
-      alert("Importeer eerst boekingen via de Import tab.");
-      return;
-    }
+  }, [jaar, outlet]);
+
+  // Import handler
+  function handleImport(e) {
+    var file = e.target.files[0];
+    if (!file) return;
     setImportBezig(true);
-    setImportLog(["Starten met importeren..."]);
-    var rijen = [];
-    boekingen.forEach(function(b) {
-      (b.regels || []).forEach(function(r) {
-        if ((r.menuNaam || "").toLowerCase().includes("add up")) return;
-        var kp = (window._stamKoppelingen || []).find(function(k) {
-          return (k.recras_naam || "").trim() === (r.menuNaam || "").trim();
-        });
-        var m = kp ? (window._stamMenus || []).find(function(mm) {
-          return mm.id === kp.menu_id;
-        }) : null;
-        var datum = b.deadline ? b.deadline.replace("T", " ").split(" ")[0] : (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
-        var hashStr = b.id + "_" + (r.menuNaam || "") + "_" + datum;
-        var hash = hashStr.split("").reduce(function(a, c) {
-          return (a << 5) - a + c.charCodeAt(0) | 0;
-        }, 0).toString(36);
-        rijen.push({
-          boeking_id: b.id,
-          boeking_naam: b.naam || "",
-          datum,
-          locatie: b.locatie || "",
-          menu_id: m ? m.id : null,
-          menu_naam: r.menuNaam || "",
-          recras_product_naam: r.menuNaam || "",
-          aantal_personen: r.aantal || 0,
-          verkoop_prijs_pp: m ? parseFloat(m.verkoop_prijs) || 0 : 0,
-          theoretische_omzet: m ? (parseFloat(m.verkoop_prijs) || 0) * (r.aantal || 0) : 0,
-          werkelijke_omzet: 0,
-          kostprijs_totaal: 0,
-          import_hash: hash,
-          import_bron: "recras_xlsx"
-        });
-      });
-    });
-    var batches = [];
-    for (var i = 0; i < rijen.length; i += 50) batches.push(rijen.slice(i, i + 50));
-    var totNieuw = 0, totDup = 0;
-    var verwerkBatch = function(idx) {
-      if (idx >= batches.length) {
-        setImportLog(function(prev) {
-          return prev.concat(["✓ Klaar — " + totNieuw + " nieuw, " + totDup + " duplicaten overgeslagen"]);
-        });
-        setImportBezig(false);
-        window._supa.rpc("herbereken_menu_engineering").then(function() {
-          setTab("eng");
-        });
-        return;
+    setImportBericht(null);
+    var form = new FormData();
+    form.append('bestand', file);
+    fetch('https://aezatnwsrhlwtykpixsq.supabase.co/functions/v1/fin-import', {
+      method: 'POST', body: form
+    }).then(function(r) { return r.json(); }).then(function(d) {
+      setImportBezig(false);
+      if (d.ok) {
+        setImportBericht({ ok: true, tekst: d.bericht + ' · ' + d.regels_zonder_prijs + ' regels zonder prijs · periode: ' + d.periode });
+        // Herlaad data
+        supa.from('fin_regels').select('*').eq('jaar', jaar).then(function(r) { setRegels(r.data || []); });
+        supa.from('fin_imports').select('*').order('aangemaakt_op', { ascending: false }).limit(10).then(function(r) { setImports(r.data || []); });
+      } else {
+        setImportBericht({ ok: false, tekst: d.error || 'Onbekende fout' });
       }
-      window._supa.from("omzet_registraties").upsert(batches[idx], { onConflict: "import_hash", ignoreDuplicates: true }).then(function(r) {
-        totNieuw += batches[idx].length;
-        setImportLog(function(prev) {
-          return prev.concat(["Batch " + (idx + 1) + "/" + batches.length + " verwerkt"]);
-        });
-        verwerkBatch(idx + 1);
-      }).catch(function(e) {
-        setImportLog(function(prev) {
-          return prev.concat(["\u26A0 Batch " + (idx + 1) + " fout: " + e.message]);
-        });
-        verwerkBatch(idx + 1);
-      });
-    };
-    verwerkBatch(0);
-  }
-  var klasseKleuren = { star: "#F9A825", plowhorse: "#1565C0", puzzle: "#6A1B9A", dog: "#757575", onbekend: "#9E9E9E" };
-  var klasseEmoji = { star: "\u2B50", plowhorse: "🐴", puzzle: "🧩", dog: "🐕", onbekend: "—" };
-  var klasseLabel = { star: "Star", plowhorse: "Plowhorse", puzzle: "Puzzle", dog: "Dog", onbekend: "Onbekend" };
-  var klasseLeg = { star: "Populair + hoge marge", plowhorse: "Populair + lage marge", puzzle: "Onpopulair + hoge marge", dog: "Onpopulair + lage marge" };
-  return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: SS.pT }, "Financieel Overzicht"), /* @__PURE__ */ React.createElement("div", { style: SS.pD }, "Alle bedragen excl. BTW"), /* @__PURE__ */ React.createElement("div", { style: SS.tabBar }, tabItems.map(function(item) {
-    return /* @__PURE__ */ React.createElement("button", { key: item[0], style: tabStyle(tab === item[0]), onClick: function() {
-      setTab(item[0]);
-    } }, item[1]);
-  })), tab === "samen" && /* @__PURE__ */ React.createElement("div", { style: SS.card }, (function() {
-    var excl = [];
-    var excludeWords2 = ["locatiebezoek", "bananenbrood", "twist"];
-    var gefilterd2 = (window._recrasBoekingen || []).filter(function(b) {
-      var naam = (b.naam || "").toLowerCase();
-      var menus2 = (b.regels || []).map(function(r) {
-        return (r.menuNaam || "").toLowerCase();
-      }).join(" ");
-      return !excludeWords2.some(function(w) {
-        return naam.includes(w) || menus2.includes(w);
-      });
+    }).catch(function(err) {
+      setImportBezig(false);
+      setImportBericht({ ok: false, tekst: err.message });
     });
-    if (gefilterd2.length === 0) return React.createElement("div", { style: { color: C.muted, padding: 20 } }, "Importeer eerst boekingen om een samenvatting te zien.");
-    var totOmzet = gefilterd2.reduce(function(s, b) {
-      return s + berekenOmzet(b);
-    }, 0);
-    var totInkoop = gefilterd2.reduce(function(s, b) {
-      return s + berekenInkoop(b);
-    }, 0);
-    var totOmzetExcl = totOmzet / (1 + BTW);
-    var totWinst = totOmzetExcl - totInkoop;
-    var totMarge = totOmzetExcl > 0 ? Math.round(totWinst / totOmzetExcl * 100) : 0;
-    return React.createElement(
-      "div",
-      null,
-      React.createElement(
-        "div",
-        { style: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12, marginBottom: 16 } },
-        [
-          ["Omzet excl.", "€ " + totOmzetExcl.toFixed(0), C2.aqua],
-          ["Inkoop", "€ " + totInkoop.toFixed(0), C2.muted],
-          ["Winst", "€ " + totWinst.toFixed(0), C2.green],
-          ["Marge", totMarge + "%", totMarge > 50 ? C2.green : totMarge > 25 ? "#E67E22" : C2.hot]
-        ].map(function(item) {
-          return React.createElement(
-            "div",
-            { key: item[0], style: { background: C2.white, borderRadius: 10, padding: "14px 16px", boxShadow: "0 1px 4px rgba(0,45,65,.07)", borderTop: "3px solid " + item[2] } },
-            React.createElement("div", { style: { fontSize: 10, color: C2.muted, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 } }, item[0]),
-            React.createElement("div", { style: { fontSize: 22, fontWeight: 900, color: item[2] } }, item[1])
-          );
-        })
-      ),
-      React.createElement("div", { style: { fontSize: 11, color: C2.muted } }, gefilterd2.length + " boekingen — locatiebezoek/bananenbrood uitgesloten")
+    e.target.value = '';
+  }
+
+  // ── Berekeningen ─────────────────────────────────────────────────────────
+  function groepeer(key) {
+    var map = {};
+    regels.forEach(function(r) {
+      var k = r[key];
+      if (!k) k = 'Onbekend';
+      if (!map[k]) map[k] = { label: k, omzet: 0, personen: 0, boekingen: new Set(), regels: 0 };
+      map[k].omzet    += parseFloat(r.omzet || 0);
+      map[k].personen += r.aantal_personen || 0;
+      map[k].boekingen.add(r.boeking_id);
+      map[k].regels++;
+    });
+    return Object.values(map).map(function(v) {
+      return { ...v, boekingen: v.boekingen.size };
+    }).sort(function(a,b) { return b.omzet - a.omzet; });
+  }
+
+  function periodeGroepeer() {
+    var map = {};
+    regels.forEach(function(r) {
+      var k = periode === 'week'
+        ? r.jaar + '-W' + String(r.week).padStart(2,'0')
+        : r.jaar + '-' + String(r.maand).padStart(2,'0');
+      if (!map[k]) map[k] = { label: k, week: r.week, maand: r.maand, jaar: r.jaar, west: 0, weesp: 0, totaal: 0, personen: 0 };
+      var omzet = parseFloat(r.omzet || 0);
+      map[k].totaal   += omzet;
+      map[k].personen += r.aantal_personen || 0;
+      if (r.outlet_code === 'west')  map[k].west  += omzet;
+      if (r.outlet_code === 'weesp') map[k].weesp += omzet;
+    });
+    return Object.values(map).sort(function(a,b) {
+      return (a.jaar*100 + (periode==='week'?a.week:a.maand)) - (b.jaar*100 + (periode==='week'?b.week:b.maand));
+    });
+  }
+
+  // Vorig jaar vergelijking (zelfde week)
+  function getVorigJaar(week) {
+    // Zoek in regels met jaar-1
+    var vorigJaarRegels = regels.filter(function(r) {
+      return r.jaar === jaar - 1 && r.week === week;
+    });
+    return vorigJaarRegels.reduce(function(s,r) { return s + parseFloat(r.omzet||0); }, 0);
+  }
+
+  var totaalOmzet   = regels.reduce(function(s,r) { return s + parseFloat(r.omzet||0); }, 0);
+  var totaalPersonen= regels.reduce(function(s,r) { return s + (r.aantal_personen||0); }, 0);
+  var totaalBoekingen = new Set(regels.map(function(r){ return r.boeking_id; })).size;
+  var westOmzet     = regels.filter(function(r){ return r.outlet_code==='west'; }).reduce(function(s,r){ return s+parseFloat(r.omzet||0); },0);
+  var weespOmzet    = regels.filter(function(r){ return r.outlet_code==='weesp'; }).reduce(function(s,r){ return s+parseFloat(r.omzet||0); },0);
+  var omzetPerPersoon = totaalPersonen > 0 ? totaalOmzet / totaalPersonen : 0;
+
+  var periodeData     = periodeGroepeer();
+  var menuData        = groepeer('menu_naam');
+  var productsoortData= groepeer('productsoort_naam');
+
+  function euro(v) { return '\u20ac' + Math.round(v).toLocaleString('nl-NL'); }
+  function pct(a,b) { return b > 0 ? Math.round(a/b*100) + '%' : '-'; }
+
+  // Staafjeschart (simpel met divs)
+  function MiniBar(props) {
+    var max = props.max || 1;
+    var pctW = Math.round((props.value / max) * 100);
+    var kleur = props.kleur || C.aqua;
+    return React.createElement('div', { style:{height:8,background:'#E8EDF2',borderRadius:4,overflow:'hidden',marginTop:2} },
+      React.createElement('div', { style:{height:'100%',width:pctW+'%',background:kleur,borderRadius:4,transition:'width 0.3s'} })
     );
-  })()), tab === "bk" && /* @__PURE__ */ React.createElement("div", { style: SS.card }, /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 8, fontSize: 11, color: C2.muted } }, gefilterd.length, " boekingen — locatiebezoek/bananenbrood uitgesloten"), /* @__PURE__ */ React.createElement("table", { style: SS.tbl }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, ["", "ID", "Naam", "Datum", "Pers.", "Omzet excl.", "Inkoop", "Winst", "Marge"].map(function(h) {
-    return /* @__PURE__ */ React.createElement("th", { key: h, style: SS.th }, h);
-  }))), /* @__PURE__ */ React.createElement("tbody", null, gefilterd.map(function(b) {
-    var omzet = berekenOmzet(b);
-    var omzetExcl = omzet / (1 + BTW);
-    var inkoop = berekenInkoop(b);
-    var winst = omzetExcl - inkoop;
-    var marge = omzetExcl > 0 ? Math.round(winst / omzetExcl * 100) : 0;
-    var isOpen = openBoeking === b.id;
-    return [
-      /* @__PURE__ */ React.createElement(
-        "tr",
-        {
-          key: b.id,
-          style: { cursor: "pointer", background: isOpen ? "#EBF5FB" : C2.white },
-          onClick: function() {
-            setOpenBoeking(isOpen ? null : b.id);
-          }
-        },
-        /* @__PURE__ */ React.createElement("td", { style: SS.td }, isOpen ? "\u25BC" : "\u25B6"),
-        /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontSize: 10, color: C2.muted } }, b.id),
-        /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 700 } }, b.naam),
-        /* @__PURE__ */ React.createElement("td", { style: SS.td }, b.deadlineDag || ""),
-        /* @__PURE__ */ React.createElement("td", { style: SS.td }, totPers2(b)),
-        /* @__PURE__ */ React.createElement("td", { style: SS.td }, "€ " + omzetExcl.toFixed(0)),
-        /* @__PURE__ */ React.createElement("td", { style: SS.td }, "€ " + inkoop.toFixed(0)),
-        /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 700, color: C2.green } }, "€ " + winst.toFixed(0)),
-        /* @__PURE__ */ React.createElement("td", { style: SS.td }, /* @__PURE__ */ React.createElement("span", { style: { background: marge > 50 ? C2.green : marge > 25 ? "#E67E22" : C2.hot, color: "#fff", borderRadius: 4, padding: "1px 6px", fontSize: 10 } }, omzetExcl > 0 ? marge + "%" : "—"))
+  }
+
+  // KPI kaart
+  function KPI(props) {
+    return React.createElement('div', { style:{background:C.white,borderRadius:10,padding:'14px 18px',flex:1,minWidth:120} },
+      React.createElement('div', { style:{fontSize:11,color:C.muted,fontWeight:700,letterSpacing:1,marginBottom:6} }, props.label),
+      React.createElement('div', { style:{fontSize:24,fontWeight:900,color:props.kleur||C.night} }, props.waarde),
+      props.sub && React.createElement('div', { style:{fontSize:11,color:C.muted,marginTop:2} }, props.sub)
+    );
+  }
+
+  // Tabbalk
+  function TabBtn(props) {
+    var actief = tab === props.id;
+    return React.createElement('button', {
+      onClick: function() { setTab(props.id); },
+      style:{
+        padding:'8px 16px', border:'none', borderRadius:6, cursor:'pointer', fontSize:12, fontWeight:700,
+        background: actief ? C.night : 'transparent',
+        color: actief ? '#fff' : C.muted,
+      }
+    }, props.label);
+  }
+
+  return React.createElement('div', { style:{maxWidth:1000,margin:'0 auto',padding:'0 12px 40px'} },
+
+    // Header
+    React.createElement('div', { style:{background:C.night,borderRadius:10,padding:'16px 20px',marginBottom:16,display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:10} },
+      React.createElement('div', null,
+        React.createElement('div', { style:{color:C.hot,fontWeight:900,fontSize:18} }, '\ud83d\udcb6 Financieel'),
+        React.createElement('div', { style:{color:C.aqua,fontSize:11,letterSpacing:2,marginTop:2} }, 'OMZET · MARGE · ANALYSE')
       ),
-      isOpen && /* @__PURE__ */ React.createElement("tr", { key: b.id + "_detail" }, /* @__PURE__ */ React.createElement("td", { colSpan: 9, style: { padding: 0, background: "#F8FBFF", borderLeft: "3px solid " + C2.aqua } }, /* @__PURE__ */ React.createElement("div", { style: { padding: "10px 16px" } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 11, color: C2.muted, marginBottom: 6 } }, "Geboekte menus:"), /* @__PURE__ */ React.createElement("table", { style: { width: "100%", borderCollapse: "collapse", fontSize: 11 } }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, ["Menu", "Aantal", "Omzet excl.", "Inkoop", "Winst"].map(function(h) {
-        return /* @__PURE__ */ React.createElement("th", { key: h, style: { ...SS.th, background: "#1a3b4d", padding: "5px 10px" } }, h);
-      }))), /* @__PURE__ */ React.createElement("tbody", null, (b.regels || []).filter(function(r) {
-        return !(r.menuNaam || "").toLowerCase().includes("add up");
-      }).map(function(r, ri) {
-        var kp3 = (window._stamKoppelingen || []).find(function(k) {
-          return (k.recras_naam || "").trim() === (r.menuNaam || "").trim();
-        });
-        var m3 = kp3 ? (window._stamMenus || []).find(function(mm) {
-          return mm.id === kp3.menu_id;
-        }) : null;
-        var rOmzetExcl = m3 ? (parseFloat(m3.verkoop_prijs) || 0) * r.aantal / (1 + BTW) : 0;
-        var rInkoop = (function() {
-          if (!m3) return 0;
-          var psPct2 = opzetPct2(r.aantal, m3.productsoort_id);
-          return (m3.menu_gerechten || []).reduce(function(ms, mg) {
-            var g3 = (window._stamGerechten || []).find(function(g) {
-              return g.id === mg.gerecht_id;
-            });
-            if (!g3) return ms;
-            var pEff2 = r.aantal * (mg.porties_per_persoon || 1) * psPct2;
-            return ms + (g3.ingredienten || []).reduce(function(is, ing) {
-              if (ing.zichtbaar === "nee" || ing.zichtbaar === "nooit") return is;
-              var sp = (window._stamSligro || []).find(function(p) {
-                return p.id === ing.sligro_id;
-              });
-              if (!sp) return is;
-              return is + pEff2 * (parseFloat(ing.gebruik_per_portie) || 0) / (parseFloat(sp.hoeveelheid || sp.hoev || 1) || 1) * parseFloat(sp.prijs_excl || sp.prijs || 0);
-            }, 0);
-          }, 0);
-        })();
-        var menuOpen2 = openMenuRegel === (b.id + "_" + ri);
-        return [
-          /* @__PURE__ */ React.createElement("tr", { key: ri, style: { background: ri%2===0?C2.white:"#F5F8FA", cursor:"pointer" }, onClick: function(e){e.stopPropagation();setOpenMenuRegel(menuOpen2?null:b.id+"_"+ri); } },
-            React.createElement("td", {style:{padding:"5px 10px",fontWeight:700}}, React.createElement("span",{style:{marginRight:6,fontSize:10,color:C2.aqua}},menuOpen2?"▼":"▶"), m3?m3.naam:r.menuNaam),
-            React.createElement("td", {style:{padding:"5px 10px"}}, r.aantal,"×"),
-            React.createElement("td", {style:{padding:"5px 10px"}}, "€ "+rOmzetExcl.toFixed(2)),
-            React.createElement("td", {style:{padding:"5px 10px"}}, "€ "+rInkoop.toFixed(2)),
-            React.createElement("td", {style:{padding:"5px 10px",color:C2.green,fontWeight:700}}, "€ "+(rOmzetExcl-rInkoop).toFixed(2))
-          ),
-          menuOpen2 && m3 && React.createElement("tr", {key:ri+"_g"},
-            React.createElement("td", {colSpan:5, style:{padding:"6px 12px 10px 32px",background:"#F0F5F8",borderLeft:"3px solid "+C2.aqua}},
-              React.createElement("div",{style:{fontWeight:700,fontSize:10,color:C2.muted,marginBottom:6,textTransform:"uppercase",letterSpacing:1}},"Gerechten & kostprijs"),
-              React.createElement("table",{style:{width:"100%",borderCollapse:"collapse",fontSize:11}},
-                React.createElement("thead",null,React.createElement("tr",null,
-                  ["Gerecht","Porties","Kostprijs/portie","Totaal inkoop"].map(function(h){return React.createElement("th",{key:h,style:{background:"#002D41",color:"#DAEDF3",padding:"5px 9px",textAlign:"left",fontSize:9,fontWeight:700,textTransform:"uppercase",letterSpacing:1}},h);})
-                )),
-                React.createElement("tbody",null,
-                  (m3.menu_gerechten||[]).map(function(mg,gi){
-                    var g3=(window._stamGerechten||[]).find(function(g){return g.id===mg.gerecht_id;});
-                    if(!g3) return null;
-                    var psPct2x=opzetPct2(r.aantal,m3.productsoort_id);
-                    var pEff3=r.aantal*(mg.porties_per_persoon||1)*psPct2x;
-                    // Gebruik kostprijs_portie uit stamgegevens (meest accuraat)
-                    var kpPP = parseFloat(g3.kostprijs_portie)||0;
-                    if (kpPP===0) {
-                      kpPP=(g3.ingredienten||[]).reduce(function(is,ing){
-                        if(ing.zichtbaar==="nee"||ing.zichtbaar==="nooit") return is;
-                        var sp=(window._stamSligro||[]).find(function(p){return p.id===ing.sligro_id;});
-                        if(!sp) return is;
-                        return is+(parseFloat(ing.gebruik_per_portie)||0)/( parseFloat(sp.hoeveelheid||sp.hoev||1)||1)*(parseFloat(sp.prijs_excl||sp.prijs||0));
-                      },0);
-                    }
-                    var kpG=kpPP*pEff3;
-                    return React.createElement("tr",{key:gi,style:{background:gi%2===0?"#fff":"#F8FAFC"}},
-                      React.createElement("td",{style:{padding:"4px 9px",fontWeight:700}},
-                        g3.is_gn&&React.createElement("span",{style:{background:"#1AA6B7",color:"#fff",borderRadius:3,padding:"1px 5px",fontSize:8,marginRight:4,fontWeight:700}},"GN"),
-                        g3.naam),
-                      React.createElement("td",{style:{padding:"4px 9px",color:"#1AA6B7",fontWeight:700}},Math.round(pEff3)+"×"),
-                      React.createElement("td",{style:{padding:"4px 9px"}},kpPP>0?"€ "+kpPP.toFixed(3):"—"),
-                      React.createElement("td",{style:{padding:"4px 9px",fontWeight:700,color:kpG>0?"#002D41":"#999"}},kpG>0?"€ "+kpG.toFixed(2):"—")
-                    );
-                  }).filter(Boolean),
-                  React.createElement("tr",{style:{background:"#EEF5FA"}},
-                    React.createElement("td",{colSpan:3,style:{padding:"5px 9px",fontWeight:900,textAlign:"right",fontSize:11}},"Totaal inkoop:"),
-                    React.createElement("td",{style:{padding:"5px 9px",fontWeight:900,color:"#002D41",fontSize:12}},"€ "+rInkoop.toFixed(2))
+      React.createElement('div', { style:{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'} },
+        // Jaar selector
+        React.createElement('select', {
+          value: jaar,
+          onChange: function(e) { setJaar(parseInt(e.target.value)); },
+          style:{background:'rgba(255,255,255,0.1)',color:'#fff',border:'1px solid rgba(255,255,255,0.2)',borderRadius:6,padding:'6px 10px',fontSize:13,cursor:'pointer'}
+        }, [2024,2025,2026,2027].map(function(y) {
+          return React.createElement('option', { key:y, value:y, style:{background:C.night} }, y);
+        })),
+        // Outlet selector
+        React.createElement('select', {
+          value: outlet,
+          onChange: function(e) { setOutlet(e.target.value); },
+          style:{background:'rgba(255,255,255,0.1)',color:'#fff',border:'1px solid rgba(255,255,255,0.2)',borderRadius:6,padding:'6px 10px',fontSize:13,cursor:'pointer'}
+        },
+          React.createElement('option', { value:'beide', style:{background:C.night} }, 'West + Weesp'),
+          React.createElement('option', { value:'west', style:{background:C.night} }, 'Amsterdam West'),
+          React.createElement('option', { value:'weesp', style:{background:C.night} }, 'Weesp')
+        ),
+        // Import knop
+        React.createElement('label', {
+          style:{background:importBezig?'#555':C.aqua,color:'#fff',borderRadius:6,padding:'6px 14px',fontSize:12,fontWeight:700,cursor:importBezig?'default':'pointer',display:'inline-block'}
+        },
+          importBezig ? '\u23f3 Bezig...' : '\u2b06 Import Excel',
+          React.createElement('input', { type:'file', accept:'.xlsx,.xls', style:{display:'none'}, onChange:handleImport, disabled:importBezig })
+        )
+      )
+    ),
+
+    // Import bericht
+    importBericht && React.createElement('div', {
+      style:{
+        background: importBericht.ok ? '#E8F5E9' : '#FFEBEE',
+        border: '1px solid ' + (importBericht.ok ? '#A5D6A7' : '#FFCDD2'),
+        borderRadius:8, padding:'10px 16px', marginBottom:12, fontSize:12,
+        color: importBericht.ok ? C.green : C.hot, fontWeight:700
+      }
+    }, importBericht.ok ? '\u2713 ' : '\u26a0 ', importBericht.tekst),
+
+    // Laden
+    laden && React.createElement('div', { style:{padding:40,textAlign:'center',color:C.muted} }, 'Laden...'),
+
+    !laden && regels.length === 0 && React.createElement('div', {
+      style:{background:'#F8FAFB',borderRadius:10,padding:40,textAlign:'center'}
+    },
+      React.createElement('div', { style:{fontSize:32,marginBottom:12} }, '\ud83d\udcca'),
+      React.createElement('div', { style:{fontWeight:700,color:C.night,marginBottom:6} }, 'Nog geen data voor ' + jaar),
+      React.createElement('div', { style:{fontSize:12,color:C.muted} }, 'Importeer een Recras Excel via de knop rechtsboven')
+    ),
+
+    !laden && regels.length > 0 && React.createElement(React.Fragment, null,
+
+      // KPI rij
+      React.createElement('div', { style:{display:'flex',gap:10,marginBottom:16,flexWrap:'wrap'} },
+        React.createElement(KPI, { label:'TOTAAL OMZET', waarde:euro(totaalOmzet), sub:totaalBoekingen + ' boekingen' }),
+        React.createElement(KPI, { label:'AMSTERDAM WEST', waarde:euro(westOmzet), sub:pct(westOmzet,totaalOmzet) + ' van totaal', kleur:'#1AA6B7' }),
+        React.createElement(KPI, { label:'WEESP', waarde:euro(weespOmzet), sub:pct(weespOmzet,totaalOmzet) + ' van totaal', kleur:'#FE424D' }),
+        React.createElement(KPI, { label:'OMZET / PERSOON', waarde:euro(omzetPerPersoon), sub:totaalPersonen.toLocaleString('nl-NL') + ' personen' })
+      ),
+
+      // Periode toggle + tabs
+      React.createElement('div', { style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12,flexWrap:'wrap',gap:8} },
+        React.createElement('div', { style:{background:'#F0F4F6',borderRadius:8,padding:4,display:'flex',gap:2} },
+          React.createElement(TabBtn, { id:'overzicht', label:'\ud83d\udcc8 Trend' }),
+          React.createElement(TabBtn, { id:'menus', label:'\ud83c\udf7d Menu\u2019s' }),
+          React.createElement(TabBtn, { id:'productsoort', label:'\ud83d\udccb Categorie\u00ebn' }),
+          React.createElement(TabBtn, { id:'vergelijk', label:'\ud83c\udfdb\ufe0f West vs Weesp' })
+        ),
+        tab === 'overzicht' && React.createElement('div', { style:{display:'flex',gap:6} },
+          ['week','maand'].map(function(p) {
+            return React.createElement('button', {
+              key:p,
+              onClick: function() { setPeriode(p); },
+              style:{
+                padding:'6px 12px',border:'none',borderRadius:6,cursor:'pointer',fontSize:11,fontWeight:700,
+                background: periode===p ? C.night : '#F0F4F6',
+                color: periode===p ? '#fff' : C.muted,
+              }
+            }, p === 'week' ? 'Per week' : 'Per maand');
+          })
+        )
+      ),
+
+      // ─── TAB: TREND ──────────────────────────────────────────────────────
+      tab === 'overzicht' && React.createElement('div', { style:{background:C.white,borderRadius:10,padding:20} },
+        React.createElement('div', { style:{fontWeight:700,fontSize:14,marginBottom:16,color:C.night} }, 'Omzet per ' + (periode==='week'?'week':'maand') + ' \u2014 ' + jaar),
+        periodeData.length === 0
+          ? React.createElement('div', { style:{color:C.muted,textAlign:'center',padding:20} }, 'Geen data')
+          : React.createElement('div', { style:{overflowX:'auto'} },
+              React.createElement('table', { style:{width:'100%',borderCollapse:'collapse',fontSize:12} },
+                React.createElement('thead', null,
+                  React.createElement('tr', { style:{background:'#F0F4F6'} },
+                    React.createElement('th', { style:{padding:'8px 12px',textAlign:'left',fontWeight:700,color:C.muted} }, periode==='week'?'Week':'Maand'),
+                    React.createElement('th', { style:{padding:'8px 12px',textAlign:'right',fontWeight:700,color:C.muted} }, 'Omzet'),
+                    outlet==='beide' && React.createElement('th', { style:{padding:'8px 12px',textAlign:'right',fontWeight:700,color:'#1AA6B7'} }, 'West'),
+                    outlet==='beide' && React.createElement('th', { style:{padding:'8px 12px',textAlign:'right',fontWeight:700,color:'#FE424D'} }, 'Weesp'),
+                    React.createElement('th', { style:{padding:'8px 12px',textAlign:'right',fontWeight:700,color:C.muted} }, 'Personen'),
+                    React.createElement('th', { style:{padding:'8px 12px',textAlign:'right',fontWeight:700,color:C.muted} }, 'vs ' + (jaar-1)),
+                    React.createElement('th', { style:{padding:'8px 12px',minWidth:120} }, 'Staafje')
                   )
+                ),
+                React.createElement('tbody', null,
+                  periodeData.map(function(p, i) {
+                    var vj = getVorigJaar(p.week);
+                    var delta = vj > 0 ? Math.round((p.totaal - vj) / vj * 100) : null;
+                    var maxOmzet = Math.max.apply(null, periodeData.map(function(x){ return x.totaal; }));
+                    return React.createElement('tr', { key:p.label, style:{borderBottom:'1px solid #F0F4F6', background:i%2===0?'#FAFCFE':'#fff'} },
+                      React.createElement('td', { style:{padding:'8px 12px',fontWeight:700,color:C.night} }, p.label),
+                      React.createElement('td', { style:{padding:'8px 12px',textAlign:'right',fontWeight:700} }, euro(p.totaal)),
+                      outlet==='beide' && React.createElement('td', { style:{padding:'8px 12px',textAlign:'right',color:'#1AA6B7'} }, euro(p.west)),
+                      outlet==='beide' && React.createElement('td', { style:{padding:'8px 12px',textAlign:'right',color:'#FE424D'} }, euro(p.weesp)),
+                      React.createElement('td', { style:{padding:'8px 12px',textAlign:'right',color:C.muted} }, p.personen.toLocaleString('nl-NL')),
+                      React.createElement('td', { style:{padding:'8px 12px',textAlign:'right',fontWeight:700,color:delta===null?C.muted:delta>=0?C.green:C.hot} },
+                        delta === null ? '-' : (delta >= 0 ? '+' : '') + delta + '%'
+                      ),
+                      React.createElement('td', { style:{padding:'8px 12px'} },
+                        React.createElement(MiniBar, { value:p.totaal, max:maxOmzet, kleur:C.aqua })
+                      )
+                    );
+                  })
                 )
               )
             )
+      ),
+
+      // ─── TAB: MENU'S ─────────────────────────────────────────────────────
+      tab === 'menus' && React.createElement('div', { style:{background:C.white,borderRadius:10,padding:20} },
+        React.createElement('div', { style:{fontWeight:700,fontSize:14,marginBottom:16,color:C.night} }, 'Omzet per menu \u2014 ' + jaar),
+        menuData.length === 0
+          ? React.createElement('div', { style:{color:C.muted,textAlign:'center',padding:20} }, 'Geen data')
+          : React.createElement('table', { style:{width:'100%',borderCollapse:'collapse',fontSize:12} },
+              React.createElement('thead', null,
+                React.createElement('tr', { style:{background:'#F0F4F6'} },
+                  React.createElement('th', { style:{padding:'8px 12px',textAlign:'left',fontWeight:700,color:C.muted} }, 'Menu'),
+                  React.createElement('th', { style:{padding:'8px 12px',textAlign:'right',fontWeight:700} }, 'Omzet'),
+                  React.createElement('th', { style:{padding:'8px 12px',textAlign:'right',fontWeight:700} }, 'Personen'),
+                  React.createElement('th', { style:{padding:'8px 12px',textAlign:'right',fontWeight:700} }, 'Boekingen'),
+                  React.createElement('th', { style:{padding:'8px 12px',textAlign:'right',fontWeight:700} }, '% v/d omzet'),
+                  React.createElement('th', { style:{padding:'8px 12px',minWidth:120} }, 'Aandeel')
+                )
+              ),
+              React.createElement('tbody', null,
+                menuData.slice(0,30).map(function(m, i) {
+                  return React.createElement('tr', { key:m.label, style:{borderBottom:'1px solid #F0F4F6',background:i%2===0?'#FAFCFE':'#fff'} },
+                    React.createElement('td', { style:{padding:'8px 12px',fontWeight:700,color:C.night} }, m.label || 'Onbekend'),
+                    React.createElement('td', { style:{padding:'8px 12px',textAlign:'right',fontWeight:700} }, euro(m.omzet)),
+                    React.createElement('td', { style:{padding:'8px 12px',textAlign:'right',color:C.muted} }, m.personen.toLocaleString('nl-NL')),
+                    React.createElement('td', { style:{padding:'8px 12px',textAlign:'right',color:C.muted} }, m.boekingen),
+                    React.createElement('td', { style:{padding:'8px 12px',textAlign:'right',fontWeight:700} }, pct(m.omzet, totaalOmzet)),
+                    React.createElement('td', { style:{padding:'8px 12px'} },
+                      React.createElement(MiniBar, { value:m.omzet, max:menuData[0]?.omzet||1, kleur:C.aqua })
+                    )
+                  );
+                })
+              )
+            )
+      ),
+
+      // ─── TAB: CATEGORIEËN ────────────────────────────────────────────────
+      tab === 'productsoort' && React.createElement('div', { style:{background:C.white,borderRadius:10,padding:20} },
+        React.createElement('div', { style:{fontWeight:700,fontSize:14,marginBottom:16,color:C.night} }, 'Omzet per categorie \u2014 ' + jaar),
+        productsoortData.length === 0
+          ? React.createElement('div', { style:{color:C.muted,textAlign:'center',padding:20} }, 'Geen data')
+          : React.createElement('div', null,
+              // Grote kaarten per categorie
+              React.createElement('div', { style:{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))',gap:10,marginBottom:20} },
+                productsoortData.map(function(ps) {
+                  var kleuren = ['#1AA6B7','#FE424D','#FF9800','#2E7D32','#9C27B0','#00BCD4','#FF5722','#607D8B'];
+                  var kleur = kleuren[productsoortData.indexOf(ps) % kleuren.length];
+                  return React.createElement('div', { key:ps.label, style:{background:'#F8FAFB',borderRadius:10,padding:14,borderTop:'3px solid '+kleur} },
+                    React.createElement('div', { style:{fontSize:11,color:C.muted,fontWeight:700,marginBottom:6} }, (ps.label||'Onbekend').toUpperCase()),
+                    React.createElement('div', { style:{fontSize:20,fontWeight:900,color:C.night} }, euro(ps.omzet)),
+                    React.createElement('div', { style:{fontSize:11,color:C.muted,marginTop:4} }, pct(ps.omzet, totaalOmzet) + ' \u2022 ' + ps.personen.toLocaleString('nl-NL') + ' p'),
+                    React.createElement(MiniBar, { value:ps.omzet, max:productsoortData[0]?.omzet||1, kleur })
+                  );
+                })
+              ),
+              // Detail tabel
+              React.createElement('table', { style:{width:'100%',borderCollapse:'collapse',fontSize:12} },
+                React.createElement('thead', null,
+                  React.createElement('tr', { style:{background:'#F0F4F6'} },
+                    React.createElement('th', { style:{padding:'8px 12px',textAlign:'left',fontWeight:700,color:C.muted} }, 'Categorie'),
+                    React.createElement('th', { style:{padding:'8px 12px',textAlign:'right',fontWeight:700} }, 'Omzet'),
+                    React.createElement('th', { style:{padding:'8px 12px',textAlign:'right',fontWeight:700} }, 'Personen'),
+                    React.createElement('th', { style:{padding:'8px 12px',textAlign:'right',fontWeight:700} }, 'Boekingen'),
+                    React.createElement('th', { style:{padding:'8px 12px',textAlign:'right',fontWeight:700} }, 'Per persoon'),
+                    React.createElement('th', { style:{padding:'8px 12px',textAlign:'right',fontWeight:700} }, '% totaal')
+                  )
+                ),
+                React.createElement('tbody', null,
+                  productsoortData.map(function(ps, i) {
+                    return React.createElement('tr', { key:ps.label, style:{borderBottom:'1px solid #F0F4F6',background:i%2===0?'#FAFCFE':'#fff'} },
+                      React.createElement('td', { style:{padding:'8px 12px',fontWeight:700,color:C.night} }, ps.label || 'Onbekend'),
+                      React.createElement('td', { style:{padding:'8px 12px',textAlign:'right',fontWeight:700} }, euro(ps.omzet)),
+                      React.createElement('td', { style:{padding:'8px 12px',textAlign:'right',color:C.muted} }, ps.personen.toLocaleString('nl-NL')),
+                      React.createElement('td', { style:{padding:'8px 12px',textAlign:'right',color:C.muted} }, ps.boekingen),
+                      React.createElement('td', { style:{padding:'8px 12px',textAlign:'right',color:C.muted} }, euro(ps.personen>0?ps.omzet/ps.personen:0)),
+                      React.createElement('td', { style:{padding:'8px 12px',textAlign:'right',fontWeight:700} }, pct(ps.omzet, totaalOmzet))
+                    );
+                  })
+                )
+              )
+            )
+      ),
+
+      // ─── TAB: WEST VS WEESP ──────────────────────────────────────────────
+      tab === 'vergelijk' && React.createElement('div', { style:{background:C.white,borderRadius:10,padding:20} },
+        React.createElement('div', { style:{fontWeight:700,fontSize:14,marginBottom:16,color:C.night} }, 'West vs Weesp \u2014 ' + jaar),
+
+        // KPI vergelijk
+        React.createElement('div', { style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:20} },
+          React.createElement('div', { style:{background:'#E8F4F9',borderRadius:10,padding:16,borderTop:'4px solid #1AA6B7'} },
+            React.createElement('div', { style:{fontWeight:900,color:'#1AA6B7',fontSize:14,marginBottom:8} }, 'Amsterdam West'),
+            React.createElement('div', { style:{fontSize:24,fontWeight:900,color:C.night} }, euro(westOmzet)),
+            React.createElement('div', { style:{fontSize:12,color:C.muted,marginTop:4} },
+              pct(westOmzet,totaalOmzet) + ' van totaal \u2022 ' +
+              regels.filter(function(r){return r.outlet_code==='west';}).reduce(function(s,r){return s+(r.aantal_personen||0);},0).toLocaleString('nl-NL') + ' personen'
+            )
+          ),
+          React.createElement('div', { style:{background:'#FFF3F3',borderRadius:10,padding:16,borderTop:'4px solid #FE424D'} },
+            React.createElement('div', { style:{fontWeight:900,color:'#FE424D',fontSize:14,marginBottom:8} }, 'Weesp'),
+            React.createElement('div', { style:{fontSize:24,fontWeight:900,color:C.night} }, euro(weespOmzet)),
+            React.createElement('div', { style:{fontSize:12,color:C.muted,marginTop:4} },
+              pct(weespOmzet,totaalOmzet) + ' van totaal \u2022 ' +
+              regels.filter(function(r){return r.outlet_code==='weesp';}).reduce(function(s,r){return s+(r.aantal_personen||0);},0).toLocaleString('nl-NL') + ' personen'
+            )
           )
-        ];
-      }))))))
-    ];
-  })))), tab === "eng" && /* @__PURE__ */ React.createElement("div", null, engLaden && /* @__PURE__ */ React.createElement("div", { style: { padding: 20, color: C.muted, textAlign: "center" } }, "Laden..."), !engLaden && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 16 } }, ["star", "plowhorse", "puzzle", "dog"].map(function(k) {
-    var kl = klasseKleuren[k];
-    var count = menuEng.filter(function(m) {
-      return m.classificatie === k;
-    }).length;
-    return /* @__PURE__ */ React.createElement(
-      "div",
-      {
-        key: k,
-        style: {
-          background: "#fff",
-          borderRadius: 8,
-          padding: "10px 16px",
-          border: "2px solid " + (filterKlasse === k ? kl : "#E0E8EF"),
-          cursor: "pointer",
-          minWidth: 140
-        },
-        onClick: function() {
-          setFilterKlasse(filterKlasse === k ? "alle" : k);
-        }
-      },
-      /* @__PURE__ */ React.createElement("div", { style: { fontSize: 20 } }, klasseEmoji[k]),
-      /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 900, fontSize: 13, color: kl } }, klasseLabel[k]),
-      /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.muted, marginBottom: 4 } }, klasseLeg[k]),
-      /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 900, fontSize: 22, color: C.night } }, count)
-    );
-  })), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.muted, marginBottom: 10 } }, "\u26A0 Classificatie wordt nauwkeuriger naarmate er meer omzetdata ge\xEFmporteerd is via Financieel \u2192 Omzet."), /* @__PURE__ */ React.createElement("table", { style: SS.tbl }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, ["Menu", "Events", "Personen", "Kostprijs/p", "Verkoopprijs/p", "Marge €", "Marge %", "Classificatie"].map(function(h) {
-    return /* @__PURE__ */ React.createElement("th", { key: h, style: SS.th }, h);
-  }))), /* @__PURE__ */ React.createElement("tbody", null, menuEng.filter(function(m) {
-    var nm = (m.menu_naam || "").toLowerCase();
-    if (nm.includes("twist") || nm.includes("locatiebezoek") || nm.includes("bananenbrood") || nm.includes("add up")) return false;
-    return filterKlasse === "alle" || m.classificatie === filterKlasse;
-  }).map(function(m) {
-    var kl = klasseKleuren[m.classificatie || "onbekend"] || C.muted;
-    var mp = parseFloat(m.marge_pct) || 0;
-    var margeKl = mp >= 60 ? C.green : mp >= 40 ? "#FF9800" : C.hot;
-    return /* @__PURE__ */ React.createElement("tr", { key: m.id }, /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 700 } }, m.menu_naam), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 700, color: C.night, textAlign: "center" } }, m.aantal_events || 0), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 900, color: C.aqua, textAlign: "center" } }, m.totaal_personen || 0), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, color: C.muted, fontSize: 11 } }, m.kostprijs_portie > 0 ? "€" + parseFloat(m.kostprijs_portie).toFixed(2) : "—"), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 700 } }, m.verkoop_prijs > 0 ? "€" + parseFloat(m.verkoop_prijs).toFixed(2) : "—"), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, color: margeKl, fontWeight: 700 } }, m.marge_euro > 0 ? "€" + parseFloat(m.marge_euro).toFixed(2) : "—"), /* @__PURE__ */ React.createElement("td", { style: SS.td }, /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 900, color: margeKl } }, mp > 0 ? mp + "%" : "—")), /* @__PURE__ */ React.createElement("td", { style: SS.td }, /* @__PURE__ */ React.createElement("span", { style: { background: kl + "22", color: kl, border: "1px solid " + kl + "44", borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 700 } }, klasseEmoji[m.classificatie || "onbekend"], " ", klasseLabel[m.classificatie || "onbekend"])));
-  }))))), tab === "omzet" && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { ...SS.card, marginBottom: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 900, fontSize: 14, color: C.night } }, "Omzethistorie importeren"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.muted, marginTop: 2 } }, "Importeert huidige Recras boekingen als omzethistorie. Duplicaten worden automatisch overgeslagen via een unieke hash.")), /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      style: { ...btnP, opacity: importBezig ? 0.5 : 1 },
-      disabled: importBezig,
-      onClick: importeerOmzetVanRecras
-    },
-    importBezig ? "Bezig..." : "📥 Importeer huidige boekingen"
-  )), importLog.length > 0 && /* @__PURE__ */ React.createElement("div", { style: { background: "#F8FAFB", borderRadius: 6, padding: 8, maxHeight: 90, overflowY: "auto" } }, importLog.map(function(l, i) {
-    return /* @__PURE__ */ React.createElement("div", { key: i, style: { fontSize: 11, color: C.muted } }, l);
-  }))), omzetData.length > 0 && (function() {
-    var totTheo = omzetData.reduce(function(s, r) {
-      return s + parseFloat(r.theoretische_omzet || 0);
-    }, 0);
-    var totPers3 = omzetData.reduce(function(s, r) {
-      return s + (r.aantal_personen || 0);
-    }, 0);
-    var uniekeBoek = new Set(omzetData.map(function(r) {
-      return r.boeking_id;
-    })).size;
-    var maanden = {};
-    omzetData.forEach(function(r) {
-      var m = (r.datum || "").slice(0, 7);
-      if (m) maanden[m] = (maanden[m] || 0) + parseFloat(r.theoretische_omzet || 0);
-    });
-    var topMaand = Object.entries(maanden).sort(function(a, b) {
-      return b[1] - a[1];
-    })[0];
-    return /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 14 } }, [
-      ["Theoretische omzet", "€" + Math.round(totTheo).toLocaleString("nl-NL"), C.green],
-      ["Unieke boekingen", uniekeBoek + " stuks", C.aqua],
-      ["Totale personen", totPers3.toLocaleString("nl-NL") + " pax", C.night],
-      ["Top maand", topMaand ? topMaand[0] : "—", C.hot]
-    ].map(function(item) {
-      return /* @__PURE__ */ React.createElement("div", { key: item[0], style: { background: "#fff", borderRadius: 8, padding: "12px 14px", boxShadow: "0 1px 4px rgba(0,45,65,.07)" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.muted, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 } }, item[0]), /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 900, fontSize: 16, color: item[2] } }, item[1]));
-    }));
-  })(), omzetData.length === 0 ? /* @__PURE__ */ React.createElement("div", { style: { ...SS.card, textAlign: "center", color: C.muted } }, "Nog geen data. Importeer boekingen via de knop hierboven.") : /* @__PURE__ */ React.createElement("table", { style: { ...SS.tbl, fontSize: 12 } }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, ["Datum", "Boeking", "Menu", "Personen", "Theor. omzet", "Marge%"].map(function(h) {
-    return /* @__PURE__ */ React.createElement("th", { key: h, style: SS.th }, h);
-  }))), /* @__PURE__ */ React.createElement("tbody", null, omzetData.slice(0, 200).map(function(r) {
-    var mp = parseFloat(r.bruto_marge || 0);
-    var margeKl = mp >= 60 ? C.green : mp >= 40 ? "#FF9800" : C.hot;
-    return /* @__PURE__ */ React.createElement("tr", { key: r.id }, /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, color: C.muted, whiteSpace: "nowrap", fontSize: 11 } }, r.datum), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 700 } }, r.boeking_naam), /* @__PURE__ */ React.createElement("td", { style: SS.td }, r.menu_naam), /* @__PURE__ */ React.createElement("td", { style: SS.td }, r.aantal_personen), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 700, color: C.green } }, "€" + parseFloat(r.theoretische_omzet || 0).toFixed(2)), /* @__PURE__ */ React.createElement("td", { style: SS.td }, mp > 0 ? /* @__PURE__ */ React.createElement("span", { style: { color: margeKl, fontWeight: 700 } }, mp, "%") : /* @__PURE__ */ React.createElement("span", { style: { color: "#ccc" } }, "—")));
-  })))), tab === "alerts" && /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 900, fontSize: 16, color: C.night } }, "\u26A0 Marge Alerts"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.muted, marginTop: 2 } }, "Automatisch gegenereerd als marge onder de drempel zakt na een prijswijziging")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      style: { ...btnSG, fontSize: 11 },
-      onClick: function() {
-        setMargeCheckBezig(true);
-        fetch("https://aezatnwsrhlwtykpixsq.supabase.co/functions/v1/marge-check", { method: "POST" }).then(function(r) {
-          return r.json();
-        }).then(function(d) {
-          setMargeCheckBezig(false);
-          window._supa.from("marge_alerts").select("*").order("aangemaakt_op", { ascending: false }).limit(100).then(function(r) {
-            setMargeAlerts(r.data || []);
-          });
-          alert("Marge check klaar: " + (d.nieuwe_alerts || 0) + " nieuwe alerts");
-        }).catch(function() {
-          setMargeCheckBezig(false);
-        });
-      }
-    },
-    margeCheckBezig ? "\u23F3 Bezig..." : "🔄 Herbereken nu"
-  ))), margeAlerts.length === 0 && /* @__PURE__ */ React.createElement("div", { style: { background: "#E8F5E9", borderRadius: 10, padding: "20px 24px", textAlign: "center" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 24, marginBottom: 8 } }, "\u2705"), /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, color: C.green } }, "Alle marges zijn in orde"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.muted, marginTop: 4 } }, "Geen menu's onder de drempel van 50%")), margeAlerts.length > 0 && /* @__PURE__ */ React.createElement("table", { style: SS.tbl }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, ["Menu", "Marge", "Drempel", "Duur ingredient", "Status", ""].map(function(h) {
-    return /* @__PURE__ */ React.createElement("th", { key: h, style: SS.th }, h);
-  }))), /* @__PURE__ */ React.createElement("tbody", null, margeAlerts.map(function(a) {
-    var stKl = { open: C.hot, gezien: "#FF9800", opgelost: C.green }[a.status] || C.muted;
-    return /* @__PURE__ */ React.createElement("tr", { key: a.id }, /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 700 } }, a.menu_naam), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 900, color: C.hot } }, a.marge_pct_na ? parseFloat(a.marge_pct_na).toFixed(1) + "%" : "—"), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, color: C.muted } }, a.drempel_pct, "%"), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontSize: 11, color: C.muted } }, a.trigger_product || "—"), /* @__PURE__ */ React.createElement("td", { style: SS.td }, /* @__PURE__ */ React.createElement("span", { style: { background: stKl + "22", color: stKl, border: "1px solid " + stKl + "44", borderRadius: 4, padding: "1px 6px", fontSize: 10, fontWeight: 700 } }, a.status)), /* @__PURE__ */ React.createElement("td", { style: SS.td }, a.status === "open" && /* @__PURE__ */ React.createElement(
-      "button",
-      {
-        style: { ...btnSG, fontSize: 10 },
-        onClick: function() {
-          window._supa.from("marge_alerts").update({ status: "gezien", gezien_op: (/* @__PURE__ */ new Date()).toISOString() }).eq("id", a.id).then(function() {
-            setMargeAlerts(function(prev) {
-              return prev.map(function(x) {
-                return x.id === a.id ? Object.assign({}, x, { status: "gezien" }) : x;
-              });
-            });
-          });
-        }
-      },
-      "Gezien"
-    )));
-  })))), tab === "geboekt" && /* @__PURE__ */ React.createElement(FinancieelGeboektTab, null));
+        ),
+
+        // Per week vergelijk
+        React.createElement('div', { style:{fontWeight:700,fontSize:12,color:C.muted,letterSpacing:1,marginBottom:8} }, 'OMZET PER WEEK — WEST VS WEESP'),
+        React.createElement('div', { style:{overflowX:'auto'} },
+          React.createElement('table', { style:{width:'100%',borderCollapse:'collapse',fontSize:12} },
+            React.createElement('thead', null,
+              React.createElement('tr', { style:{background:'#F0F4F6'} },
+                React.createElement('th', { style:{padding:'8px 12px',textAlign:'left',fontWeight:700,color:C.muted} }, 'Week'),
+                React.createElement('th', { style:{padding:'8px 12px',textAlign:'right',fontWeight:700,color:'#1AA6B7'} }, 'West'),
+                React.createElement('th', { style:{padding:'8px 12px',textAlign:'right',fontWeight:700,color:'#FE424D'} }, 'Weesp'),
+                React.createElement('th', { style:{padding:'8px 12px',textAlign:'right',fontWeight:700} }, 'Totaal'),
+                React.createElement('th', { style:{padding:'8px 12px',minWidth:160} }, 'Verdeling')
+              )
+            ),
+            React.createElement('tbody', null,
+              periodeGroepeer().map(function(p, i) {
+                var totW = p.totaal || 1;
+                var westPct = Math.round(p.west/totW*100);
+                return React.createElement('tr', { key:p.label, style:{borderBottom:'1px solid #F0F4F6',background:i%2===0?'#FAFCFE':'#fff'} },
+                  React.createElement('td', { style:{padding:'8px 12px',fontWeight:700} }, p.label),
+                  React.createElement('td', { style:{padding:'8px 12px',textAlign:'right',color:'#1AA6B7',fontWeight:700} }, euro(p.west)),
+                  React.createElement('td', { style:{padding:'8px 12px',textAlign:'right',color:'#FE424D',fontWeight:700} }, euro(p.weesp)),
+                  React.createElement('td', { style:{padding:'8px 12px',textAlign:'right',fontWeight:700} }, euro(p.totaal)),
+                  React.createElement('td', { style:{padding:'8px 12px'} },
+                    React.createElement('div', { style:{height:8,background:'#FEE',borderRadius:4,overflow:'hidden'} },
+                      React.createElement('div', { style:{height:'100%',width:westPct+'%',background:'#1AA6B7',borderRadius:'4px 0 0 4px'} })
+                    ),
+                    React.createElement('div', { style:{fontSize:10,color:C.muted,marginTop:2} }, 'W: '+westPct+'% · Weesp: '+(100-westPct)+'%')
+                  )
+                );
+              })
+            )
+          )
+        )
+      ),
+
+      // Laatste imports
+      imports.length > 0 && React.createElement('div', { style:{marginTop:16,background:C.white,borderRadius:10,padding:16} },
+        React.createElement('div', { style:{fontWeight:700,fontSize:12,color:C.muted,letterSpacing:1,marginBottom:10} }, 'IMPORT GESCHIEDENIS'),
+        imports.map(function(imp) {
+          return React.createElement('div', { key:imp.id, style:{display:'flex',justifyContent:'space-between',padding:'6px 0',borderBottom:'1px solid #F0F4F6',fontSize:12,flexWrap:'wrap',gap:4} },
+            React.createElement('span', { style:{color:C.night,fontWeight:700} }, imp.import_datum + ' \u2014 ' + (imp.periode_van||'?') + ' t/m ' + (imp.periode_tot||'?')),
+            React.createElement('span', { style:{color:C.muted} }, imp.totaal_boekingen + ' boekingen \u2022 ' + imp.totaal_regels + ' regels \u2022 ' + euro(imp.totaal_omzet||0))
+          );
+        })
+      )
+
+    ) // einde !laden && regels.length > 0
+  );
 }
+
+
 function FinancieelGeboektTab() {
   var [imports, setImports] = useState([]);
   var [laden, setLaden] = useState(true);
@@ -9828,7 +9792,7 @@ function App({ supabaseInloggen, supabaseUitloggen, supabaseSessie, supabaseProf
   if (!user) {
     return /* @__PURE__ */ React.createElement(LoginScreen, { onLogin: handleLogin });
   }
-  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", minHeight: "100vh", background: "#F0F4F7" } }, /* @__PURE__ */ React.createElement(Header, { sc, setSc, user, logout: handleLogout }), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto", overflowX: "hidden" }, className: "mobile-padding" }, /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 1200, margin: "0 auto", padding: "28px 20px 60px" } }, sc === "home" && /* @__PURE__ */ React.createElement(HomeScreen, { setSc }), sc === "boekingen" && /* @__PURE__ */ React.createElement(BoekingenScreen, { setSc, setActieve }), sc === "chef" && /* @__PURE__ */ React.createElement(ChefScreen, { setSc }), sc === "buffet" && /* @__PURE__ */ React.createElement(BuffetScreen, { actieve, setActieve }), sc === "opzet" && /* @__PURE__ */ React.createElement(OpzetScreen, null), sc === "tijden" && /* @__PURE__ */ React.createElement(TijdenScreen, null), sc.startsWith("stam:") && /* @__PURE__ */ React.createElement(StamScreen, { initTab: sc.split(":")[1] || "pg" }), sc === "fin" && /* @__PURE__ */ React.createElement(FinancieelScreen, null), sc === "allergenen" && /* @__PURE__ */ React.createElement(AllergenenScreen, null), sc === "inspiratie" && /* @__PURE__ */ React.createElement(InspiratieScreen, null), sc === "opzetlog" && /* @__PURE__ */ React.createElement(OpzetLogboekScreen, null), sc === "haccp" && /* @__PURE__ */ React.createElement(HACCPScreen, null), sc === "bestelling" && /* @__PURE__ */ React.createElement(SligroBestellingScreen, null))));
+  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", minHeight: "100vh", background: "#F0F4F7" } }, /* @__PURE__ */ React.createElement(Header, { sc, setSc, user, logout: handleLogout }), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto", overflowX: "hidden" }, className: "mobile-padding" }, /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 1200, margin: "0 auto", padding: "28px 20px 60px" } }, sc === "home" && /* @__PURE__ */ React.createElement(HomeScreen, { setSc }), sc === "boekingen" && /* @__PURE__ */ React.createElement(BoekingenScreen, { setSc, setActieve }), sc === "financieel" && /* @__PURE__ */ React.createElement(FinancieelScreen, { setSc }), sc === "chef" && /* @__PURE__ */ React.createElement(ChefScreen, { setSc }), sc === "buffet" && /* @__PURE__ */ React.createElement(BuffetScreen, { actieve, setActieve }), sc === "opzet" && /* @__PURE__ */ React.createElement(OpzetScreen, null), sc === "tijden" && /* @__PURE__ */ React.createElement(TijdenScreen, null), sc.startsWith("stam:") && /* @__PURE__ */ React.createElement(StamScreen, { initTab: sc.split(":")[1] || "pg" }), sc === "fin" && /* @__PURE__ */ React.createElement(FinancieelScreen, null), sc === "allergenen" && /* @__PURE__ */ React.createElement(AllergenenScreen, null), sc === "inspiratie" && /* @__PURE__ */ React.createElement(InspiratieScreen, null), sc === "opzetlog" && /* @__PURE__ */ React.createElement(OpzetLogboekScreen, null), sc === "haccp" && /* @__PURE__ */ React.createElement(HACCPScreen, null), sc === "bestelling" && /* @__PURE__ */ React.createElement(SligroBestellingScreen, null))));
 }
 function InspiratieScreen() {
   var _a, _b;
