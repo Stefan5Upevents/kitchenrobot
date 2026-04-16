@@ -2944,41 +2944,67 @@ function BuffetScreen({ actieve, setActieve }) {
   } }, "\uD83D\uDCF2 Opslaan in kiosk"), /* @__PURE__ */ React.createElement("button", { style: { ...btnSG, fontSize: 12 }, onClick: function() {
     setBoekingenAllergenen(Object.assign({}, boeking, { activePsId: psId }));
   } }, "🏷 Allergenenkaart"),
-/* @__PURE__ */ React.createElement("button", { style: { ...btnSG, fontSize: 12, background: dwLaden ? "#E0E0E0" : "rgba(26,166,183,.12)", color: dwLaden ? "#999" : "#1AA6B7", cursor: dwLaden ? "wait" : "pointer" }, disabled: dwLaden, onClick: function() {
+/* @__PURE__ */ React.createElement("button", { style: { ...btnSG, fontSize: 12, background: "rgba(26,166,183,.12)", color: "#1AA6B7" }, onClick: function() {
+    // Bouw helper voor allergenen per gerecht
     var sligro = window._stamSligro || [];
-    function getGerechtenAllergenen(menu) {
-      var result = [];
+    function getGerAllerg(menu) {
+      var res = [];
       (menu.menu_gerechten || []).forEach(function(mg) {
         var g = (window._stamGerechten || []).find(function(x) { return x.id === mg.gerecht_id; });
         if (!g) return;
-        var bevat = new Set(), mogelijk = new Set();
+        var bev = new Set(), mog = new Set();
         (g.ingredienten || []).forEach(function(ing) {
           var sp = sligro.find(function(p) { return p.id === ing.sligro_id; });
           if (!sp) return;
           var a = sp.allergenen_json || {};
-          (a.bevat || []).forEach(function(k) { bevat.add(k); });
-          (a.mogelijk || []).forEach(function(k) { if (!bevat.has(k)) mogelijk.add(k); });
+          (a.bevat || []).forEach(function(k) { bev.add(k); });
+          (a.mogelijk || []).forEach(function(k) { if (!bev.has(k)) mog.add(k); });
         });
-        result.push({ naam: g.naam, allergenen_bevat: [...bevat], allergenen_mogelijk: [...mogelijk] });
+        res.push({ naam: g.naam, allergenen_bevat: [...bev], allergenen_mogelijk: [...mog] });
       });
-      return result;
+      return res;
     }
-    var regelsVoorAnalyse = (geboekteMenus || [])
-      .filter(function(gm) { return gm.opmerking && gm.opmerking.trim().length > 2; })
-      .map(function(gm) { return { menu_naam: gm.recrasNaam, aantal: gm.aantal, opmerking: gm.opmerking, gerechten: getGerechtenAllergenen(gm.menu || {}) }; });
-    if (regelsVoorAnalyse.length === 0) {
+    // Maak tabs: één per productregel MET opmerking
+    var regelsMetOpm = (geboekteMenus || []).filter(function(gm) {
+      return gm.opmerking && gm.opmerking.trim().length > 2;
+    });
+    if (regelsMetOpm.length === 0) {
       setDwFout("Geen opmerkingen gevonden voor dit formulier.");
       setDwResultaat(null);
       return;
     }
-    setDwLaden(true); setDwFout(""); setDwResultaat(null);
-    fetch("https://aezatnwsrhlwtykpixsq.supabase.co/functions/v1/dieetwensen", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ regels: regelsVoorAnalyse })
-    }).then(function(r) { return r.json(); })
-    .then(function(d) { setDwLaden(false); if (d.error) { setDwFout(d.error); } else { setDwResultaat(d); } })
-    .catch(function(e) { setDwLaden(false); setDwFout(e.message); });
-} }, dwLaden ? "⏳ Analyseren..." : "🔍 Dieetwensen"),
+    // Initialiseer tabs: elke tab = { menu_naam, opmerking, status: 'wacht', resultaat: null }
+    var initTabs = regelsMetOpm.map(function(gm) {
+      return { menu_naam: gm.recrasNaam, aantal: gm.aantal, opmerking: gm.opmerking, gerechten: getGerAllerg(gm.menu || {}), status: "wacht", resultaat: null, fout: null };
+    });
+    setDwResultaat({ tabs: initTabs, actief: 0 });
+    setDwFout("");
+    // Start analyses één voor één
+    initTabs.forEach(function(tab, idx) {
+      fetch("https://aezatnwsrhlwtykpixsq.supabase.co/functions/v1/dieetwensen", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ menu_naam: tab.menu_naam, aantal: tab.aantal, opmerking: tab.opmerking, gerechten: tab.gerechten })
+      }).then(function(r) { return r.json(); })
+      .then(function(d) {
+        setDwResultaat(function(prev) {
+          if (!prev) return prev;
+          var newTabs = prev.tabs.map(function(t, i) {
+            if (i !== idx) return t;
+            return Object.assign({}, t, { status: d.error ? "fout" : "klaar", resultaat: d.error ? null : d, fout: d.error || null });
+          });
+          return Object.assign({}, prev, { tabs: newTabs });
+        });
+      }).catch(function(e) {
+        setDwResultaat(function(prev) {
+          if (!prev) return prev;
+          var newTabs = prev.tabs.map(function(t, i) {
+            return i === idx ? Object.assign({}, t, { status: "fout", fout: e.message }) : t;
+          });
+          return Object.assign({}, prev, { tabs: newTabs });
+        });
+      });
+    });
+} }, "\uD83D\uDD0D Dieetwensen"),
 /* @__PURE__ */ React.createElement("button", { style: btnA, onClick: function() {
     window.open("https://upevents.recras.nl/v2/customer/" + (boeking.id || "").split("-")[0], "_blank");
   } }, "Publiceer Recras \u2192"))), /* @__PURE__ */ React.createElement("div", { style: { background: C.white, padding: "16px 20px", borderRadius: 10, border: "1px solid " + C.border } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12, borderBottom: "2px solid " + C.night, paddingBottom: 10 } }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 900, fontSize: 20, color: C.night } }, boeking.naam), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.muted } }, pg ? pg.naam : "", " \u203A ", ps ? ps.naam : "", " \u2022 #", boeking.id), boeking.locatie && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: C.muted } }, boeking.locatie, boeking.plaats ? ", " + boeking.plaats : "")), /* @__PURE__ */ React.createElement("div", { style: { textAlign: "right" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 10, color: C.muted, textTransform: "uppercase", letterSpacing: 1 } }, "Recras deadline"), /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 900, fontSize: 24, color: C.hot } }, psDeadline || boeking.deadlineTijd || "—"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.muted } }, boeking.deadlineDag || "—"))), (function() {
@@ -3232,64 +3258,163 @@ function BuffetScreen({ actieve, setActieve }) {
     )), /* @__PURE__ */ React.createElement("td", { style: { padding: "5px 8px", fontSize: 10 } }, sligro.length > 0 ? sligro.map(function(s, si) {
       return /* @__PURE__ */ React.createElement("div", { key: si }, /* @__PURE__ */ React.createElement("strong", { style: { color: C.night } }, s.afgerond), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: C.muted } }, " ", s.naam), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 9, color: C.muted } }, " (", s.exacte.toFixed(1), ")"));
     }) : /* @__PURE__ */ React.createElement("span", { style: { color: "#BDBDBD" } }, "—")));
-  }))), isPsBBQ && buffetLayout && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 10, padding: "8px 12px", background: C.light, borderRadius: 8, border: "1px solid " + C.border, fontSize: 11 } }, /* @__PURE__ */ React.createElement("strong", null, "Chafingdish layout per buffet:"), "\xA0GN 1/3: ", buffetLayout.counts[0], " \u2022 GN 1/2: ", buffetLayout.counts[1], " \u2022 GN 1/1: ", buffetLayout.counts[2], "\xA0\u2022\xA0", /* @__PURE__ */ React.createElement("strong", { style: { color: C.hot } }, "Dishes per buffet: ", buffetLayout.dishesPerBuf), "\xA0\u2022\xA0Totaal (", nBuf, " bufs): ", buffetLayout.totalDishes)), // ─── Dieetwensen resultaten panel ────────────────────────────────
-  (dwFout || dwResultaat) && /* @__PURE__ */ React.createElement("div", { style: { position:"fixed", bottom:16, right:16, width:"min(560px,95vw)", maxHeight:"80vh", background:"#fff", borderRadius:12, boxShadow:"0 8px 32px rgba(0,45,65,.25)", overflow:"hidden", display:"flex", flexDirection:"column", zIndex:900 } },
-    React.createElement("div", { style: { background:"#002D41", padding:"12px 16px", display:"flex", justifyContent:"space-between", alignItems:"center" } },
-      React.createElement("div", { style: { color:"#fff", fontWeight:700, fontSize:14 } }, "\uD83D\uDD0D Dieetwensen analyse"),
-      React.createElement("button", { onClick: function(){ setDwResultaat(null); setDwFout(""); }, style: { background:"transparent", border:"none", color:"#fff", fontSize:20, cursor:"pointer", lineHeight:1 } }, "\u00D7")
+  }))), isPsBBQ && buffetLayout && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 10, padding: "8px 12px", background: C.light, borderRadius: 8, border: "1px solid " + C.border, fontSize: 11 } }, /* @__PURE__ */ React.createElement("strong", null, "Chafingdish layout per buffet:"), "\xA0GN 1/3: ", buffetLayout.counts[0], " \u2022 GN 1/2: ", buffetLayout.counts[1], " \u2022 GN 1/1: ", buffetLayout.counts[2], "\xA0\u2022\xA0", /* @__PURE__ */ React.createElement("strong", { style: { color: C.hot } }, "Dishes per buffet: ", buffetLayout.dishesPerBuf), "\xA0\u2022\xA0Totaal (", nBuf, " bufs): ", buffetLayout.totalDishes)), // ─── Dieetwensen multi-tab panel ─────────────────────────────────
+  (dwFout || dwResultaat) && /* @__PURE__ */ React.createElement("div", {
+    style: { position:"fixed", bottom:0, right:0, width:"min(620px,100vw)", maxHeight:"85vh", background:"#fff",
+             borderRadius:"12px 12px 0 0", boxShadow:"0 -4px 32px rgba(0,45,65,.22)", display:"flex",
+             flexDirection:"column", zIndex:900 }
+  },
+    // Header
+    React.createElement("div", { style: { background:"#002D41", padding:"10px 16px", display:"flex", justifyContent:"space-between", alignItems:"center", borderRadius:"12px 12px 0 0", flexShrink:0 } },
+      React.createElement("div", { style: { color:"#fff", fontWeight:700, fontSize:13 } }, "\uD83D\uDD0D Dieetwensen analyse"),
+      React.createElement("div", { style: { display:"flex", gap:8, alignItems:"center" } },
+        dwResultaat && React.createElement("div", { style: { fontSize:10, color:"#1AA6B7" } },
+          (dwResultaat.tabs||[]).filter(function(t){return t.status==="klaar";}).length + "/" + (dwResultaat.tabs||[]).length + " klaar"
+        ),
+        React.createElement("button", { onClick: function(){ setDwResultaat(null); setDwFout(""); }, style: { background:"transparent", border:"none", color:"#aaa", fontSize:22, cursor:"pointer", lineHeight:1, padding:"0 4px" } }, "\u00D7")
+      )
     ),
-    React.createElement("div", { style: { overflowY:"auto", padding:16, fontSize:12 } },
-      dwFout && React.createElement("div", { style: { background:"#FFEBEE", color:"#C62828", padding:"10px 14px", borderRadius:8, marginBottom:12 } }, "\u26A0 ", dwFout),
-      dwResultaat && (dwResultaat.regels || []).map(function(regel, ri) {
-        var SK = { geschikt:"#2E7D32", niet_geschikt:"#C62828", controleer:"#E65100", onbekend:"#78909C" };
-        var SE = { geschikt:"\u2713", niet_geschikt:"\u2717", controleer:"\u26A0", onbekend:"?" };
-        if (regel.geen_wensen) return React.createElement("div", { key:ri, style:{ marginBottom:10, padding:"10px 14px", background:"#E8F5E9", borderRadius:8 } },
-          React.createElement("div", {style:{fontWeight:700,color:"#2E7D32"}}, regel.menu_naam),
-          React.createElement("div", {style:{fontSize:11,color:"#78909C",marginTop:4}}, "\u2705 Geen dieetwensen")
-        );
-        if (regel.wacht_op_wensen) return React.createElement("div", { key:ri, style:{ marginBottom:10, padding:"10px 14px", background:"#FFF8E1", borderRadius:8, borderLeft:"3px solid #FF9800" } },
-          React.createElement("div", {style:{fontWeight:700,color:"#E65100"}}, regel.menu_naam),
-          React.createElement("div", {style:{fontSize:11,color:"#E65100",marginTop:4}}, "\u26A0 Dieetwensen volgen nog \u2014 controleer voor service!")
-        );
-        if (!regel.wensen_gevonden) return React.createElement("div", { key:ri, style:{ marginBottom:10, padding:"8px 14px", background:"#F5F5F5", borderRadius:8 } },
-          React.createElement("div", {style:{fontWeight:700,color:"#78909C"}}, regel.menu_naam),
-          React.createElement("div", {style:{fontSize:11,color:"#78909C",marginTop:2}}, "\u2014 Geen dieetwensen in opmerking")
-        );
-        return React.createElement("div", { key:ri, style:{ marginBottom:12, border:"1px solid #E0E8EF", borderRadius:8, overflow:"hidden" } },
-          React.createElement("div", { style:{ background:"#002D41", padding:"8px 12px", color:"#fff", fontWeight:700, fontSize:12 } },
-            regel.menu_naam + " (" + (regel.wensen||[]).length + " wens" + ((regel.wensen||[]).length!==1?"en":"") + ")"
-          ),
-          React.createElement("div", { style:{ padding:"8px 12px", background:"#F8FAFB", borderBottom:"1px solid #E0E8EF", display:"flex", flexWrap:"wrap", gap:4 } },
-            (regel.wensen||[]).map(function(w,wi){
-              var bg = w.type==="allergie"?"#FFEBEE":w.type==="zwanger"?"#FCE4EC":w.type==="dieet"?"#E3F2FD":"#F3E5F5";
-              var col = w.type==="allergie"?"#C62828":w.type==="zwanger"?"#880E4F":w.type==="dieet"?"#1565C0":"#6A1B9A";
-              return React.createElement("span", {key:wi, style:{background:bg,color:col,borderRadius:4,padding:"2px 7px",fontSize:11,fontWeight:700}},
-                (w.naam?w.naam+": ":"")+w.tekst);
-            })
-          ),
-          React.createElement("div", { style:{ padding:"8px 12px" } },
-            (regel.gerecht_analyse||[]).map(function(ga,gi){
+
+    // Foutmelding
+    dwFout && React.createElement("div", { style: { background:"#FFEBEE", color:"#C62828", padding:"10px 16px", fontSize:12 } }, "\u26A0 ", dwFout),
+
+    // Tabs
+    dwResultaat && React.createElement("div", { style: { display:"flex", overflowX:"auto", borderBottom:"2px solid #E0E8EF", flexShrink:0, background:"#F8FAFB" } },
+      (dwResultaat.tabs||[]).map(function(tab, idx) {
+        var isActief = dwResultaat.actief === idx;
+        var tabKleur = tab.status==="klaar" ? (tab.resultaat&&!tab.resultaat.wensen_gevonden&&!tab.resultaat.wacht_op_wensen ? "#78909C" : "#1AA6B7") : tab.status==="fout" ? "#C62828" : "#FF9800";
+        var tabIco = tab.status==="wacht" ? "\u23F3" : tab.status==="fout" ? "\u26A0" : tab.resultaat&&tab.resultaat.geen_wensen ? "\u2705" : tab.resultaat&&tab.resultaat.wacht_op_wensen ? "\u26A0" : "\uD83D\uDD0D";
+        return React.createElement("button", {
+          key: idx,
+          onClick: function() { setDwResultaat(function(p){ return Object.assign({},p,{actief:idx}); }); },
+          style: { padding:"8px 14px", border:"none", borderBottom: isActief?"3px solid #1AA6B7":"3px solid transparent",
+                   background: isActief?"#fff":"transparent", cursor:"pointer", fontSize:11, fontWeight: isActief?700:400,
+                   color: isActief?"#002D41":tabKleur, whiteSpace:"nowrap", flexShrink:0 }
+        }, tabIco + " " + tab.menu_naam.substring(0, 28) + (tab.menu_naam.length>28?"…":""));
+      })
+    ),
+
+    // Tab inhoud
+    dwResultaat && (function() {
+      var tab = (dwResultaat.tabs||[])[dwResultaat.actief];
+      if (!tab) return null;
+
+      var SK = { geschikt:"#2E7D32", niet_geschikt:"#C62828", controleer:"#E65100", onbekend:"#78909C" };
+      var SE = { geschikt:"\u2713", niet_geschikt:"\u2717", controleer:"\u26A0", onbekend:"?" };
+      var SBG = { geschikt:"#F1F8E9", niet_geschikt:"#FFEBEE", controleer:"#FFF8E1", onbekend:"#F5F5F5" };
+
+      return React.createElement("div", { style: { overflowY:"auto", padding:14, fontSize:12, flex:1 } },
+
+        // Laden spinner
+        tab.status === "wacht" && React.createElement("div", { style: { textAlign:"center", padding:24, color:"#78909C" } },
+          React.createElement("div", { style: { fontSize:24, marginBottom:8 } }, "\u23F3"),
+          React.createElement("div", null, "Claude analyseert de opmerkingen..."),
+          React.createElement("div", { style: { fontSize:10, marginTop:4, color:"#b0bec5" } }, "\"" + tab.opmerking.substring(0,80) + (tab.opmerking.length>80?"…":"") + "\"")
+        ),
+
+        // Fout
+        tab.status === "fout" && React.createElement("div", { style: { background:"#FFEBEE", color:"#C62828", padding:"12px 16px", borderRadius:8 } },
+          "\u26A0 Fout: ", tab.fout,
+          React.createElement("div", { style: { marginTop:8 } },
+            React.createElement("button", { style: { background:"#C62828", color:"#fff", border:"none", borderRadius:4, padding:"4px 10px", cursor:"pointer", fontSize:11 },
+              onClick: function() {
+                var sligro = window._stamSligro || [];
+                setDwResultaat(function(prev) {
+                  if (!prev) return prev;
+                  var idx = prev.actief;
+                  var newTabs = prev.tabs.map(function(t,i){ return i===idx ? Object.assign({},t,{status:"wacht",fout:null}) : t; });
+                  return Object.assign({},prev,{tabs:newTabs});
+                });
+                var tabData = tab;
+                fetch("https://aezatnwsrhlwtykpixsq.supabase.co/functions/v1/dieetwensen", {
+                  method:"POST", headers:{"Content-Type":"application/json"},
+                  body: JSON.stringify({ menu_naam: tabData.menu_naam, aantal: tabData.aantal, opmerking: tabData.opmerking, gerechten: tabData.gerechten })
+                }).then(function(r){return r.json();}).then(function(d){
+                  var aktIdx = dwResultaat.actief;
+                  setDwResultaat(function(prev) {
+                    if (!prev) return prev;
+                    var newTabs = prev.tabs.map(function(t,i){ return i===aktIdx ? Object.assign({},t,{status:d.error?"fout":"klaar",resultaat:d.error?null:d,fout:d.error||null}) : t; });
+                    return Object.assign({},prev,{tabs:newTabs});
+                  });
+                }).catch(function(e){
+                  var aktIdx = dwResultaat.actief;
+                  setDwResultaat(function(prev) {
+                    if (!prev) return prev;
+                    var newTabs = prev.tabs.map(function(t,i){ return i===aktIdx ? Object.assign({},t,{status:"fout",fout:e.message}) : t; });
+                    return Object.assign({},prev,{tabs:newTabs});
+                  });
+                });
+              }
+            }, "\uD83D\uDD04 Opnieuw proberen")
+          )
+        ),
+
+        // Resultaat
+        tab.status === "klaar" && tab.resultaat && (function() {
+          var r = tab.resultaat;
+
+          if (r.geen_wensen) return React.createElement("div", { style: { padding:"16px", background:"#E8F5E9", borderRadius:8, textAlign:"center" } },
+            React.createElement("div", { style: { fontSize:20, marginBottom:4 } }, "\u2705"),
+            React.createElement("div", { style: { fontWeight:700, color:"#2E7D32" } }, "Geen dieetwensen"),
+            React.createElement("div", { style: { fontSize:10, color:"#78909C", marginTop:4 } }, "\"" + tab.opmerking + "\"")
+          );
+
+          if (r.wacht_op_wensen) return React.createElement("div", { style: { padding:"16px", background:"#FFF8E1", borderRadius:8, borderLeft:"4px solid #FF9800" } },
+            React.createElement("div", { style: { fontWeight:700, color:"#E65100", marginBottom:4 } }, "\u26A0 Dieetwensen volgen nog"),
+            React.createElement("div", { style: { fontSize:11, color:"#78909C" } }, "Controleer v\xF3\xF3r service of de dieetwensen zijn bijgewerkt!"),
+            React.createElement("div", { style: { fontSize:10, color:"#b0bec5", marginTop:6, fontStyle:"italic" } }, "\"" + tab.opmerking + "\"")
+          );
+
+          if (!r.wensen_gevonden) return React.createElement("div", { style: { padding:"16px", background:"#F5F5F5", borderRadius:8, textAlign:"center" } },
+            React.createElement("div", { style: { color:"#78909C" } }, "\u2014 Geen dieetwensen gevonden in opmerking"),
+            React.createElement("div", { style: { fontSize:10, color:"#b0bec5", marginTop:4, fontStyle:"italic" } }, "\"" + tab.opmerking.substring(0,100) + "\"")
+          );
+
+          if (r.parse_fout) return React.createElement("div", { style: { padding:"16px", background:"#FFF8E1", borderRadius:8 } },
+            React.createElement("div", { style: { fontWeight:700, color:"#E65100", marginBottom:6 } }, "\u26A0 Kon niet volledig parsen"),
+            React.createElement("div", { style: { fontSize:10, color:"#78909C" } }, "Originele opmerking: \"" + tab.opmerking + "\"")
+          );
+
+          return React.createElement("div", null,
+            // Wensen samenvatting
+            React.createElement("div", { style: { marginBottom:10 } },
+              React.createElement("div", { style: { fontSize:11, fontWeight:700, color:"#78909C", marginBottom:6, textTransform:"uppercase", letterSpacing:1 } }, "Wensen in deze opmerking:"),
+              React.createElement("div", { style: { display:"flex", flexWrap:"wrap", gap:4 } },
+                (r.wensen||[]).map(function(w,wi) {
+                  var bg = w.type==="allergie"?"#FFEBEE":w.type==="zwanger"?"#FCE4EC":w.type==="dieet"?"#E3F2FD":"#F3E5F5";
+                  var col = w.type==="allergie"?"#C62828":w.type==="zwanger"?"#880E4F":w.type==="dieet"?"#1565C0":"#6A1B9A";
+                  return React.createElement("span", { key:wi, style:{ background:bg, color:col, borderRadius:4, padding:"3px 8px", fontSize:11, fontWeight:700 } },
+                    (w.naam ? w.naam + ": " : "") + w.tekst
+                  );
+                })
+              )
+            ),
+            // Gerecht analyse
+            React.createElement("div", { style: { fontSize:11, fontWeight:700, color:"#78909C", marginBottom:6, textTransform:"uppercase", letterSpacing:1 } }, "Gerechten:"),
+            (r.gerecht_analyse||[]).map(function(ga, gi) {
               var worst = "geschikt";
-              (ga.per_wens||[]).forEach(function(pw){
+              (ga.per_wens||[]).forEach(function(pw) {
                 if (pw.status==="niet_geschikt") worst="niet_geschikt";
                 else if (pw.status==="controleer" && worst!=="niet_geschikt") worst="controleer";
                 else if (pw.status==="onbekend" && worst==="geschikt") worst="onbekend";
               });
-              var bgs = {geschikt:"#F1F8E9",niet_geschikt:"#FFEBEE",controleer:"#FFF8E1",onbekend:"#F5F5F5"};
-              return React.createElement("div", {key:gi, style:{marginBottom:5, padding:"5px 10px", background:bgs[worst]||"#F5F5F5", borderRadius:6, borderLeft:"3px solid "+(SK[worst]||"#ccc")}},
-                React.createElement("div", {style:{fontWeight:700,fontSize:11,color:SK[worst],marginBottom:2}}, SE[worst]+" "+ga.gerecht_naam),
-                (ga.per_wens||[]).filter(function(pw){return pw.status!=="geschikt";}).map(function(pw,pi){
-                  return React.createElement("div",{key:pi,style:{fontSize:10,color:SK[pw.status]||"#78909C",marginLeft:12}},
-                    "\u2022 "+pw.wens_tekst+": "+pw.reden);
+              var onveilig = (ga.per_wens||[]).filter(function(pw){ return pw.status !== "geschikt"; });
+              return React.createElement("div", { key:gi, style:{ marginBottom:6, padding:"8px 12px", background:SBG[worst], borderRadius:6, borderLeft:"3px solid "+(SK[worst]||"#ccc") } },
+                React.createElement("div", { style:{ fontWeight:700, fontSize:12, color:SK[worst], marginBottom: onveilig.length?4:0 } }, SE[worst] + " " + ga.gerecht_naam),
+                onveilig.map(function(pw,pi) {
+                  return React.createElement("div", { key:pi, style:{ fontSize:10, color:SK[pw.status]||"#78909C", marginLeft:14 } },
+                    "\u2022 " + pw.wens_tekst + ": " + pw.reden
+                  );
                 })
               );
             })
-          )
-        );
-      })
-    )
+          );
+        })()
+      );
+    })()
   ),
   boekingenAllergenen && /* @__PURE__ */ React.createElement(
+    AllergenenKaart,  boekingenAllergenen && /* @__PURE__ */ React.createElement(
     AllergenenKaart,
     {
       boeking: boekingenAllergenen,
