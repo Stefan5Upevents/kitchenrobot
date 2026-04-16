@@ -8197,7 +8197,7 @@ function FinancieelScreen({ setSc }) {
     // Laad regels voor geselecteerd jaar
     var query = supa.from('fin_regels').select('*').eq('jaar', jaar);
     if (outlet !== 'beide') query = query.eq('outlet_code', outlet);
-    var vcmpQ = supa.from('fin_regels').select('jaar,maand,omzet,outlet_code');
+    var vcmpQ = supa.from('v_fin_maand_totalen').select('jaar,maand,omzet,outlet_code');
     if (outlet !== 'beide') vcmpQ = vcmpQ.eq('outlet_code', outlet);
     Promise.all([
       query,
@@ -8739,6 +8739,8 @@ function FinancieelScreen({ setSc }) {
         var ytd25 = [1,2,3,4].reduce(function(s,mn){return s+getM(2025,mn);},0);
         var tot25 = [1,2,3,4,5,6,7,8,9,10,11,12].reduce(function(s,mn){return s+getM(2025,mn);},0);
         var gf = ytd25 > 0 ? ytd26/ytd25 : 1.0;
+        // Safety: cap tussen 0.5 en 2.0
+        gf = Math.min(2.0, Math.max(0.5, gf));
 
         // Scenarios
         var scen = [
@@ -8886,7 +8888,7 @@ function FinancieelScreen({ setSc }) {
           React.createElement('div', {style:{background:'#fff',borderRadius:10,padding:20}},
             React.createElement('div', {style:{fontWeight:700,fontSize:14,marginBottom:4,color:'#002D41'}}, '\ud83d\udcc8 Omzetprognose 2026 — Keuken'),
             React.createElement('div', {style:{fontSize:11,color:'#78909C',marginBottom:16}},
-              'Groeifactor YTD: '+Math.round(gf*100)+'% t.o.v. 2025 · Actueel = jan-apr · Geboekt = mei-dec confirmed · Prognose = seizoensmodel'
+              'Groeifactor YTD: '+Math.round(gf*100)+'% t.o.v. 2025 (jan-apr: \u20ac'+Math.round(ytd25/1000)+'K→\u20ac'+Math.round(ytd26/1000)+'K) · Prognose = seizoenspatroon 2025 × factor'
             ),
 
             // Grafiek
