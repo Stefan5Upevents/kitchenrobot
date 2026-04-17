@@ -2946,158 +2946,130 @@ function BuffetScreen({ actieve, setActieve }) {
   } }, "🏷 Allergenenkaart"),
 /* @__PURE__ */ React.createElement("button", { style: { ...btnSG, fontSize: 12, background: "rgba(26,166,183,.12)", color: "#1AA6B7" }, onClick: function() {
 
-    // ─── Bouw VOLLEDIGE allergenen per gerecht (alle sligro ingredienten) ───────
     var sligro = window._stamSligro || [];
 
-    function bouwAllergeenProfiel(gerecht) {
-      var bevat = new Set(), mogelijk = new Set(), bevat_niet = new Set();
-      var heeftInfo = false;
-      (gerecht.ingredienten || []).forEach(function(ing) {
+    // Bouw volledig allergeen profiel per gerecht vanuit sligro ingrediënten
+    function bouwProfiel(g) {
+      var bev = new Set(), mog = new Set(), bevNiet = new Set(), hasInfo = false;
+      (g.ingredienten || []).forEach(function(ing) {
         var sp = sligro.find(function(p) { return p.id === ing.sligro_id; });
         if (!sp || !sp.allergenen_json) return;
-        heeftInfo = true;
+        hasInfo = true;
         var a = sp.allergenen_json;
-        (a.bevat || []).forEach(function(k) { bevat.add(k); });
-        (a.mogelijk || []).forEach(function(k) { if (!bevat.has(k)) mogelijk.add(k); });
-        (a.bevat_niet || []).forEach(function(k) { bevat_niet.add(k); });
+        (a.bevat || []).forEach(function(k) { bev.add(k); });
+        (a.mogelijk || []).forEach(function(k) { if (!bev.has(k)) mog.add(k); });
+        (a.bevat_niet || []).forEach(function(k) { bevNiet.add(k); });
       });
-      return { bevat: bevat, mogelijk: mogelijk, bevat_niet: bevat_niet, heeftInfo: heeftInfo };
+      return { bev: bev, mog: mog, bevNiet: bevNiet, hasInfo: hasInfo, aantalIng: (g.ingredienten||[]).length };
     }
 
-    // ─── Algoritme: check één wens tegen allergeen profiel ────────────────────
-    function checkWensVsGerecht(wens, profiel) {
-      if (!profiel.heeftInfo && (gerecht.ingredienten || []).length > 0) {
-        return { status: "onbekend", reden: "Geen allergeneninformatie voor ingrediënten" };
+    // Check één wens tegen profiel — puur algoritmisch op echte sligro data
+    function check(wens, prof) {
+      if (!prof.hasInfo) {
+        return { status: "onbekend", reden: prof.aantalIng === 0 ? "Geen ingrediënten gekoppeld" : "Geen allergeneninfo voor ingrediënten" };
       }
-      if (!profiel.heeftInfo && (gerecht.ingredienten || []).length === 0) {
-        return { status: "onbekend", reden: "Geen ingrediënten gekoppeld aan dit gerecht" };
+      // Directe allergeen-sleutels check
+      var keys = wens.allergeen_keys || [];
+      for (var i = 0; i < keys.length; i++) {
+        var k = keys[i];
+        if (prof.bev.has(k)) return { status: "niet_geschikt", reden: "Bevat " + k };
+        if (prof.mog.has(k)) return { status: wens.sporen_ok ? "geschikt" : "controleer", reden: "Mogelijk sporen van " + k + (wens.sporen_ok ? " (sporen ok)" : "") };
       }
-
-      // Check allergeen sleutels (definitief)
-      var keysToCheck = wens.allergeen_keys || [];
-      for (var i = 0; i < keysToCheck.length; i++) {
-        var key = keysToCheck[i];
-        if (profiel.bevat.has(key)) {
-          return { status: "niet_geschikt", reden: "Bevat " + key };
-        }
-        if (profiel.mogelijk.has(key)) {
-          if (wens.sporen_ok) {
-            return { status: "geschikt", reden: "Sporen van " + key + " mogelijk (sporen ok)" };
-          }
-          return { status: "controleer", reden: "Mogelijk sporen van " + key };
-        }
-      }
-
-      // Vegan: check dierlijke producten in allergenen
+      // Vegan: check dierlijke allergenen
       if (wens.vegan) {
-        var dierlijk = ["melk","eieren","vis","schaaldieren","weekdieren"];
-        for (var j = 0; j < dierlijk.length; j++) {
-          if (profiel.bevat.has(dierlijk[j])) {
-            return { status: "niet_geschikt", reden: "Bevat " + dierlijk[j] + " (niet vegan)" };
-          }
-          if (profiel.mogelijk.has(dierlijk[j])) {
-            return { status: "controleer", reden: "Mogelijk " + dierlijk[j] + " (controleer vegan)" };
-          }
+        var dier = ["melk","eieren","vis","schaaldieren","weekdieren"];
+        for (var j = 0; j < dier.length; j++) {
+          if (prof.bev.has(dier[j])) return { status: "niet_geschikt", reden: "Bevat " + dier[j] + " (niet vegan)" };
+          if (prof.mog.has(dier[j])) return { status: "controleer", reden: "Mogelijk " + dier[j] };
         }
-        // Vlees niet in allergenen → altijd handmatig
-        return { status: "controleer", reden: "Geen dierlijke allergenen aangetroffen — controleer op vlees" };
+        return { status: "controleer", reden: "Controleer op vlees (vlees staat niet in EU allergenenlijst)" };
       }
-
-      // Vegetarisch: vis/schaaldieren check via allergenen
+      // Vegetarisch
       if (wens.vegetarisch) {
-        if (profiel.bevat.has("vis")) return { status: "niet_geschikt", reden: "Bevat vis" };
-        if (profiel.bevat.has("schaaldieren")) return { status: "niet_geschikt", reden: "Bevat schaaldieren" };
-        if (profiel.bevat.has("weekdieren")) return { status: "niet_geschikt", reden: "Bevat weekdieren" };
-        return { status: "controleer", reden: "Controleer op vlees (vlees staat niet in allergenenlijst)" };
+        if (prof.bev.has("vis")) return { status: "niet_geschikt", reden: "Bevat vis" };
+        if (prof.bev.has("schaaldieren")) return { status: "niet_geschikt", reden: "Bevat schaaldieren" };
+        if (prof.bev.has("weekdieren")) return { status: "niet_geschikt", reden: "Bevat weekdieren" };
+        return { status: "controleer", reden: "Controleer op vlees" };
       }
-
       // Handmatig vereist (halal, zwanger, ui/knoflook, etc.)
-      if (wens.requires_manual) {
-        return { status: "controleer", reden: wens.manual_note || "Handmatig controleren" };
-      }
-
-      // Geen probleem gevonden
-      return { status: "geschikt", reden: "Geen relevante allergenen aangetroffen" };
+      if (wens.requires_manual) return { status: "controleer", reden: wens.manual_note || "Handmatig controleren" };
+      return { status: "geschikt", reden: "Geen relevante allergenen gevonden" };
     }
 
-    // ─── Maak tabs: één per boeking-regel MET opmerking ─────────────────────
+    // Filter regels met echte dieetwens-opmerkingen
     var regelsMetOpm = (geboekteMenus || []).filter(function(gm) {
       return gm.opmerking && gm.opmerking.trim().length > 2;
     });
+
     if (regelsMetOpm.length === 0) {
       setDwFout("Geen opmerkingen gevonden voor dit formulier.");
       setDwResultaat(null);
       return;
     }
 
-    // Sla de check-functie op voor gebruik in de tab update
-    window._dwCheckFn = checkWensVsGerecht;
-    window._dwBouwFn = bouwAllergeenProfiel;
-
-    var initTabs = regelsMetOpm.map(function(gm) {
-      return {
-        menu_naam: gm.recrasNaam,
-        aantal: gm.aantal,
-        opmerking: gm.opmerking,
-        status: "wacht",
-        wensen: null,
-        gerecht_analyse: null,
-        fout: null
-      };
+    // Init tabs — één per productregel met opmerking
+    var tabs = regelsMetOpm.map(function(gm) {
+      return { menu_naam: gm.recrasNaam, aantal: gm.aantal, opmerking: gm.opmerking, status: "wacht", wensen: null, gerecht_analyse: null, fout: null };
     });
-    setDwResultaat({ tabs: initTabs, actief: 0 });
+    setDwResultaat({ tabs: tabs, actief: 0 });
     setDwFout("");
 
-    // Start per tab: 1) parse opmerking via edge function, 2) check lokaal
-    initTabs.forEach(function(tab, idx) {
+    // Per tab: parse tekst via edge function → check dan algoritmisch
+    tabs.forEach(function(tab, idx) {
       fetch("https://aezatnwsrhlwtykpixsq.supabase.co/functions/v1/dieetwensen", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ menu_naam: tab.menu_naam, aantal: tab.aantal, opmerking: tab.opmerking })
-      }).then(function(r) { return r.json(); })
+      })
+      .then(function(r) { return r.json(); })
       .then(function(d) {
         if (d.error) throw new Error(d.error);
-        if (!d.wensen_gevonden && !d.wacht_op_wensen && !d.geen_wensen) {
-          // Geen wensen → direct opslaan
+
+        // Geen dieetwensen gevonden → sla direct op
+        if (!d.wensen_gevonden && !d.wacht_op_wensen) {
           setDwResultaat(function(prev) {
             if (!prev) return prev;
-            return Object.assign({}, prev, { tabs: prev.tabs.map(function(t,i) {
-              return i !== idx ? t : Object.assign({}, t, { status: "klaar", wensen: [], gerecht_analyse: [], geen_wensen: d.geen_wensen, wacht_op_wensen: d.wacht_op_wensen, wensen_gevonden: false, parse_fout: d.parse_fout });
-            })});
+            var newTabs = prev.tabs.map(function(t, i) {
+              return i !== idx ? t : Object.assign({}, t, { status: "klaar", wensen: [], gerecht_analyse: [], geen_wensen: !!d.geen_wensen, wacht_op_wensen: false, wensen_gevonden: false });
+            });
+            return Object.assign({}, prev, { tabs: newTabs });
           });
           return;
         }
 
-        // Algorithme: check ALLE gerechten in de productsoort (alleGerechten)
+        // Algoritmische check: alle gerechten in de productsoort
         var wensen = d.wensen || [];
-        var gerechtenAnalyse = alleGerechten.map(function(g) {
-          var profiel = window._dwBouwFn ? window._dwBouwFn(g) : { bevat: new Set(), mogelijk: new Set(), bevat_niet: new Set(), heeftInfo: false };
+        var analyse = alleGerechten.map(function(g) {
+          var prof = bouwProfiel(g);
           var perWens = wensen.map(function(w) {
-            var check = window._dwCheckFn ? window._dwCheckFn(w, profiel) : { status: "onbekend", reden: "" };
-            return { wens_tekst: w.tekst, wens_aantal: w.aantal, wens_naam: w.naam, status: check.status, reden: check.reden };
+            var res = check(w, prof);
+            return { wens_tekst: w.tekst, wens_aantal: w.aantal, wens_naam: w.naam, status: res.status, reden: res.reden };
           });
           return { gerecht_naam: g.naam, per_wens: perWens };
         });
 
         setDwResultaat(function(prev) {
           if (!prev) return prev;
-          return Object.assign({}, prev, { tabs: prev.tabs.map(function(t,i) {
+          var newTabs = prev.tabs.map(function(t, i) {
             return i !== idx ? t : Object.assign({}, t, {
               status: "klaar",
               wensen_gevonden: d.wensen_gevonden,
-              geen_wensen: d.geen_wensen,
-              wacht_op_wensen: d.wacht_op_wensen,
-              parse_fout: d.parse_fout,
+              geen_wensen: !!d.geen_wensen,
+              wacht_op_wensen: !!d.wacht_op_wensen,
               wensen: wensen,
-              gerecht_analyse: gerechtenAnalyse
+              gerecht_analyse: analyse
             });
-          })});
+          });
+          return Object.assign({}, prev, { tabs: newTabs });
         });
-      }).catch(function(e) {
+      })
+      .catch(function(e) {
         setDwResultaat(function(prev) {
           if (!prev) return prev;
-          return Object.assign({}, prev, { tabs: prev.tabs.map(function(t,i) {
+          var newTabs = prev.tabs.map(function(t, i) {
             return i === idx ? Object.assign({}, t, { status: "fout", fout: e.message }) : t;
-          })});
+          });
+          return Object.assign({}, prev, { tabs: newTabs });
         });
       });
     });
