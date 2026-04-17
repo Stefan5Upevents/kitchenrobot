@@ -2969,47 +2969,104 @@ function BuffetScreen({ actieve, setActieve }) {
 
     var sligro = window._stamSligro || [];
 
-    // Profiel per gerecht op basis van echte sligro allergenen
+    // Profiel per gerecht: verzamelt EU-allergenen + volledige ingrediententekst per gerecht
     function bouwProfiel(g) {
-      var bev = new Set(), mog = new Set(), bevNiet = new Set(), hasInfo = false;
+      var bev = new Set(), mog = new Set(), bevNiet = new Set();
+      var hasAllergenInfo = false, hasIngredientText = false;
+      var volledigeTekst = []; // verzameling van productnaam + ingredientlijst per sligro product
+      var productHits = []; // {sligro_naam, tekst} voor toelichting
+
       (g.ingredienten || []).forEach(function(ing) {
         var sp = sligro.find(function(p) { return p.id === ing.sligro_id; });
-        if (!sp || !sp.allergenen_json) return;
-        hasInfo = true;
-        var a = sp.allergenen_json;
-        (a.bevat || []).forEach(function(k) { bev.add(k); });
-        (a.mogelijk || []).forEach(function(k) { if (!bev.has(k)) mog.add(k); });
-        (a.bevat_niet || []).forEach(function(k) { bevNiet.add(k); });
+        if (!sp) return;
+
+        // EU-allergenen inladen
+        if (sp.allergenen_json) {
+          hasAllergenInfo = true;
+          var a = sp.allergenen_json;
+          (a.bevat || []).forEach(function(k) { bev.add(k); });
+          (a.mogelijk || []).forEach(function(k) { if (!bev.has(k)) mog.add(k); });
+          (a.bevat_niet || []).forEach(function(k) { bevNiet.add(k); });
+        }
+
+        // Ingredienten tekst inladen
+        var tekst = ((sp.naam || "") + " " + (sp.ingredienten_tekst || "")).toLowerCase();
+        if ((sp.ingredienten_tekst || "").length > 10) hasIngredientText = true;
+        volledigeTekst.push(tekst);
+        productHits.push({ naam: sp.naam, tekst: sp.ingredienten_tekst || "" });
       });
-      return { bev: bev, mog: mog, bevNiet: bevNiet, hasInfo: hasInfo, aantalIng: (g.ingredienten||[]).length };
+
+      return {
+        bev: bev, mog: mog, bevNiet: bevNiet,
+        hasAllergenInfo: hasAllergenInfo,
+        hasIngredientText: hasIngredientText,
+        hasInfo: hasAllergenInfo || hasIngredientText,
+        tekst: volledigeTekst.join(" | "),
+        products: productHits,
+        aantalIng: (g.ingredienten||[]).length
+      };
+    }
+
+    // Zoek keyword in tekst — met slimme word-boundary detectie voor korte woorden zoals "ui"
+    function zoekKeyword(tekst, keyword) {
+      if (!tekst || !keyword) return false;
+      var kw = keyword.toLowerCase().trim();
+      if (!kw) return false;
+      // Als keyword al komma's/spaties bevat (bv " ui,") — gewoon indexOf
+      if (/[\s,()]/.test(kw)) {
+        return tekst.indexOf(kw) >= 0;
+      }
+      // Voor normale woorden: word boundary check
+      var regex = new RegExp('(^|[\\s,()\\-/.])' + kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '([\\s,()\\-/.]|$)', 'i');
+      return regex.test(tekst);
     }
 
     // Check één wens tegen profiel
     function check(wens, prof) {
       if (!prof.hasInfo) {
-        return { status: "onbekend", reden: prof.aantalIng === 0 ? "Geen ingrediënten gekoppeld" : "Geen allergeneninfo beschikbaar" };
+        return { status: "onbekend", reden: prof.aantalIng === 0 ? "Geen ingrediënten gekoppeld" : "Geen Sligro-data beschikbaar" };
       }
+
+      // 1. EU-allergenen check (definitief)
       var keys = wens.allergeen_keys || [];
       for (var i = 0; i < keys.length; i++) {
         var k = keys[i];
-        if (prof.bev.has(k)) return { status: "niet_geschikt", reden: "Bevat " + k };
-        if (prof.mog.has(k)) return { status: wens.sporen_ok ? "geschikt" : "controleer", reden: "Mogelijk sporen van " + k + (wens.sporen_ok ? " (sporen ok)" : "") };
-      }
-      if (wens.vegan) {
-        var dier = ["melk","eieren","vis","schaaldieren","weekdieren"];
-        for (var j = 0; j < dier.length; j++) {
-          if (prof.bev.has(dier[j])) return { status: "niet_geschikt", reden: "Bevat " + dier[j] + " (niet vegan)" };
-          if (prof.mog.has(dier[j])) return { status: "controleer", reden: "Mogelijk " + dier[j] };
+        if (prof.bev.has(k)) return { status: "niet_geschikt", reden: "Bevat " + k + " (EU-allergeen)" };
+        if (prof.mog.has(k)) {
+          if (wens.sporen_ok) continue;
+          return { status: "controleer", reden: "Mogelijk sporen van " + k };
         }
-        return { status: "controleer", reden: "Check op vlees (vlees niet in EU allergenenlijst)" };
       }
-      if (wens.vegetarisch) {
-        if (prof.bev.has("vis")) return { status: "niet_geschikt", reden: "Bevat vis" };
-        if (prof.bev.has("schaaldieren")) return { status: "niet_geschikt", reden: "Bevat schaaldieren" };
-        if (prof.bev.has("weekdieren")) return { status: "niet_geschikt", reden: "Bevat weekdieren" };
-        return { status: "controleer", reden: "Check op vlees" };
+
+      // 2. Zoek-keywords in ingrediëntentekst (voor ui/knoflook/varken/etc.)
+      var zoek = wens.zoek_keywords || [];
+      for (var z = 0; z < zoek.length; z++) {
+        var kw = zoek[z];
+        if (zoekKeyword(prof.tekst, kw)) {
+          // Vind specifiek product waar het in staat
+          var product = null;
+          for (var p = 0; p < prof.products.length; p++) {
+            var t = (prof.products[p].naam + " " + prof.products[p].tekst).toLowerCase();
+            if (zoekKeyword(t, kw)) { product = prof.products[p]; break; }
+          }
+          return {
+            status: "niet_geschikt",
+            reden: "Bevat " + kw.trim() + (product ? " (in " + product.naam + ")" : "")
+          };
+        }
       }
-      if (wens.requires_manual) return { status: "controleer", reden: wens.manual_note || "Handmatig controleren" };
+
+      // 3. Als we de tekst hebben en niets gevonden → GESCHIKT (niet meer onbekend/oranje)
+      if (prof.hasIngredientText) {
+        return { status: "geschikt", reden: "Geen '" + (zoek.join("', '") || keys.join("', '") || "trigger-ingredient") + "' gevonden in ingredi\u00ebntenlijst" };
+      }
+
+      // 4. Handmatige check als laatste redmiddel
+      if (wens.requires_manual) {
+        return { status: "controleer", reden: wens.manual_note || "Handmatig controleren" };
+      }
+
+      // 5. Alleen allergenen-data, geen ingrediententekst, geen relevante allergenen
       return { status: "geschikt", reden: "Geen relevante allergenen gevonden" };
     }
 
