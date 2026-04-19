@@ -11124,6 +11124,45 @@ function ChefScreen({ setSc }) {
   var [opgeslagen, setOpgeslagen] = React.useState({});
   var [openBoeking, setOpenBoeking] = React.useState(null);
   var [profiel, setProfiel] = React.useState(null);
+  var [wijzigingenChef, setWijzigingenChef] = React.useState({});
+  var [bbqSnapshots, setBbqSnapshots] = React.useState({});
+  var [openFormulier, setOpenFormulier] = React.useState(null);
+
+  React.useEffect(function() {
+    if (!supa) return;
+    function laadWijz() {
+      supa.from('recras_wijzigingen').select('*').is('gezien_op', null).then(function(r) {
+        if (!r.data) return;
+        var m = {};
+        r.data.forEach(function(w) {
+          if (!m[w.boeking_id] || new Date(w.ontstaan_op) > new Date(m[w.boeking_id].ontstaan_op)) m[w.boeking_id] = w;
+        });
+        setWijzigingenChef(m);
+      });
+    }
+    laadWijz();
+    var iv = setInterval(laadWijz, 30000);
+    return function() { clearInterval(iv); };
+  }, []);
+
+  React.useEffect(function() {
+    if (!supa) return;
+    supa.from('kiosk_bbq_snapshots').select('boeking_id, html, updated_at').then(function(r) {
+      if (!r.data) return;
+      var m = {};
+      r.data.forEach(function(s) {
+        if (!m[s.boeking_id] || new Date(s.updated_at) > new Date(m[s.boeking_id].updated_at)) m[s.boeking_id] = s;
+      });
+      setBbqSnapshots(m);
+    });
+  }, []);
+
+  function markeerChefGezien(boekingId) {
+    if (!supa) return;
+    supa.from('recras_wijzigingen').update({ gezien_op: new Date().toISOString() }).eq('boeking_id', boekingId).is('gezien_op', null).then(function() {
+      setWijzigingenChef(function(prev) { var n = Object.assign({}, prev); delete n[boekingId]; return n; });
+    });
+  }
   var C = window._C || { night:'#234756', aqua:'#3FB8C4', hot:'#E8202B', green:'#2E7D32', muted:'#78909C', white:'#fff' };
 
   // Haal gebruikersprofiel op
@@ -11350,7 +11389,7 @@ function ChefScreen({ setSc }) {
             style:{
               background: isGecontroleerd ? '#F1F8E9' : '#fff',
               border: '1px solid ' + (isBBQ ? C.hot : '#D8E8EF'),
-              borderLeft: '4px solid ' + (isBBQ ? C.hot : '#D8E8EF'),
+              borderLeft: '4px solid ' + (wijzigingenChef[b.id] ? (wijzigingenChef[b.id].type === 'geannuleerd' ? '#FE424D' : wijzigingenChef[b.id].type === 'gewijzigd' ? '#FF9800' : wijzigingenChef[b.id].type === 'nieuw' ? '#27AE60' : (isBBQ ? C.hot : '#D8E8EF')) : (isBBQ ? C.hot : '#D8E8EF')),
               borderRadius:8, marginBottom:8, overflow:'hidden'
             }
           },
@@ -11375,6 +11414,23 @@ function ChefScreen({ setSc }) {
               React.createElement('div', { style:{display:'flex',alignItems:'center',gap:8,flexShrink:0} },
                 isGecontroleerd && React.createElement('span', { style:{color:C.green,fontSize:16} }, '✓'),
                 isOpgeslagen && React.createElement('span', { style:{color:C.green,fontSize:11,fontWeight:700} }, 'Opgeslagen'),
+                wijzigingenChef[b.id] && React.createElement('span', {
+                  onClick: function(ev) {
+                    ev.stopPropagation();
+                    if (wijzigingenChef[b.id].type === 'geannuleerd' && confirm('Geannuleerde boeking wegklikken?')) markeerChefGezien(b.id);
+                  },
+                  title: (wijzigingenChef[b.id].detail && wijzigingenChef[b.id].detail.tekst) || wijzigingenChef[b.id].type,
+                  style:{
+                    fontSize:9, fontWeight:800, letterSpacing:0.5,
+                    padding:'3px 7px', borderRadius:10, color:'#fff',
+                    background: wijzigingenChef[b.id].type === 'geannuleerd' ? '#FE424D' : wijzigingenChef[b.id].type === 'gewijzigd' ? '#FF9800' : '#27AE60',
+                    cursor: wijzigingenChef[b.id].type === 'geannuleerd' ? 'pointer' : 'help'
+                  }
+                }, wijzigingenChef[b.id].type === 'geannuleerd' ? 'GEANNULEERD' : wijzigingenChef[b.id].type === 'gewijzigd' ? 'GEWIJZIGD' : 'NIEUW'),
+                bbqSnapshots[b.id] && React.createElement('button', {
+                  onClick: function(ev) { ev.stopPropagation(); setOpenFormulier({ boekingId: b.id, naam: b.naam, html: bbqSnapshots[b.id].html }); },
+                  style:{background:C.night,color:'#fff',border:'none',borderRadius:10,padding:'3px 8px',fontSize:10,fontWeight:700,cursor:'pointer'}
+                }, '📋 Formulier'),
                 React.createElement('span', { style:{color:C.muted,fontSize:12} }, isOpen ? '▲' : '▼')
               )
             ),
@@ -11475,7 +11531,30 @@ function ChefScreen({ setSc }) {
           );
         })
       );
-    })
+    }),
+
+    // BBQ Formulier modal
+    openFormulier && React.createElement('div', {
+      style:{position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,0.7)',zIndex:9999,display:'flex',alignItems:'center',justifyContent:'center',padding:20},
+      onClick: function() { setOpenFormulier(null); }
+    },
+      React.createElement('div', {
+        onClick: function(e) { e.stopPropagation(); },
+        style:{background:'#fff',borderRadius:12,maxWidth:'900px',width:'100%',maxHeight:'90vh',overflow:'hidden',display:'flex',flexDirection:'column'}
+      },
+        React.createElement('div', { style:{padding:'14px 20px',background:C.night,color:'#fff',display:'flex',justifyContent:'space-between',alignItems:'center'} },
+          React.createElement('div', { style:{fontWeight:800,fontSize:15} }, '📋 ' + openFormulier.naam),
+          React.createElement('button', {
+            onClick: function() { setOpenFormulier(null); },
+            style:{background:'transparent',color:'#fff',border:'1px solid rgba(255,255,255,0.3)',borderRadius:8,padding:'4px 12px',cursor:'pointer'}
+          }, '✕ Sluiten')
+        ),
+        React.createElement('iframe', {
+          srcDoc: openFormulier.html,
+          style:{flex:1,border:0,width:'100%',minHeight:'60vh'}
+        })
+      )
+    )
   );
 }
 
