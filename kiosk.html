@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#234756">
+<title>KitchenRobot Kiosk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; background: #F8FAFC; color: #234756; min-height: 100vh; -webkit-font-smoothing: antialiased; }
+.screen { padding: 16px; max-width: 480px; margin: 0 auto; padding-bottom: 100px; }
+.topbar { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: #234756; color: white; position: sticky; top: 0; z-index: 10; gap: 10px; }
+.topbar .info { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.topbar .datum { font-size: 11px; opacity: 0.7; }
+.topbar .wie { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.topbar .outlet { font-size: 11px; background: #3FB8C4; padding: 4px 10px; border-radius: 100px; font-weight: 600; white-space: nowrap; }
+.topbar .logout { background: transparent; color: white; border: 0; font-size: 12px; padding: 6px 10px; border-radius: 8px; opacity: 0.7; }
+.tijdbalk { background: white; border-radius: 14px; padding: 12px; margin-bottom: 14px; border: 1px solid #E1E8EB; overflow-x: auto; white-space: nowrap; }
+.tijdbalk::-webkit-scrollbar { display: none; }
+.tijdbalk h3 { font-size: 11px; opacity: 0.6; margin-bottom: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.tijdmoment { display: inline-flex; flex-direction: column; margin-right: 8px; padding: 6px 10px; background: #F8FAFC; border-radius: 10px; border: 1px solid #E1E8EB; min-width: 80px; }
+.tijdmoment.huidig { background: #3FB8C4; color: white; border-color: #3FB8C4; }
+.tijdmoment.verlopen { opacity: 0.5; }
+.tijdmoment .tijd { font-size: 14px; font-weight: 700; }
+.tijdmoment .naam { font-size: 9px; opacity: 0.8; }
+.mode-switch { display: flex; background: white; border-radius: 100px; padding: 4px; margin-bottom: 14px; border: 1px solid #E1E8EB; }
+.mode-btn { flex: 1; border: 0; background: transparent; padding: 10px 8px; font-size: 11px; font-weight: 600; border-radius: 100px; color: #234756; cursor: pointer; }
+.mode-btn.active { background: #234756; color: white; }
+.boeking { background: white; border-radius: 18px; margin-bottom: 12px; border: 1px solid #E1E8EB; overflow: hidden; transition: all 0.2s; }
+.boeking.uitgeklapt { border-color: #3FB8C4; }
+.boeking-kop { padding: 14px 16px; cursor: pointer; }
+.boeking-kop .regel1 { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; gap: 10px; }
+.boeking-kop .tijd { font-size: 22px; font-weight: 700; font-family: 'Fraunces', serif; }
+.boeking-kop .naam { font-size: 14px; font-weight: 600; text-align: right; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.boeking-kop .meta { font-size: 12px; opacity: 0.6; margin-bottom: 10px; }
+.boeking-kop .ps-rij { display: flex; gap: 6px; flex-wrap: wrap; }
+.ps-badge { display: inline-flex; align-items: center; gap: 4px; padding: 5px 10px; background: #F8FAFC; border-radius: 100px; font-size: 11px; font-weight: 600; border: 1px solid #E1E8EB; }
+.ps-badge.klaar { background: #D1F5E6; color: #047857; border-color: #6EE7B7; }
+.voortgang { height: 4px; background: #F0F4F6; border-radius: 100px; margin-top: 10px; overflow: hidden; }
+.voortgang-bar { height: 100%; background: linear-gradient(90deg, #3FB8C4, #6EE7B7); transition: width 0.3s; }
+.ps-blok { border-top: 1px solid #F0F4F6; padding: 14px 16px; }
+.ps-kop { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 10px; }
+.ps-kop h4 { font-size: 13px; font-weight: 700; }
+.btn-klaar-ps { background: #234756; color: white; border: 0; padding: 8px 14px; border-radius: 100px; font-size: 11px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.btn-klaar-ps:disabled { opacity: 0.4; }
+.gerecht { display: flex; align-items: center; padding: 10px 0; gap: 12px; border-bottom: 1px solid #F8FAFC; }
+.gerecht:last-child { border-bottom: 0; }
+.cb { width: 26px; height: 26px; border: 2px solid #C5D0D5; border-radius: 8px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; font-weight: 700; color: white; font-size: 15px; }
+.cb.uitgevoerd { background: #22C55E; border-color: #22C55E; }
+.cb.afwijking { background: #F59E0B; border-color: #F59E0B; }
+.gerecht-info { flex: 1; min-width: 0; }
+.gerecht-naam { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+.gerecht-details { font-size: 11px; opacity: 0.6; }
+.gerecht-status { font-size: 10px; opacity: 0.5; margin-top: 2px; font-style: italic; }
+.info-btn { width: 32px; height: 32px; border-radius: 100px; background: #F0F4F6; border: 0; font-size: 14px; cursor: pointer; flex-shrink: 0; }
+.onder-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; margin-bottom: 10px; }
+.onder-blok { background: white; border-radius: 14px; padding: 14px; border: 1px solid #E1E8EB; cursor: pointer; }
+.onder-blok .icoon { font-size: 22px; margin-bottom: 6px; }
+.onder-blok .label { font-size: 12px; font-weight: 600; }
+.onder-blok .stat { font-size: 11px; opacity: 0.6; margin-top: 2px; }
+.onder-blok.alarm { background: #FEF2F2; border-color: #FCA5A5; }
+.meld-chef-knop { background: #E8202B; color: white; border: 0; padding: 14px; width: 100%; border-radius: 14px; font-size: 13px; font-weight: 600; margin-top: 10px; cursor: pointer; }
+.login-bg { min-height: 100vh; background: linear-gradient(180deg, #234756 0%, #3FB8C4 100%); display: flex; flex-direction: column; padding: 20px; }
+.login-titel { text-align: center; color: white; padding: 40px 0 30px; }
+.login-titel h1 { font-family: 'Fraunces', serif; font-size: 32px; font-weight: 700; margin-bottom: 6px; }
+.login-titel p { opacity: 0.8; font-size: 14px; }
+.login-outlet { display: flex; gap: 10px; margin-bottom: 20px; }
+.outlet-btn { flex: 1; background: rgba(255,255,255,0.2); color: white; border: 0; padding: 14px; border-radius: 100px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.outlet-btn.active { background: white; color: #234756; }
+.medewerker-lijst { background: white; border-radius: 22px; padding: 14px; flex: 1; min-height: 300px; }
+.medewerker-lijst h3 { font-size: 12px; opacity: 0.6; margin-bottom: 14px; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
+.medewerker { display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: 14px; cursor: pointer; transition: background 0.15s; }
+.medewerker:hover { background: #F8FAFC; }
+.medewerker .avatar { width: 44px; height: 44px; border-radius: 100px; background: linear-gradient(135deg, #3FB8C4, #234756); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; }
+.medewerker .naam { font-size: 15px; font-weight: 600; }
+.medewerker .rol { font-size: 11px; opacity: 0.6; }
+.leeg-lijst { text-align: center; padding: 40px 20px; opacity: 0.5; font-size: 13px; }
+.pin-overlay { position: fixed; inset: 0; background: rgba(35, 71, 86, 0.9); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 20px; backdrop-filter: blur(10px); }
+.pin-card { background: white; border-radius: 22px; padding: 24px; width: 100%; max-width: 320px; }
+.pin-card h2 { font-family: 'Fraunces', serif; text-align: center; margin-bottom: 4px; }
+.pin-card .sub { text-align: center; font-size: 12px; opacity: 0.6; margin-bottom: 20px; }
+.pin-display { display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; }
+.pin-dot { width: 16px; height: 16px; border-radius: 100px; border: 2px solid #C5D0D5; transition: all 0.15s; }
+.pin-dot.filled { background: #234756; border-color: #234756; }
+.pin-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.pin-btn { aspect-ratio: 1; background: #F8FAFC; border: 1px solid #E1E8EB; border-radius: 14px; font-size: 22px; font-weight: 600; cursor: pointer; }
+.pin-btn:active { background: #3FB8C4; color: white; transform: scale(0.95); }
+.pin-err { color: #E8202B; text-align: center; font-size: 12px; margin-top: 10px; font-weight: 600; }
+.modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; display: flex; align-items: flex-end; padding: 0; }
+.modal-card { background: white; width: 100%; max-width: 480px; margin: 0 auto; border-radius: 22px 22px 0 0; max-height: 85vh; overflow-y: auto; padding: 20px; }
+.modal-card h3 { font-family: 'Fraunces', serif; margin-bottom: 14px; }
+.modal-close { background: #234756; color: white; border: 0; padding: 12px; width: 100%; border-radius: 100px; font-weight: 600; cursor: pointer; margin-top: 14px; }
+.modal-content label { font-size: 12px; font-weight: 600; display: block; margin-top: 10px; }
+.modal-content input, .modal-content select, .modal-content textarea { width: 100%; padding: 10px; border: 1px solid #E1E8EB; border-radius: 10px; font-size: 14px; margin-top: 4px; font-family: inherit; }
+.preview-banner { background: #FEF3C7; color: #92400E; text-align: center; padding: 8px; font-size: 11px; font-weight: 600; border-bottom: 1px solid #FCD34D; }
+.loader { text-align: center; padding: 40px; opacity: 0.5; font-size: 13px; }
+.leeg { text-align: center; padding: 30px; opacity: 0.5; font-size: 13px; border: 2px dashed #E1E8EB; border-radius: 14px; }
+</style>
+</head>
+<body>
+<div class="preview-banner">✨ Kiosk v2 PREVIEW — werkt met echte data</div>
+<div id="app"><div class="loader">Laden...</div></div>
+<script>
+var SUPABASE_URL = 'https://aezatnwsrhlwtykpixsq.supabase.co';
+var ANON_KEY = 'sb_publishable_qkQzUEM5fvJPSsfScEzNCg_Eug8-d4t';
+
+var PS_ICONS = {
+  'BBQ': '🔥',
+  'Lunch': '🥪',
+  'Ontbijt': '🍳',
+  'Borrel': '🍻',
+  'Borrelplateau': '🧀',
+  'Bitter': '🌟',
+  'Gebak': '🍰',
+  'Ijs': '🍨',
+  'Streetfood': '🌮',
+  'Snack': '🍟',
+  'Friet': '🍟',
+  'Tafel': '🍽️',
+  'Hospi': '📝'
+};
+
+function getPSIcon(ps_naam) {
+  if (!ps_naam) return '🍽️';
+  var keys = Object.keys(PS_ICONS);
+  for (var i = 0; i < keys.length; i++) {
+    if (ps_naam.indexOf(keys[i]) !== -1) return PS_ICONS[keys[i]];
+  }
+  return '🍽️';
+}
+
+function esc(s) { 
+  if (s == null) return ''; 
+  return String(s).replace(/[&<>"']/g, function(c) { 
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; 
+  }); 
+}
+
+var state = {
+  outlet_code: localStorage.getItem('kiosk_outlet') || 'weesp',
+  sessie_id: localStorage.getItem('kiosk_sessie'),
+  medewerker_naam: localStorage.getItem('kiosk_naam'),
+  rol: localStorage.getItem('kiosk_rol'),
+  data: null,
+  medewerkers: [],
+  mode: 'A',
+  uitgeklapt: {},
+  pin_medewerker: null,
+  pin_input: '',
+  pin_error: '',
+  modal: null
+};
+
+function api(path, body) {
+  return fetch(SUPABASE_URL + '/functions/v1/' + path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ANON_KEY, 'apikey': ANON_KEY },
+    body: JSON.stringify(body || {})
+  }).then(function(r) { return r.json(); });
+}
+
+function laadMedewerkers() {
+  return api('kiosk-sessie', { actie: 'medewerkers', outlet_code: state.outlet_code }).then(function(res) {
+    state.medewerkers = res.medewerkers || [];
+    render();
+  });
+}
+
+function laadData() {
+  return api('kiosk-vandaag', { outlet_code: state.outlet_code }).then(function(res) {
+    state.data = res;
+    render();
+  });
+}
+
+function login(pincode) {
+  state.pin_error = '';
+  return api('kiosk-sessie', { 
+    actie: 'login', 
+    outlet_code: state.outlet_code, 
+    medewerker_id: state.pin_medewerker.id,
+    pincode: pincode
+  }).then(function(res) {
+    if (res.sessie_id) {
+      state.sessie_id = res.sessie_id;
+      state.medewerker_naam = res.medewerker_naam;
+      state.rol = res.rol;
+      localStorage.setItem('kiosk_sessie', res.sessie_id);
+      localStorage.setItem('kiosk_naam', res.medewerker_naam);
+      localStorage.setItem('kiosk_rol', res.rol);
+      localStorage.setItem('kiosk_outlet', state.outlet_code);
+      state.pin_medewerker = null;
+      state.pin_input = '';
+      return laadData();
+    } else {
+      state.pin_error = res.error || 'Onjuiste pincode';
+      state.pin_input = '';
+      render();
+    }
+  });
+}
+
+function logout() {
+  var p = state.sessie_id ? api('kiosk-sessie', { actie: 'logout', sessie_id: state.sessie_id }) : Promise.resolve();
+  p.then(function() {
+    state.sessie_id = null;
+    state.medewerker_naam = null;
+    state.rol = null;
+    state.data = null;
+    localStorage.removeItem('kiosk_sessie');
+    localStorage.removeItem('kiosk_naam');
+    localStorage.removeItem('kiosk_rol');
+    return laadMedewerkers();
+  });
+}
+
+function aftik(bid, bnaam, gerecht_naam, ps_naam) {
+  return api('kiosk-aftik', {
+    actie: 'aftik',
+    sessie_id: state.sessie_id,
+    datum: new Date().toISOString().slice(0,10),
+    outlet_code: state.outlet_code,
+    boeking_id: bid,
+    boeking_naam: bnaam,
+    gerecht_naam: gerecht_naam,
+    ps_naam: ps_naam
+  }).then(function(res) {
+    if (res.ok) return laadData();
+    alert(res.error || 'Aftikken mislukt');
+  });
+}
+
+function bevestigPS(bid, bnaam, ps_naam, gerechten) {
+  if (!confirm('Alle ' + gerechten.length + ' gerechten van ' + ps_naam + ' afvinken?')) return;
+  return api('kiosk-aftik', {
+    actie: 'bevestig_productsoort',
+    sessie_id: state.sessie_id,
+    datum: new Date().toISOString().slice(0,10),
+    outlet_code: state.outlet_code,
+    boeking_id: bid,
+    boeking_naam: bnaam,
+    ps_naam: ps_naam,
+    gerechten: gerechten.map(function(g) { return { gerecht_naam: g }; })
+  }).then(function(res) {
+    if (res.ok) return laadData();
+  });
+}
+
+function render() {
+  var app = document.getElementById('app');
+  if (!state.sessie_id) {
+    app.innerHTML = renderLogin();
+    bindLogin();
+    return;
+  }
+  if (!state.data) {
+    app.innerHTML = '<div class="loader">Bezig met laden...</div>';
+    laadData();
+    return;
+  }
+  app.innerHTML = renderHome();
+  bindHome();
+}
+
+function renderLogin() {
+  var mwLijst = state.medewerkers.length === 0 ? 
+    '<div class="leeg-lijst">Nog geen medewerkers aangemaakt voor deze outlet.<br><br>Vraag Stefan.</div>' :
+    state.medewerkers.map(function(m) {
+      var initial = (m.naam || '?').charAt(0).toUpperCase();
+      return '<div class="medewerker" data-id="' + esc(m.id) + '" data-naam="' + esc(m.naam) + '" data-rol="' + esc(m.rol || 'kok') + '">' +
+        '<div class="avatar">' + esc(initial) + '</div>' +
+        '<div><div class="naam">' + esc(m.naam) + '</div><div class="rol">' + esc(m.rol || 'kok') + '</div></div>' +
+      '</div>';
+    }).join('');
+  var pinOverlay = state.pin_medewerker ? renderPinPad() : '';
+  return '<div class="login-bg">' +
+    '<div class="login-titel"><h1>KitchenRobot</h1><p>Kies je naam om in te loggen</p></div>' +
+    '<div class="login-outlet">' +
+      '<button class="outlet-btn ' + (state.outlet_code === 'west' ? 'active' : '') + '" data-outlet="west">West</button>' +
+      '<button class="outlet-btn ' + (state.outlet_code === 'weesp' ? 'active' : '') + '" data-outlet="weesp">Weesp</button>' +
+    '</div>' +
+    '<div class="medewerker-lijst">' +
+      '<h3>Medewerkers &mdash; ' + esc(state.outlet_code) + '</h3>' + mwLijst +
+    '</div>' + pinOverlay +
+  '</div>';
+}
+
+function renderPinPad() {
+  var dots = '';
+  for (var i = 0; i < 4; i++) dots += '<div class="pin-dot ' + (state.pin_input.length > i ? 'filled' : '') + '"></div>';
+  var btns = '';
+  [1,2,3,4,5,6,7,8,9,null,0,'back'].forEach(function(n) {
+    if (n === null) btns += '<div></div>';
+    else if (n === 'back') btns += '<button class="pin-btn" data-pin="back">&#9003;</button>';
+    else btns += '<button class="pin-btn" data-pin="' + n + '">' + n + '</button>';
+  });
+  var errHtml = state.pin_error ? '<div class="pin-err">' + esc(state.pin_error) + '</div>' : '';
+  return '<div class="pin-overlay"><div class="pin-card">' +
+    '<h2>' + esc(state.pin_medewerker.naam) + '</h2>' +
+    '<div class="sub">Pincode (4 cijfers)</div>' +
+    '<div class="pin-display">' + dots + '</div>' +
+    '<div class="pin-pad">' + btns + '</div>' + errHtml +
+    '<button class="modal-close" data-pin="cancel" style="background:transparent;color:#234756;margin-top:10px;border:1px solid #E1E8EB;">Annuleren</button>' +
+  '</div></div>';
+}
+
+function bindLogin() {
+  Array.prototype.forEach.call(document.querySelectorAll('[data-outlet]'), function(b) {
+    b.onclick = function() {
+      state.outlet_code = b.getAttribute('data-outlet');
+      localStorage.setItem('kiosk_outlet', state.outlet_code);
+      laadMedewerkers();
+    };
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('.medewerker'), function(b) {
+    b.onclick = function() {
+      state.pin_medewerker = { id: b.getAttribute('data-id'), naam: b.getAttribute('data-naam'), rol: b.getAttribute('data-rol') };
+      state.pin_input = '';
+      state.pin_error = '';
+      render();
+    };
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-pin]'), function(b) {
+    b.onclick = function() {
+      var v = b.getAttribute('data-pin');
+      if (v === 'cancel') { state.pin_medewerker = null; render(); return; }
+      if (v === 'back') { state.pin_input = state.pin_input.slice(0, -1); render(); return; }
+      if (state.pin_input.length >= 4) return;
+      state.pin_input += v;
+      render();
+      if (state.pin_input.length === 4) setTimeout(function() { login(state.pin_input); }, 150);
+    };
+  });
+}
+
+function renderHome() {
+  var d = state.data;
+  var vandaag = new Date().toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' });
+  var nu = new Date().toTimeString().slice(0,5);
+  var boekingen = (d.dagpakket && d.dagpakket.boekingen) ? d.dagpakket.boekingen : [];
+  var voortgang = d.voortgang || [];
+  return '<div class="topbar">' +
+    '<div class="info"><div class="datum">' + esc(vandaag) + '</div><div class="wie">' + esc(state.medewerker_naam) + '</div></div>' +
+    '<div class="outlet">' + esc(d.outlet_naam) + '</div>' +
+    '<button class="logout" id="btn-logout">Uit</button>' +
+  '</div><div class="screen">' +
+    renderTijdbalk(d.tijdschema, nu) + renderModeSwitch() + renderBoekingen(boekingen, voortgang) + renderOnderBlokken(d) +
+    '<button class="meld-chef-knop" id="btn-meld-chef">🛠 Meld chef: er moet iets besteld / is op / defect</button>' +
+  '</div>' + (state.modal ? renderModal() : '');
+}
+
+function renderTijdbalk(tijdschema, nu) {
+  if (!tijdschema || tijdschema.length === 0) return '<div class="tijdbalk"><h3>Tijdschema</h3><div style="font-size:12px;opacity:0.5;padding:6px 0;">Geen tijden voor vandaag</div></div>';
+  var nuMin = parseInt(nu.slice(0,2)) * 60 + parseInt(nu.slice(3,5));
+  var items = tijdschema.map(function(t) {
+    var mv = t.minVal || 0;
+    var verlopen = mv < nuMin;
+    var huidig = !verlopen && Math.abs(mv - nuMin) < 30;
+    return '<div class="tijdmoment ' + (verlopen ? 'verlopen' : '') + ' ' + (huidig ? 'huidig' : '') + '"><div class="tijd">' + esc(t.tijd) + '</div><div class="naam">' + esc(t.naam) + '</div></div>';
+  }).join('');
+  return '<div class="tijdbalk"><h3>Tijdschema vandaag</h3>' + items + '</div>';
+}
+
+function renderModeSwitch() {
+  return '<div class="mode-switch">' +
+    '<button class="mode-btn ' + (state.mode === 'A' ? 'active' : '') + '" data-mode="A">Per boeking</button>' +
+    '<button class="mode-btn ' + (state.mode === 'B' ? 'active' : '') + '" data-mode="B">Per soort</button>' +
+    '<button class="mode-btn ' + (state.mode === 'C' ? 'active' : '') + '" data-mode="C">Snelle klaar</button>' +
+  '</div>';
+}
+
+function renderBoekingen(boekingen, voortgang) {
+  if (!boekingen || boekingen.length === 0) return '<div class="leeg">Geen boekingen voor vandaag.<br><br>Check dagpakket op website.</div>';
+  var gesort = boekingen.slice().sort(function(a,b) {
+    var ta = (a.deadline || '99:99').replace(':','');
+    var tb = (b.deadline || '99:99').replace(':','');
+    return ta.localeCompare(tb);
+  });
+  return gesort.map(function(b) { return renderBoekingKaart(b, voortgang); }).join('');
+}
+
+function renderBoekingKaart(boeking, voortgang) {
+  var bid = boeking.boeking_id || boeking.id || '';
+  var bnaam = boeking.naam || boeking.boeking_naam || 'Onbekend';
+  var uitgeklapt = state.uitgeklapt[bid];
+  var psGroepen = {};
+  (boeking.gerechten || []).forEach(function(g) {
+    var ps = g.ps_naam || g.productsoort_naam || 'Overig';
+    if (!psGroepen[ps]) psGroepen[ps] = [];
+    psGroepen[ps].push(g);
+  });
+  var status = {};
+  voortgang.filter(function(v) { return v.boeking_id === bid; }).forEach(function(v) {
+    status[v.gerecht_naam + '|' + v.ps_naam] = v;
+  });
+  var psKeys = Object.keys(psGroepen);
+  var psBadges = psKeys.map(function(ps) {
+    var gerechten = psGroepen[ps];
+    var klaar = gerechten.filter(function(g) { return status[g.naam + '|' + ps] && status[g.naam + '|' + ps].status === 'uitgevoerd'; }).length;
+    var totaal = gerechten.length;
+    var allesKlaar = klaar === totaal;
+    return '<span class="ps-badge ' + (allesKlaar ? 'klaar' : '') + '">' + getPSIcon(ps) + ' ' + esc(ps) + ' ' + klaar + '/' + totaal + '</span>';
+  }).join('');
+  var totKlaar = 0, totAlles = 0;
+  psKeys.forEach(function(ps) {
+    psGroepen[ps].forEach(function(g) {
+      totAlles++;
+      if (status[g.naam + '|' + ps] && status[g.naam + '|' + ps].status === 'uitgevoerd') totKlaar++;
+    });
+  });
+  var pct = totAlles > 0 ? (totKlaar / totAlles * 100) : 0;
+  var psBlokken = uitgeklapt ? psKeys.map(function(ps) { return renderPsBlok(bid, bnaam, ps, psGroepen[ps], status); }).join('') : '';
+  return '<div class="boeking ' + (uitgeklapt ? 'uitgeklapt' : '') + '">' +
+    '<div class="boeking-kop" data-toggle="' + esc(bid) + '">' +
+      '<div class="regel1"><div class="tijd">' + esc(boeking.deadline || '?') + '</div><div class="naam">' + esc(bnaam) + '</div></div>' +
+      '<div class="meta">' + esc(boeking.locatie || '') + ' &middot; ' + esc(boeking.aantal_personen || '?') + 'p</div>' +
+      '<div class="ps-rij">' + psBadges + '</div>' +
+      '<div class="voortgang"><div class="voortgang-bar" style="width: ' + pct + '%"></div></div>' +
+    '</div>' + psBlokken +
+  '</div>';
+}
+
+function renderPsBlok(bid, bnaam, ps, gerechten, status) {
+  var items = gerechten.map(function(g) {
+    var st = status[g.naam + '|' + ps];
+    var klaarState = (st && st.status === 'uitgevoerd') ? 'uitgevoerd' : ((st && st.status === 'afwijking') ? 'afwijking' : '');
+    var cbInhoud = klaarState === 'uitgevoerd' ? '&#10003;' : (klaarState === 'afwijking' ? '!' : '');
+    var stTekst = (st && st.uitgevoerd_door_naam) ? st.uitgevoerd_door_naam + ', ' + new Date(st.uitgevoerd_op).toLocaleTimeString('nl-NL', {hour:'2-digit',minute:'2-digit'}) : '';
+    var aftikData = btoa(unescape(encodeURIComponent(JSON.stringify({ bid: bid, bnaam: bnaam, gerecht: g.naam, ps: ps }))));
+    var infoData = btoa(unescape(encodeURIComponent(JSON.stringify({ gerecht: g.naam }))));
+    return '<div class="gerecht">' +
+      '<div class="cb ' + klaarState + '" data-aftik="' + aftikData + '">' + cbInhoud + '</div>' +
+      '<div class="gerecht-info"><div class="gerecht-naam">' + esc(g.naam) + '</div>' +
+      '<div class="gerecht-details">' + esc(g.aantal || '?') + 'p' + (g.gn_formaat ? ' &middot; ' + esc(g.gn_formaat) : '') + '</div>' +
+      (stTekst ? '<div class="gerecht-status">' + esc(stTekst) + '</div>' : '') + '</div>' +
+      '<button class="info-btn" data-info="' + infoData + '">ℹ</button>' +
+    '</div>';
+  }).join('');
+  var allesKlaar = gerechten.every(function(g) { return status[g.naam + '|' + ps] && status[g.naam + '|' + ps].status === 'uitgevoerd'; });
+  var klaarData = btoa(unescape(encodeURIComponent(JSON.stringify({ bid: bid, bnaam: bnaam, ps: ps, gerechten: gerechten.map(function(g) { return g.naam; }) }))));
+  return '<div class="ps-blok"><div class="ps-kop"><h4>' + getPSIcon(ps) + ' ' + esc(ps) + '</h4>' +
+    '<button class="btn-klaar-ps" data-klaar-ps="' + klaarData + '" ' + (allesKlaar ? 'disabled' : '') + '>' +
+    (allesKlaar ? 'Alles klaar ✓' : 'Alles klaar voor service') + '</button></div>' + items + '</div>';
+}
+
+function renderOnderBlokken(d) {
+  var sm = d.schoonmaak || {};
+  var alarm = sm.dwingend > 0;
+  var hac = d.haccp || {};
+  return '<div class="onder-grid">' +
+    '<div class="onder-blok"><div class="icoon">📅</div><div class="label">Morgen</div><div class="stat">Binnenkort</div></div>' +
+    '<div class="onder-blok"><div class="icoon">🗓️</div><div class="label">Verder week</div><div class="stat">Plan vooruit</div></div>' +
+    '<div class="onder-blok ' + (alarm ? 'alarm' : '') + '"><div class="icoon">🧽</div><div class="label">Schoonmaak</div><div class="stat">' + (sm.dwingend || 0) + ' rood &middot; ' + (sm.waarschuwing || 0) + ' geel</div></div>' +
+    '<div class="onder-blok"><div class="icoon">🌡️</div><div class="label">HACCP</div><div class="stat">' + (hac.gedaan || 0) + '/' + (hac.totaal || 0) + ' gedaan</div></div>' +
+    '<div class="onder-blok"><div class="icoon">📄</div><div class="label">Documenten</div><div class="stat">Buffet &middot; BBQ-PDF</div></div>' +
+    '<div class="onder-blok ' + (d.meldingen_chef_open > 0 ? 'alarm' : '') + '"><div class="icoon">📨</div><div class="label">Meldingen</div><div class="stat">' + (d.meldingen_chef_open || 0) + ' open</div></div>' +
+  '</div>';
+}
+
+function renderModal() {
+  if (state.modal && state.modal.type === 'meld') return renderMeldModal();
+  if (state.modal && state.modal.type === 'info') return renderInfoModal();
+  return '';
+}
+
+function renderMeldModal() {
+  return '<div class="modal"><div class="modal-card"><h3>Meld chef</h3>' +
+    '<div class="modal-content"><label>Type</label>' +
+    '<select id="meld-type"><option value="bestellen">Er moet besteld worden</option><option value="op">Iets is op</option><option value="defect">Iets is stuk / defect</option><option value="anders">Anders</option></select>' +
+    '<label>Product / omschrijving</label>' +
+    '<input id="meld-product" placeholder="bv. kipfilet 5kg, frituur 2...">' +
+    '<label>Urgentie</label>' +
+    '<select id="meld-urgentie"><option value="vandaag">Vandaag</option><option value="deze_week">Deze week</option><option value="mag_wachten">Mag wachten</option></select>' +
+    '<label>Toelichting (optioneel)</label>' +
+    '<textarea id="meld-tekst" rows="2"></textarea></div>' +
+    '<button class="modal-close" id="meld-verstuur">Versturen</button>' +
+    '<button class="modal-close" data-close style="background:transparent;color:#234756;margin-top:8px;border:1px solid #E1E8EB;">Annuleren</button>' +
+  '</div></div>';
+}
+
+function renderInfoModal() {
+  var g = state.modal && state.modal.gerecht || 'Info';
+  return '<div class="modal"><div class="modal-card"><h3>' + esc(g) + '</h3>' +
+    '<div class="modal-content"><p style="font-size:13px;opacity:0.7;">Allergenen, ingrediënten, bereidingswijze en how-to komen hier in de volledige versie.</p></div>' +
+    '<button class="modal-close" data-close>Sluiten</button>' +
+  '</div></div>';
+}
+
+function bindHome() {
+  var bLogout = document.getElementById('btn-logout');
+  if (bLogout) bLogout.onclick = logout;
+  Array.prototype.forEach.call(document.querySelectorAll('[data-toggle]'), function(b) {
+    b.onclick = function() { var id = b.getAttribute('data-toggle'); state.uitgeklapt[id] = !state.uitgeklapt[id]; render(); };
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-mode]'), function(b) {
+    b.onclick = function() { state.mode = b.getAttribute('data-mode'); render(); };
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-aftik]'), function(b) {
+    b.onclick = function(e) {
+      e.stopPropagation();
+      var d = JSON.parse(decodeURIComponent(escape(atob(b.getAttribute('data-aftik')))));
+      aftik(d.bid, d.bnaam, d.gerecht, d.ps);
+    };
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-klaar-ps]'), function(b) {
+    b.onclick = function(e) {
+      e.stopPropagation();
+      var d = JSON.parse(decodeURIComponent(escape(atob(b.getAttribute('data-klaar-ps')))));
+      bevestigPS(d.bid, d.bnaam, d.ps, d.gerechten);
+    };
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-info]'), function(b) {
+    b.onclick = function(e) {
+      e.stopPropagation();
+      var d = JSON.parse(decodeURIComponent(escape(atob(b.getAttribute('data-info')))));
+      state.modal = { type: 'info', gerecht: d.gerecht };
+      render();
+    };
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-close]'), function(b) {
+    b.onclick = function() { state.modal = null; render(); };
+  });
+  var meldBtn = document.getElementById('btn-meld-chef');
+  if (meldBtn) meldBtn.onclick = function() { state.modal = { type: 'meld' }; render(); };
+  var verstuur = document.getElementById('meld-verstuur');
+  if (verstuur) verstuur.onclick = function() {
+    api('kiosk-meld-chef', {
+      sessie_id: state.sessie_id,
+      outlet_code: state.outlet_code,
+      type: document.getElementById('meld-type').value,
+      urgentie: document.getElementById('meld-urgentie').value,
+      product_naam: document.getElementById('meld-product').value,
+      omschrijving: document.getElementById('meld-tekst').value
+    }).then(function(res) {
+      if (res.ok) { state.modal = null; alert('Melding verstuurd!'); return laadData(); }
+      else alert(res.error || 'Fout');
+    });
+  };
+}
+
+if (state.sessie_id) {
+  laadData();
+  setInterval(function() { if (state.sessie_id) laadData(); }, 30000);
+} else {
+  laadMedewerkers();
+}
+</script>
+</body>
+</html>
