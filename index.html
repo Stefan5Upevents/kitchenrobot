@@ -11343,7 +11343,7 @@ function ChefScreen({ setSc, setActieve }) {
   var dagen = Object.keys(dagMap).sort().map(function(d) { return { dag: d, boekingen: dagMap[d] }; });
 
   var vandaagIso = new Date().toISOString().split('T')[0];
-  var vandaagBks = boekingen.filter(function(b) { return (b.deadline || '').split('T')[0] === vandaagIso; });
+  var vandaagBks = boekingen.filter(function(b) { return (b.deadline || '').split('T')[0].split(' ')[0] === vandaagIso; });
   var urgentBks = boekingen.filter(function(b) {
     var uren = urenTotDeadline(b);
     if (uren < 0 || uren > 48) return false;
@@ -11452,7 +11452,7 @@ function ChefScreen({ setSc, setActieve }) {
         React.createElement('div', { style:{flex:1,minWidth:0} },
           React.createElement('div', { style:{fontWeight:800,fontSize:13,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'} }, b.naam),
           React.createElement('div', { style:{fontSize:11,color:C.muted,marginTop:2} },
-            fmtDag((b.deadline || '').split('T')[0]) + ' · ' + (b.deadline_tijd || '—') + ' · ' + (b.locatie || '—') + ' · ' + pss.length + ' productsoort' + (pss.length !== 1 ? 'en' : '') + (pss.length > 0 ? ' (' + nGoed + '/' + pss.length + ' ✓)' : '')
+            fmtDag((b.deadline || '').split('T')[0].split(' ')[0]) + ' · ' + (b.deadline_tijd || '—') + ' · ' + (b.locatie || '—') + ' · ' + pss.length + ' productsoort' + (pss.length !== 1 ? 'en' : '') + (pss.length > 0 ? ' (' + nGoed + '/' + pss.length + ' ✓)' : '')
           )
         ),
         wijz && React.createElement('span', {
