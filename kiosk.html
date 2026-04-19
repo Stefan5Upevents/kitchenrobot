@@ -85,6 +85,46 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; back
     .week-info { flex: 1; min-width: 0; }
     .week-naam { font-size: 13px; font-weight: 600; line-height: 1.2; }
     .week-meta { font-size: 11px; color: #78909C; }
+    /* Schoonmaak modal */
+    .sm-rij { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; border-bottom: 1px solid #F0F4F6; cursor: pointer; }
+    .sm-rij:active { background: #F8FAFC; }
+    .sm-urg { width: 8px; min-height: 40px; border-radius: 4px; flex-shrink: 0; background: #27AE60; margin-top: 3px; }
+    .sm-rij.waarschuwing .sm-urg { background: #FF9800; }
+    .sm-rij.dwingend .sm-urg { background: #FE424D; }
+    .sm-info { flex: 1; min-width: 0; }
+    .sm-naam { font-size: 14px; font-weight: 700; line-height: 1.25; margin-bottom: 3px; }
+    .sm-meta { font-size: 11px; color: #78909C; }
+    .sm-actie { background: #001828; color: white; border: none; border-radius: 10px; padding: 10px 14px; font-size: 13px; font-weight: 700; cursor: pointer; flex-shrink: 0; }
+    /* HACCP modal */
+    .hc-rij { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid #F0F4F6; cursor: pointer; }
+    .hc-rij:active { background: #F8FAFC; }
+    .hc-icon { width: 42px; height: 42px; background: #F0F4F6; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+    .hc-info { flex: 1; min-width: 0; }
+    .hc-naam { font-size: 13px; font-weight: 700; line-height: 1.2; margin-bottom: 2px; }
+    .hc-norm { font-size: 11px; color: #78909C; }
+    .hc-temp { font-family: 'Inter', sans-serif; font-weight: 800; font-size: 20px; letter-spacing: -0.5px; padding: 4px 10px; border-radius: 10px; background: #E8F5E9; color: #27AE60; min-width: 60px; text-align: center; }
+    .hc-temp.afwijking { background: #FFEBEE; color: #FE424D; }
+    .hc-temp.leeg { background: #F0F4F6; color: #78909C; font-size: 12px; letter-spacing: 0; font-weight: 600; padding: 8px 10px; }
+    /* Documenten */
+    .doc-rij { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid #F0F4F6; cursor: pointer; }
+    .doc-rij:active { background: #F8FAFC; }
+    .doc-icon { width: 40px; height: 40px; background: #EEF2F6; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+    .doc-info { flex: 1; min-width: 0; }
+    .doc-titel { font-size: 14px; font-weight: 700; line-height: 1.2; margin-bottom: 3px; }
+    .doc-meta { font-size: 11px; color: #78909C; }
+    .doc-pijl { font-size: 20px; color: #78909C; }
+    .doc-inhoud { padding: 20px 16px; white-space: pre-wrap; font-size: 14px; line-height: 1.6; color: #001828; }
+    /* Meldingen */
+    .meld-rij { padding: 14px 16px; border-bottom: 1px solid #F0F4F6; }
+    .meld-top { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+    .meld-urg { background: #FE424D; color: white; font-size: 10px; font-weight: 800; letter-spacing: 0.5px; padding: 3px 8px; border-radius: 6px; text-transform: uppercase; }
+    .meld-urg.deze_week { background: #FF9800; }
+    .meld-urg.mag_wachten { background: #78909C; }
+    .meld-type { font-size: 12px; font-weight: 700; color: #001828; }
+    .meld-tijd { margin-left: auto; font-size: 10px; color: #78909C; }
+    .meld-tekst { font-size: 14px; font-weight: 600; line-height: 1.3; margin-bottom: 4px; }
+    .meld-sub { font-size: 11px; color: #78909C; margin-bottom: 8px; }
+    .meld-actie { background: #27AE60; color: white; border: none; border-radius: 8px; padding: 8px 14px; font-size: 12px; font-weight: 700; cursor: pointer; }
     .boeking-kop .boeking-tijd .bt-tijd { font-weight: 700; font-size: 12px; }
     .boeking-kop .boeking-tijd .bt-naam { font-size: 9px; opacity: 0.75; line-height: 1.2; }
 .boeking-kop .ps-rij { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -629,6 +669,11 @@ function renderModal() {
   if (state.modal && state.modal.type === 'alle-tijden') return renderAlleTijdenModal();
   if (state.modal && state.modal.type === 'dag-overzicht') return renderDagOverzichtModal();
   if (state.modal && state.modal.type === 'week-overzicht') return renderWeekOverzichtModal();
+  if (state.modal && state.modal.type === 'schoonmaak') return renderSchoonmaakModal();
+  if (state.modal && state.modal.type === 'haccp') return renderHaccpModal();
+  if (state.modal && state.modal.type === 'documenten') return renderDocumentenModal();
+  if (state.modal && state.modal.type === 'doc-inhoud') return renderDocInhoudModal();
+  if (state.modal && state.modal.type === 'meldingen') return renderMeldingenLijstModal();
   return '';
 }
 
@@ -714,6 +759,135 @@ function renderWeekOverzichtModal() {
     '<button class="atm-close" data-close>Sluiten</button></div>' +
     '<div class="atm-lijst">' + html + '</div>' +
   '</div>';
+}
+
+function _tijdAgo(iso) {
+  if (!iso) return '';
+  var diff = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (diff < 60) return 'net nu';
+  if (diff < 3600) return Math.floor(diff/60) + 'min geleden';
+  if (diff < 86400) return Math.floor(diff/3600) + 'u geleden';
+  return Math.floor(diff/86400) + 'd geleden';
+}
+
+function renderSchoonmaakModal() {
+  var taken = (state.data && state.data.schoonmaak_taken) || [];
+  var st = (state.data && state.data.schoonmaak) || {};
+  var lijst = '';
+  if (taken.length === 0) {
+    lijst = '<div class="atm-empty">Geen schoonmaaktaken gedefinieerd.</div>';
+  } else {
+    lijst = taken.map(function(t){
+      var sub = '';
+      if (t.dagen_geleden === null || t.dagen_geleden === undefined) sub = 'Nog nooit afgetekend';
+      else if (t.dagen_geleden === 0) sub = 'Vandaag door ' + (t.laatst_afgetekend_door || '?');
+      else if (t.dagen_geleden === 1) sub = 'Gisteren door ' + (t.laatst_afgetekend_door || '?');
+      else sub = t.dagen_geleden + ' dagen geleden door ' + (t.laatst_afgetekend_door || '?');
+      sub += ' · ' + esc(t.frequentie || 'taak');
+      return '<div class="sm-rij ' + esc(t.urgentie) + '" data-sm-taak="' + esc(t.id) + '">' +
+        '<div class="sm-urg"></div>' +
+        '<div class="sm-info"><div class="sm-naam">' + esc(t.naam) + '</div>' +
+        '<div class="sm-meta">' + sub + '</div></div>' +
+        '<button class="sm-actie" data-sm-taak="' + esc(t.id) + '" data-sm-naam="' + esc(t.naam) + '">Aftekenen</button>' +
+      '</div>';
+    }).join('');
+  }
+  return '<div class="alle-tijden-modal">' +
+    '<div class="atm-header"><div><h3>🧽 Schoonmaak</h3><div class="atm-sub">' + (st.dwingend||0) + ' ROOD · ' + (st.waarschuwing||0) + ' GEEL · ' + (st.gedaan_week||0) + ' OK</div></div>' +
+    '<button class="atm-close" data-close>Sluiten</button></div>' +
+    '<div class="atm-lijst">' + lijst + '</div></div>';
+}
+
+function renderHaccpModal() {
+  var punten = (state.data && state.data.haccp_punten_lijst) || [];
+  var h = (state.data && state.data.haccp) || {};
+  var lijst = '';
+  if (punten.length === 0) {
+    lijst = '<div class="atm-empty">Geen HACCP-meetpunten gedefinieerd.</div>';
+  } else {
+    lijst = punten.map(function(p){
+      var icon = (p.type === 'koeling' || p.type === 'vriezer') ? '❄️' : (p.type === 'warm' ? '🔥' : '🌡️');
+      var tempHtml;
+      if (p.laatste_meting) {
+        var afwijk = p.laatste_meting.binnen_norm ? '' : ' afwijking';
+        tempHtml = '<div class="hc-temp' + afwijk + '">' + Number(p.laatste_meting.gemeten_temp).toFixed(1) + '°</div>';
+      } else {
+        tempHtml = '<div class="hc-temp leeg">Meet</div>';
+      }
+      var norm = 'Norm: ' + (p.min_temp != null ? Number(p.min_temp).toFixed(1) + '°' : '') + ' - ' + (p.max_temp != null ? Number(p.max_temp).toFixed(1) + '°' : '');
+      if (p.laatste_meting) norm += ' · ' + _tijdAgo(p.laatste_meting.gemeten_op) + ' door ' + esc(p.laatste_meting.door || '?');
+      return '<div class="hc-rij" data-hc-punt="' + esc(p.id) + '" data-hc-naam="' + esc(p.naam) + '" data-hc-min="' + (p.min_temp || '') + '" data-hc-max="' + (p.max_temp || '') + '">' +
+        '<div class="hc-icon">' + icon + '</div>' +
+        '<div class="hc-info"><div class="hc-naam">' + esc(p.naam) + '</div><div class="hc-norm">' + norm + '</div></div>' +
+        tempHtml + '</div>';
+    }).join('');
+  }
+  return '<div class="alle-tijden-modal">' +
+    '<div class="atm-header"><div><h3>🌡️ HACCP</h3><div class="atm-sub">' + (h.gedaan||0) + ' VAN ' + (h.totaal||0) + ' VANDAAG GEMETEN</div></div>' +
+    '<button class="atm-close" data-close>Sluiten</button></div>' +
+    '<div class="atm-lijst">' + lijst + '</div></div>';
+}
+
+function renderDocumentenModal() {
+  var docs = (state.data && state.data.instructie_documenten) || [];
+  var lijst = '';
+  if (docs.length === 0) {
+    lijst = '<div class="atm-empty">Geen documenten beschikbaar.</div>';
+  } else {
+    lijst = docs.map(function(d){
+      var heeftInhoud = (d.inhoud && d.inhoud.length > 0);
+      var heeftPdf = !!d.pdf_url;
+      var meta = (d.niveau || 'algemeen') + (d.koppel_naam ? ' · ' + esc(d.koppel_naam) : '') + (heeftPdf ? ' · PDF' : '') + (heeftInhoud ? '' : ' · nog leeg');
+      return '<div class="doc-rij" data-doc-id="' + esc(d.id) + '">' +
+        '<div class="doc-icon">' + (heeftPdf ? '📄' : '📝') + '</div>' +
+        '<div class="doc-info"><div class="doc-titel">' + esc(d.titel || 'Zonder titel') + '</div>' +
+        '<div class="doc-meta">' + meta + '</div></div>' +
+        '<div class="doc-pijl">›</div></div>';
+    }).join('');
+  }
+  return '<div class="alle-tijden-modal">' +
+    '<div class="atm-header"><div><h3>📄 Documenten</h3><div class="atm-sub">' + docs.length + ' INSTRUCTIES</div></div>' +
+    '<button class="atm-close" data-close>Sluiten</button></div>' +
+    '<div class="atm-lijst">' + lijst + '</div></div>';
+}
+
+function renderDocInhoudModal() {
+  var m = state.modal || {};
+  var d = m.doc || {};
+  var inhoud = d.inhoud || '(Geen inhoud. Voeg via admin-website toe.)';
+  return '<div class="alle-tijden-modal">' +
+    '<div class="atm-header"><div><h3>' + esc(d.titel || 'Document') + '</h3><div class="atm-sub">' + esc(d.koppel_naam || '') + '</div></div>' +
+    '<button class="atm-close" data-close-doc>Terug</button></div>' +
+    (d.pdf_url ? '<div style="padding:14px 16px;border-bottom:1px solid #F0F4F6"><a href="' + esc(d.pdf_url) + '" target="_blank" style="display:inline-block;background:#FE424D;color:white;padding:10px 16px;border-radius:10px;text-decoration:none;font-weight:700;font-size:13px">📄 Open PDF in nieuwe tab</a></div>' : '') +
+    '<div class="atm-lijst"><div class="doc-inhoud">' + esc(inhoud) + '</div></div></div>';
+}
+
+function renderMeldingenLijstModal() {
+  var m = (state.data && state.data.meldingen_chef_lijst) || [];
+  var rol = state.rol || '';
+  var magAfhandelen = rol === 'chef' || rol === 'leidinggevende' || rol === 'admin';
+  var lijst = '';
+  if (m.length === 0) {
+    lijst = '<div class="atm-empty">Geen open meldingen.</div>';
+  } else {
+    lijst = m.map(function(x){
+      var typeL = x.type === 'bestellen' ? 'Bestellen' : x.type === 'op' ? 'Is op' : x.type === 'defect' ? 'Defect' : 'Anders';
+      var urgL = x.urgentie === 'vandaag' ? 'Vandaag' : x.urgentie === 'deze_week' ? 'Deze week' : 'Mag wachten';
+      return '<div class="meld-rij">' +
+        '<div class="meld-top"><span class="meld-urg ' + esc(x.urgentie || '') + '">' + urgL + '</span>' +
+        '<span class="meld-type">' + typeL + '</span>' +
+        '<span class="meld-tijd">' + _tijdAgo(x.aangemaakt_op) + '</span></div>' +
+        '<div class="meld-tekst">' + esc(x.product_naam || '(geen productnaam)') + (x.hoeveelheid ? ' · ' + esc(x.hoeveelheid) : '') + '</div>' +
+        (x.omschrijving ? '<div class="meld-sub">' + esc(x.omschrijving) + '</div>' : '') +
+        '<div class="meld-sub">Door: ' + esc(x.van_medewerker_naam || '?') + '</div>' +
+        (magAfhandelen ? '<button class="meld-actie" data-meld-af="' + esc(x.id) + '" data-meld-naam="' + esc(x.product_naam || '') + '">✓ Afhandelen</button>' : '') +
+      '</div>';
+    }).join('');
+  }
+  return '<div class="alle-tijden-modal">' +
+    '<div class="atm-header"><div><h3>📨 Meldingen aan chef</h3><div class="atm-sub">' + m.length + ' OPEN' + (magAfhandelen ? '' : ' · ALLEEN-LEZEN') + '</div></div>' +
+    '<button class="atm-close" data-close>Sluiten</button></div>' +
+    '<div class="atm-lijst">' + lijst + '</div></div>';
 }
 
 function renderAlleTijdenModal() {
@@ -930,6 +1104,70 @@ document.addEventListener('click', function(e) {
         });
         return;
       }
+      // data-sm-taak: schoonmaak taak aftekenen
+      if (t.hasAttribute && t.hasAttribute('data-sm-taak')) {
+        e.stopPropagation();
+        var taakId = t.getAttribute('data-sm-taak');
+        var taakNaam = t.getAttribute('data-sm-naam') || '';
+        if (confirm('Aftekenen: ' + taakNaam + '?')) {
+          api('kiosk-actie', { actie: 'schoonmaak_aftekenen', sessie_id: state.sessie_id, taak_template_id: taakId }).then(function(res){
+            if (res.ok) { state.modal = null; laadData().then(function(){ state.modal = { type: 'schoonmaak' }; render(); }); }
+            else alert(res.error || 'Mislukt');
+          });
+        }
+        return;
+      }
+      // data-hc-punt: HACCP meting invoeren
+      if (t.hasAttribute && t.hasAttribute('data-hc-punt')) {
+        e.stopPropagation();
+        var puntId = t.getAttribute('data-hc-punt');
+        var puntNaam = t.getAttribute('data-hc-naam') || '';
+        var min = t.getAttribute('data-hc-min') || '';
+        var max = t.getAttribute('data-hc-max') || '';
+        var tempStr = prompt('Temperatuur ' + puntNaam + ' (°C)\nNorm: ' + min + ' tot ' + max + '°C');
+        if (tempStr === null) return;
+        var temp = parseFloat(String(tempStr).replace(',', '.'));
+        if (isNaN(temp)) { alert('Ongeldige temperatuur'); return; }
+        var opmerking = '';
+        if ((min !== '' && temp < parseFloat(min)) || (max !== '' && temp > parseFloat(max))) {
+          opmerking = prompt('Buiten norm! Wat is er aan de hand + correctieve actie?') || 'Afwijking gemeld';
+        }
+        api('kiosk-actie', { actie: 'haccp_meting', sessie_id: state.sessie_id, haccp_punt_id: puntId, gemeten_temp: temp, opmerking: opmerking, correctieve_actie: opmerking }).then(function(res){
+          if (res.ok) { state.modal = null; laadData().then(function(){ state.modal = { type: 'haccp' }; render(); }); }
+          else alert(res.error || 'Mislukt');
+        });
+        return;
+      }
+      // data-doc-id: document inhoud tonen
+      if (t.hasAttribute && t.hasAttribute('data-doc-id')) {
+        e.stopPropagation();
+        var docId = t.getAttribute('data-doc-id');
+        var docs = (state.data && state.data.instructie_documenten) || [];
+        var doc = docs.find ? docs.find(function(x){ return x.id === docId; }) : null;
+        if (!doc) { for (var di=0; di<docs.length; di++) { if (docs[di].id === docId) { doc = docs[di]; break; } } }
+        if (doc) { state.modal = { type: 'doc-inhoud', doc: doc }; render(); }
+        return;
+      }
+      // data-close-doc: terug van doc-inhoud naar documenten-lijst
+      if (t.hasAttribute && t.hasAttribute('data-close-doc')) {
+        e.stopPropagation();
+        state.modal = { type: 'documenten' };
+        render();
+        return;
+      }
+      // data-meld-af: melding afhandelen
+      if (t.hasAttribute && t.hasAttribute('data-meld-af')) {
+        e.stopPropagation();
+        var mId = t.getAttribute('data-meld-af');
+        var mNaam = t.getAttribute('data-meld-naam') || 'melding';
+        var opl = prompt('Oplossing voor: ' + mNaam + '\n(wat heb je gedaan?)');
+        if (opl === null) return;
+        api('kiosk-actie', { actie: 'melding_afhandelen', sessie_id: state.sessie_id, melding_id: mId, oplossing: opl }).then(function(res){
+          if (res.ok) { state.modal = null; laadData().then(function(){ state.modal = { type: 'meldingen' }; render(); }); }
+          else alert(res.error || 'Mislukt');
+        });
+        return;
+      }
       // data-atm-filter: filter wisselen in alle-tijden modal
       if (t.hasAttribute && t.hasAttribute('data-atm-filter')) {
         e.stopPropagation();
@@ -980,7 +1218,12 @@ document.addEventListener('click', function(e) {
           }
           return;
         }
-        var titels = { schoonmaak: '🧽 Schoonmaak', haccp: '🌡️ HACCP', documenten: '📄 Documenten', meldingen: '📨 Meldingen aan chef' };
+        // Schoonmaak/HACCP/Documenten/Meldingen: echte modals met state.data
+        if (soort === 'schoonmaak') { state.modal = { type: 'schoonmaak' }; render(); return; }
+        if (soort === 'haccp') { state.modal = { type: 'haccp' }; render(); return; }
+        if (soort === 'documenten') { state.modal = { type: 'documenten' }; render(); return; }
+        if (soort === 'meldingen') { state.modal = { type: 'meldingen' }; render(); return; }
+        var titels = { };
         var teksten = {
           morgen: 'Overzicht voor morgen komt binnenkort. Voor nu: check via de website.',
           week: 'Weekoverzicht komt binnenkort. Voor nu: check via de website.',
