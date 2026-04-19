@@ -215,6 +215,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; back
 .pin-btn { aspect-ratio: 1; background: #F8FAFC; border: 1px solid #E1E8EB; border-radius: 14px; font-size: 22px; font-weight: 600; cursor: pointer; }
 .pin-btn:active { background: #3FB8C4; color: white; transform: scale(0.95); }
 .pin-err { color: #E8202B; text-align: center; font-size: 12px; margin-top: 10px; font-weight: 600; }
+    .pin-login-btn { display: block; width: 100%; background: #27AE60; color: white; border: none; border-radius: 14px; padding: 16px; font-size: 17px; font-weight: 800; letter-spacing: 0.5px; cursor: pointer; margin-top: 12px; transition: all 0.1s; }
+    .pin-login-btn:active { transform: scale(0.98); }
+    .pin-login-btn:disabled { background: #E1E8EB; color: #A0B0B8; cursor: not-allowed; }
+    .pin-login-btn.laden { background: #78909C; }
 .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; display: flex; align-items: flex-end; padding: 0; }
 .modal-card { background: white; width: 100%; max-width: 480px; margin: 0 auto; border-radius: 22px 22px 0 0; max-height: 85vh; overflow-y: auto; padding: 20px; }
 .modal-card h3 { font-family: 'Fraunces', serif; margin-bottom: 14px; }
@@ -285,7 +289,8 @@ var state = (function(){
     pin_error: '',
     modal: null,
     atm_filter: 'alle',
-    week_data: {} // { 'YYYY-MM-DD': { data } } cache voor morgen/week modals
+    week_data: {},
+    pin_laden: false // { 'YYYY-MM-DD': { data } } cache voor morgen/week modals
   };
 })();
 
@@ -438,6 +443,7 @@ function renderPinPad() {
     '<div class="sub">Pincode (4 cijfers)</div>' +
     '<div class="pin-display">' + dots + '</div>' +
     '<div class="pin-pad">' + btns + '</div>' + errHtml +
+    '<button class="pin-login-btn' + (state.pin_laden ? ' laden' : '') + '" data-pin="login"' + ((state.pin_input.length < 4 || state.pin_laden) ? ' disabled' : '') + '>' + (state.pin_laden ? 'Inloggen...' : 'Inloggen') + '</button>' +
     '<button class="modal-close" data-pin="cancel" style="background:transparent;color:#234756;margin-top:10px;border:1px solid #E1E8EB;">Annuleren</button>' +
   '</div></div>';
 }
@@ -462,11 +468,19 @@ function bindLogin() {
     b.onclick = function() {
       var v = b.getAttribute('data-pin');
       if (v === 'cancel') { state.pin_medewerker = null; render(); return; }
-      if (v === 'back') { state.pin_input = state.pin_input.slice(0, -1); render(); return; }
+      if (v === 'back') { state.pin_input = state.pin_input.slice(0, -1); state.pin_error = ''; render(); return; }
+      if (v === 'login') {
+        if (state.pin_input.length !== 4 || state.pin_laden) return;
+        state.pin_laden = true;
+        render();
+        var p = login(state.pin_input);
+        if (p && p.then) p.then(function(){ state.pin_laden = false; });
+        else state.pin_laden = false;
+        return;
+      }
       if (state.pin_input.length >= 4) return;
       state.pin_input += v;
       render();
-      if (state.pin_input.length === 4) setTimeout(function() { login(state.pin_input); }, 150);
     };
   });
 }
