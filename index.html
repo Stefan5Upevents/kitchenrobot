@@ -11131,31 +11131,6 @@ function ChefScreen({ setSc, setActieve }) {
   var [toast, setToast] = React.useState(null);
   var [openFormulier, setOpenFormulier] = React.useState(null);
   var [actieveOutlet, setActieveOutlet] = React.useState(null);
-  var [genereerBezig, setGenereerBezig] = React.useState(null);
-
-  function genereerOpzet(b, ps) {
-    if (!supa) return;
-    var key = b.id + '::' + ps.id;
-    setGenereerBezig(key);
-    supa.functions.invoke('genereer-opzet-snapshot', { body: { boeking_id: b.id, ps_id: ps.id } }).then(function(r) {
-      setGenereerBezig(null);
-      if (r && r.error) { toonToast('Fout: ' + r.error.message); return; }
-      if (r && r.data && r.data.ok === false) { toonToast('Fout: ' + (r.data.error || 'onbekend')); return; }
-      toonToast('✓ Opzet gegenereerd (' + ((r && r.data && r.data.gerechten) || '?') + ' gerechten)');
-      // Herlaad snapshots
-      supa.from('kiosk_opzet_snapshots').select('boeking_id, ps_id, ps_naam, html, updated_at').then(function(r2) {
-        var m = {};
-        (r2.data || []).forEach(function(s) {
-          var k = s.boeking_id + '::' + (s.ps_id || '');
-          if (!m[k] || new Date(s.updated_at) > new Date(m[k].updated_at)) m[k] = s;
-        });
-        setOpzetSnapshots(m);
-      });
-    }).catch(function(e) {
-      setGenereerBezig(null);
-      toonToast('Fout: ' + (e.message || 'onbekend'));
-    });
-  }
   var [autoGenereer, setAutoGenereer] = React.useState(null);
   var [autoGenereerStamKlaar, setAutoGenereerStamKlaar] = React.useState(false);
 
@@ -11511,13 +11486,8 @@ function ChefScreen({ setSc, setActieve }) {
         var opzetLijst = opzetSnap ? parseOpzetLijst(opzetSnap.html) : [];
         return React.createElement('div', { style:{marginTop:6} },
           React.createElement('div', { style:{fontSize:10,fontWeight:700,color:C.muted,marginBottom:4,letterSpacing:0.5} }, '📊 OPZET' + (opzetLijst.length ? ' (' + opzetLijst.length + ' gerechten)' : '')),
-          !opzetSnap ? React.createElement('div', { style:{padding:'10px 12px',fontSize:11,color:C.muted,background:'#F5F5F5',borderRadius:6,border:'1px dashed #CCC',display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'} },
-            React.createElement('span', { style:{fontStyle:'italic',flex:1,minWidth:150} }, 'Nog geen opzet'),
-            React.createElement('button', {
-              onClick: function(ev) { ev.stopPropagation(); genereerOpzet(b, ps); },
-              disabled: genereerBezig === b.id + '::' + ps.id,
-              style:{background: genereerBezig === b.id + '::' + ps.id ? '#999' : C.aqua, color:'#fff', border:'none', borderRadius:100, padding:'6px 14px', fontSize:11, fontWeight:700, cursor: genereerBezig === b.id + '::' + ps.id ? 'wait' : 'pointer'}
-            }, genereerBezig === b.id + '::' + ps.id ? '⏳ Bezig...' : '⚡ Genereer nu')
+          !opzetSnap ? React.createElement('div', { style:{padding:'10px 12px',fontSize:11,color:C.muted,fontStyle:'italic',background:'#F5F5F5',borderRadius:6,border:'1px dashed #CCC'} },
+            autoGenereer ? '⚡ Wordt gegenereerd...' : 'Nog geen opzet beschikbaar'
           ) : opzetLijst.length === 0 ? React.createElement('div', { style:{padding:'10px 12px',fontSize:11,color:C.muted,fontStyle:'italic',background:'#F5F5F5',borderRadius:6,border:'1px dashed #CCC'} },
             'Geen gerechten in opzet'
           ) : React.createElement('div', { style:{background:'#F5F8FA',borderRadius:6,overflow:'hidden'} },
