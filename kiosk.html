@@ -141,20 +141,27 @@ function esc(s) {
   }); 
 }
 
-var state = {
-  outlet_code: localStorage.getItem('kiosk_outlet') || 'weesp',
-  sessie_id: localStorage.getItem('kiosk_sessie'),
-  medewerker_naam: localStorage.getItem('kiosk_naam'),
-  rol: localStorage.getItem('kiosk_rol'),
-  data: null,
-  medewerkers: [],
-  mode: 'A',
-  uitgeklapt: {},
-  pin_medewerker: null,
-  pin_input: '',
-  pin_error: '',
-  modal: null
-};
+var state = (function(){
+  var _p = new URLSearchParams(window.location.search);
+  var _urlOutlet = _p.get('outlet');
+  if (_urlOutlet === 'west' || _urlOutlet === 'weesp') {
+    try { localStorage.setItem('kiosk_outlet', _urlOutlet); } catch(e){}
+  }
+  return {
+    outlet_code: _urlOutlet || localStorage.getItem('kiosk_outlet') || 'weesp',
+    sessie_id: localStorage.getItem('kiosk_sessie'),
+    medewerker_naam: localStorage.getItem('kiosk_naam'),
+    rol: localStorage.getItem('kiosk_rol'),
+    data: null,
+    medewerkers: [],
+    mode: 'A',
+    uitgeklapt: {},
+    pin_medewerker: null,
+    pin_input: '',
+    pin_error: '',
+    modal: null
+  };
+})();
 
 function api(path, body) {
   return fetch(SUPABASE_URL + '/functions/v1/' + path, {
@@ -349,19 +356,25 @@ function renderHome() {
     '<div class="outlet">' + esc(d.outlet_naam) + '</div>' +
     '<button class="logout" id="btn-logout">Uit</button>' +
   '</div><div class="screen">' +
-    renderTijdbalk(d.tijdschema, nu) + renderModeSwitch() + renderBoekingen(boekingen, voortgang) + renderOnderBlokken(d) +
+    renderTijdbalk(d.tijdschema, nu, boekingen) + renderModeSwitch() + renderBoekingen(boekingen, voortgang) + renderOnderBlokken(d) +
     '<button class="meld-chef-knop" id="btn-meld-chef">🛠 Meld chef: er moet iets besteld / is op / defect</button>' +
   '</div>' + (state.modal ? renderModal() : '');
 }
 
-function renderTijdbalk(tijdschema, nu) {
-  if (!tijdschema || tijdschema.length === 0) return '<div class="tijdbalk"><h3>Tijdschema</h3><div style="font-size:12px;opacity:0.5;padding:6px 0;">Geen tijden voor vandaag</div></div>';
+function renderTijdbalk(tijdschema, nu, boekingen) {
+  var lijst = (tijdschema && tijdschema.length) ? tijdschema : (boekingen || []).map(function(b){
+    var tijd = b.deadlineTijd || (b.deadline||'').slice(11,16) || '?';
+    var hh = parseInt((tijd||'00:00').slice(0,2)) || 0;
+    var mm = parseInt((tijd||'00:00').slice(3,5)) || 0;
+    return { tijd: tijd, naam: (b.naam||'').slice(0,14), minVal: hh*60 + mm };
+  });
+  if (!lijst.length) return '<div class="tijdbalk"><h3>Tijdschema</h3><div style="font-size:12px;opacity:0.5;padding:6px 0;">Geen tijden voor vandaag</div></div>';
   var nuMin = parseInt(nu.slice(0,2)) * 60 + parseInt(nu.slice(3,5));
-  var items = tijdschema.map(function(t) {
+  var items = lijst.map(function(t) {
     var mv = t.minVal || 0;
     var verlopen = mv < nuMin;
     var huidig = !verlopen && Math.abs(mv - nuMin) < 30;
-    return '<div class="tijdmoment ' + (verlopen ? 'verlopen' : '') + ' ' + (huidig ? 'huidig' : '') + '"><div class="tijd">' + esc(t.tijd) + '</div><div class="naam">' + esc(t.naam) + '</div></div>';
+    return '<div class="tijdmoment ' + (verlopen ? 'verlopen' : '') + ' ' + (huidig ? 'huidig' : '') + '"><div class="tijd">' + esc(t.tijd) + '</div><div class="naam">' + esc(t.naam||'') + '</div></div>';
   }).join('');
   return '<div class="tijdbalk"><h3>Tijdschema vandaag</h3>' + items + '</div>';
 }
@@ -376,12 +389,80 @@ function renderModeSwitch() {
 
 function renderBoekingen(boekingen, voortgang) {
   if (!boekingen || boekingen.length === 0) return '<div class="leeg">Geen boekingen voor vandaag.<br><br>Check dagpakket op website.</div>';
+  if (state.mode === 'B') return renderPerSoort(boekingen, voortgang);
+  if (state.mode === 'C') return renderSnelleKlaar(boekingen, voortgang);
   var gesort = boekingen.slice().sort(function(a,b) {
-    var ta = (a.deadline || '99:99').replace(':','');
-    var tb = (b.deadline || '99:99').replace(':','');
+    var ta = (a.deadlineTijd || '99:99').replace(':','');
+    var tb = (b.deadlineTijd || '99:99').replace(':','');
     return ta.localeCompare(tb);
   });
   return gesort.map(function(b) { return renderBoekingKaart(b, voortgang); }).join('');
+}
+
+function renderPerSoort(boekingen, voortgang) {
+  var groepen = {};
+  boekingen.forEach(function(b) {
+    (b.gerechten || []).forEach(function(g) {
+      var ps = g.ps_naam || g.productsoort_naam || 'Overig';
+      var gn = g.naam;
+      if (!groepen[ps]) groepen[ps] = {};
+      if (!groepen[ps][gn]) groepen[ps][gn] = { is_gn: g.is_gn, regels: [] };
+      groepen[ps][gn].regels.push({ bid: b.boeking_id || b.id, bnaam: b.naam, aantal: g.aantal, tijd: b.deadlineTijd });
+    });
+  });
+  var statusMap = {};
+  (voortgang || []).forEach(function(v) { statusMap[v.boeking_id + '|' + v.gerecht_naam + '|' + v.ps_naam] = v; });
+  var html = '';
+  Object.keys(groepen).sort().forEach(function(ps) {
+    html += '<div style="background:white;border-radius:14px;margin-bottom:12px;padding:14px;border:1px solid #E1E8EB">';
+    html += '<div style="font-weight:700;font-size:15px;margin-bottom:10px">' + getPSIcon(ps) + ' ' + esc(ps) + '</div>';
+    Object.keys(groepen[ps]).sort().forEach(function(gn) {
+      var groep = groepen[ps][gn];
+      var totaal = groep.regels.reduce(function(s,r){ return s+(r.aantal||0); }, 0);
+      var gnBadge = groep.is_gn ? '<span style="background:#3FB8C4;color:#fff;border-radius:3px;padding:1px 5px;font-size:9px;margin-right:4px">GN</span>' : '';
+      html += '<div style="margin-top:10px;padding-top:10px;border-top:1px solid #F0F4F6">';
+      html += '<div style="font-weight:600;font-size:13px;margin-bottom:6px">' + gnBadge + esc(gn) + ' &middot; ' + totaal + 'x totaal</div>';
+      groep.regels.forEach(function(r) {
+        var st = statusMap[r.bid + '|' + gn + '|' + ps];
+        var klaar = st && st.status === 'uitgevoerd';
+        var aftikData = btoa(unescape(encodeURIComponent(JSON.stringify({ bid: r.bid, bnaam: r.bnaam, gerecht: gn, ps: ps }))));
+        html += '<div style="display:flex;align-items:center;gap:10px;padding:6px 0;font-size:13px">';
+        html += '<div class="cb ' + (klaar?'uitgevoerd':'') + '" data-aftik="' + aftikData + '">' + (klaar?'&#10003;':'') + '</div>';
+        html += '<div style="flex:1;' + (klaar?'opacity:0.5':'') + '">' + esc(r.tijd||'') + ' &middot; ' + esc(r.bnaam) + '</div>';
+        html += '<div style="font-weight:700">' + r.aantal + '</div>';
+        html += '</div>';
+      });
+      html += '</div>';
+    });
+    html += '</div>';
+  });
+  return html || '<div class="leeg">Geen items.</div>';
+}
+
+function renderSnelleKlaar(boekingen, voortgang) {
+  var items = [];
+  boekingen.forEach(function(b) {
+    (b.gerechten || []).forEach(function(g) {
+      items.push({
+        bid: b.boeking_id || b.id, bnaam: b.naam, tijd: b.deadlineTijd,
+        gerecht: g.naam, ps: g.ps_naam || g.productsoort_naam || 'Overig', aantal: g.aantal, is_gn: g.is_gn
+      });
+    });
+  });
+  items.sort(function(a,b){ return (a.tijd||'').localeCompare(b.tijd||''); });
+  var statusMap = {};
+  (voortgang || []).forEach(function(v) { statusMap[v.boeking_id + '|' + v.gerecht_naam + '|' + v.ps_naam] = v; });
+  if (items.length === 0) return '<div class="leeg">Niks af te tikken.</div>';
+  return '<div style="background:white;border-radius:14px;padding:6px;border:1px solid #E1E8EB">' + items.map(function(it) {
+    var st = statusMap[it.bid + '|' + it.gerecht + '|' + it.ps];
+    var klaar = st && st.status === 'uitgevoerd';
+    var aftikData = btoa(unescape(encodeURIComponent(JSON.stringify({ bid: it.bid, bnaam: it.bnaam, gerecht: it.gerecht, ps: it.ps }))));
+    return '<div style="display:flex;align-items:center;gap:12px;padding:12px 10px;border-bottom:1px solid #F0F4F6;' + (klaar?'opacity:0.4;':'') + '">' +
+      '<div class="cb ' + (klaar?'uitgevoerd':'') + '" data-aftik="' + aftikData + '" style="width:32px;height:32px;flex-shrink:0">' + (klaar?'&#10003;':'') + '</div>' +
+      '<div style="flex:1"><div style="font-weight:600;font-size:14px">' + esc(it.gerecht) + '</div><div style="font-size:11px;opacity:0.6">' + esc(it.tijd||'') + ' &middot; ' + esc(it.bnaam) + ' &middot; ' + getPSIcon(it.ps) + ' ' + esc(it.ps) + '</div></div>' +
+      '<div style="font-weight:700;font-size:16px">' + it.aantal + '</div>' +
+    '</div>';
+  }).join('') + '</div>';
 }
 
 function renderBoekingKaart(boeking, voortgang) {
@@ -453,12 +534,12 @@ function renderOnderBlokken(d) {
   var alarm = sm.dwingend > 0;
   var hac = d.haccp || {};
   return '<div class="onder-grid">' +
-    '<div class="onder-blok"><div class="icoon">📅</div><div class="label">Morgen</div><div class="stat">Binnenkort</div></div>' +
-    '<div class="onder-blok"><div class="icoon">🗓️</div><div class="label">Verder week</div><div class="stat">Plan vooruit</div></div>' +
-    '<div class="onder-blok ' + (alarm ? 'alarm' : '') + '"><div class="icoon">🧽</div><div class="label">Schoonmaak</div><div class="stat">' + (sm.dwingend || 0) + ' rood &middot; ' + (sm.waarschuwing || 0) + ' geel</div></div>' +
-    '<div class="onder-blok"><div class="icoon">🌡️</div><div class="label">HACCP</div><div class="stat">' + (hac.gedaan || 0) + '/' + (hac.totaal || 0) + ' gedaan</div></div>' +
-    '<div class="onder-blok"><div class="icoon">📄</div><div class="label">Documenten</div><div class="stat">Buffet &middot; BBQ-PDF</div></div>' +
-    '<div class="onder-blok ' + (d.meldingen_chef_open > 0 ? 'alarm' : '') + '"><div class="icoon">📨</div><div class="label">Meldingen</div><div class="stat">' + (d.meldingen_chef_open || 0) + ' open</div></div>' +
+    '<div class="onder-blok" data-onder="morgen"><div class="icoon">📅</div><div class="label">Morgen</div><div class="stat">Binnenkort</div></div>' +
+    '<div class="onder-blok" data-onder="week"><div class="icoon">🗓️</div><div class="label">Verder week</div><div class="stat">Plan vooruit</div></div>' +
+    '<div class="onder-blok ' + (alarm ? 'alarm' : '') + '" data-onder="schoonmaak"><div class="icoon">🧽</div><div class="label">Schoonmaak</div><div class="stat">' + (sm.dwingend || 0) + ' rood &middot; ' + (sm.waarschuwing || 0) + ' geel</div></div>' +
+    '<div class="onder-blok" data-onder="haccp"><div class="icoon">🌡️</div><div class="label">HACCP</div><div class="stat">' + (hac.gedaan || 0) + '/' + (hac.totaal || 0) + ' gedaan</div></div>' +
+    '<div class="onder-blok" data-onder="documenten"><div class="icoon">📄</div><div class="label">Documenten</div><div class="stat">Buffet &middot; BBQ-PDF</div></div>' +
+    '<div class="onder-blok ' + (d.meldingen_chef_open > 0 ? 'alarm' : '') + '" data-onder="meldingen"><div class="icoon">📨</div><div class="label">Meldingen</div><div class="stat">' + (d.meldingen_chef_open || 0) + ' open</div></div>' +
   '</div>';
 }
 
@@ -630,6 +711,22 @@ document.addEventListener('click', function(e) {
           if (res.ok) { state.modal=null; alert('Melding verstuurd!'); return laadData(); }
           else alert(res.error || 'Fout');
         });
+        return;
+      }
+      // data-onder: nav-blok onder (morgen/week/schoonmaak/haccp/documenten/meldingen)
+      if (t.hasAttribute && t.hasAttribute('data-onder')) {
+        e.stopPropagation();
+        var soort = t.getAttribute('data-onder');
+        var titels = { morgen: '📅 Morgen', week: '🗓️ Verder in de week', schoonmaak: '🧽 Schoonmaak', haccp: '🌡️ HACCP', documenten: '📄 Documenten', meldingen: '📨 Meldingen aan chef' };
+        var teksten = {
+          morgen: 'Overzicht voor morgen komt binnenkort. Voor nu: check via de website.',
+          week: 'Weekoverzicht komt binnenkort. Voor nu: check via de website.',
+          schoonmaak: (state.data && state.data.schoonmaak ? 'Dwingend: ' + (state.data.schoonmaak.dwingend||0) + ' taken\nWaarschuwing: ' + (state.data.schoonmaak.waarschuwing||0) + ' taken\nDeze week gedaan: ' + (state.data.schoonmaak.gedaan_week||0) + '\n\nVolledige lijst + aftekenen komt binnenkort.' : 'Geen data.'),
+          haccp: (state.data && state.data.haccp ? 'Vandaag: ' + (state.data.haccp.gedaan||0) + ' van ' + (state.data.haccp.totaal||0) + ' metingen gedaan.\n\nMeet-interface komt binnenkort.' : 'Geen data.'),
+          documenten: 'PDF-bibliotheek komt binnenkort. Voor nu: check via de website.',
+          meldingen: (state.data && state.data.meldingen_chef_open ? state.data.meldingen_chef_open + ' open melding(en) naar de chef.\n\nOverzicht komt binnenkort.' : 'Geen open meldingen.')
+        };
+        alert((titels[soort] || soort) + '\n\n' + (teksten[soort] || 'Komt binnenkort.'));
         return;
       }
       // medewerker klikken op login
