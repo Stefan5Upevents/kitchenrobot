@@ -69,6 +69,22 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; back
     .atm-kwal.Koken { background: #7B1FA2; }
     .atm-kwal.recras { background: #78909C; }
     .atm-empty { padding: 40px 20px; text-align: center; opacity: 0.5; font-size: 13px; }
+    .dag-rij { display: flex; gap: 14px; padding: 14px 16px; border-bottom: 1px solid #F0F4F6; align-items: flex-start; }
+    .dag-tijd { font-family: 'Inter', sans-serif; font-weight: 800; font-size: 24px; letter-spacing: -1px; color: #001828; min-width: 74px; }
+    .dag-info { flex: 1; min-width: 0; }
+    .dag-naam { font-size: 14px; font-weight: 700; line-height: 1.25; margin-bottom: 2px; }
+    .dag-meta { font-size: 11px; color: #78909C; margin-bottom: 6px; }
+    .dag-ps { display: flex; gap: 4px; flex-wrap: wrap; }
+    .dag-ps .ps-badge { font-size: 11px; padding: 3px 7px; background: #F8FAFC; border: 1px solid #E1E8EB; border-radius: 10px; color: #234756; font-weight: 600; }
+    .week-dag { border-bottom: 4px solid #F0F4F6; }
+    .week-dagkop { background: #001828; color: white; padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 700; }
+    .week-dagkop .week-aantal { background: #1AA6B7; padding: 2px 10px; border-radius: 10px; font-size: 12px; }
+    .week-leeg { padding: 14px 16px; opacity: 0.4; font-size: 12px; font-style: italic; }
+    .week-rij { display: flex; gap: 12px; padding: 10px 16px; border-bottom: 1px solid #F0F4F6; }
+    .week-tijd { font-family: 'Inter', sans-serif; font-weight: 700; font-size: 16px; color: #001828; min-width: 52px; }
+    .week-info { flex: 1; min-width: 0; }
+    .week-naam { font-size: 13px; font-weight: 600; line-height: 1.2; }
+    .week-meta { font-size: 11px; color: #78909C; }
     .boeking-kop .boeking-tijd .bt-tijd { font-weight: 700; font-size: 12px; }
     .boeking-kop .boeking-tijd .bt-naam { font-size: 9px; opacity: 0.75; line-height: 1.2; }
 .boeking-kop .ps-rij { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -193,7 +209,8 @@ var state = (function(){
     pin_input: '',
     pin_error: '',
     modal: null,
-    atm_filter: 'alle'
+    atm_filter: 'alle',
+    week_data: {} // { 'YYYY-MM-DD': { data } } cache voor morgen/week modals
   };
 })();
 
@@ -404,6 +421,8 @@ function renderTijdbalk(tijdschema, nu, boekingen) {
   });
   if (!lijst.length) return '<div class="tijdbalk" data-onder="alle-tijden"><h3>Tijdschema <span class="hint">TIK →</span></h3><div style="font-size:12px;opacity:0.5;padding:6px 0;">Geen tijden voor vandaag</div></div>';
   var nuMin = parseInt(nu.slice(0,2)) * 60 + parseInt(nu.slice(3,5));
+  lijst = lijst.filter(function(t){ return (t.minVal||0) >= nuMin - 15; });
+  if (!lijst.length) return '<div class="tijdbalk" data-onder="alle-tijden"><h3>Tijdschema <span class="hint">TIK →</span></h3><div style="font-size:12px;opacity:0.5;padding:6px 0;">Nog geen tijden actueel</div></div>';
   var items = lijst.map(function(t) {
     var mv = t.minVal || 0;
     var verlopen = mv < nuMin;
@@ -515,6 +534,10 @@ function renderBoekingKaart(boeking, voortgang, tijdschema, nu) {
     });
     boekingTijden.sort(function(a,b){ return (a.minVal||0) - (b.minVal||0); });
   }
+  // Filter 15 min na deadline weg
+  var _now2 = new Date();
+  var _nuMin2 = _now2.getHours()*60 + _now2.getMinutes();
+  boekingTijden = boekingTijden.filter(function(t){ return (t.minVal||0) >= _nuMin2 - 15; });
   var nuMin = 0;
   if (nu) { nuMin = (parseInt(nu.slice(0,2))||0)*60 + (parseInt(nu.slice(3,5))||0); }
   var tijdenHtml = boekingTijden.length ? '<div class="boeking-tijden">' + boekingTijden.map(function(t){
@@ -604,7 +627,93 @@ function renderModal() {
   if (state.modal && state.modal.type === 'meld') return renderMeldModal();
   if (state.modal && state.modal.type === 'info') return renderInfoModal();
   if (state.modal && state.modal.type === 'alle-tijden') return renderAlleTijdenModal();
+  if (state.modal && state.modal.type === 'dag-overzicht') return renderDagOverzichtModal();
+  if (state.modal && state.modal.type === 'week-overzicht') return renderWeekOverzichtModal();
   return '';
+}
+
+function laadDagData(datumStr, cb) {
+  if (state.week_data[datumStr]) { cb(state.week_data[datumStr]); return; }
+  api('kiosk-vandaag', { outlet_code: state.outlet_code, datum: datumStr }).then(function(res){
+    state.week_data[datumStr] = res;
+    cb(res);
+  });
+}
+
+function datumNL(datumStr) {
+  var d = new Date(datumStr + 'T00:00:00');
+  var dagen = ['Zondag','Maandag','Dinsdag','Woensdag','Donderdag','Vrijdag','Zaterdag'];
+  var maanden = ['januari','februari','maart','april','mei','juni','juli','augustus','september','oktober','november','december'];
+  return dagen[d.getDay()] + ' ' + d.getDate() + ' ' + maanden[d.getMonth()];
+}
+
+function datumIsoRel(offsetDagen) {
+  var d = new Date();
+  d.setDate(d.getDate() + offsetDagen);
+  return d.toISOString().slice(0,10);
+}
+
+function renderDagOverzichtModal() {
+  var m = state.modal || {};
+  var data = m.data || {};
+  var boekingen = (data.dagpakket && data.dagpakket.boekingen) ? data.dagpakket.boekingen.slice() : [];
+  boekingen.sort(function(a,b){ return (a.deadlineTijd||'').localeCompare(b.deadlineTijd||''); });
+  var titel = m.label || 'Overzicht';
+  var subtitel = m.datumStr ? datumNL(m.datumStr) : '';
+  var lijst = '';
+  if (boekingen.length === 0) {
+    lijst = '<div class="atm-empty">Geen boekingen op deze dag.</div>';
+  } else {
+    lijst = boekingen.map(function(b){
+      var psGroepen = {};
+      (b.gerechten || []).forEach(function(g){
+        var ps = g.ps_naam || 'Overig';
+        psGroepen[ps] = (psGroepen[ps] || 0) + 1;
+      });
+      var psBadges = Object.keys(psGroepen).map(function(ps){
+        return '<span class="ps-badge">' + getPSIcon(ps) + ' ' + esc(ps) + '</span>';
+      }).join('');
+      return '<div class="dag-rij">' +
+        '<div class="dag-tijd">' + esc(b.deadlineTijd || (b.deadline||'').slice(11,16) || '?') + '</div>' +
+        '<div class="dag-info"><div class="dag-naam">' + esc(b.naam || '?') + '</div>' +
+        '<div class="dag-meta">' + esc(b.locatie || '') + ' · ' + esc(b.aantal_personen || '?') + 'p</div>' +
+        (psBadges ? '<div class="dag-ps">' + psBadges + '</div>' : '') +
+        '</div></div>';
+    }).join('');
+  }
+  return '<div class="alle-tijden-modal">' +
+    '<div class="atm-header"><div><h3>' + esc(titel) + '</h3><div class="atm-sub">' + esc(subtitel.toUpperCase()) + ' · ' + boekingen.length + ' BOEKING' + (boekingen.length !== 1 ? 'EN' : '') + '</div></div>' +
+    '<button class="atm-close" data-close>Sluiten</button></div>' +
+    '<div class="atm-lijst">' + lijst + '</div>' +
+  '</div>';
+}
+
+function renderWeekOverzichtModal() {
+  var m = state.modal || {};
+  var dagen = m.dagen || []; // [{datumStr, data}]
+  var html = '';
+  dagen.forEach(function(d){
+    var boekingen = (d.data && d.data.dagpakket && d.data.dagpakket.boekingen) ? d.data.dagpakket.boekingen.slice() : [];
+    boekingen.sort(function(a,b){ return (a.deadlineTijd||'').localeCompare(b.deadlineTijd||''); });
+    html += '<div class="week-dag">' +
+      '<div class="week-dagkop"><div>' + esc(datumNL(d.datumStr)) + '</div><div class="week-aantal">' + boekingen.length + '</div></div>';
+    if (boekingen.length === 0) {
+      html += '<div class="week-leeg">Geen boekingen</div>';
+    } else {
+      html += boekingen.map(function(b){
+        return '<div class="week-rij"><div class="week-tijd">' + esc(b.deadlineTijd || '?') + '</div>' +
+          '<div class="week-info"><div class="week-naam">' + esc(b.naam || '?') + '</div>' +
+          '<div class="week-meta">' + esc(b.locatie || '') + ' · ' + esc(b.aantal_personen || '?') + 'p</div>' +
+          '</div></div>';
+      }).join('');
+    }
+    html += '</div>';
+  });
+  return '<div class="alle-tijden-modal">' +
+    '<div class="atm-header"><div><h3>Verder in de week</h3><div class="atm-sub">' + dagen.length + ' DAGEN VOORUIT</div></div>' +
+    '<button class="atm-close" data-close>Sluiten</button></div>' +
+    '<div class="atm-lijst">' + html + '</div>' +
+  '</div>';
 }
 
 function renderAlleTijdenModal() {
@@ -621,8 +730,11 @@ function renderAlleTijdenModal() {
     var count = tijden.filter(function(t){ return t.kwal === k; }).length;
     chips += '<div class="atm-chip ' + (filter === k ? 'actief' : '') + '" data-atm-filter="' + esc(k) + '">' + esc(k) + ' (' + count + ')</div>';
   });
-  // Filter toepassen
-  var gefilterd = filter === 'alle' ? tijden : tijden.filter(function(t){ return t.kwal === filter; });
+  // Filter toepassen (eerst kwal-filter, dan 15min-na-deadline filter)
+  var _nowA = new Date();
+  var _nuMinA = _nowA.getHours()*60 + _nowA.getMinutes();
+  var gefilterd = (filter === 'alle' ? tijden : tijden.filter(function(t){ return t.kwal === filter; }))
+    .filter(function(t){ return (t.minVal||0) >= _nuMinA - 15; });
   gefilterd.sort(function(a,b){ return (a.minVal||0) - (b.minVal||0); });
   // Huidige tijd in minuten
   var now = new Date();
@@ -836,7 +948,39 @@ document.addEventListener('click', function(e) {
           render();
           return;
         }
-        var titels = { morgen: '📅 Morgen', week: '🗓️ Verder in de week', schoonmaak: '🧽 Schoonmaak', haccp: '🌡️ HACCP', documenten: '📄 Documenten', meldingen: '📨 Meldingen aan chef' };
+        // Morgen: echte modal met boekingen van morgen
+        if (soort === 'morgen') {
+          var mDatum = datumIsoRel(1);
+          laadDagData(mDatum, function(res){
+            state.modal = { type: 'dag-overzicht', data: res, label: '📅 Morgen', datumStr: mDatum };
+            render();
+          });
+          return;
+        }
+        // Week: echte modal met d+2 t/m d+6
+        if (soort === 'week') {
+          var weekDagen = [];
+          var klaarTeller = 0;
+          for (var i = 2; i <= 6; i++) {
+            (function(offset){
+              var ds = datumIsoRel(offset);
+              weekDagen.push({ datumStr: ds, data: null });
+              laadDagData(ds, function(res){
+                for (var j = 0; j < weekDagen.length; j++) {
+                  if (weekDagen[j].datumStr === ds) weekDagen[j].data = res;
+                }
+                klaarTeller++;
+                if (klaarTeller === 5) {
+                  weekDagen.sort(function(a,b){ return a.datumStr.localeCompare(b.datumStr); });
+                  state.modal = { type: 'week-overzicht', dagen: weekDagen };
+                  render();
+                }
+              });
+            })(i);
+          }
+          return;
+        }
+        var titels = { schoonmaak: '🧽 Schoonmaak', haccp: '🌡️ HACCP', documenten: '📄 Documenten', meldingen: '📨 Meldingen aan chef' };
         var teksten = {
           morgen: 'Overzicht voor morgen komt binnenkort. Voor nu: check via de website.',
           week: 'Weekoverzicht komt binnenkort. Voor nu: check via de website.',
