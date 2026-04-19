@@ -38,6 +38,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; back
     .boeking-kop .datum-klein { font-size: 10px; font-weight: 500; opacity: 0.5; margin-top: 2px; text-transform: lowercase; }
 .boeking-kop .naam { font-size: 15px; font-weight: 600; text-align: right; flex: 1; word-wrap: break-word; overflow-wrap: anywhere; white-space: normal; line-height: 1.25; }
 .boeking-kop .meta { font-size: 12px; opacity: 0.6; margin-bottom: 10px; }
+    .boeking-kop .boeking-tijden { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0 10px 0; }
+    .boeking-kop .boeking-tijd { display: inline-flex; flex-direction: column; background: #F8FAFC; border: 1px solid #E1E8EB; border-radius: 10px; padding: 4px 9px; font-size: 11px; min-width: 60px; }
+    .boeking-kop .boeking-tijd.huidig { background: #3FB8C4; color: white; border-color: #3FB8C4; }
+    .boeking-kop .boeking-tijd.verlopen { opacity: 0.45; }
+    .boeking-kop .boeking-tijd .bt-tijd { font-weight: 700; font-size: 12px; }
+    .boeking-kop .boeking-tijd .bt-naam { font-size: 9px; opacity: 0.75; line-height: 1.2; }
 .boeking-kop .ps-rij { display: flex; gap: 6px; flex-wrap: wrap; }
 .ps-badge { display: inline-flex; align-items: center; gap: 4px; padding: 5px 10px; background: #F8FAFC; border-radius: 100px; font-size: 11px; font-weight: 600; border: 1px solid #E1E8EB; }
 .ps-badge.klaar { background: #D1F5E6; color: #047857; border-color: #6EE7B7; }
@@ -356,7 +362,7 @@ function renderHome() {
     '<div class="outlet">' + esc(d.outlet_naam) + '</div>' +
     '<button class="logout" id="btn-logout">Uit</button>' +
   '</div><div class="screen">' +
-    renderTijdbalk(d.tijdschema, nu, boekingen) + renderModeSwitch() + renderBoekingen(boekingen, voortgang) + renderOnderBlokken(d) +
+    renderTijdbalk(d.tijdschema, nu, boekingen) + renderModeSwitch() + renderBoekingen(boekingen, voortgang, d.tijdschema, nu) + renderOnderBlokken(d) +
     '<button class="meld-chef-knop" id="btn-meld-chef">🛠 Meld chef: er moet iets besteld / is op / defect</button>' +
   '</div>' + (state.modal ? renderModal() : '');
 }
@@ -387,7 +393,7 @@ function renderModeSwitch() {
   '</div>';
 }
 
-function renderBoekingen(boekingen, voortgang) {
+function renderBoekingen(boekingen, voortgang, tijdschema, nu) {
   if (!boekingen || boekingen.length === 0) return '<div class="leeg">Geen boekingen voor vandaag.<br><br>Check dagpakket op website.</div>';
   if (state.mode === 'B') return renderPerSoort(boekingen, voortgang);
   if (state.mode === 'C') return renderSnelleKlaar(boekingen, voortgang);
@@ -396,7 +402,7 @@ function renderBoekingen(boekingen, voortgang) {
     var tb = (b.deadlineTijd || '99:99').replace(':','');
     return ta.localeCompare(tb);
   });
-  return gesort.map(function(b) { return renderBoekingKaart(b, voortgang); }).join('');
+  return gesort.map(function(b) { return renderBoekingKaart(b, voortgang, tijdschema, nu); }).join('');
 }
 
 function renderPerSoort(boekingen, voortgang) {
@@ -465,9 +471,31 @@ function renderSnelleKlaar(boekingen, voortgang) {
   }).join('') + '</div>';
 }
 
-function renderBoekingKaart(boeking, voortgang) {
+function renderBoekingKaart(boeking, voortgang, tijdschema, nu) {
   var bid = boeking.boeking_id || boeking.id || '';
   var bnaam = boeking.naam || boeking.boeking_naam || 'Onbekend';
+  // Tijden voor deze boeking uit tijdschema filteren + dedup (tijd+naam)
+  var boekingTijden = [];
+  if (tijdschema && tijdschema.length) {
+    var gezien = {};
+    tijdschema.forEach(function(t){
+      if (t.boeking_id !== bid) return;
+      var k = (t.tijd||'') + '|' + (t.naam||'');
+      if (gezien[k]) return;
+      gezien[k] = true;
+      boekingTijden.push(t);
+    });
+    boekingTijden.sort(function(a,b){ return (a.minVal||0) - (b.minVal||0); });
+  }
+  var nuMin = 0;
+  if (nu) { nuMin = (parseInt(nu.slice(0,2))||0)*60 + (parseInt(nu.slice(3,5))||0); }
+  var tijdenHtml = boekingTijden.length ? '<div class="boeking-tijden">' + boekingTijden.map(function(t){
+    var mv = t.minVal || 0;
+    var verlopen = mv < nuMin;
+    var huidig = !verlopen && Math.abs(mv - nuMin) < 15;
+    var cls = (verlopen ? 'verlopen ' : '') + (huidig ? 'huidig ' : '');
+    return '<div class="boeking-tijd ' + cls + '"><span class="bt-tijd">' + esc(t.tijd||'') + '</span><span class="bt-naam">' + esc(t.naam||'') + '</span></div>';
+  }).join('') + '</div>' : '';
   var uitgeklapt = state.uitgeklapt[bid];
   var psGroepen = {};
   (boeking.gerechten || []).forEach(function(g) {
@@ -500,6 +528,7 @@ function renderBoekingKaart(boeking, voortgang) {
     '<div class="boeking-kop" data-toggle="' + esc(bid) + '">' +
       '<div class="regel1"><div class="tijd-blok"><div class="tijd">' + esc(boeking.deadlineTijd || (boeking.deadline || '').slice(11,16) || '?') + '</div><div class="datum-klein">' + esc(boeking.deadlineDag || (boeking.deadline || '').slice(0,10) || '') + '</div></div><div class="naam">' + esc(bnaam) + '</div></div>' +
       '<div class="meta">' + esc(boeking.locatie || '') + ' &middot; ' + esc(boeking.aantal_personen || '?') + 'p</div>' +
+      tijdenHtml +
       '<div class="ps-rij">' + psBadges + '</div>' +
       '<div class="voortgang"><div class="voortgang-bar" style="width: ' + pct + '%"></div></div>' +
     '</div>' + psBlokken +
