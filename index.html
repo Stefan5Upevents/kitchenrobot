@@ -11131,6 +11131,65 @@ function ChefScreen({ setSc, setActieve }) {
   var [toast, setToast] = React.useState(null);
   var [openFormulier, setOpenFormulier] = React.useState(null);
   var [actieveOutlet, setActieveOutlet] = React.useState(null);
+  var [autoGenereer, setAutoGenereer] = React.useState(null);
+  var [autoGenereerStamKlaar, setAutoGenereerStamKlaar] = React.useState(false);
+
+  // Check of alle stamdata geladen is (nodig voor BuffetScreen)
+  React.useEffect(function() {
+    function check() {
+      var klaar = !!(window._recrasBoekingen && window._stamMenus && window._stamGerechten && window._stamKoppelingen && window._stamProductgroepen);
+      setAutoGenereerStamKlaar(klaar);
+      return klaar;
+    }
+    if (check()) return;
+    var iv = setInterval(function() { if (check()) clearInterval(iv); }, 1000);
+    return function() { clearInterval(iv); };
+  }, []);
+
+  // Effect: bij elke boekingen/snapshots update, pak volgende ontbrekende als er nog geen auto-generate bezig is
+  React.useEffect(function() {
+    if (!autoGenereerStamKlaar) return;
+    if (!boekingen.length) return;
+    if (autoGenereer) return; // al bezig
+    // Zoek eerste boeking+PS zonder opzet-snapshot
+    for (var i = 0; i < boekingen.length; i++) {
+      var b = boekingen[i];
+      var pss = productsoortenVanBoeking(b);
+      for (var j = 0; j < pss.length; j++) {
+        var ps = pss[j];
+        var key = b.id + '::' + ps.id;
+        if (!opzetSnapshots[key]) {
+          setAutoGenereer({ boekingId: b.id, psId: ps.id, pgId: '', boekingNaam: b.naam, boekingTijd: b.deadline_tijd || '', boekingDag: b.deadline_dag || '' });
+          return;
+        }
+      }
+    }
+  }, [boekingen, opzetSnapshots, autoGenereerStamKlaar, autoGenereer]);
+
+  // Effect: na 3 sec van auto-generate, reload snapshots en ga verder
+  React.useEffect(function() {
+    if (!autoGenereer || !supa) return;
+    var t = setTimeout(function() {
+      supa.from('kiosk_opzet_snapshots').select('boeking_id, ps_id, ps_naam, html, updated_at').then(function(r) {
+        var m = {};
+        (r.data || []).forEach(function(s) {
+          var k = s.boeking_id + '::' + (s.ps_id || '');
+          if (!m[k] || new Date(s.updated_at) > new Date(m[k].updated_at)) m[k] = s;
+        });
+        setOpzetSnapshots(m);
+      });
+      supa.from('kiosk_bbq_snapshots').select('boeking_id, ps_id, html, updated_at').then(function(r) {
+        var m = {};
+        (r.data || []).forEach(function(s) {
+          var k = s.boeking_id + '::' + (s.ps_id || '');
+          if (!m[k] || new Date(s.updated_at) > new Date(m[k].updated_at)) m[k] = s;
+        });
+        setBbqSnapshots(m);
+      });
+      setAutoGenereer(null);
+    }, 2500);
+    return function() { clearTimeout(t); };
+  }, [autoGenereer]);
 
   function toonToast(tekst) {
     setToast(tekst);
@@ -11579,7 +11638,18 @@ function ChefScreen({ setSc, setActieve }) {
           style:{flex:1,border:0,width:'100%',minHeight:'60vh'}
         })
       )
-    )
+    ),
+    // Hidden BuffetScreen voor auto-generate van ontbrekende snapshots
+    autoGenereer && React.createElement('div', {
+      style: { position:'fixed', left:-99999, top:-99999, width:1, height:1, overflow:'hidden', pointerEvents:'none', visibility:'hidden' },
+      'aria-hidden': true
+    },
+      React.createElement(BuffetScreen, { actieve: autoGenereer, setActieve: function() {} })
+    ),
+    // Status-indicator onderaan als auto-generate bezig is
+    autoGenereer && React.createElement('div', {
+      style: { position:'fixed', bottom:24, right:24, background:C.aqua, color:'#fff', padding:'8px 14px', borderRadius:100, fontSize:11, fontWeight:700, boxShadow:'0 2px 8px rgba(0,0,0,0.15)', zIndex:9998 }
+    }, '⚡ Bezig met genereren · ' + (autoGenereer.boekingNaam || '...'))
   );
 }
 
