@@ -290,7 +290,8 @@ var state = (function(){
     modal: null,
     atm_filter: 'alle',
     week_data: {},
-    pin_laden: false // { 'YYYY-MM-DD': { data } } cache voor morgen/week modals
+    pin_laden: false,
+    buffet_data: null // kiosk-buffet-html response cache
   };
 })();
 
@@ -350,6 +351,8 @@ function logout() {
     state.medewerker_naam = null;
     state.rol = null;
     state.data = null;
+    state.week_data = {};
+    state.buffet_data = null;
     localStorage.removeItem('kiosk_sessie');
     localStorage.removeItem('kiosk_naam');
     localStorage.removeItem('kiosk_rol');
@@ -453,6 +456,7 @@ function bindLogin() {
     b.onclick = function() {
       state.outlet_code = b.getAttribute('data-outlet');
       localStorage.setItem('kiosk_outlet', state.outlet_code);
+      state.data = null; state.week_data = {}; state.buffet_data = null;
       laadMedewerkers();
     };
   });
@@ -724,7 +728,7 @@ function renderModal() {
   if (state.modal && state.modal.type === 'documenten') return renderDocumentenModal();
   if (state.modal && state.modal.type === 'doc-inhoud') return renderDocInhoudModal();
   if (state.modal && state.modal.type === 'meldingen') return renderMeldingenLijstModal();
-  if (state.modal && state.modal.type === 'buffet') return renderBbqBuffetModal();
+  if (state.modal && state.modal.type === 'buffet') return renderBbqBuffetModalV2();
   return '';
 }
 
@@ -1032,6 +1036,33 @@ function renderBbqBuffetModal() {
     '<div class="atm-lijst" style="background:#EEF2F6">' + inhoud + '</div></div>';
 }
 
+function renderBbqBuffetModalV2() {
+  var m = state.modal || {};
+  if (m.laden) {
+    return '<div class="alle-tijden-modal">' +
+      '<div class="atm-header"><div><h3>🔥 BBQ / Buffet</h3><div class="atm-sub">FORMULIEREN OPHALEN...</div></div>' +
+      '<button class="atm-close" data-close>Sluiten</button></div>' +
+      '<div class="atm-lijst" style="background:#EEF2F6"><div class="bf-loader"><div class="spinner"></div><div>Bezig met laden...</div></div></div></div>';
+  }
+  var bd = state.buffet_data || { dagen: [], totaal_boekingen: 0 };
+  var inhoud = '';
+  (bd.dagen || []).forEach(function(d){
+    var boeks = d.boekingen || [];
+    var kop = '<div class="bf-dag-kop"><div>' + esc(d.dag_label || d.datum) + '</div>' +
+      '<div class="bf-dag-aantal' + (boeks.length === 0 ? ' zero' : '') + '">' + boeks.length + (boeks.length === 1 ? ' formulier' : ' formulieren') + '</div></div>';
+    if (boeks.length === 0) {
+      inhoud += kop + '<div class="bf-dag-leeg">Geen BBQ/buffet-boekingen.</div>';
+    } else {
+      inhoud += kop + '<div style="padding:12px">' + boeks.map(function(b){ return b.html; }).join('') + '</div>';
+    }
+  });
+  if (!inhoud) inhoud = '<div class="atm-empty">Geen data geladen.</div>';
+  return '<div class="alle-tijden-modal">' +
+    '<div class="atm-header"><div><h3>🔥 BBQ / Buffet</h3><div class="atm-sub">' + (bd.totaal_boekingen || 0) + ' FORMULIER' + ((bd.totaal_boekingen || 0) !== 1 ? 'EN' : '') + ' · 7 DAGEN · BRON: ADMIN</div></div>' +
+    '<button class="atm-close" data-close>Sluiten</button></div>' +
+    '<div class="atm-lijst" style="background:#EEF2F6">' + inhoud + '</div></div>';
+}
+
 function renderAlleTijdenModal() {
   var d = state.data || {};
   var tijden = (d.tijdschema || []).slice();
@@ -1225,6 +1256,7 @@ document.addEventListener('click', function(e) {
         e.stopPropagation();
         state.outlet_code = t.getAttribute('data-outlet');
         try { localStorage.setItem('kiosk_outlet', state.outlet_code); } catch(e){}
+        state.data = null; state.week_data = {}; state.buffet_data = null;
         laadMedewerkers();
         return;
       }
@@ -1366,41 +1398,19 @@ document.addEventListener('click', function(e) {
         if (soort === 'documenten') { state.modal = { type: 'documenten' }; render(); return; }
         if (soort === 'meldingen') { state.modal = { type: 'meldingen' }; render(); return; }
         if (soort === 'buffet') {
-          // Toon loader, start 7 parallelle fetches (vandaag + 6 dagen vooruit)
           state.modal = { type: 'buffet', laden: true };
           render();
-          var dagenBuf = [];
-          var klaarBuf = 0;
-          for (var i = 0; i <= 6; i++) {
-            (function(off){
-              var ds = datumIsoRel(off);
-              dagenBuf.push({ datumStr: ds, data: null });
-              if (off === 0 && state.data && state.data.datum === ds) {
-                // vandaag hebben we al in state.data
-                for (var j = 0; j < dagenBuf.length; j++) {
-                  if (dagenBuf[j].datumStr === ds) dagenBuf[j].data = state.data;
-                }
-                klaarBuf++;
-                if (klaarBuf === 7) {
-                  dagenBuf.sort(function(a,b){ return a.datumStr.localeCompare(b.datumStr); });
-                  state.modal = { type: 'buffet', dagen: dagenBuf };
-                  render();
-                }
-                return;
-              }
-              laadDagData(ds, function(res){
-                for (var j = 0; j < dagenBuf.length; j++) {
-                  if (dagenBuf[j].datumStr === ds) dagenBuf[j].data = res;
-                }
-                klaarBuf++;
-                if (klaarBuf === 7) {
-                  dagenBuf.sort(function(a,b){ return a.datumStr.localeCompare(b.datumStr); });
-                  state.modal = { type: 'buffet', dagen: dagenBuf };
-                  render();
-                }
-              });
-            })(i);
-          }
+          api('kiosk-buffet-html', { outlet_code: state.outlet_code, dagen: 7 }).then(function(res){
+            if (res && res.ok && res.dagen) {
+              state.buffet_data = res;
+              state.modal = { type: 'buffet' };
+              render();
+            } else {
+              state.modal = null;
+              alert('Kon buffet-formulieren niet laden: ' + ((res && res.error) || 'onbekend'));
+              render();
+            }
+          });
           return;
         }
         var titels = { };
