@@ -7,7 +7,7 @@
 <title>KitchenRobot Kiosk</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; background: #F8FAFC; color: #234756; min-height: 100vh; -webkit-font-smoothing: antialiased; }
@@ -32,9 +32,11 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; back
 .boeking { background: white; border-radius: 18px; margin-bottom: 12px; border: 1px solid #E1E8EB; overflow: hidden; transition: all 0.2s; }
 .boeking.uitgeklapt { border-color: #3FB8C4; }
 .boeking-kop { padding: 14px 16px; cursor: pointer; }
-.boeking-kop .regel1 { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; gap: 10px; }
-.boeking-kop .tijd { font-size: 22px; font-weight: 700; font-family: 'Fraunces', serif; }
-.boeking-kop .naam { font-size: 14px; font-weight: 600; text-align: right; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.boeking-kop .regel1 { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; gap: 14px; }
+.boeking-kop .tijd-blok { display: flex; flex-direction: column; align-items: flex-start; flex-shrink: 0; }
+    .boeking-kop .tijd { font-size: 22px; font-weight: 800; font-family: 'Inter', sans-serif; line-height: 1; letter-spacing: -0.5px; }
+    .boeking-kop .datum-klein { font-size: 10px; font-weight: 500; opacity: 0.5; margin-top: 2px; text-transform: lowercase; }
+.boeking-kop .naam { font-size: 15px; font-weight: 600; text-align: right; flex: 1; word-wrap: break-word; overflow-wrap: anywhere; white-space: normal; line-height: 1.25; }
 .boeking-kop .meta { font-size: 12px; opacity: 0.6; margin-bottom: 10px; }
 .boeking-kop .ps-rij { display: flex; gap: 6px; flex-wrap: wrap; }
 .ps-badge { display: inline-flex; align-items: center; gap: 4px; padding: 5px 10px; background: #F8FAFC; border-radius: 100px; font-size: 11px; font-weight: 600; border: 1px solid #E1E8EB; }
@@ -415,7 +417,7 @@ function renderBoekingKaart(boeking, voortgang) {
   var psBlokken = uitgeklapt ? psKeys.map(function(ps) { return renderPsBlok(bid, bnaam, ps, psGroepen[ps], status); }).join('') : '';
   return '<div class="boeking ' + (uitgeklapt ? 'uitgeklapt' : '') + '">' +
     '<div class="boeking-kop" data-toggle="' + esc(bid) + '">' +
-      '<div class="regel1"><div class="tijd">' + esc(boeking.deadline || '?') + '</div><div class="naam">' + esc(bnaam) + '</div></div>' +
+      '<div class="regel1"><div class="tijd-blok"><div class="tijd">' + esc(boeking.deadlineTijd || (boeking.deadline || '').slice(11,16) || '?') + '</div><div class="datum-klein">' + esc(boeking.deadlineDag || (boeking.deadline || '').slice(0,10) || '') + '</div></div><div class="naam">' + esc(bnaam) + '</div></div>' +
       '<div class="meta">' + esc(boeking.locatie || '') + ' &middot; ' + esc(boeking.aantal_personen || '?') + 'p</div>' +
       '<div class="ps-rij">' + psBadges + '</div>' +
       '<div class="voortgang"><div class="voortgang-bar" style="width: ' + pct + '%"></div></div>' +
