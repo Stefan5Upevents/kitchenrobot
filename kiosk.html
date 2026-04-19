@@ -125,6 +125,34 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; back
     .meld-tekst { font-size: 14px; font-weight: 600; line-height: 1.3; margin-bottom: 4px; }
     .meld-sub { font-size: 11px; color: #78909C; margin-bottom: 8px; }
     .meld-actie { background: #27AE60; color: white; border: none; border-radius: 8px; padding: 8px 14px; font-size: 12px; font-weight: 700; cursor: pointer; }
+    /* Buffet/BBQ modal */
+    .bf-kaart { background: white; border-radius: 12px; margin: 12px; border: 2px solid #1AA6B7; overflow: hidden; }
+    .bf-kaart.bbq { border-color: #FE424D; }
+    .bf-kop { background: #1AA6B7; color: white; padding: 14px 16px; display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+    .bf-kaart.bbq .bf-kop { background: #FE424D; }
+    .bf-kop-links { flex: 1; min-width: 0; }
+    .bf-kop h4 { margin: 0; font-size: 16px; font-weight: 800; line-height: 1.2; }
+    .bf-kop .bf-kop-meta { font-size: 11px; opacity: 0.85; margin-top: 3px; }
+    .bf-tijd { font-family: 'Inter', sans-serif; font-size: 26px; font-weight: 900; letter-spacing: -1px; line-height: 1; }
+    .bf-tijd-sub { font-size: 9px; opacity: 0.75; text-align: right; letter-spacing: 1px; }
+    .bf-body { padding: 12px 16px; }
+    .bf-titel { font-size: 10px; font-weight: 700; color: #78909C; letter-spacing: 1px; margin-bottom: 6px; }
+    .bf-regel { display: flex; gap: 10px; padding: 8px 10px; background: #F0F9F9; border-radius: 8px; margin-bottom: 4px; align-items: center; }
+    .bf-kaart.bbq .bf-regel.bbq { background: #FFF3F3; }
+    .bf-regel-naam { flex: 1; font-size: 13px; font-weight: 700; }
+    .bf-regel-opm { font-size: 11px; color: #78909C; margin-top: 2px; font-weight: 500; }
+    .bf-regel-aantal { font-size: 18px; font-weight: 900; color: #001828; min-width: 36px; text-align: center; }
+    .bf-regel-tijd { font-size: 12px; font-weight: 700; color: #001828; min-width: 46px; text-align: right; }
+    .bf-andere { background: #F8FAFB; border-radius: 8px; padding: 8px 10px; margin-top: 10px; }
+    .bf-andere-regel { display: flex; justify-content: space-between; padding: 3px 0; font-size: 12px; border-bottom: 1px solid #EEF2F6; }
+    .bf-andere-regel:last-child { border-bottom: none; }
+    .bf-andere-regel span:last-child { font-weight: 700; }
+    .bf-afteken { background: #FBFCFD; border: 1px dashed #C8D5DB; border-radius: 8px; padding: 10px 12px; margin-top: 10px; }
+    .bf-afteken-titel { font-size: 10px; font-weight: 700; color: #78909C; letter-spacing: 1px; margin-bottom: 8px; }
+    .bf-afteken-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px; }
+    .bf-afteken-veld { }
+    .bf-afteken-veld .lbl { font-size: 9px; color: #78909C; margin-bottom: 2px; }
+    .bf-afteken-veld .lijn { border-bottom: 2px solid #234756; height: 22px; }
     .boeking-kop .boeking-tijd .bt-tijd { font-weight: 700; font-size: 12px; }
     .boeking-kop .boeking-tijd .bt-naam { font-size: 9px; opacity: 0.75; line-height: 1.2; }
 .boeking-kop .ps-rij { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -660,6 +688,7 @@ function renderOnderBlokken(d) {
     '<div class="onder-blok" data-onder="haccp"><div class="icoon">🌡️</div><div class="label">HACCP</div><div class="stat">' + (hac.gedaan || 0) + '/' + (hac.totaal || 0) + ' gedaan</div></div>' +
     '<div class="onder-blok" data-onder="documenten"><div class="icoon">📄</div><div class="label">Documenten</div><div class="stat">Buffet &middot; BBQ-PDF</div></div>' +
     '<div class="onder-blok ' + (d.meldingen_chef_open > 0 ? 'alarm' : '') + '" data-onder="meldingen"><div class="icoon">📨</div><div class="label">Meldingen</div><div class="stat">' + (d.meldingen_chef_open || 0) + ' open</div></div>' +
+    '<div class="onder-blok" data-onder="buffet"><div class="icoon">🔥</div><div class="label">BBQ / Buffet</div><div class="stat">Formulier per groep</div></div>' +
   '</div>';
 }
 
@@ -674,6 +703,7 @@ function renderModal() {
   if (state.modal && state.modal.type === 'documenten') return renderDocumentenModal();
   if (state.modal && state.modal.type === 'doc-inhoud') return renderDocInhoudModal();
   if (state.modal && state.modal.type === 'meldingen') return renderMeldingenLijstModal();
+  if (state.modal && state.modal.type === 'buffet') return renderBbqBuffetModal();
   return '';
 }
 
@@ -888,6 +918,77 @@ function renderMeldingenLijstModal() {
     '<div class="atm-header"><div><h3>📨 Meldingen aan chef</h3><div class="atm-sub">' + m.length + ' OPEN' + (magAfhandelen ? '' : ' · ALLEEN-LEZEN') + '</div></div>' +
     '<button class="atm-close" data-close>Sluiten</button></div>' +
     '<div class="atm-lijst">' + lijst + '</div></div>';
+}
+
+function renderBbqBuffetModal() {
+  var BUFFET_KW = ['bbq', 'buffet', 'festival food', 'dinner crew', 'streetfood'];
+  var BBQ_KW = ['bbq', 'festival food', 'dinner crew', 'streetfood'];
+  function isBuffet(n) { n = (n||'').toLowerCase(); for (var i=0;i<BUFFET_KW.length;i++) if (n.indexOf(BUFFET_KW[i]) !== -1) return true; return false; }
+  function isBBQ(n) { n = (n||'').toLowerCase(); for (var i=0;i<BBQ_KW.length;i++) if (n.indexOf(BBQ_KW[i]) !== -1) return true; return false; }
+  var data = state.data || {};
+  var boekingen = (data.dagpakket && data.dagpakket.boekingen) || [];
+  var metBuffet = boekingen.filter(function(b){
+    return (b.regels || []).some(function(r){ return isBuffet(r.menuNaam || r.menuCode || ''); });
+  });
+  metBuffet.sort(function(a,b){ return (a.deadlineTijd||'99:99').localeCompare(b.deadlineTijd||'99:99'); });
+
+  var inhoud = '';
+  if (metBuffet.length === 0) {
+    inhoud = '<div class="atm-empty">Geen BBQ/buffet-boekingen vandaag.</div>';
+  } else {
+    inhoud = metBuffet.map(function(bk){
+      var regels = bk.regels || [];
+      var buffetRegels = regels.filter(function(r){ return isBuffet(r.menuNaam || r.menuCode || ''); });
+      var andereRegels = regels.filter(function(r){ return !isBuffet(r.menuNaam || r.menuCode || ''); });
+      var heeftBBQ = buffetRegels.some(function(r){ return isBBQ(r.menuNaam || r.menuCode || ''); });
+      var totPax = buffetRegels.reduce(function(s,r){ return s + (r.aantal||0); }, 0);
+      var vroegste = buffetRegels.reduce(function(min, r){
+        var t = (r.starttijdTijd || r.starttijd || '').slice(-8,-3) || (r.starttijd || '').slice(11,16) || bk.deadlineTijd || '';
+        if (!min || (t && t < min)) return t;
+        return min;
+      }, '');
+      var buffetHtml = buffetRegels.map(function(r){
+        var rBbq = isBBQ(r.menuNaam || r.menuCode || '');
+        var opm = (r.opmerking || '').replace(/<[^>]*>/g, '').trim();
+        if (opm.length > 140) opm = opm.substring(0, 140) + '...';
+        var rTijd = (r.starttijdTijd || r.starttijd || '').slice(-8,-3) || (r.starttijd || '').slice(11,16) || bk.deadlineTijd || '?';
+        return '<div class="bf-regel' + (rBbq ? ' bbq' : '') + '">' +
+          '<div style="flex:1;min-width:0"><div class="bf-regel-naam">' + esc(r.menuNaam || r.menuCode || '?') + '</div>' +
+          (opm ? '<div class="bf-regel-opm">' + esc(opm) + '</div>' : '') + '</div>' +
+          '<div class="bf-regel-aantal">' + (r.aantal || 0) + '<span style="font-size:10px;font-weight:600;opacity:0.5">p</span></div>' +
+          '<div class="bf-regel-tijd">' + esc(rTijd) + '</div>' +
+        '</div>';
+      }).join('');
+      var andereHtml = andereRegels.length > 0 ? '<div class="bf-andere">' +
+        '<div class="bf-titel" style="margin-bottom:4px">Overige producten</div>' +
+        andereRegels.map(function(r){
+          var rTijd = (r.starttijdTijd || r.starttijd || '').slice(-8,-3) || (r.starttijd || '').slice(11,16) || bk.deadlineTijd || '';
+          return '<div class="bf-andere-regel"><span>' + esc(r.menuNaam || r.menuCode || '?') + ' ×' + (r.aantal||0) + '</span><span>' + esc(rTijd) + '</span></div>';
+        }).join('') + '</div>' : '';
+      var afteken = '<div class="bf-afteken">' +
+        '<div class="bf-afteken-titel">AFTEKENEN</div>' +
+        '<div class="bf-afteken-grid">' +
+        '<div class="bf-afteken-veld"><div class="lbl">Voorbereid door</div><div class="lijn"></div></div>' +
+        '<div class="bf-afteken-veld"><div class="lbl">Tijdstip</div><div class="lijn"></div></div>' +
+        '<div class="bf-afteken-veld"><div class="lbl">Controle</div><div class="lijn"></div></div>' +
+        '</div></div>';
+      return '<div class="bf-kaart' + (heeftBBQ ? ' bbq' : '') + '">' +
+        '<div class="bf-kop"><div class="bf-kop-links"><h4>' + (heeftBBQ ? '🔥 ' : '🍽 ') + esc(bk.naam || '?') + '</h4>' +
+        '<div class="bf-kop-meta">' + esc(bk.locatie || '') + ' · ' + totPax + 'p</div></div>' +
+        '<div><div class="bf-tijd">' + esc(vroegste || bk.deadlineTijd || '?') + '</div>' +
+        '<div class="bf-tijd-sub">STARTTIJD</div></div></div>' +
+        '<div class="bf-body">' +
+        '<div class="bf-titel">BBQ / BUFFET PRODUCTEN</div>' +
+        buffetHtml +
+        andereHtml +
+        afteken +
+        '</div></div>';
+    }).join('');
+  }
+  return '<div class="alle-tijden-modal">' +
+    '<div class="atm-header"><div><h3>🔥 BBQ / Buffet</h3><div class="atm-sub">' + metBuffet.length + ' BOEKING' + (metBuffet.length !== 1 ? 'EN' : '') + ' CHRONOLOGISCH</div></div>' +
+    '<button class="atm-close" data-close>Sluiten</button></div>' +
+    '<div class="atm-lijst" style="background:#EEF2F6">' + inhoud + '</div></div>';
 }
 
 function renderAlleTijdenModal() {
@@ -1223,6 +1324,7 @@ document.addEventListener('click', function(e) {
         if (soort === 'haccp') { state.modal = { type: 'haccp' }; render(); return; }
         if (soort === 'documenten') { state.modal = { type: 'documenten' }; render(); return; }
         if (soort === 'meldingen') { state.modal = { type: 'meldingen' }; render(); return; }
+        if (soort === 'buffet') { state.modal = { type: 'buffet' }; render(); return; }
         var titels = { };
         var teksten = {
           morgen: 'Overzicht voor morgen komt binnenkort. Voor nu: check via de website.',
