@@ -549,6 +549,104 @@ if (state.sessie_id) {
 } else {
   laadMedewerkers();
 }
+
+// GLOBAL_CLICK_DELEGATION_MARKER - globale click handler als fallback/failsafe
+document.addEventListener('click', function(e) {
+  try {
+    var t = e.target;
+    // Walk up DOM to find element with data-* attribute
+    while (t && t !== document.body) {
+      // data-toggle: uitklap boeking
+      if (t.hasAttribute && t.hasAttribute('data-toggle')) {
+        e.stopPropagation();
+        var id = t.getAttribute('data-toggle');
+        state.uitgeklapt[id] = !state.uitgeklapt[id];
+        render();
+        return;
+      }
+      // data-mode: tab-switch (opzet/haccp/etc)
+      if (t.hasAttribute && t.hasAttribute('data-mode')) {
+        e.stopPropagation();
+        state.mode = t.getAttribute('data-mode');
+        render();
+        return;
+      }
+      // data-aftik: gerecht aftikken
+      if (t.hasAttribute && t.hasAttribute('data-aftik')) {
+        e.stopPropagation();
+        try {
+          var d = JSON.parse(decodeURIComponent(escape(atob(t.getAttribute('data-aftik')))));
+          aftik(d.bid, d.bnaam, d.gerecht, d.ps);
+        } catch(err) { console.error('aftik parse error', err); }
+        return;
+      }
+      // data-klaar-ps: hele productsoort klaar
+      if (t.hasAttribute && t.hasAttribute('data-klaar-ps')) {
+        e.stopPropagation();
+        try {
+          var d2 = JSON.parse(decodeURIComponent(escape(atob(t.getAttribute('data-klaar-ps')))));
+          bevestigPS(d2.bid, d2.bnaam, d2.ps, d2.gerechten);
+        } catch(err) { console.error('klaar-ps parse error', err); }
+        return;
+      }
+      // data-info: info-knop
+      if (t.hasAttribute && t.hasAttribute('data-info')) {
+        e.stopPropagation();
+        try {
+          var d3 = JSON.parse(decodeURIComponent(escape(atob(t.getAttribute('data-info')))));
+          state.modal = { type: 'info', gerecht: d3.gerecht };
+          render();
+        } catch(err) { console.error('info parse error', err); }
+        return;
+      }
+      // data-close: modal sluiten
+      if (t.hasAttribute && t.hasAttribute('data-close')) {
+        e.stopPropagation();
+        state.modal = null;
+        render();
+        return;
+      }
+      // data-outlet: outlet wisselen op loginscherm
+      if (t.hasAttribute && t.hasAttribute('data-outlet')) {
+        e.stopPropagation();
+        state.outlet_code = t.getAttribute('data-outlet');
+        try { localStorage.setItem('kiosk_outlet', state.outlet_code); } catch(e){}
+        laadMedewerkers();
+        return;
+      }
+      // Specifieke IDs
+      if (t.id === 'btn-logout') { e.stopPropagation(); logout(); return; }
+      if (t.id === 'btn-meld-chef') { e.stopPropagation(); state.modal = { type: 'meld' }; render(); return; }
+      if (t.id === 'meld-verstuur') {
+        e.stopPropagation();
+        api('kiosk-meld-chef', {
+          sessie_id: state.sessie_id,
+          outlet_code: state.outlet_code,
+          type: (document.getElementById('meld-type')||{}).value,
+          urgentie: (document.getElementById('meld-urgentie')||{}).value,
+          product_naam: (document.getElementById('meld-product')||{}).value,
+          omschrijving: (document.getElementById('meld-tekst')||{}).value
+        }).then(function(res){
+          if (res.ok) { state.modal=null; alert('Melding verstuurd!'); return laadData(); }
+          else alert(res.error || 'Fout');
+        });
+        return;
+      }
+      // medewerker klikken op login
+      if (t.classList && t.classList.contains('medewerker')) {
+        e.stopPropagation();
+        state.pin_medewerker = { id: t.getAttribute('data-id'), naam: t.getAttribute('data-naam'), rol: t.getAttribute('data-rol') };
+        state.pin_input = '';
+        render();
+        return;
+      }
+      t = t.parentNode;
+    }
+  } catch(globalErr) {
+    console.error('global click handler error', globalErr);
+  }
+}, true); // true = capture phase, runs before .onclick
+
 </script>
 </body>
 </html>
