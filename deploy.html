@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#234756">
+<title>KitchenRobot Deploy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; background: linear-gradient(180deg, #234756 0%, #3FB8C4 100%); color: #234756; min-height: 100vh; padding: 20px; }
+.wrap { max-width: 480px; margin: 0 auto; }
+h1 { color: white; font-family: 'Fraunces', serif; font-size: 28px; margin-bottom: 4px; text-align: center; padding-top: 20px; }
+.subtitel { color: rgba(255,255,255,0.8); text-align: center; margin-bottom: 24px; font-size: 13px; }
+.card { background: white; border-radius: 18px; padding: 18px; margin-bottom: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.card h2 { font-family: 'Fraunces', serif; font-size: 18px; margin-bottom: 12px; }
+.deploy-item { border: 1px solid #E1E8EB; border-radius: 12px; padding: 14px; margin-bottom: 10px; }
+.deploy-item:last-child { margin-bottom: 0; }
+.deploy-item .naam { font-weight: 600; font-size: 15px; margin-bottom: 4px; }
+.deploy-item .pad { font-size: 11px; color: #7A8A90; font-family: monospace; margin-bottom: 10px; }
+.deploy-btn { background: #234756; color: white; border: 0; padding: 12px; width: 100%; border-radius: 100px; font-size: 14px; font-weight: 600; cursor: pointer; margin-bottom: 6px; }
+.deploy-btn.pull { background: transparent; color: #234756; border: 1px solid #E1E8EB; }
+.deploy-btn:active { transform: scale(0.97); }
+.deploy-btn:disabled { opacity: 0.5; }
+.status { margin-top: 10px; padding: 10px; border-radius: 10px; font-size: 12px; line-height: 1.5; }
+.status.ok { background: #D1F5E6; color: #047857; }
+.status.err { background: #FEE2E2; color: #991B1B; }
+.status.busy { background: #FEF3C7; color: #92400E; }
+.status a { color: inherit; text-decoration: underline; }
+.footer { color: rgba(255,255,255,0.7); text-align: center; font-size: 11px; margin-top: 20px; padding: 10px; }
+.footer a { color: rgba(255,255,255,0.9); }
+.instructies { margin-top:12px; padding:12px; background:#F8FAFC; border-radius:10px; font-size:12px; line-height:1.6; color:#5A6A70; }
+.instructies code { background: #E1E8EB; padding: 1px 5px; border-radius: 4px; font-size: 11px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>KitchenRobot Deploy</h1>
+  <div class="subtitel">Push vanaf mobiel naar live site</div>
+
+  <div class="card">
+    <h2>🚀 Deploys</h2>
+
+    <div class="deploy-item">
+      <div class="naam">🏠 Hoofdbestand (index.html)</div>
+      <div class="pad">app-versies/index.html → kitchenrobot.vercel.app</div>
+      <button class="deploy-btn" data-deploy="index">Push naar live</button>
+      <button class="deploy-btn pull" data-pull="index">Trek huidige live terug naar Storage</button>
+      <div class="status" id="status-index" style="display:none"></div>
+    </div>
+
+    <div class="deploy-item">
+      <div class="naam">📱 Kiosk v2 Preview</div>
+      <div class="pad">app-versies/kiosk.html → kitchenrobot.vercel.app/kiosk.html</div>
+      <button class="deploy-btn" data-deploy="kiosk">Push naar live</button>
+      <div class="status" id="status-kiosk" style="display:none"></div>
+    </div>
+
+    <div class="deploy-item">
+      <div class="naam">🛠 Deploy paneel zelf</div>
+      <div class="pad">deploy.html → herlaad om nieuwste versie te krijgen</div>
+      <button class="deploy-btn pull" onclick="window.location.reload(true)">Herlaad pagina</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>✅ Setup-status</h2>
+    <div id="setup-status" style="font-size:13px;line-height:1.6;color:#5A6A70;">
+      Een moment, check GitHub PAT...
+    </div>
+  </div>
+
+  <div class="footer">
+    <a href="https://kitchenrobot.vercel.app" target="_blank">live site</a> ·
+    <a href="https://aezatnwsrhlwtykpixsq.supabase.co/storage/v1/object/public/app-versies/kiosk.html" target="_blank">kiosk preview</a> ·
+    <a href="https://github.com/Stefan5Upevents/kitchenrobot/commits/main" target="_blank">recente commits</a>
+  </div>
+</div>
+
+<script>
+var SUPABASE_URL = 'https://aezatnwsrhlwtykpixsq.supabase.co';
+var ANON_KEY = 'sb_publishable_qkQzUEM5fvJPSsfScEzNCg_Eug8-d4t';
+
+var DEPLOY_CONFIG = {
+  index: {
+    push: { storage_bucket: 'app-versies', storage_path: 'index.html', repo_path: 'index.html', commit_message: 'Update index.html via mobile deploy' },
+    pull: { repo_path: 'index.html', storage_path: 'index.html' }
+  },
+  kiosk: {
+    push: { storage_bucket: 'app-versies', storage_path: 'kiosk.html', repo_path: 'kiosk.html', commit_message: 'Kiosk v2 preview update via mobile deploy' },
+    pull: { repo_path: 'kiosk.html', storage_path: 'kiosk.html' }
+  }
+};
+
+function api(path, body, onDone) {
+  fetch(SUPABASE_URL + '/functions/v1/' + path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ANON_KEY, 'apikey': ANON_KEY },
+    body: JSON.stringify(body || {})
+  }).then(function(r) { return r.json(); }).then(onDone).catch(function(e) { onDone({ ok: false, error: 'Netwerkfout: ' + e.message }); });
+}
+
+// Push knoppen
+var pushBtns = document.querySelectorAll('[data-deploy]');
+for (var i = 0; i < pushBtns.length; i++) {
+  pushBtns[i].onclick = function() {
+    var key = this.getAttribute('data-deploy');
+    var cfg = DEPLOY_CONFIG[key].push;
+    var btn = this;
+    var statusEl = document.getElementById('status-' + key);
+    if (!confirm('Push ' + cfg.storage_path + ' naar live?')) return;
+    btn.disabled = true;
+    btn.innerText = 'Bezig met pushen...';
+    statusEl.style.display = 'block';
+    statusEl.className = 'status busy';
+    statusEl.innerHTML = '⏳ Bezig... GitHub API aanroepen...';
+
+    api('github-push', cfg, function(res) {
+      btn.disabled = false;
+      btn.innerText = 'Push naar live';
+      if (res.ok) {
+        statusEl.className = 'status ok';
+        var parts = ['✅ <strong>Gepushed naar GitHub!</strong>'];
+        parts.push('Actie: ' + (res.action === 'created' ? 'nieuw aangemaakt' : 'bijgewerkt'));
+        parts.push('Grootte: ' + (res.file_size_bytes / 1024).toFixed(1) + ' KB');
+        if (res.commit_url) parts.push('<a href="' + res.commit_url + '" target="_blank">🔗 Commit op GitHub</a>');
+        parts.push('<br>Vercel deployt automatisch in 1-2 min.');
+        statusEl.innerHTML = parts.join('<br>');
+      } else {
+        statusEl.className = 'status err';
+        var err = '<strong>❌ Fout:</strong> ' + (res.error || 'onbekend');
+        if (res.details) err += '<br><small style="opacity:0.7">' + JSON.stringify(res.details).slice(0, 200) + '</small>';
+        statusEl.innerHTML = err;
+      }
+    });
+  };
+}
+
+// Pull knoppen
+var pullBtns = document.querySelectorAll('[data-pull]');
+for (var j = 0; j < pullBtns.length; j++) {
+  pullBtns[j].onclick = function() {
+    var key = this.getAttribute('data-pull');
+    var cfg = DEPLOY_CONFIG[key].pull;
+    var btn = this;
+    var statusEl = document.getElementById('status-' + key);
+    if (!confirm('LET OP: dit overschrijft app-versies/' + cfg.storage_path + ' met de huidige live versie. Wijzigingen die Claude had voorbereid gaan VERLOREN. Doorgaan?')) return;
+    btn.disabled = true;
+    btn.innerText = 'Bezig met ophalen...';
+    statusEl.style.display = 'block';
+    statusEl.className = 'status busy';
+    statusEl.innerHTML = '⏳ Live versie ophalen van GitHub...';
+
+    api('github-pull-to-storage', cfg, function(res) {
+      btn.disabled = false;
+      btn.innerText = 'Trek huidige live terug naar Storage';
+      if (res.ok) {
+        statusEl.className = 'status ok';
+        statusEl.innerHTML = '✅ <strong>Opgehaald!</strong><br>' + res.file_size_kb + ' KB · Claude kan nu werken op de huidige live versie.';
+      } else {
+        statusEl.className = 'status err';
+        statusEl.innerHTML = '❌ ' + (res.error || 'onbekend');
+      }
+    });
+  };
+}
+
+// Setup check: probeer github-push met dummy
+api('github-push', { storage_bucket: '__test__', storage_path: '__test__' }, function(res) {
+  var el = document.getElementById('setup-status');
+  if (res.error && res.error.indexOf('GITHUB_PAT niet ingesteld') >= 0) {
+    el.innerHTML = '❌ GitHub PAT niet ingesteld. <a href="https://supabase.com/dashboard/project/aezatnwsrhlwtykpixsq/functions/secrets" target="_blank">Open Supabase secrets</a>';
+  } else {
+    el.innerHTML = '✅ GitHub PAT ok · deploy-systeem werkt · repo: <code>Stefan5Upevents/kitchenrobot</code>';
+  }
+});
+</script>
+</body>
+</html>
