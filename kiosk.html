@@ -153,6 +153,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; back
     .bf-afteken-veld { }
     .bf-afteken-veld .lbl { font-size: 9px; color: #78909C; margin-bottom: 2px; }
     .bf-afteken-veld .lijn { border-bottom: 2px solid #234756; height: 22px; }
+    .bf-dag-kop { background: #001828; color: white; padding: 12px 16px; font-weight: 800; font-size: 15px; display: flex; justify-content: space-between; align-items: center; margin-top: 4px; position: sticky; top: 0; z-index: 5; }
+    .bf-dag-kop .bf-dag-aantal { background: #FE424D; padding: 3px 10px; border-radius: 10px; font-size: 12px; font-weight: 800; }
+    .bf-dag-kop .bf-dag-aantal.zero { background: #78909C; }
+    .bf-dag-leeg { padding: 14px 16px; opacity: 0.45; font-size: 12px; font-style: italic; background: white; margin: 0 12px 12px 12px; border-radius: 12px; }
+    .bf-loader { padding: 60px 20px; text-align: center; opacity: 0.6; font-size: 14px; }
+    .bf-loader .spinner { display: inline-block; width: 28px; height: 28px; border: 3px solid #E1E8EB; border-top-color: #001828; border-radius: 50%; animation: bf-spin 0.9s linear infinite; margin-bottom: 12px; }
+    @keyframes bf-spin { to { transform: rotate(360deg); } }
     .boeking-kop .boeking-tijd .bt-tijd { font-weight: 700; font-size: 12px; }
     .boeking-kop .boeking-tijd .bt-naam { font-size: 9px; opacity: 0.75; line-height: 1.2; }
 .boeking-kop .ps-rij { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -921,22 +928,25 @@ function renderMeldingenLijstModal() {
 }
 
 function renderBbqBuffetModal() {
+  var m = state.modal || {};
+  if (m.laden) {
+    return '<div class="alle-tijden-modal">' +
+      '<div class="atm-header"><div><h3>🔥 BBQ / Buffet</h3><div class="atm-sub">WEEK WORDT OPGEHAALD...</div></div>' +
+      '<button class="atm-close" data-close>Sluiten</button></div>' +
+      '<div class="atm-lijst" style="background:#EEF2F6"><div class="bf-loader"><div class="spinner"></div><div>Bezig met laden van 7 dagen...</div></div></div></div>';
+  }
   var BUFFET_KW = ['bbq', 'buffet', 'festival food', 'dinner crew', 'streetfood'];
   var BBQ_KW = ['bbq', 'festival food', 'dinner crew', 'streetfood'];
   function isBuffet(n) { n = (n||'').toLowerCase(); for (var i=0;i<BUFFET_KW.length;i++) if (n.indexOf(BUFFET_KW[i]) !== -1) return true; return false; }
   function isBBQ(n) { n = (n||'').toLowerCase(); for (var i=0;i<BBQ_KW.length;i++) if (n.indexOf(BBQ_KW[i]) !== -1) return true; return false; }
-  var data = state.data || {};
-  var boekingen = (data.dagpakket && data.dagpakket.boekingen) || [];
-  var metBuffet = boekingen.filter(function(b){
-    return (b.regels || []).some(function(r){ return isBuffet(r.menuNaam || r.menuCode || ''); });
-  });
-  metBuffet.sort(function(a,b){ return (a.deadlineTijd||'99:99').localeCompare(b.deadlineTijd||'99:99'); });
-
-  var inhoud = '';
-  if (metBuffet.length === 0) {
-    inhoud = '<div class="atm-empty">Geen BBQ/buffet-boekingen vandaag.</div>';
-  } else {
-    inhoud = metBuffet.map(function(bk){
+  // dagen array: [{datumStr, data}, ...]
+  var dagen = m.dagen || [];
+  if (!dagen.length) {
+    // fallback: alleen vandaag
+    var d0 = state.data ? { datumStr: (state.data.datum || new Date().toISOString().slice(0,10)), data: state.data } : null;
+    if (d0) dagen = [d0];
+  }
+  function boekingKaart(bk){
       var regels = bk.regels || [];
       var buffetRegels = regels.filter(function(r){ return isBuffet(r.menuNaam || r.menuCode || ''); });
       var andereRegels = regels.filter(function(r){ return !isBuffet(r.menuNaam || r.menuCode || ''); });
@@ -983,10 +993,27 @@ function renderBbqBuffetModal() {
         andereHtml +
         afteken +
         '</div></div>';
-    }).join('');
   }
+
+  // Per dag boekingen filteren + renderen
+  var totBoekingen = 0;
+  var inhoud = dagen.map(function(d){
+    var bk = (d.data && d.data.dagpakket && d.data.dagpakket.boekingen) || [];
+    var metBuf = bk.filter(function(b){ return (b.regels || []).some(function(r){ return isBuffet(r.menuNaam || r.menuCode || ''); }); });
+    metBuf.sort(function(a,b){ return (a.deadlineTijd||'99:99').localeCompare(b.deadlineTijd||'99:99'); });
+    totBoekingen += metBuf.length;
+    var kop = '<div class="bf-dag-kop"><div>' + esc(datumNL(d.datumStr)) + '</div>' +
+      '<div class="bf-dag-aantal' + (metBuf.length === 0 ? ' zero' : '') + '">' + metBuf.length + (metBuf.length === 1 ? ' boeking' : ' boekingen') + '</div></div>';
+    if (metBuf.length === 0) {
+      return kop + '<div class="bf-dag-leeg">Geen BBQ/buffet-boekingen.</div>';
+    }
+    return kop + metBuf.map(boekingKaart).join('');
+  }).join('');
+
+  if (!inhoud) inhoud = '<div class="atm-empty">Geen data geladen.</div>';
+
   return '<div class="alle-tijden-modal">' +
-    '<div class="atm-header"><div><h3>🔥 BBQ / Buffet</h3><div class="atm-sub">' + metBuffet.length + ' BOEKING' + (metBuffet.length !== 1 ? 'EN' : '') + ' CHRONOLOGISCH</div></div>' +
+    '<div class="atm-header"><div><h3>🔥 BBQ / Buffet</h3><div class="atm-sub">' + totBoekingen + ' FORMULIER' + (totBoekingen !== 1 ? 'EN' : '') + ' · ' + dagen.length + ' DAGEN</div></div>' +
     '<button class="atm-close" data-close>Sluiten</button></div>' +
     '<div class="atm-lijst" style="background:#EEF2F6">' + inhoud + '</div></div>';
 }
@@ -1324,7 +1351,44 @@ document.addEventListener('click', function(e) {
         if (soort === 'haccp') { state.modal = { type: 'haccp' }; render(); return; }
         if (soort === 'documenten') { state.modal = { type: 'documenten' }; render(); return; }
         if (soort === 'meldingen') { state.modal = { type: 'meldingen' }; render(); return; }
-        if (soort === 'buffet') { state.modal = { type: 'buffet' }; render(); return; }
+        if (soort === 'buffet') {
+          // Toon loader, start 7 parallelle fetches (vandaag + 6 dagen vooruit)
+          state.modal = { type: 'buffet', laden: true };
+          render();
+          var dagenBuf = [];
+          var klaarBuf = 0;
+          for (var i = 0; i <= 6; i++) {
+            (function(off){
+              var ds = datumIsoRel(off);
+              dagenBuf.push({ datumStr: ds, data: null });
+              if (off === 0 && state.data && state.data.datum === ds) {
+                // vandaag hebben we al in state.data
+                for (var j = 0; j < dagenBuf.length; j++) {
+                  if (dagenBuf[j].datumStr === ds) dagenBuf[j].data = state.data;
+                }
+                klaarBuf++;
+                if (klaarBuf === 7) {
+                  dagenBuf.sort(function(a,b){ return a.datumStr.localeCompare(b.datumStr); });
+                  state.modal = { type: 'buffet', dagen: dagenBuf };
+                  render();
+                }
+                return;
+              }
+              laadDagData(ds, function(res){
+                for (var j = 0; j < dagenBuf.length; j++) {
+                  if (dagenBuf[j].datumStr === ds) dagenBuf[j].data = res;
+                }
+                klaarBuf++;
+                if (klaarBuf === 7) {
+                  dagenBuf.sort(function(a,b){ return a.datumStr.localeCompare(b.datumStr); });
+                  state.modal = { type: 'buffet', dagen: dagenBuf };
+                  render();
+                }
+              });
+            })(i);
+          }
+          return;
+        }
         var titels = { };
         var teksten = {
           morgen: 'Overzicht voor morgen komt binnenkort. Voor nu: check via de website.',
