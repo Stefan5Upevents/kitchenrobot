@@ -159,6 +159,25 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; back
     .bf-dag-leeg { padding: 14px 16px; opacity: 0.45; font-size: 12px; font-style: italic; background: white; margin: 0 12px 12px 12px; border-radius: 12px; }
     .bf-loader { padding: 60px 20px; text-align: center; opacity: 0.6; font-size: 14px; }
     .bf-loader .spinner { display: inline-block; width: 28px; height: 28px; border: 3px solid #E1E8EB; border-top-color: #001828; border-radius: 50%; animation: bf-spin 0.9s linear infinite; margin-bottom: 12px; }
+    .bf-boeking-rij { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: white; border-bottom: 1px solid #F0F4F6; cursor: pointer; }
+    .bf-boeking-rij:active { background: #F8FAFC; }
+    .bf-boeking-rij.missend { border-left: 4px solid #FF9800; }
+    .bf-boeking-rij.klaar { border-left: 4px solid #27AE60; }
+    .bf-tijd-blok { font-weight: 800; font-size: 18px; letter-spacing: -0.5px; min-width: 55px; text-align: center; color: #001828; }
+    .bf-info-blok { flex: 1; min-width: 0; }
+    .bf-info-naam { font-size: 14px; font-weight: 700; line-height: 1.2; margin-bottom: 2px; }
+    .bf-info-meta { font-size: 11px; color: #78909C; }
+    .bf-status { background: #27AE60; color: white; padding: 4px 10px; border-radius: 10px; font-size: 10px; font-weight: 800; letter-spacing: 0.5px; flex-shrink: 0; }
+    .bf-status.missend { background: #FF9800; }
+    .bf-pijl { font-size: 22px; color: #78909C; flex-shrink: 0; }
+    .bf-detail-body { padding: 0; background: white; }
+    .bf-detail-body iframe { width: 100%; min-height: calc(100vh - 130px); border: 0; display: block; }
+    .bf-detail-leeg { padding: 40px 20px; text-align: center; }
+    .bf-detail-leeg .icoon { font-size: 56px; opacity: 0.3; margin-bottom: 12px; }
+    .bf-detail-leeg h4 { margin: 0 0 8px; font-size: 17px; }
+    .bf-detail-leeg p { margin: 0 0 16px; font-size: 13px; color: #78909C; line-height: 1.5; }
+    .bf-detail-prod { background: #F8FAFB; border-radius: 10px; padding: 12px 14px; margin: 12px 20px; text-align: left; font-size: 12px; }
+    .bf-detail-prod strong { display: block; margin-bottom: 6px; font-size: 11px; color: #78909C; letter-spacing: 1px; }
     @keyframes bf-spin { to { transform: rotate(360deg); } }
     .boeking-kop .boeking-tijd .bt-tijd { font-weight: 700; font-size: 12px; }
     .boeking-kop .boeking-tijd .bt-naam { font-size: 9px; opacity: 0.75; line-height: 1.2; }
@@ -1044,21 +1063,55 @@ function renderBbqBuffetModalV2() {
       '<button class="atm-close" data-close>Sluiten</button></div>' +
       '<div class="atm-lijst" style="background:#EEF2F6"><div class="bf-loader"><div class="spinner"></div><div>Bezig met laden...</div></div></div></div>';
   }
-  var bd = state.buffet_data || { dagen: [], totaal_boekingen: 0 };
+  // Detail-weergave (klik op 1 boeking)
+  if (m.bbq_boeking) {
+    var bk = m.bbq_boeking;
+    var inhoudDetail;
+    if (bk.heeft_snapshot && bk.html) {
+      // iframe met de HTML (1-op-1 admin-website output)
+      var blob = 'data:text/html;charset=utf-8,' + encodeURIComponent(bk.html);
+      inhoudDetail = '<iframe src="' + blob + '" sandbox="allow-same-origin"></iframe>';
+    } else {
+      // Formulier ontbreekt
+      var prodLijst = (bk.bbq_producten || []).map(function(p){ return '· ' + esc(p.naam) + ' ×' + (p.aantal || 0); }).join('<br>');
+      inhoudDetail = '<div class="bf-detail-leeg">' +
+        '<div class="icoon">⚠</div>' +
+        '<h4>Formulier nog niet gegenereerd</h4>' +
+        '<p>Open deze boeking in de <strong>admin-website</strong> en open de BBQ-productsoort. Na een paar seconden staat het formulier automatisch hier.</p>' +
+        '<div class="bf-detail-prod"><strong>BBQ-PRODUCTEN IN BOEKING</strong>' + prodLijst + '</div></div>';
+    }
+    return '<div class="alle-tijden-modal">' +
+      '<div class="atm-header"><div><h3>🔥 ' + esc(bk.naam) + '</h3><div class="atm-sub">' + esc(bk.tijd || '') + ' · ' + (bk.bbq_pax || 0) + 'p · ' + esc(bk.locatie || '') + '</div></div>' +
+      '<button class="atm-close" data-bbq-terug>Terug</button></div>' +
+      '<div class="bf-detail-body">' + inhoudDetail + '</div></div>';
+  }
+  // Lijst-weergave
+  var bd = state.buffet_data || { dagen: [], totaal_boekingen: 0, totaal_missend: 0 };
   var inhoud = '';
   (bd.dagen || []).forEach(function(d){
     var boeks = d.boekingen || [];
     var kop = '<div class="bf-dag-kop"><div>' + esc(d.dag_label || d.datum) + '</div>' +
-      '<div class="bf-dag-aantal' + (boeks.length === 0 ? ' zero' : '') + '">' + boeks.length + (boeks.length === 1 ? ' formulier' : ' formulieren') + '</div></div>';
+      '<div class="bf-dag-aantal' + (boeks.length === 0 ? ' zero' : '') + '">' + boeks.length + (boeks.length === 1 ? ' boeking' : ' boekingen') + '</div></div>';
     if (boeks.length === 0) {
-      inhoud += kop + '<div class="bf-dag-leeg">Geen BBQ/buffet-boekingen.</div>';
+      inhoud += kop + '<div class="bf-dag-leeg">Geen BBQ-boekingen.</div>';
     } else {
-      inhoud += kop + '<div style="padding:12px">' + boeks.map(function(b){ return b.html; }).join('') + '</div>';
+      inhoud += kop + boeks.map(function(b){
+        var klas = b.heeft_snapshot ? 'klaar' : 'missend';
+        var statusLabel = b.heeft_snapshot ? 'KLAAR' : 'NOG TE DOEN';
+        var prodKort = (b.bbq_producten || []).map(function(p){ return p.naam; }).join(', ').substring(0, 70);
+        return '<div class="bf-boeking-rij ' + klas + '" data-bbq-id="' + esc(b.id) + '">' +
+          '<div class="bf-tijd-blok">' + esc(b.tijd || '--:--') + '</div>' +
+          '<div class="bf-info-blok"><div class="bf-info-naam">' + esc(b.naam) + '</div>' +
+          '<div class="bf-info-meta">' + (b.bbq_pax || 0) + 'p · ' + esc(b.locatie || '?') + (prodKort ? ' · ' + esc(prodKort) : '') + '</div></div>' +
+          '<div class="bf-status ' + klas + '">' + statusLabel + '</div>' +
+          '<div class="bf-pijl">›</div></div>';
+      }).join('');
     }
   });
   if (!inhoud) inhoud = '<div class="atm-empty">Geen data geladen.</div>';
+  var sub = (bd.totaal_boekingen || 0) + ' BOEKING' + ((bd.totaal_boekingen || 0) !== 1 ? 'EN' : '') + ' · ' + (bd.totaal_missend || 0) + ' NOG TE DOEN';
   return '<div class="alle-tijden-modal">' +
-    '<div class="atm-header"><div><h3>🔥 BBQ / Buffet</h3><div class="atm-sub">' + (bd.totaal_boekingen || 0) + ' FORMULIER' + ((bd.totaal_boekingen || 0) !== 1 ? 'EN' : '') + ' · 7 DAGEN · BRON: ADMIN</div></div>' +
+    '<div class="atm-header"><div><h3>🔥 BBQ / Buffet</h3><div class="atm-sub">' + sub + '</div></div>' +
     '<button class="atm-close" data-close>Sluiten</button></div>' +
     '<div class="atm-lijst" style="background:#EEF2F6">' + inhoud + '</div></div>';
 }
@@ -1242,6 +1295,26 @@ document.addEventListener('click', function(e) {
           state.modal = { type: 'info', gerecht: d3.gerecht };
           render();
         } catch(err) { console.error('info parse error', err); }
+        return;
+      }
+      // data-bbq-id: BBQ boeking detail openen
+      if (t.hasAttribute && t.hasAttribute('data-bbq-id')) {
+        e.stopPropagation();
+        var bbqId = t.getAttribute('data-bbq-id');
+        var found = null;
+        var dagen = (state.buffet_data && state.buffet_data.dagen) || [];
+        for (var di = 0; di < dagen.length && !found; di++) {
+          var bk = dagen[di].boekingen || [];
+          for (var bi = 0; bi < bk.length; bi++) { if (String(bk[bi].id) === String(bbqId)) { found = bk[bi]; break; } }
+        }
+        if (found) { state.modal = { type: 'buffet', bbq_boeking: found }; render(); }
+        return;
+      }
+      // data-bbq-terug: terug naar lijst
+      if (t.hasAttribute && t.hasAttribute('data-bbq-terug')) {
+        e.stopPropagation();
+        state.modal = { type: 'buffet' };
+        render();
         return;
       }
       // data-close: modal sluiten
