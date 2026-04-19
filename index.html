@@ -11576,6 +11576,26 @@ function ChefScreen({ setSc, setActieve }) {
       ),
       // Uitklap: productsoorten met inline iframes
       isOpen && (pss.length === 0 ? React.createElement('div', { style:{padding:'10px 14px',fontSize:11,color:C.muted,fontStyle:'italic',borderTop:'1px solid #EEE'} }, 'Geen gekoppelde productsoorten') : React.createElement('div', { style:{borderTop:'1px solid #EEE'} },
+        (function() {
+          var stamKp = window._stamKoppelingen || [];
+          var menuRegels = (b.regels || []).filter(function(r) {
+            if ((r.menuNaam || '').toLowerCase().indexOf('add up') >= 0) return false;
+            var kp = stamKp.find(function(k) { return (k.recras_naam || '').trim() === (r.menuNaam || '').trim(); });
+            return !!kp;
+          });
+          if (menuRegels.length === 0) return null;
+          return React.createElement('div', { style:{padding:'8px 14px',background:'#EEF6F9',borderBottom:'1px solid #E0EBF0'} },
+            React.createElement('div', { style:{fontSize:9,fontWeight:700,color:C.muted,marginBottom:3,letterSpacing:0.5} }, '📌 GEBOEKTE MENU\u0027S'),
+            React.createElement('div', { style:{display:'flex',flexWrap:'wrap',gap:'4px 12px'} },
+              menuRegels.map(function(r, i) {
+                return React.createElement('span', { key: i, style:{fontSize:11,color:C.night} },
+                  React.createElement('strong', { style:{color:C.aqua,fontWeight:800} }, r.aantal + '×'),
+                  ' ' + r.menuNaam + (r.starttijdTijd ? ' (' + r.starttijdTijd + ')' : '')
+                );
+              })
+            )
+          );
+        })(),
         pss.map(function(ps) { return renderProductsoortBlok(b, ps); })
       ))
     );
