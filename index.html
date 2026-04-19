@@ -11186,8 +11186,8 @@ function ChefScreen({ setSc }) {
 
     var query = supa.from('recras_boekingen')
       .select('*')
-      .gte('deadline_dag', vanStr)
-      .lte('deadline_dag', totStr)
+      .gte('deadline', vanStr)
+      .lte('deadline', totStr + 'T23:59:59')
       .order('deadline');
 
     // Filter op outlet als chef (niet beheerder)
@@ -11202,7 +11202,7 @@ function ChefScreen({ setSc }) {
       // Groepeer per dag
       var dagMap = {};
       bk.forEach(function(b) {
-        var dag = (b.deadline_dag || '').substring(0, 10);
+        var dag = (b.deadline || '').split('T')[0].split(' ')[0];
         if (!dag) return;
         if (!dagMap[dag]) dagMap[dag] = [];
         dagMap[dag].push(b);
@@ -11250,7 +11250,7 @@ function ChefScreen({ setSc }) {
   function slaOp(boeking) {
     if (!supa) return;
     var w = wijzigingen[boeking.id] || {};
-    var dag = (boeking.deadline_dag || '').substring(0, 10);
+    var dag = (boeking.deadline || '').split('T')[0].split(' ')[0];
     var outlet = boeking.outlet_code || (profiel && profiel.outlet_code) || 'west';
 
     supa.auth.getUser().then(function(r) {
