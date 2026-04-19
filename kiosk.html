@@ -42,6 +42,33 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; back
     .boeking-kop .boeking-tijd { display: inline-flex; flex-direction: column; background: #F8FAFC; border: 1px solid #E1E8EB; border-radius: 10px; padding: 4px 9px; font-size: 11px; min-width: 60px; }
     .boeking-kop .boeking-tijd.huidig { background: #3FB8C4; color: white; border-color: #3FB8C4; }
     .boeking-kop .boeking-tijd.verlopen { opacity: 0.45; }
+    .tijdbalk { cursor: pointer; transition: background 0.15s; }
+    .tijdbalk:active { background: #F0F4F6; }
+    .tijdbalk .hint { font-size: 10px; opacity: 0.5; float: right; font-weight: 500; letter-spacing: 0.5px; }
+    .alle-tijden-modal { position: fixed; inset: 0; background: white; z-index: 9999; display: flex; flex-direction: column; overflow: hidden; }
+    .atm-header { background: #001828; color: white; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+    .atm-header h3 { margin: 0; font-size: 18px; font-weight: 800; }
+    .atm-header .atm-sub { font-size: 11px; opacity: 0.6; letter-spacing: 1.5px; margin-top: 2px; }
+    .atm-close { background: transparent; border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 10px; padding: 8px 14px; font-size: 14px; font-weight: 600; cursor: pointer; }
+    .atm-filters { padding: 10px 12px; background: #F8FAFC; border-bottom: 1px solid #E1E8EB; display: flex; gap: 6px; overflow-x: auto; flex-shrink: 0; }
+    .atm-chip { background: white; border: 1px solid #E1E8EB; border-radius: 18px; padding: 7px 14px; font-size: 12px; font-weight: 600; white-space: nowrap; cursor: pointer; color: #234756; }
+    .atm-chip.actief { background: #001828; color: white; border-color: #001828; }
+    .atm-lijst { flex: 1; overflow-y: auto; padding: 6px 0; }
+    .atm-rij { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid #F0F4F6; }
+    .atm-rij.verlopen { opacity: 0.4; }
+    .atm-rij.huidig { background: #FFF8E1; }
+    .atm-tijd { font-family: 'Inter', sans-serif; font-weight: 800; font-size: 22px; letter-spacing: -1px; min-width: 70px; color: #001828; }
+    .atm-info { flex: 1; min-width: 0; }
+    .atm-naam { font-size: 13px; font-weight: 600; line-height: 1.25; margin-bottom: 2px; }
+    .atm-meta { font-size: 11px; color: #78909C; }
+    .atm-kwal { display: inline-block; background: #1AA6B7; color: white; border-radius: 5px; padding: 2px 7px; font-size: 10px; font-weight: 700; letter-spacing: 0.3px; text-transform: uppercase; }
+    .atm-kwal.Frituur { background: #FE424D; }
+    .atm-kwal.Oven { background: #E65100; }
+    .atm-kwal.BBQ { background: #B71C1C; }
+    .atm-kwal.Koud { background: #3FB8C4; }
+    .atm-kwal.Koken { background: #7B1FA2; }
+    .atm-kwal.recras { background: #78909C; }
+    .atm-empty { padding: 40px 20px; text-align: center; opacity: 0.5; font-size: 13px; }
     .boeking-kop .boeking-tijd .bt-tijd { font-weight: 700; font-size: 12px; }
     .boeking-kop .boeking-tijd .bt-naam { font-size: 9px; opacity: 0.75; line-height: 1.2; }
 .boeking-kop .ps-rij { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -165,7 +192,8 @@ var state = (function(){
     pin_medewerker: null,
     pin_input: '',
     pin_error: '',
-    modal: null
+    modal: null,
+    atm_filter: 'alle'
   };
 })();
 
@@ -374,7 +402,7 @@ function renderTijdbalk(tijdschema, nu, boekingen) {
     var mm = parseInt((tijd||'00:00').slice(3,5)) || 0;
     return { tijd: tijd, naam: (b.naam||'').slice(0,14), minVal: hh*60 + mm };
   });
-  if (!lijst.length) return '<div class="tijdbalk"><h3>Tijdschema</h3><div style="font-size:12px;opacity:0.5;padding:6px 0;">Geen tijden voor vandaag</div></div>';
+  if (!lijst.length) return '<div class="tijdbalk" data-onder="alle-tijden"><h3>Tijdschema <span class="hint">TIK →</span></h3><div style="font-size:12px;opacity:0.5;padding:6px 0;">Geen tijden voor vandaag</div></div>';
   var nuMin = parseInt(nu.slice(0,2)) * 60 + parseInt(nu.slice(3,5));
   var items = lijst.map(function(t) {
     var mv = t.minVal || 0;
@@ -382,7 +410,7 @@ function renderTijdbalk(tijdschema, nu, boekingen) {
     var huidig = !verlopen && Math.abs(mv - nuMin) < 30;
     return '<div class="tijdmoment ' + (verlopen ? 'verlopen' : '') + ' ' + (huidig ? 'huidig' : '') + '"><div class="tijd">' + esc(t.tijd) + '</div><div class="naam">' + esc(t.naam||'') + '</div></div>';
   }).join('');
-  return '<div class="tijdbalk"><h3>Tijdschema vandaag</h3>' + items + '</div>';
+  return '<div class="tijdbalk" data-onder="alle-tijden"><h3>Tijdschema vandaag <span class="hint">TIK → ALLE</span></h3>' + items + '</div>';
 }
 
 function renderModeSwitch() {
@@ -575,7 +603,55 @@ function renderOnderBlokken(d) {
 function renderModal() {
   if (state.modal && state.modal.type === 'meld') return renderMeldModal();
   if (state.modal && state.modal.type === 'info') return renderInfoModal();
+  if (state.modal && state.modal.type === 'alle-tijden') return renderAlleTijdenModal();
   return '';
+}
+
+function renderAlleTijdenModal() {
+  var d = state.data || {};
+  var tijden = (d.tijdschema || []).slice();
+  // Verzamel unieke kwalificaties
+  var kwalSet = {};
+  tijden.forEach(function(t){ if (t.kwal) kwalSet[t.kwal] = true; });
+  var kwalLijst = Object.keys(kwalSet).sort();
+  // Filter chips
+  var filter = state.atm_filter || 'alle';
+  var chips = '<div class="atm-chip ' + (filter === 'alle' ? 'actief' : '') + '" data-atm-filter="alle">Alle (' + tijden.length + ')</div>';
+  kwalLijst.forEach(function(k){
+    var count = tijden.filter(function(t){ return t.kwal === k; }).length;
+    chips += '<div class="atm-chip ' + (filter === k ? 'actief' : '') + '" data-atm-filter="' + esc(k) + '">' + esc(k) + ' (' + count + ')</div>';
+  });
+  // Filter toepassen
+  var gefilterd = filter === 'alle' ? tijden : tijden.filter(function(t){ return t.kwal === filter; });
+  gefilterd.sort(function(a,b){ return (a.minVal||0) - (b.minVal||0); });
+  // Huidige tijd in minuten
+  var now = new Date();
+  var nuMin = now.getHours() * 60 + now.getMinutes();
+  // Lijst
+  var lijst = '';
+  if (gefilterd.length === 0) {
+    lijst = '<div class="atm-empty">Geen tijden voor filter "' + esc(filter) + '"</div>';
+  } else {
+    lijst = gefilterd.map(function(t){
+      var mv = t.minVal || 0;
+      var verlopen = mv < nuMin - 5;
+      var huidig = !verlopen && Math.abs(mv - nuMin) <= 15;
+      var cls = (verlopen ? 'verlopen ' : '') + (huidig ? 'huidig ' : '');
+      var kwalClass = 'atm-kwal ' + esc(t.kwal || '');
+      return '<div class="atm-rij ' + cls + '">' +
+        '<div class="atm-tijd">' + esc(t.tijd || '') + '</div>' +
+        '<div class="atm-info"><div class="atm-naam">' + esc(t.naam || '') + '</div>' +
+        '<div class="atm-meta">' + esc(t.boeking_naam || '') + (t.ps_naam ? ' · ' + esc(t.ps_naam) : '') + '</div></div>' +
+        (t.kwal ? '<span class="' + kwalClass + '">' + esc(t.kwal) + '</span>' : '') +
+      '</div>';
+    }).join('');
+  }
+  return '<div class="alle-tijden-modal">' +
+    '<div class="atm-header"><div><h3>Alle tijden</h3><div class="atm-sub">' + gefilterd.length + ' van ' + tijden.length + ' MOMENTEN</div></div>' +
+    '<button class="atm-close" data-close>Sluiten</button></div>' +
+    '<div class="atm-filters">' + chips + '</div>' +
+    '<div class="atm-lijst">' + lijst + '</div>' +
+  '</div>';
 }
 
 function renderMeldModal() {
@@ -742,10 +818,24 @@ document.addEventListener('click', function(e) {
         });
         return;
       }
+      // data-atm-filter: filter wisselen in alle-tijden modal
+      if (t.hasAttribute && t.hasAttribute('data-atm-filter')) {
+        e.stopPropagation();
+        state.atm_filter = t.getAttribute('data-atm-filter');
+        render();
+        return;
+      }
       // data-onder: nav-blok onder (morgen/week/schoonmaak/haccp/documenten/meldingen)
       if (t.hasAttribute && t.hasAttribute('data-onder')) {
         e.stopPropagation();
         var soort = t.getAttribute('data-onder');
+        // Tijdbalk klikbaar -> alle-tijden modal (geen alert)
+        if (soort === 'alle-tijden') {
+          state.atm_filter = 'alle';
+          state.modal = { type: 'alle-tijden' };
+          render();
+          return;
+        }
         var titels = { morgen: '📅 Morgen', week: '🗓️ Verder in de week', schoonmaak: '🧽 Schoonmaak', haccp: '🌡️ HACCP', documenten: '📄 Documenten', meldingen: '📨 Meldingen aan chef' };
         var teksten = {
           morgen: 'Overzicht voor morgen komt binnenkort. Voor nu: check via de website.',
