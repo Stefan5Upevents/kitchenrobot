@@ -3797,7 +3797,10 @@ function OpzetScreen() {
         // Bepaal datum van eerste boeking
         var _datum = (boekingen[0].deadline || "").replace("T", " ").split(" ")[0] || "";
         if (!_datum) return;
-        var psNm = pg ? ((pg.naam || "") + " › " + (ps ? ps.naam : psId)) : (ps ? ps.naam : psId);
+        var psObj = (window._stamProductgroepen || []).reduce(function(f, pg2) {
+          return f || (pg2.soorten || []).find(function(s) { return s.id === psId; });
+        }, null);
+        var psNm = pg ? ((pg.naam || "") + " › " + (psObj ? psObj.naam : psId)) : (psObj ? psObj.naam : psId);
         // Bouw volledige HTML pagina met stijlen (inline zodat iframe het goed toont)
         var _styles = [
           "body{font-family:Roboto,sans-serif;margin:0;padding:12px;background:#fff;color:#234756;font-size:12px}",
