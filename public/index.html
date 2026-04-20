@@ -2285,7 +2285,11 @@ function BuffetScreen({ actieve, setActieve, setSc }) {
     var btnTekst = source === 'boekingen' ? '← Terug naar Boekingen' : '← Terug naar Chef Portaal';
     var wrapper = document.createElement('div');
     wrapper.id = 'buffet-return-btn-wrapper';
-    wrapper.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:9999;';
+    // v3: desktop linksonder, mobiel linksboven
+    var isDesktop = window.matchMedia && window.matchMedia('(min-width: 768px)').matches;
+    wrapper.style.cssText = isDesktop
+      ? 'position:fixed;bottom:20px;left:20px;z-index:9999;'
+      : 'position:fixed;top:70px;left:20px;z-index:9999;';
     var btn = document.createElement('button');
     btn.textContent = btnTekst;
     btn.style.cssText = 'background:#FE424D;color:#fff;border:none;border-radius:100px;padding:10px 18px;font-size:13px;font-weight:800;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.15);font-family:inherit;';
