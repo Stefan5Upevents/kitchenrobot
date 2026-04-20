@@ -471,7 +471,6 @@ function Header({ sc, setSc, user, logout }) {
       ["opzet", "📊", "Opzetoverzicht"],
       ["tijden", "\u23F0", "Tijden"],
       ["chef", "\uD83D\uDC68\u200D\uD83C\uDF73", "Chef Review"],
-      ["financieel", "\uD83D\uDCB6", "Financieel"],
       ["inspiratie", "\u2728", "Inspiratie"]
     ] },
     { label: "Analyse", items: [
@@ -2286,7 +2285,7 @@ function BuffetScreen({ actieve, setActieve, setSc }) {
     var btnTekst = source === 'boekingen' ? '← Terug naar Boekingen' : '← Terug naar Chef Portaal';
     var wrapper = document.createElement('div');
     wrapper.id = 'buffet-return-btn-wrapper';
-    wrapper.style.cssText = 'position:fixed;top:70px;left:20px;z-index:9999;';
+    wrapper.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:9999;';
     var btn = document.createElement('button');
     btn.textContent = btnTekst;
     btn.style.cssText = 'background:#FE424D;color:#fff;border:none;border-radius:100px;padding:10px 18px;font-size:13px;font-weight:800;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.15);font-family:inherit;';
