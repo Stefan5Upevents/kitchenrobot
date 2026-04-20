@@ -8980,6 +8980,10 @@ function AllergenenScreen() {
 function LiveDashboardBlok({ outletFilter }) {
   var C = window._C || { night:'#234756', aqua:'#3FB8C4', hot:'#E8202B', green:'#2E7D32', muted:'#78909C', white:'#fff', orange:'#FF9800' };
   var [data, setData] = React.useState(null);
+  var [marge, setMarge] = React.useState(null);
+  var [margeTop, setMargeTop] = React.useState([]);
+  var [margeBottom, setMargeBottom] = React.useState([]);
+  var [waste, setWaste] = React.useState(null);
   var [laatstUpdate, setLaatstUpdate] = React.useState(null);
   var [fout, setFout] = React.useState(null);
 
@@ -8994,6 +8998,30 @@ function LiveDashboardBlok({ outletFilter }) {
       setData(rij);
       setLaatstUpdate(new Date());
       setFout(null);
+    });
+    // Marge samenvatting
+    window._supa.from('v_fin_dashboard_marge').select('*').then(function(res) {
+      if (!res.error && res.data && res.data[0]) setMarge(res.data[0]);
+    });
+    // Top 3 + bottom 3 marge
+    window._supa.from('menu_engineering').select('menu_naam,marge_pct,classificatie').gt('verkoop_prijs', 0).not('marge_pct', 'is', null).order('marge_pct', { ascending: false }).limit(3).then(function(res) {
+      if (!res.error) setMargeTop(res.data || []);
+    });
+    window._supa.from('menu_engineering').select('menu_naam,marge_pct,classificatie').gt('verkoop_prijs', 0).not('marge_pct', 'is', null).eq('alert_actief', true).order('marge_pct', { ascending: true }).limit(3).then(function(res) {
+      if (!res.error) setMargeBottom(res.data || []);
+    });
+    // Waste
+    var wq = window._supa.from('v_fin_dashboard_waste').select('*');
+    if (outletFilter !== 'beide') wq = wq.eq('outlet_code', outletFilter);
+    wq.then(function(res) {
+      if (res.error) return;
+      var wrij = null;
+      if (outletFilter === 'beide') {
+        wrij = (res.data || []).find(function(r){ return r.outlet_code === 'beide' || r.outlet_code === null; }) || { n_registraties_30d:0, kosten_30d:0, kosten_7d:0 };
+      } else {
+        wrij = (res.data && res.data[0]) || { n_registraties_30d:0, kosten_30d:0, kosten_7d:0 };
+      }
+      setWaste(wrij);
     });
   }
 
@@ -9068,6 +9096,57 @@ function LiveDashboardBlok({ outletFilter }) {
       KPICard({ label:'Jaar-forecast', waarde:euro(data.jaar_forecast), kleur:C.orange, sub:'gerealiseerd + alle geplande boekingen' }),
       KPICard({ label:'Komende 30 dagen', waarde:euro(data.komende_30d_gepland), kleur:C.aqua, sub:'geplande omzet uit Recras' }),
       KPICard({ label:'Komende 7 dagen', waarde:euro(data.komende_7d_gepland), kleur:C.aqua, sub:'geplande omzet deze week' })
+    ),
+    // RIJ 3: Marge + Waste
+    React.createElement('div', { style:{fontSize:10,color:C.night,fontWeight:800,letterSpacing:1,textTransform:'uppercase',marginBottom:6,marginTop:14} }, '📊 Marge & kosten'),
+    React.createElement('div', { style:{display:'flex',gap:8,flexWrap:'wrap',marginBottom:10} },
+      KPICard({
+        label: 'Gem. marge',
+        waarde: marge ? (parseFloat(marge.gem_marge_pct || 0).toFixed(1) + '%') : '...',
+        kleur: marge && parseFloat(marge.gem_marge_pct||0) >= 60 ? C.green : C.orange,
+        sub: marge ? (marge.n_met_marge + ' menus') : ''
+      }),
+      KPICard({
+        label: 'Marge-alerts',
+        waarde: marge ? marge.n_alert_actief : '...',
+        kleur: marge && marge.n_alert_actief > 0 ? C.hot : C.green,
+        sub: marge && marge.n_alert_actief > 0 ? 'menus onder drempel' : 'alles binnen drempel'
+      }),
+      KPICard({
+        label: 'Waste 30 dagen',
+        waarde: waste ? ('€' + Math.round(parseFloat(waste.kosten_30d||0)).toLocaleString('nl-NL')) : '...',
+        kleur: waste && parseFloat(waste.kosten_30d||0) > 0 ? C.hot : C.muted,
+        sub: waste ? (waste.n_registraties_30d + ' registraties') : ''
+      }),
+      KPICard({
+        label: 'Waste 7 dagen',
+        waarde: waste ? ('€' + Math.round(parseFloat(waste.kosten_7d||0)).toLocaleString('nl-NL')) : '...',
+        kleur: C.muted,
+        sub: 'deze week'
+      })
+    ),
+    // Top + Bottom marge lijsten
+    (margeTop.length > 0 || margeBottom.length > 0) && React.createElement('div', { style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginTop:6} },
+      React.createElement('div', { style:{background:C.white,borderRadius:10,padding:'10px 14px'} },
+        React.createElement('div', { style:{fontSize:10,fontWeight:700,color:C.green,letterSpacing:1,textTransform:'uppercase',marginBottom:6} }, '⭐ Top 3 marge'),
+        margeTop.map(function(m, i) {
+          return React.createElement('div', { key:i, style:{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'3px 0',fontSize:12} },
+            React.createElement('span', { style:{color:C.night,fontWeight:600,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'} }, m.menu_naam),
+            React.createElement('span', { style:{color:C.green,fontWeight:800,marginLeft:8} }, parseFloat(m.marge_pct).toFixed(1) + '%')
+          );
+        })
+      ),
+      React.createElement('div', { style:{background:C.white,borderRadius:10,padding:'10px 14px'} },
+        React.createElement('div', { style:{fontSize:10,fontWeight:700,color:C.hot,letterSpacing:1,textTransform:'uppercase',marginBottom:6} }, '⚠ Laagste 3 marge'),
+        margeBottom.length === 0
+          ? React.createElement('div', { style:{fontSize:11,color:C.muted,fontStyle:'italic'} }, 'Geen menus onder drempel')
+          : margeBottom.map(function(m, i) {
+              return React.createElement('div', { key:i, style:{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'3px 0',fontSize:12} },
+                React.createElement('span', { style:{color:C.night,fontWeight:600,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'} }, m.menu_naam),
+                React.createElement('span', { style:{color:C.hot,fontWeight:800,marginLeft:8} }, parseFloat(m.marge_pct).toFixed(1) + '%')
+              );
+            })
+      )
     )
   );
 }
