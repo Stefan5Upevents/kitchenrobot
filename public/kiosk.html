@@ -313,7 +313,8 @@ var state = (function(){
     buffet_data: null, // kiosk-buffet-html response cache
     draaiboek_links: [], // NIEUW: Notion URLs per context
     onboarding_stap: null, // NIEUW: 1-4 actief, null=niet actief
-    wekker_toast: null // NIEUW: {tijd, naam} wanneer wekker afgaat
+    wekker_toast: null, // NIEUW: {tijd, naam} wanneer wekker afgaat
+    toewijzingen: {} // NIEUW: { boeking_id: { medewerker_naam } } - wie is verantwoordelijk
   };
 })();
 
@@ -356,9 +357,24 @@ function laadMedewerkers() {
   });
 }
 
+// NIEUW: Toewijzingen laden (wie is verantwoordelijk per boeking)
+function laadToewijzingen() {
+  return fetch(SUPABASE_URL + '/rest/v1/boeking_toewijzingen?select=*', {
+    headers: { 'apikey': ANON_KEY, 'Authorization': 'Bearer ' + ANON_KEY }
+  }).then(function(r){ return r.json(); }).then(function(rows) {
+    if (Array.isArray(rows)) {
+      var map = {};
+      rows.forEach(function(t){ map[t.boeking_id] = t; });
+      state.toewijzingen = map;
+    }
+  }).catch(function(){});
+}
+
 function laadData() {
   // NIEUW: draaiboek-links parallel laden (non-blocking)
   laadDraaiboekLinks();
+  // NIEUW: toewijzingen parallel laden
+  laadToewijzingen();
   // NIEUW: onboarding check - alleen eerste keer
   try {
     if (state.sessie_id && !localStorage.getItem('kiosk_onboarding_voltooid')) {
@@ -855,7 +871,10 @@ function renderBoekingKaart(boeking, voortgang, tijdschema, nu) {
   return '<div class="boeking ' + (uitgeklapt ? 'uitgeklapt' : '') + '">' +
     '<div class="boeking-kop" data-toggle="' + esc(bid) + '">' +
       '<div class="regel1"><div class="tijd-blok"><div class="tijd">' + esc(boeking.deadlineTijd || (boeking.deadline || '').slice(11,16) || '?') + '</div><div class="datum-klein">' + esc(boeking.deadlineDag || (boeking.deadline || '').slice(0,10) || '') + '</div></div><div class="naam">' + esc(bnaam) + '</div></div>' +
-      '<div class="meta">' + esc(boeking.locatie || '') + ' &middot; ' + esc(boeking.aantal_personen || '?') + 'p</div>' +
+      '<div class="meta">' + esc(boeking.locatie || '') + ' &middot; ' + esc(boeking.aantal_personen || '?') + 'p' + (function(){
+        var t = state.toewijzingen && state.toewijzingen[bid];
+        return t ? ' &middot; <span style="background:#E3F2FD;color:#1565C0;border-radius:100px;padding:2px 8px;font-size:11px;font-weight:700;">👤 ' + esc(t.medewerker_naam) + '</span>' : '';
+      })() + '</div>' +
       tijdenHtml +
       '<div class="ps-rij">' + psBadges + '</div>' +
       '<div class="voortgang"><div class="voortgang-bar" style="width: ' + pct + '%"></div></div>' +
