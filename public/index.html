@@ -11957,7 +11957,18 @@ function ChefScreen({ setSc, setActieve }) {
             fmtDag((b.deadline || '').split('T')[0].split(' ')[0]) + ' · ' + (b.deadline_tijd || '—') + ' · ' + (b.locatie || '—') + (geenProductsoorten ? ' · locatie/product' : ' · ' + pss.length + ' productsoort' + (pss.length !== 1 ? 'en' : '') + (pss.length > 0 ? ' (' + nGoed + '/' + pss.length + ' ✓)' : ''))
           ),
           menuSamenvatting && React.createElement('div', { style:{fontSize:12,color:C.night,marginTop:4,fontWeight:600,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'} }, menuSamenvatting),
-          nOpmerkingenHdr > 0 && React.createElement('div', { style:{fontSize:11,marginTop:6,background:'#FFF8E1',color:'#E65100',padding:'4px 10px',borderRadius:100,display:'inline-block',fontWeight:700,border:'1px solid #FFB300'} }, '📝 ' + nOpmerkingenHdr + ' opmerking' + (nOpmerkingenHdr !== 1 ? 'en' : '') + ' van klant')
+          nOpmerkingenHdr > 0 && (function() {
+            var teksten = opmerkingenHdr.slice(0, 2).map(function(r){
+              var t = String(r.opmerking || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+              return t.length > 55 ? t.slice(0, 55) + '…' : t;
+            });
+            var extra = nOpmerkingenHdr > 2 ? ' (+' + (nOpmerkingenHdr - 2) + ' meer)' : '';
+            return React.createElement('div', { style:{fontSize:12,marginTop:8,background:'#FFF8E1',color:'#E65100',padding:'8px 12px',borderRadius:8,fontWeight:600,border:'1px solid #FFB300',lineHeight:1.45} },
+              React.createElement('span', { style:{fontWeight:800,marginRight:6} }, '📝'),
+              teksten.join('  ·  '),
+              extra && React.createElement('span', { style:{fontWeight:800,marginLeft:4} }, extra)
+            );
+          })()
         ),
         (geenProductsoorten || isVerborgen) && React.createElement('button', {
           onClick: function(ev) { ev.stopPropagation(); if (isVerborgen) { herstelBoeking(b.id); } else { verbergBoeking(b.id); } },
