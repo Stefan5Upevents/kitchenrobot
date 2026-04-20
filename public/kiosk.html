@@ -311,7 +311,8 @@ var state = (function(){
     week_data: {},
     pin_laden: false,
     buffet_data: null, // kiosk-buffet-html response cache
-    draaiboek_links: [] // NIEUW: Notion URLs per context
+    draaiboek_links: [], // NIEUW: Notion URLs per context
+    onboarding_stap: null // NIEUW: 1-4 actief, null=niet actief
   };
 })();
 
@@ -357,6 +358,12 @@ function laadMedewerkers() {
 function laadData() {
   // NIEUW: draaiboek-links parallel laden (non-blocking)
   laadDraaiboekLinks();
+  // NIEUW: onboarding check - alleen eerste keer
+  try {
+    if (state.sessie_id && !localStorage.getItem('kiosk_onboarding_voltooid')) {
+      state.onboarding_stap = 1;
+    }
+  } catch(e){}
   return api('kiosk-vandaag', { outlet_code: state.outlet_code }).then(function(res) {
     state.data = res;
     render();
@@ -552,7 +559,57 @@ function renderHome() {
   '</div><div class="screen">' +
     renderTijdbalk(d.tijdschema, nu, boekingen) + renderModeSwitch() + renderBoekingen(boekingen, voortgang, d.tijdschema, nu) + renderOnderBlokken(d) +
     '<button class="meld-chef-knop" id="btn-meld-chef">🛠 Meld chef: er moet iets besteld / is op / defect</button>' +
-  '</div>' + (state.modal ? renderModal() : '');
+  '</div>' + (state.modal ? renderModal() : '') + (state.onboarding_stap ? renderOnboarding() : '');
+}
+
+// NIEUW: Welkom-rondleiding voor eerste login
+function renderOnboarding() {
+  var stappen = [
+    {
+      emoji: '👋',
+      titel: 'Welkom bij de KitchenRobot Kiosk!',
+      tekst: 'Deze kiosk helpt je door de dag heen. Hier zie je wat je moet bereiden, wanneer het klaar moet zijn, en kun je direct melden als er iets mis is.'
+    },
+    {
+      emoji: '⏰',
+      titel: 'Tijdbalk bovenin',
+      tekst: 'Bovenin zie je de deadlines van vandaag. Tik erop om alle tijden te zien. Zo weet je altijd wat er als volgende klaar moet zijn.'
+    },
+    {
+      emoji: '✅',
+      titel: 'Boekingen aftikken',
+      tekst: 'Tik op een kaart als iets klaar is. Wissel bovenaan tussen "Per boeking", "Per soort" en "Snelle klaar" voor de meest handige weergave voor jou.'
+    },
+    {
+      emoji: '🛠',
+      titel: 'Iets mis? Meld de chef',
+      tekst: 'Met de rode knop onderaan geef je snel aan dat iets op is, defect is, of besteld moet worden. De chef krijgt direct bericht en kan actie ondernemen.'
+    }
+  ];
+  var huidige = stappen[state.onboarding_stap - 1];
+  if (!huidige) return '';
+  var laatste = state.onboarding_stap === stappen.length;
+  return '<div style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(35,71,86,.85);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;">' +
+    '<div style="background:#fff;border-radius:20px;padding:28px 24px;max-width:420px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">' +
+        '<div style="font-size:12px;font-weight:700;color:#78909C;letter-spacing:1px;">STAP ' + state.onboarding_stap + ' VAN ' + stappen.length + '</div>' +
+        '<button data-onboarding="skip" style="background:none;border:none;color:#78909C;font-size:11px;cursor:pointer;text-decoration:underline;font-family:inherit;padding:4px 8px;">Overslaan</button>' +
+      '</div>' +
+      '<div style="font-size:48px;text-align:center;margin-bottom:12px;">' + huidige.emoji + '</div>' +
+      '<div style="font-size:20px;font-weight:900;color:#234756;text-align:center;margin-bottom:10px;line-height:1.3;">' + esc(huidige.titel) + '</div>' +
+      '<div style="font-size:14px;color:#37474F;line-height:1.5;text-align:center;margin-bottom:20px;">' + esc(huidige.tekst) + '</div>' +
+      '<div style="display:flex;justify-content:center;gap:6px;margin-bottom:20px;">' +
+        stappen.map(function(_, i){
+          var act = (i+1) === state.onboarding_stap;
+          return '<div style="width:' + (act?24:8) + 'px;height:8px;border-radius:4px;background:' + (act?'#E8202B':'#D8E8EF') + ';transition:all .3s;"></div>';
+        }).join('') +
+      '</div>' +
+      (laatste
+        ? '<button data-onboarding="done" style="width:100%;background:#E8202B;color:#fff;border:none;border-radius:14px;padding:14px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;">✔ Ik snap het, begin maar</button>'
+        : '<button data-onboarding="next" style="width:100%;background:#E8202B;color:#fff;border:none;border-radius:14px;padding:14px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;">Volgende →</button>'
+      ) +
+    '</div>' +
+  '</div>';
 }
 
 function renderTijdbalk(tijdschema, nu, boekingen) {
@@ -1285,6 +1342,19 @@ document.addEventListener('click', function(e) {
     var t = e.target;
     // Walk up DOM to find element with data-* attribute
     while (t && t !== document.body) {
+      // data-onboarding: onboarding-tour knoppen (NIEUW)
+      if (t.hasAttribute && t.hasAttribute('data-onboarding')) {
+        e.stopPropagation();
+        var act = t.getAttribute('data-onboarding');
+        if (act === 'next') {
+          state.onboarding_stap = (state.onboarding_stap || 0) + 1;
+        } else if (act === 'skip' || act === 'done') {
+          try { localStorage.setItem('kiosk_onboarding_voltooid', '1'); } catch(e){}
+          state.onboarding_stap = null;
+        }
+        render();
+        return;
+      }
       // data-toggle: uitklap boeking
       if (t.hasAttribute && t.hasAttribute('data-toggle')) {
         e.stopPropagation();
