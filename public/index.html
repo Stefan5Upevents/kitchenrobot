@@ -2244,7 +2244,39 @@ function InputRauw({ gId, formKey_, opzetFactor_, actieveOverride_, onCommit }) 
     }
   );
 }
-function BuffetScreen({ actieve, setActieve }) {
+function BuffetScreen({ actieve, setActieve, setSc }) {
+  // NIEUW: terug-naar-chef-portaal floating knop (v1)
+  React.useEffect(function() {
+    var ret = null;
+    try { ret = sessionStorage.getItem('chef_return'); } catch(e) {}
+    if (!ret) return;
+    var wrapper = document.createElement('div');
+    wrapper.id = 'chef-return-btn-wrapper';
+    wrapper.style.cssText = 'position:fixed;top:70px;left:20px;z-index:9999;';
+    var btn = document.createElement('button');
+    btn.textContent = '← Terug naar Chef Portaal';
+    btn.style.cssText = 'background:#FE424D;color:#fff;border:none;border-radius:100px;padding:10px 18px;font-size:13px;font-weight:800;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.15);font-family:inherit;';
+    btn.onmouseenter = function() { btn.style.background = '#D63341'; };
+    btn.onmouseleave = function() { btn.style.background = '#FE424D'; };
+    btn.onclick = function() {
+      try {
+        var data = JSON.parse(ret || '{}');
+        // Zet chef_return_boekingId zodat ChefScreen bij mount weer openklapt
+        if (data && data.boekingId) {
+          sessionStorage.setItem('chef_return_boekingId', data.boekingId);
+        }
+        sessionStorage.removeItem('chef_return');
+      } catch(e) {}
+      if (typeof setSc === 'function') setSc('chef');
+    };
+    wrapper.appendChild(btn);
+    document.body.appendChild(wrapper);
+    return function() {
+      var existing = document.getElementById('chef-return-btn-wrapper');
+      if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
+    };
+  }, [setSc]);
+
   var [overrideMarge, setOverrideMarge] = useState(null);
   var [handOpm, setHandOpm] = useState("");
   var [extraGerechten, setExtraGerechten] = useState({});
@@ -10611,7 +10643,7 @@ function App({ supabaseInloggen, supabaseUitloggen, supabaseSessie, supabaseProf
   if (!user) {
     return /* @__PURE__ */ React.createElement(LoginScreen, { onLogin: handleLogin });
   }
-  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", minHeight: "100vh", background: "#F0F4F7" } }, /* @__PURE__ */ React.createElement(Header, { sc, setSc, user, logout: handleLogout }), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto", overflowX: "hidden" }, className: "mobile-padding" }, /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 1200, margin: "0 auto", padding: "28px 20px 60px" } }, sc === "home" && /* @__PURE__ */ React.createElement(HomeScreen, { setSc }), sc === "boekingen" && /* @__PURE__ */ React.createElement(BoekingenScreen, { setSc, setActieve }), sc === "financieel" && /* @__PURE__ */ React.createElement(FinancieelScreen, { setSc }), sc === "chef" && /* @__PURE__ */ React.createElement(ChefScreen, { setSc, setActieve }), sc === "buffet" && /* @__PURE__ */ React.createElement(BuffetScreen, { actieve, setActieve }), sc === "opzet" && /* @__PURE__ */ React.createElement(OpzetScreen, null), sc === "tijden" && /* @__PURE__ */ React.createElement(TijdenScreen, null), sc.startsWith("stam:") && /* @__PURE__ */ React.createElement(StamScreen, { initTab: sc.split(":")[1] || "pg" }), sc === "fin" && /* @__PURE__ */ React.createElement(FinancieelScreen, null), sc === "allergenen" && /* @__PURE__ */ React.createElement(AllergenenScreen, null), sc === "inspiratie" && /* @__PURE__ */ React.createElement(InspiratieScreen, null), sc === "opzetlog" && /* @__PURE__ */ React.createElement(OpzetLogboekScreen, null), sc === "haccp" && /* @__PURE__ */ React.createElement(HACCPScreen, null), sc === "bestelling" && /* @__PURE__ */ React.createElement(SligroBestellingScreen, null))));
+  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", minHeight: "100vh", background: "#F0F4F7" } }, /* @__PURE__ */ React.createElement(Header, { sc, setSc, user, logout: handleLogout }), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto", overflowX: "hidden" }, className: "mobile-padding" }, /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 1200, margin: "0 auto", padding: "28px 20px 60px" } }, sc === "home" && /* @__PURE__ */ React.createElement(HomeScreen, { setSc }), sc === "boekingen" && /* @__PURE__ */ React.createElement(BoekingenScreen, { setSc, setActieve }), sc === "financieel" && /* @__PURE__ */ React.createElement(FinancieelScreen, { setSc }), sc === "chef" && /* @__PURE__ */ React.createElement(ChefScreen, { setSc, setActieve }), sc === "buffet" && /* @__PURE__ */ React.createElement(BuffetScreen, { actieve, setActieve, setSc }), sc === "opzet" && /* @__PURE__ */ React.createElement(OpzetScreen, null), sc === "tijden" && /* @__PURE__ */ React.createElement(TijdenScreen, null), sc.startsWith("stam:") && /* @__PURE__ */ React.createElement(StamScreen, { initTab: sc.split(":")[1] || "pg" }), sc === "fin" && /* @__PURE__ */ React.createElement(FinancieelScreen, null), sc === "allergenen" && /* @__PURE__ */ React.createElement(AllergenenScreen, null), sc === "inspiratie" && /* @__PURE__ */ React.createElement(InspiratieScreen, null), sc === "opzetlog" && /* @__PURE__ */ React.createElement(OpzetLogboekScreen, null), sc === "haccp" && /* @__PURE__ */ React.createElement(HACCPScreen, null), sc === "bestelling" && /* @__PURE__ */ React.createElement(SligroBestellingScreen, null))));
 }
 function InspiratieScreen() {
   var _a, _b;
@@ -11127,7 +11159,14 @@ function ChefScreen({ setSc, setActieve }) {
   var [wijzigingen, setWijzigingen] = React.useState({});
   var [bbqSnapshots, setBbqSnapshots] = React.useState({});
   var [opzetSnapshots, setOpzetSnapshots] = React.useState({});
-  var [openBoekingId, setOpenBoekingId] = React.useState(null);
+  var [openBoekingId, setOpenBoekingId] = React.useState(function() {
+    // NIEUW: herstel open-boeking uit sessionStorage na terug-navigatie
+    try {
+      var stored = sessionStorage.getItem('chef_return_boekingId');
+      if (stored) { sessionStorage.removeItem('chef_return_boekingId'); return stored; }
+    } catch(e) {}
+    return null;
+  });
   var [toast, setToast] = React.useState(null);
   var [openFormulier, setOpenFormulier] = React.useState(null);
   var [actieveOutlet, setActieveOutlet] = React.useState(null);
@@ -11422,6 +11461,8 @@ function ChefScreen({ setSc, setActieve }) {
   }
 
   function gaNaarBuffetformulier(b, ps) {
+    // NIEUW: onthoud welke boeking was open in chef-portaal voor terug-knop
+    try { sessionStorage.setItem('chef_return', JSON.stringify({ boekingId: b.id, ts: Date.now() })); } catch(e) {}
     if (typeof setActieve === 'function') {
       setActieve({ boekingId: b.id, psId: ps.id, pgId: '', boekingNaam: b.naam, boekingTijd: b.deadline_tijd || '', boekingDag: b.deadline_dag || '' });
       setSc('buffet');
