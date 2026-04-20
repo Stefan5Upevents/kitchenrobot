@@ -312,7 +312,8 @@ var state = (function(){
     pin_laden: false,
     buffet_data: null, // kiosk-buffet-html response cache
     draaiboek_links: [], // NIEUW: Notion URLs per context
-    onboarding_stap: null // NIEUW: 1-4 actief, null=niet actief
+    onboarding_stap: null, // NIEUW: 1-4 actief, null=niet actief
+    wekker_toast: null // NIEUW: {tijd, naam} wanneer wekker afgaat
   };
 })();
 
@@ -559,7 +560,22 @@ function renderHome() {
   '</div><div class="screen">' +
     renderTijdbalk(d.tijdschema, nu, boekingen) + renderModeSwitch() + renderBoekingen(boekingen, voortgang, d.tijdschema, nu) + renderOnderBlokken(d) +
     '<button class="meld-chef-knop" id="btn-meld-chef">🛠 Meld chef: er moet iets besteld / is op / defect</button>' +
-  '</div>' + (state.modal ? renderModal() : '') + (state.onboarding_stap ? renderOnboarding() : '');
+  '</div>' + (state.modal ? renderModal() : '') + (state.onboarding_stap ? renderOnboarding() : '') + (state.wekker_toast ? renderWekkerToast() : '');
+}
+
+// NIEUW: Wekker-toast wanneer een wekker afgaat
+function renderWekkerToast() {
+  if (!state.wekker_toast) return '';
+  var t = state.wekker_toast;
+  return '<div style="position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#FF9800;color:#fff;border-radius:14px;padding:16px 22px;box-shadow:0 8px 24px rgba(0,0,0,.3);z-index:9998;display:flex;align-items:center;gap:12px;animation:wekkerPulse 1s ease-in-out infinite;">' +
+    '<div style="font-size:28px;">🔔</div>' +
+    '<div>' +
+      '<div style="font-size:16px;font-weight:900;">' + esc(t.tijd) + ' - ' + esc(t.naam||'') + '</div>' +
+      '<div style="font-size:12px;opacity:.9;">Het is tijd!</div>' +
+    '</div>' +
+    '<button data-wekker-sluit="1" style="background:rgba(255,255,255,.25);color:#fff;border:none;border-radius:100px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;margin-left:8px;">✔ OK</button>' +
+  '</div>' +
+  '<style>@keyframes wekkerPulse { 0%,100% { transform:translateX(-50%) scale(1); } 50% { transform:translateX(-50%) scale(1.03); } }</style>';
 }
 
 // NIEUW: Welkom-rondleiding voor eerste login
@@ -612,6 +628,64 @@ function renderOnboarding() {
   '</div>';
 }
 
+// NIEUW: wekker-helpers (per tablet in localStorage)
+function wekkerKey(tijd, naam) {
+  var vandaag = new Date().toISOString().slice(0,10);
+  return 'wekker_' + vandaag + '_' + (tijd || '') + '_' + (naam || '');
+}
+function wekkerAan(tijd, naam) {
+  try { return localStorage.getItem(wekkerKey(tijd, naam)) === '1'; } catch(e) { return false; }
+}
+function wekkerToggle(tijd, naam) {
+  var k = wekkerKey(tijd, naam);
+  try {
+    if (localStorage.getItem(k) === '1') { localStorage.removeItem(k); }
+    else { localStorage.setItem(k, '1'); }
+  } catch(e){}
+}
+function beepWekker() {
+  try {
+    var ctx = new (window.AudioContext || window.webkitAudioContext)();
+    var nu = ctx.currentTime;
+    [0, 0.2, 0.4].forEach(function(offset){
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, nu + offset);
+      gain.gain.setValueAtTime(0.3, nu + offset);
+      gain.gain.exponentialRampToValueAtTime(0.001, nu + offset + 0.15);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(nu + offset); osc.stop(nu + offset + 0.15);
+    });
+  } catch(e){ console.error('beep fout', e); }
+}
+function checkWekkers() {
+  var nu = new Date();
+  var nuStr = String(nu.getHours()).padStart(2,'0') + ':' + String(nu.getMinutes()).padStart(2,'0');
+  var vandaag = nu.toISOString().slice(0,10);
+  try {
+    var keys = Object.keys(localStorage);
+    keys.forEach(function(k) {
+      if (!k.startsWith('wekker_' + vandaag + '_')) return;
+      if (localStorage.getItem(k) !== '1') return;
+      // Parse tijd uit key
+      var rest = k.slice(('wekker_' + vandaag + '_').length);
+      var parts = rest.split('_');
+      var tijd = parts[0];
+      var naam = parts.slice(1).join('_');
+      if (tijd === nuStr) {
+        beepWekker();
+        state.wekker_toast = { tijd: tijd, naam: naam, shown: Date.now() };
+        localStorage.setItem(k, 'afgegaan'); // voorkom herhaling
+        render();
+      }
+    });
+  } catch(e){ console.error('wekker check fout', e); }
+}
+if (!window._wekkerInterval) {
+  window._wekkerInterval = setInterval(checkWekkers, 20000);
+}
+
 function renderTijdbalk(tijdschema, nu, boekingen) {
   var lijst = (tijdschema && tijdschema.length) ? tijdschema : (boekingen || []).map(function(b){
     var tijd = b.deadlineTijd || (b.deadline||'').slice(11,16) || '?';
@@ -627,7 +701,10 @@ function renderTijdbalk(tijdschema, nu, boekingen) {
     var mv = t.minVal || 0;
     var verlopen = mv < nuMin;
     var huidig = !verlopen && Math.abs(mv - nuMin) < 30;
-    return '<div class="tijdmoment ' + (verlopen ? 'verlopen' : '') + ' ' + (huidig ? 'huidig' : '') + '"><div class="tijd">' + esc(t.tijd) + '</div><div class="naam">' + esc(t.naam||'') + '</div></div>';
+    var wAan = wekkerAan(t.tijd, t.naam||'');
+    var belKleur = wAan ? '#FF9800' : '#B0BEC5';
+    var belIcoon = '<span data-wekker-tijd="' + esc(t.tijd) + '" data-wekker-naam="' + esc(t.naam||'') + '" style="cursor:pointer;font-size:14px;color:' + belKleur + ';margin-left:4px;" title="' + (wAan ? 'Wekker aan' : 'Zet wekker') + '">' + (wAan ? '🔔' : '🔕') + '</span>';
+    return '<div class="tijdmoment ' + (verlopen ? 'verlopen' : '') + ' ' + (huidig ? 'huidig' : '') + '"><div class="tijd">' + esc(t.tijd) + belIcoon + '</div><div class="naam">' + esc(t.naam||'') + '</div></div>';
   }).join('');
   return '<div class="tijdbalk" data-onder="alle-tijden"><h3>Tijdschema vandaag <span class="hint">TIK → ALLE</span></h3>' + items + '</div>';
 }
@@ -1342,6 +1419,24 @@ document.addEventListener('click', function(e) {
     var t = e.target;
     // Walk up DOM to find element with data-* attribute
     while (t && t !== document.body) {
+      // data-wekker-sluit: toast wegklikken (NIEUW)
+      if (t.hasAttribute && t.hasAttribute('data-wekker-sluit')) {
+        e.stopPropagation();
+        e.preventDefault();
+        state.wekker_toast = null;
+        render();
+        return;
+      }
+      // data-wekker-tijd: wekker toggle (NIEUW)
+      if (t.hasAttribute && t.hasAttribute('data-wekker-tijd')) {
+        e.stopPropagation();
+        e.preventDefault();
+        var wt = t.getAttribute('data-wekker-tijd');
+        var wn = t.getAttribute('data-wekker-naam') || '';
+        wekkerToggle(wt, wn);
+        render();
+        return;
+      }
       // data-onboarding: onboarding-tour knoppen (NIEUW)
       if (t.hasAttribute && t.hasAttribute('data-onboarding')) {
         e.stopPropagation();
