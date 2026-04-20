@@ -4295,6 +4295,13 @@ function TijdenScreen() {
 }
 function StamScreen({ initTab }) {
   var [tab, setTab] = useState(initTab || "pg");
+  // NIEUW: luister naar initTab-verandering bij nav-klik
+  useEffect(function() {
+    if (initTab && initTab !== tab) {
+      setTab(initTab);
+      setPendingTab(null);
+    }
+  }, [initTab]);
   var [heeftWijzigingen, setHeeftWijzigingen] = useState(false);
   var [pendingTab, setPendingTab] = useState(null);
   var [opslaanBezig, setOpslaanBezig] = useState(false);
