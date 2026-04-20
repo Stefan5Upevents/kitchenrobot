@@ -11428,6 +11428,28 @@ function ChefScreen({ setSc, setActieve }) {
   var [wijzigingen, setWijzigingen] = React.useState({});
   var [bbqSnapshots, setBbqSnapshots] = React.useState({});
   var [opzetSnapshots, setOpzetSnapshots] = React.useState({});
+  // NIEUW: Draaiboek-links (Notion URLs per context)
+  var [draaiboekLinks, setDraaiboekLinks] = React.useState([]);
+  React.useEffect(function() {
+    if (!supa) return;
+    supa.from('draaiboek_links').select('*').then(function(r) {
+      if (r && r.data) { setDraaiboekLinks(r.data); window._draaiboekLinks = r.data; }
+    });
+  }, []);
+  function getDraaiboekUrl(contextType, idOrKey, outletCode) {
+    if (!idOrKey) return null;
+    var hits = draaiboekLinks.filter(function(l) {
+      if (l.context_type !== contextType) return false;
+      return l.context_id === idOrKey || l.context_key === idOrKey;
+    });
+    if (hits.length === 0) return null;
+    if (outletCode) {
+      var specifiek = hits.find(function(l){ return l.outlet_code === outletCode; });
+      if (specifiek) return specifiek.notion_url;
+    }
+    var algemeen = hits.find(function(l){ return !l.outlet_code; });
+    return algemeen ? algemeen.notion_url : hits[0].notion_url;
+  }
   // NIEUW: verborgen boekingen (localStorage-persist)
   var [verborgenIds, setVerborgenIds] = React.useState(function() {
     try { return JSON.parse(localStorage.getItem('chef_verborgen_boekingen') || '[]'); } catch(e) { return []; }
@@ -12048,6 +12070,14 @@ function ChefScreen({ setSc, setActieve }) {
           React.createElement('option', { value: 'west' }, 'Amsterdam West'),
           React.createElement('option', { value: 'weesp' }, 'Weesp')
         ),
+        (function() {
+          var url = getDraaiboekUrl('scherm', 'chef_portaal', actieveOutlet);
+          return url ? React.createElement('a', {
+            href: url, target: '_blank', rel: 'noopener',
+            title: 'Open draaiboek voor chef portaal',
+            style:{background:'rgba(255,255,255,.12)',color:'#fff',border:'1px solid rgba(255,255,255,.28)',borderRadius:100,padding:'5px 11px',fontSize:11,fontWeight:700,textDecoration:'none',display:'inline-flex',alignItems:'center',gap:4}
+          }, '📖 Draaiboek') : null;
+        })(),
         profiel && React.createElement('div', { style:{fontSize:11,color:'#aaa'} }, profiel.naam)
       )
     ),
