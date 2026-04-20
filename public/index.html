@@ -9427,8 +9427,23 @@ function FinancieelScreen({ setSc }) {
             var colors = {2023:'#78909C',2024:'#1565C0',2025:'#2E7D32',2026:'#E8202B'};
             return React.createElement('div', { key:jj, style:{background:'#FFFFFF',borderRadius:8,padding:'12px 16px',flex:1,minWidth:130,borderTop:'3px solid '+(colors[jj]||C.muted)} },
               React.createElement('div', { style:{fontSize:10,fontWeight:700,color:C.muted,letterSpacing:1} }, jj + ' TOTAAL'),
-              React.createElement('div', { style:{fontSize:18,fontWeight:900,color:colors[jj]||C.muted,marginTop:4} }, jt ? '\u20ac'+Math.round(parseFloat(jt.omzet_excl_btw)/1000)+'K' : '-'),
-              React.createElement('div', { style:{fontSize:10,color:C.muted,marginTop:2} }, jj===2026?'YTD':'volledig jaar')
+              React.createElement('div', { style:{fontSize:18,fontWeight:900,color:colors[jj]||C.muted,marginTop:4} }, (function(){
+                if (jj === 2026 && Array.isArray(regels)) {
+                  var vandaag2 = new Date().toISOString().slice(0,10);
+                  var ytd = 0;
+                  regels.forEach(function(r){ if (r.jaar===2026 && r.datum && r.datum <= vandaag2) ytd += parseFloat(r.omzet)||0; });
+                  return '\u20ac'+Math.round(ytd/1000)+'K';
+                }
+                return jt ? '\u20ac'+Math.round(parseFloat(jt.omzet_excl_btw)/1000)+'K' : '-';
+              })()),
+              React.createElement('div', { style:{fontSize:10,color:C.muted,marginTop:2} }, jj===2026?'YTD \u00b7 tot vandaag':'volledig jaar'),
+              jj===2026 && (function(){
+                if (!Array.isArray(regels)) return null;
+                var vandaag3 = new Date().toISOString().slice(0,10);
+                var toek = 0;
+                regels.forEach(function(r){ if (r.jaar===2026 && r.datum && r.datum > vandaag3) toek += parseFloat(r.omzet)||0; });
+                return toek > 0 ? React.createElement('div', { style:{fontSize:10,color:'#666',marginTop:4,paddingTop:4,borderTop:'1px dashed #E0E0E0'} }, 'Nog te realiseren: \u20ac'+Math.round(toek/1000)+'K') : null;
+              })()
             );
           })
         ),
