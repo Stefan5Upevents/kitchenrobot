@@ -11874,10 +11874,26 @@ function ChefScreen({ setSc, setActieve }) {
         },
           React.createElement('span', { style: { fontWeight: 700, color: C.night, marginRight: 8 } }, '📋 Menu:'),
           mvb.map(function(m, i) {
-            return React.createElement('span', { key: i, style: { marginRight: 12, fontWeight: 600, color: C.night } },
-              m.aantal + '× ' + m.naam
+            var dbUrlM = m.id ? getDraaiboekUrl('menu', m.id, null) : null;
+            return React.createElement('span', { key: i, style: { marginRight: 12, fontWeight: 600, color: C.night, display:'inline-flex', alignItems:'center', gap:4 } },
+              m.aantal + '× ' + m.naam,
+              dbUrlM && React.createElement('a', {
+                href: dbUrlM, target: '_blank', rel: 'noopener',
+                onClick: function(ev){ ev.stopPropagation(); },
+                title: 'Draaiboek voor ' + m.naam,
+                style:{fontSize:10,color:C.aqua,textDecoration:'none',padding:'1px 6px',border:'1px solid ' + C.aqua,borderRadius:100,fontWeight:700}
+              }, '📖')
             );
-          })
+          }),
+          (function(){
+            var dbUrlPs = getDraaiboekUrl('tijd_stap', ps.id + '::opzet', null) || getDraaiboekUrl('taak', ps.id, null);
+            return dbUrlPs ? React.createElement('a', {
+              href: dbUrlPs, target: '_blank', rel: 'noopener',
+              onClick: function(ev){ ev.stopPropagation(); },
+              title: 'Draaiboek voor ' + ps.naam,
+              style:{fontSize:10,color:C.aqua,textDecoration:'none',padding:'2px 8px',border:'1px solid ' + C.aqua,borderRadius:100,fontWeight:700,marginLeft:6}
+            }, '📖 ' + ps.naam) : null;
+          })()
         );
       })(),
       // Opzet compacte lijst (gerecht + aantal + presentatie)
@@ -12036,9 +12052,18 @@ function ChefScreen({ setSc, setActieve }) {
             React.createElement('div', { style:{fontSize:9,fontWeight:700,color:C.muted,marginBottom:3,letterSpacing:0.5} }, '📌 GEBOEKTE MENU\u0027S'),
             React.createElement('div', { style:{display:'flex',flexWrap:'wrap',gap:'4px 12px'} },
               menuRegels.map(function(r, i) {
-                return React.createElement('span', { key: i, style:{fontSize:11,color:C.night} },
+                var kpM = stamKp.find(function(k) { return (k.recras_naam || '').trim() === (r.menuNaam || '').trim(); });
+                var menuId = kpM ? kpM.menu_id : null;
+                var dbUrl = menuId ? getDraaiboekUrl('menu', menuId, null) : null;
+                return React.createElement('span', { key: i, style:{fontSize:11,color:C.night,display:'inline-flex',alignItems:'center',gap:4} },
                   React.createElement('strong', { style:{color:C.aqua,fontWeight:800} }, r.aantal + '×'),
-                  ' ' + r.menuNaam + (r.starttijdTijd ? ' (' + r.starttijdTijd + ')' : '')
+                  ' ' + r.menuNaam + (r.starttijdTijd ? ' (' + r.starttijdTijd + ')' : ''),
+                  dbUrl && React.createElement('a', {
+                    href: dbUrl, target: '_blank', rel: 'noopener',
+                    onClick: function(ev){ ev.stopPropagation(); },
+                    title: 'Draaiboek voor ' + r.menuNaam,
+                    style:{fontSize:10,color:C.aqua,textDecoration:'none',padding:'1px 6px',border:'1px solid ' + C.aqua,borderRadius:100,marginLeft:4,fontWeight:700}
+                  }, '📖')
                 );
               })
             )
