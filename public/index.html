@@ -11388,6 +11388,21 @@ function ChefScreen({ setSc, setActieve }) {
   var [wijzigingen, setWijzigingen] = React.useState({});
   var [bbqSnapshots, setBbqSnapshots] = React.useState({});
   var [opzetSnapshots, setOpzetSnapshots] = React.useState({});
+  // NIEUW: verborgen boekingen (localStorage-persist)
+  var [verborgenIds, setVerborgenIds] = React.useState(function() {
+    try { return JSON.parse(localStorage.getItem('chef_verborgen_boekingen') || '[]'); } catch(e) { return []; }
+  });
+  var [toonVerborgen, setToonVerborgen] = React.useState(false);
+  function verbergBoeking(id) {
+    var nieuw = verborgenIds.indexOf(id) >= 0 ? verborgenIds : verborgenIds.concat([id]);
+    setVerborgenIds(nieuw);
+    try { localStorage.setItem('chef_verborgen_boekingen', JSON.stringify(nieuw)); } catch(e){}
+  }
+  function herstelBoeking(id) {
+    var nieuw = verborgenIds.filter(function(x){ return x !== id; });
+    setVerborgenIds(nieuw);
+    try { localStorage.setItem('chef_verborgen_boekingen', JSON.stringify(nieuw)); } catch(e){}
+  }
   var [openBoekingId, setOpenBoekingId] = React.useState(function() {
     try {
       var stored = sessionStorage.getItem('chef_return_boekingId');
@@ -11865,9 +11880,22 @@ function ChefScreen({ setSc, setActieve }) {
       else if (wijz.type === 'gewijzigd') randKleur = '#FF9800';
       else if (wijz.type === 'nieuw') randKleur = '#27AE60';
     }
-    var alleGoed = pss.length > 0 && pss.every(function(ps) { return goedkeuringen[b.id + '::' + ps.id]; });
+    // NIEUW: locatie/productbezoeken (geen productsoorten) = auto-goedgekeurd
+    var geenProductsoorten = pss.length === 0;
+    var alleGoed = geenProductsoorten || pss.every(function(ps) { return goedkeuringen[b.id + '::' + ps.id]; });
     var nGoed = pss.filter(function(ps) { return goedkeuringen[b.id + '::' + ps.id]; }).length;
-    var isUrgent = uren >= 0 && uren <= 24 && !alleGoed;
+    var isUrgent = !geenProductsoorten && uren >= 0 && uren <= 24 && !alleGoed;
+    // NIEUW: verborgen boekingen filteren (tenzij 'toon verborgen' aan)
+    var isVerborgen = verborgenIds.indexOf(b.id) >= 0;
+    if (isVerborgen && !toonVerborgen) return null;
+    // NIEUW: menu-samenvatting (51× BBQ Populair · 4× Vegan)
+    var stamKpHdr = window._stamKoppelingen || [];
+    var menuRegelsHdr = (b.regels || []).filter(function(r) {
+      if ((r.menuNaam || '').toLowerCase().indexOf('add up') >= 0) return false;
+      var kp = stamKpHdr.find(function(k) { return (k.recras_naam || '').trim() === (r.menuNaam || '').trim(); });
+      return !!kp;
+    });
+    var menuSamenvatting = menuRegelsHdr.map(function(r){ return r.aantal + '× ' + r.menuNaam; }).join(' · ');
     if (isUrgent) randKleur = '#FE424D';
 
     return React.createElement('div', {
@@ -11877,15 +11905,21 @@ function ChefScreen({ setSc, setActieve }) {
       // Klikbare header
       React.createElement('div', {
         onClick: function() { setOpenBoekingId(isOpen ? null : b.id); },
-        style: { padding:'10px 14px',display:'flex',alignItems:'center',gap:8,flexWrap:'wrap',cursor:'pointer' }
+        style: { padding:'10px 14px',display:'flex',alignItems:'center',gap:8,flexWrap:'wrap',cursor:'pointer', opacity: isVerborgen ? 0.55 : 1 }
       },
         React.createElement('span', { style:{color:C.muted,fontSize:12,width:14} }, isOpen ? '▼' : '▶'),
         React.createElement('div', { style:{flex:1,minWidth:0} },
-          React.createElement('div', { style:{fontWeight:800,fontSize:13,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'} }, b.naam),
-          React.createElement('div', { style:{fontSize:11,color:C.muted,marginTop:2} },
-            fmtDag((b.deadline || '').split('T')[0].split(' ')[0]) + ' · ' + (b.deadline_tijd || '—') + ' · ' + (b.locatie || '—') + ' · ' + pss.length + ' productsoort' + (pss.length !== 1 ? 'en' : '') + (pss.length > 0 ? ' (' + nGoed + '/' + pss.length + ' ✓)' : '')
-          )
+          React.createElement('div', { style:{fontWeight:800,fontSize:14,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',color:C.night} }, b.naam),
+          React.createElement('div', { style:{fontSize:11,color:C.muted,marginTop:3} },
+            fmtDag((b.deadline || '').split('T')[0].split(' ')[0]) + ' · ' + (b.deadline_tijd || '—') + ' · ' + (b.locatie || '—') + (geenProductsoorten ? ' · locatie/product' : ' · ' + pss.length + ' productsoort' + (pss.length !== 1 ? 'en' : '') + (pss.length > 0 ? ' (' + nGoed + '/' + pss.length + ' ✓)' : ''))
+          ),
+          menuSamenvatting && React.createElement('div', { style:{fontSize:12,color:C.night,marginTop:4,fontWeight:600,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'} }, menuSamenvatting)
         ),
+        (geenProductsoorten || isVerborgen) && React.createElement('button', {
+          onClick: function(ev) { ev.stopPropagation(); if (isVerborgen) { herstelBoeking(b.id); } else { verbergBoeking(b.id); } },
+          title: isVerborgen ? 'Weer tonen' : 'Verbergen uit lijst',
+          style:{background:'transparent',color:C.muted,border:'1px solid ' + C.muted,borderRadius:100,padding:'3px 9px',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}
+        }, isVerborgen ? '↻ tonen' : '× verberg'),
         wijz && React.createElement('span', {
           onClick: function(ev) { ev.stopPropagation(); if (wijz.type === 'geannuleerd' && confirm('Geannuleerde boeking wegklikken?')) markeerWijzigingGezien(b.id); },
           title: (wijz.detail && wijz.detail.tekst) || wijz.type,
@@ -11956,6 +11990,14 @@ function ChefScreen({ setSc, setActieve }) {
         onClick: function() { setTab('komend'); },
         style:{flex:1,background: tab === 'komend' ? C.white : 'transparent', color: tab === 'komend' ? C.night : C.muted, border:'none',borderRadius:100,padding:'8px 14px',fontSize:12,fontWeight:800,cursor:'pointer',boxShadow: tab === 'komend' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'}
       }, 'Komende dagen')
+    ),
+    // NIEUW: mini-banner voor verborgen boekingen
+    verborgenIds.length > 0 && React.createElement('div', {
+      onClick: function() { setToonVerborgen(!toonVerborgen); },
+      style:{cursor:'pointer',background: toonVerborgen ? '#FFF3E0' : '#F0F4F7', border:'1px dashed ' + (toonVerborgen ? '#FF9800' : C.muted), borderRadius:8, padding:'6px 12px', marginBottom:12, fontSize:11, color: toonVerborgen ? '#E65100' : C.muted, display:'flex', alignItems:'center', justifyContent:'space-between' }
+    },
+      React.createElement('span', null, (toonVerborgen ? '👁 ' : '') + verborgenIds.length + ' verborgen boeking' + (verborgenIds.length !== 1 ? 'en' : '')),
+      React.createElement('span', { style:{fontWeight:700} }, toonVerborgen ? 'verberg weer' : 'toon')
     ),
     tab === 'vandaag' ? React.createElement(React.Fragment, null,
       urgentBks.length > 0 && React.createElement('div', { style:{marginBottom:18} },
