@@ -310,9 +310,34 @@ var state = (function(){
     atm_filter: 'alle',
     week_data: {},
     pin_laden: false,
-    buffet_data: null // kiosk-buffet-html response cache
+    buffet_data: null, // kiosk-buffet-html response cache
+    draaiboek_links: [] // NIEUW: Notion URLs per context
   };
 })();
+
+// NIEUW: Draaiboek-links laden via REST (anon kan lezen)
+function laadDraaiboekLinks() {
+  return fetch(SUPABASE_URL + '/rest/v1/draaiboek_links?select=*', {
+    headers: { 'apikey': ANON_KEY, 'Authorization': 'Bearer ' + ANON_KEY }
+  }).then(function(r){ return r.json(); }).then(function(rows) {
+    if (Array.isArray(rows)) { state.draaiboek_links = rows; }
+  }).catch(function(){});
+}
+function getDraaiboekUrl(contextType, idOrKey, outletCode) {
+  if (!idOrKey) return null;
+  var links = state.draaiboek_links || [];
+  var hits = links.filter(function(l) {
+    if (l.context_type !== contextType) return false;
+    return l.context_id === idOrKey || l.context_key === idOrKey;
+  });
+  if (hits.length === 0) return null;
+  if (outletCode) {
+    var specifiek = hits.find(function(l){ return l.outlet_code === outletCode; });
+    if (specifiek) return specifiek.notion_url;
+  }
+  var algemeen = hits.find(function(l){ return !l.outlet_code; });
+  return algemeen ? algemeen.notion_url : hits[0].notion_url;
+}
 
 function api(path, body) {
   return fetch(SUPABASE_URL + '/functions/v1/' + path, {
@@ -330,6 +355,8 @@ function laadMedewerkers() {
 }
 
 function laadData() {
+  // NIEUW: draaiboek-links parallel laden (non-blocking)
+  laadDraaiboekLinks();
   return api('kiosk-vandaag', { outlet_code: state.outlet_code }).then(function(res) {
     state.data = res;
     render();
@@ -517,6 +544,10 @@ function renderHome() {
   return '<div class="topbar">' +
     '<div class="info"><div class="datum">' + esc(vandaag) + '</div><div class="wie">' + esc(state.medewerker_naam) + '</div></div>' +
     '<div class="outlet">' + esc(d.outlet_naam) + '</div>' +
+    (function(){
+      var url = getDraaiboekUrl('scherm', 'kiosk_vandaag', state.outlet_code);
+      return url ? '<a class="draaiboek-btn" href="' + esc(url) + '" target="_blank" rel="noopener" style="background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:100px;padding:6px 12px;font-size:12px;font-weight:700;text-decoration:none;margin-right:8px;display:inline-block">📖 Draaiboek</a>' : '';
+    })() +
     '<button class="logout" id="btn-logout">Uit</button>' +
   '</div><div class="screen">' +
     renderTijdbalk(d.tijdschema, nu, boekingen) + renderModeSwitch() + renderBoekingen(boekingen, voortgang, d.tijdschema, nu) + renderOnderBlokken(d) +
