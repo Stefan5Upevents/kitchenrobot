@@ -314,7 +314,15 @@ var state = (function(){
     draaiboek_links: [], // NIEUW: Notion URLs per context
     onboarding_stap: null, // NIEUW: 1-4 actief, null=niet actief
     wekker_toast: null, // NIEUW: {tijd, naam} wanneer wekker afgaat
-    toewijzingen: {} // NIEUW: { boeking_id: { medewerker_naam } } - wie is verantwoordelijk
+    toewijzingen: {}, // NIEUW: { boeking_id: { medewerker_naam } }
+    allergenen_open: false, // NIEUW: modal open?
+    allergenen_geladen: false, // NIEUW: data is geladen?
+    allergenen_gerechten: [], // NIEUW: alle gerechten met ingredienten
+    allergenen_sligro: [], // NIEUW: alle Sligro-producten
+    allergenen_productgroepen: [], // NIEUW: productgroepen met soorten
+    allergenen_zoek: '', // NIEUW: zoekterm
+    allergenen_type: 'beide', // NIEUW: 'beide' | 'gerecht' | 'sligro'
+    allergenen_vrij_van: {} // NIEUW: { gluten: true } = toon alleen items die geen gluten bevatten
   };
 })();
 
@@ -355,6 +363,193 @@ function laadMedewerkers() {
     state.medewerkers = res.medewerkers || [];
     render();
   });
+}
+
+// NIEUW: 14 EU-allergenen (zelfde volgorde als admin)
+var ALLERGENEN_14 = [
+  { key: 'gluten', label: 'Gluten', emoji: '🌾' },
+  { key: 'schaaldieren', label: 'Schaaldieren', emoji: '🦐' },
+  { key: 'eieren', label: 'Eieren', emoji: '🥚' },
+  { key: 'vis', label: 'Vis', emoji: '🐟' },
+  { key: 'pindas', label: "Pinda's", emoji: '🥜' },
+  { key: 'soja', label: 'Soja', emoji: '🫘' },
+  { key: 'melk', label: 'Melk', emoji: '🥛' },
+  { key: 'noten', label: 'Noten', emoji: '🌰' },
+  { key: 'selderij', label: 'Selderij', emoji: '🌿' },
+  { key: 'mosterd', label: 'Mosterd', emoji: '🌻' },
+  { key: 'sesam', label: 'Sesam', emoji: '🌱' },
+  { key: 'sulfiet', label: 'Sulfiet', emoji: '🍷' },
+  { key: 'lupine', label: 'Lupine', emoji: '🌸' },
+  { key: 'weekdieren', label: 'Weekdieren', emoji: '🦑' }
+];
+function openAllergenen() {
+  state.allergenen_open = true;
+  if (!state.allergenen_geladen) laadAllergenenData();
+  render();
+}
+function sluitAllergenen() {
+  state.allergenen_open = false;
+  render();
+}
+function laadAllergenenData() {
+  var h = { 'apikey': ANON_KEY, 'Authorization': 'Bearer ' + ANON_KEY };
+  var p1 = fetch(SUPABASE_URL + '/rest/v1/gerechten?select=*,ingredienten(*),gerecht_productsoort_koppelingen(productsoort_id)&order=naam.asc', {headers:h}).then(function(r){return r.json();});
+  var p2 = fetch(SUPABASE_URL + '/rest/v1/sligro_producten?select=*,sligro_productgroep_koppelingen(productgroep_id)&order=naam.asc', {headers:h}).then(function(r){return r.json();});
+  var p3 = fetch(SUPABASE_URL + '/rest/v1/productgroepen?select=*,productsoorten(*)&order=volgorde.asc', {headers:h}).then(function(r){return r.json();});
+  return Promise.all([p1,p2,p3]).then(function(res){
+    if (Array.isArray(res[0])) state.allergenen_gerechten = res[0];
+    if (Array.isArray(res[1])) state.allergenen_sligro = res[1];
+    if (Array.isArray(res[2])) state.allergenen_productgroepen = res[2];
+    state.allergenen_geladen = true;
+    if (state.allergenen_open) render();
+  }).catch(function(e){ console.error('allergenen load', e); });
+}
+// Zelfde logica als admin getAllergeenGerecht: alleen items met ingredienten die gecheckt zijn
+function getAllergeenGerecht(g) {
+  var bevat = {}, mogelijk = {}, ongecheckt = false;
+  var sligroById = {};
+  (state.allergenen_sligro || []).forEach(function(p){ sligroById[p.id] = p; });
+  (g.ingredienten || []).forEach(function(ing){
+    var sp = sligroById[ing.sligro_id];
+    if (!sp) return;
+    if (!sp.allergenen_laatst_gecheckt) { ongecheckt = true; return; }
+    var a = sp.allergenen_json || {};
+    (a.bevat || []).forEach(function(k){ bevat[k] = true; });
+    (a.mogelijk || []).forEach(function(k){ if (!bevat[k]) mogelijk[k] = true; });
+  });
+  return { bevat: Object.keys(bevat), mogelijk: Object.keys(mogelijk), ongecheckt: ongecheckt };
+}
+function getPsNaamVoorGerecht(g) {
+  var psId = g.productsoort_id || ((g.gerecht_productsoort_koppelingen || [])[0] || {}).productsoort_id;
+  if (!psId) return '';
+  for (var i = 0; i < (state.allergenen_productgroepen||[]).length; i++) {
+    var pg = state.allergenen_productgroepen[i];
+    var ps = (pg.productsoorten || []).find(function(s){ return s.id === psId; });
+    if (ps) return pg.naam + ' › ' + ps.naam;
+  }
+  return '';
+}
+// Bouw normalized lijst: mix van gerechten en sligro-producten
+function bouwAllergeenLijst() {
+  var items = [];
+  var type = state.allergenen_type;
+  if (type !== 'sligro') {
+    (state.allergenen_gerechten || []).forEach(function(g){
+      var a = getAllergeenGerecht(g);
+      items.push({
+        soort: 'gerecht', naam: g.naam || '',
+        categorie: getPsNaamVoorGerecht(g) || '—',
+        bevat: a.bevat, mogelijk: a.mogelijk, ongecheckt: a.ongecheckt,
+        aantalIng: (g.ingredienten || []).length
+      });
+    });
+  }
+  if (type !== 'gerecht') {
+    (state.allergenen_sligro || []).forEach(function(sp){
+      var a = sp.allergenen_json || {};
+      items.push({
+        soort: 'sligro', naam: sp.naam || '',
+        categorie: 'Sligro product',
+        bevat: a.bevat || [], mogelijk: a.mogelijk || [], ongecheckt: !sp.allergenen_laatst_gecheckt,
+        aantalIng: null
+      });
+    });
+  }
+  items.sort(function(a,b){ return (a.naam||'').localeCompare(b.naam||''); });
+  return items;
+}
+function filterAllergeenLijst(items) {
+  var zoek = (state.allergenen_zoek || '').toLowerCase().trim();
+  var vrijVan = Object.keys(state.allergenen_vrij_van || {}).filter(function(k){ return state.allergenen_vrij_van[k]; });
+  return items.filter(function(it){
+    if (zoek) {
+      var naamHit = (it.naam||'').toLowerCase().indexOf(zoek) >= 0;
+      var alleA = [].concat(it.bevat||[], it.mogelijk||[]);
+      var allergeenHit = alleA.some(function(x){ return (x||'').toLowerCase().indexOf(zoek) >= 0; });
+      if (!naamHit && !allergeenHit) return false;
+    }
+    if (vrijVan.length) {
+      // Item moet geen van deze allergenen bevatten (niet in bevat, niet in mogelijk)
+      var heeft = vrijVan.some(function(k){ return (it.bevat||[]).indexOf(k) >= 0 || (it.mogelijk||[]).indexOf(k) >= 0; });
+      if (heeft) return false;
+    }
+    return true;
+  });
+}
+function renderAllergeenItemCard(it) {
+  var chipsBevat = (it.bevat||[]).map(function(k){
+    var a = ALLERGENEN_14.find(function(x){return x.key===k;}) || { label: k, emoji: '' };
+    return '<span style="background:#FFEBEE;color:#C62828;border:1px solid #E8202B;border-radius:100px;padding:3px 10px;font-size:11px;font-weight:700;display:inline-flex;align-items:center;gap:3px">' + esc(a.emoji) + ' ' + esc(a.label) + '</span>';
+  }).join('');
+  var chipsMogelijk = (it.mogelijk||[]).map(function(k){
+    var a = ALLERGENEN_14.find(function(x){return x.key===k;}) || { label: k, emoji: '' };
+    return '<span style="background:#FFF3E0;color:#E65100;border:1px solid #FFB300;border-radius:100px;padding:3px 10px;font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:3px">' + esc(a.emoji) + ' ' + esc(a.label) + '</span>';
+  }).join('');
+  var badge = it.soort === 'gerecht'
+    ? '<span style="background:#E1F5FE;color:#01579B;border-radius:6px;padding:2px 6px;font-size:9px;font-weight:800;letter-spacing:.5px">GERECHT</span>'
+    : '<span style="background:#F3E5F5;color:#6A1B9A;border-radius:6px;padding:2px 6px;font-size:9px;font-weight:800;letter-spacing:.5px">SLIGRO</span>';
+  var vrijVan = (it.bevat||[]).length === 0 && (it.mogelijk||[]).length === 0;
+  var content;
+  if (it.ongecheckt && (it.bevat||[]).length === 0) {
+    content = '<div style="margin-top:6px;font-size:11px;color:#E65100;font-style:italic">⏳ Nog niet volledig gecheckt</div>';
+  } else if (vrijVan) {
+    content = '<div style="margin-top:6px;font-size:12px;color:#388E3C;font-weight:700">✓ Vrij van alle 14 EU-allergenen</div>';
+  } else {
+    content = (chipsBevat ? '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">' + chipsBevat + '</div>' : '')
+            + (chipsMogelijk ? '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">' + chipsMogelijk + '</div>' : '');
+  }
+  return '<div style="background:#fff;border:1px solid #E8EEF2;border-radius:10px;padding:10px 14px;margin-bottom:6px">' +
+    '<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">' + badge + '<span style="font-size:10px;color:#78909C">' + esc(it.categorie||'') + '</span></div>' +
+    '<div style="font-weight:700;font-size:13px;color:#234756;line-height:1.3">' + esc(it.naam) + '</div>' +
+    content +
+  '</div>';
+}
+function updateAllergeenLijst() {
+  var lijst = document.getElementById('allergeen-lijst');
+  var teller = document.getElementById('allergeen-teller');
+  if (!lijst) return;
+  var all = bouwAllergeenLijst();
+  var filt = filterAllergeenLijst(all);
+  if (teller) teller.innerText = filt.length + ' / ' + all.length;
+  lijst.innerHTML = filt.length
+    ? filt.map(renderAllergeenItemCard).join('')
+    : '<div style="padding:30px;text-align:center;color:#78909C;font-style:italic">Geen items gevonden</div>';
+}
+function renderAllergenenModal() {
+  if (!state.allergenen_open) return '';
+  var bezig = !state.allergenen_geladen;
+  var all = bezig ? [] : bouwAllergeenLijst();
+  var filt = bezig ? [] : filterAllergeenLijst(all);
+  var inhoud = bezig
+    ? '<div style="padding:30px;text-align:center;color:#78909C">⏳ Allergenen-data laden...</div>'
+    : (filt.length ? filt.map(renderAllergeenItemCard).join('') : '<div style="padding:30px;text-align:center;color:#78909C;font-style:italic">Geen items gevonden</div>');
+  var typeBtn = function(val, label){
+    var actief = state.allergenen_type === val;
+    return '<button data-allergeen-type="' + val + '" style="background:' + (actief?'#234756':'#fff') + ';color:' + (actief?'#fff':'#234756') + ';border:1px solid ' + (actief?'#234756':'#D8E8EF') + ';border-radius:100px;padding:5px 12px;font-size:11px;font-weight:' + (actief?'800':'600') + ';cursor:pointer;font-family:inherit">' + label + '</button>';
+  };
+  var chips = ALLERGENEN_14.map(function(a){
+    var actief = !!state.allergenen_vrij_van[a.key];
+    return '<button data-allergeen-filter="' + a.key + '" style="background:' + (actief?'#E8F5E9':'#fff') + ';color:' + (actief?'#1B5E20':'#234756') + ';border:1px solid ' + (actief?'#4CAF50':'#D8E8EF') + ';border-radius:100px;padding:4px 10px;font-size:10px;font-weight:' + (actief?'800':'600') + ';cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:3px">' + (actief ? '✓ ' : '') + esc(a.emoji) + ' ' + esc(a.label) + '</button>';
+  }).join('');
+  var heeftFilter = Object.values(state.allergenen_vrij_van || {}).some(Boolean);
+  return '<div style="position:fixed;inset:0;background:rgba(35,71,86,.85);z-index:9997;display:flex;flex-direction:column;padding:20px;box-sizing:border-box">' +
+    '<div style="background:#fff;border-radius:14px;max-width:820px;margin:0 auto;width:100%;height:100%;display:flex;flex-direction:column;overflow:hidden">' +
+      '<div style="background:#234756;color:#fff;padding:14px 18px;display:flex;align-items:center;gap:10px;flex-shrink:0">' +
+        '<div style="flex:1;font-size:16px;font-weight:900">🏷 Allergenen</div>' +
+        '<div id="allergeen-teller" style="font-size:11px;opacity:.75">' + (bezig?'':filt.length + ' / ' + all.length) + '</div>' +
+        '<button data-allergenen-sluit="1" style="background:rgba(255,255,255,.15);color:#fff;border:none;border-radius:100px;width:32px;height:32px;font-size:18px;cursor:pointer;font-weight:700">×</button>' +
+      '</div>' +
+      '<div style="padding:10px 14px;background:#F8FAFC;border-bottom:1px solid #E8EEF2;flex-shrink:0">' +
+        '<input type="text" id="allergeen-zoek" value="' + esc(state.allergenen_zoek||'') + '" oninput="state.allergenen_zoek=this.value;updateAllergeenLijst();" placeholder="🔍 Zoek op gerecht, product of allergeen..." style="width:100%;padding:10px 14px;border:1px solid #D8E8EF;border-radius:10px;font-size:14px;box-sizing:border-box;font-family:inherit" autofocus>' +
+        '<div style="display:flex;gap:6px;margin-top:8px">' + typeBtn('beide','Alles') + typeBtn('gerecht','Gerechten') + typeBtn('sligro','Sligro producten') + '</div>' +
+        '<div style="margin-top:8px">' +
+          '<div style="font-size:10px;color:#78909C;font-weight:700;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Vrij van (filter uit):' + (heeftFilter ? ' <button data-allergeen-reset="1" style="background:transparent;border:none;color:#E8202B;cursor:pointer;font-size:10px;font-weight:700;margin-left:6px;text-decoration:underline">wissen</button>' : '') + '</div>' +
+          '<div style="display:flex;flex-wrap:wrap;gap:4px">' + chips + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div id="allergeen-lijst" style="flex:1;overflow-y:auto;padding:10px 14px;background:#F8FAFC;-webkit-overflow-scrolling:touch">' + inhoud + '</div>' +
+    '</div>' +
+  '</div>';
 }
 
 // NIEUW: Toewijzingen laden (wie is verantwoordelijk per boeking)
@@ -568,6 +763,7 @@ function renderHome() {
   return '<div class="topbar">' +
     '<div class="info"><div class="datum">' + esc(vandaag) + '</div><div class="wie">' + esc(state.medewerker_naam) + '</div></div>' +
     '<div class="outlet">' + esc(d.outlet_naam) + '</div>' +
+    '<button class="allergenen-btn" data-allergenen-open="1" style="background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:100px;padding:6px 12px;font-size:12px;font-weight:700;margin-right:8px;cursor:pointer;font-family:inherit">🏷 Allergenen</button>' +
     (function(){
       var url = getDraaiboekUrl('scherm', 'kiosk_vandaag', state.outlet_code);
       return url ? '<a class="draaiboek-btn" href="' + esc(url) + '" target="_blank" rel="noopener" style="background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:100px;padding:6px 12px;font-size:12px;font-weight:700;text-decoration:none;margin-right:8px;display:inline-block">📖 Draaiboek</a>' : '';
@@ -576,7 +772,7 @@ function renderHome() {
   '</div><div class="screen">' +
     renderTijdbalk(d.tijdschema, nu, boekingen) + renderModeSwitch() + renderBoekingen(boekingen, voortgang, d.tijdschema, nu) + renderOnderBlokken(d) +
     '<button class="meld-chef-knop" id="btn-meld-chef">🛠 Meld chef: er moet iets besteld / is op / defect</button>' +
-  '</div>' + (state.modal ? renderModal() : '') + (state.onboarding_stap ? renderOnboarding() : '') + (state.wekker_toast ? renderWekkerToast() : '');
+  '</div>' + (state.modal ? renderModal() : '') + (state.onboarding_stap ? renderOnboarding() : '') + (state.wekker_toast ? renderWekkerToast() : '') + (state.allergenen_open ? renderAllergenenModal() : '');
 }
 
 // NIEUW: Wekker-toast wanneer een wekker afgaat
@@ -1438,6 +1634,36 @@ document.addEventListener('click', function(e) {
     var t = e.target;
     // Walk up DOM to find element with data-* attribute
     while (t && t !== document.body) {
+      // data-allergenen-open: open Allergenen modal (NIEUW)
+      if (t.hasAttribute && t.hasAttribute('data-allergenen-open')) {
+        e.stopPropagation(); e.preventDefault();
+        openAllergenen();
+        return;
+      }
+      if (t.hasAttribute && t.hasAttribute('data-allergenen-sluit')) {
+        e.stopPropagation(); e.preventDefault();
+        sluitAllergenen();
+        return;
+      }
+      if (t.hasAttribute && t.hasAttribute('data-allergeen-type')) {
+        e.stopPropagation(); e.preventDefault();
+        state.allergenen_type = t.getAttribute('data-allergeen-type');
+        render();
+        return;
+      }
+      if (t.hasAttribute && t.hasAttribute('data-allergeen-filter')) {
+        e.stopPropagation(); e.preventDefault();
+        var k = t.getAttribute('data-allergeen-filter');
+        state.allergenen_vrij_van[k] = !state.allergenen_vrij_van[k];
+        render();
+        return;
+      }
+      if (t.hasAttribute && t.hasAttribute('data-allergeen-reset')) {
+        e.stopPropagation(); e.preventDefault();
+        state.allergenen_vrij_van = {};
+        render();
+        return;
+      }
       // data-wekker-sluit: toast wegklikken (NIEUW)
       if (t.hasAttribute && t.hasAttribute('data-wekker-sluit')) {
         e.stopPropagation();
