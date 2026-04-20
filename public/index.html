@@ -2082,6 +2082,24 @@ function HomeScreen({ setSc }) {
     } catch(e) {}
     return null;
   });
+  // NIEUW (hotfix): wijzigingenMap lokaal ophalen (scope-fix)
+  var [wijzigingenMap, setWijzigingenMap] = useState({});
+  React.useEffect(function() {
+    if (!window._supa) return;
+    function laad() {
+      window._supa.from('recras_wijzigingen').select('*').is('gezien_op', null).then(function(r) {
+        if (!r.data) return;
+        var m = {};
+        r.data.forEach(function(w) {
+          if (!m[w.boeking_id] || new Date(w.ontstaan_op) > new Date(m[w.boeking_id].ontstaan_op)) m[w.boeking_id] = w;
+        });
+        setWijzigingenMap(m);
+      });
+    }
+    laad();
+    var iv = setInterval(laad, 30000);
+    return function() { clearInterval(iv); };
+  }, []);
   // v2: scroll-positie herstellen
   var [boekingenScrollHersteld, setBoekingenScrollHersteld] = useState(false);
   React.useEffect(function() {
