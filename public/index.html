@@ -10681,7 +10681,7 @@ function OpzetLogboekScreen() {
   function laad() {
     if (!window._supa) return;
     setLaden(true);
-    var q = window._supa.from("kiosk_opzet_voortgang").select("*").gte("afgetekend_op", vanDatum + "T00:00:00").lte("afgetekend_op", totDatum + "T23:59:59").order("afgetekend_op", { ascending: false });
+    var q = window._supa.from("kiosk_opzet_voortgang").select("*").gte("geregistreerd_op", vanDatum + "T00:00:00").lte("geregistreerd_op", totDatum + "T23:59:59").order("geregistreerd_op", { ascending: false });
     if (filterOutlet !== "alle") q = q.eq("outlet_code", filterOutlet);
     if (filterStatus !== "alle") q = q.eq("status", filterStatus);
     q.then(function(r) {
@@ -10693,7 +10693,7 @@ function OpzetLogboekScreen() {
   function exportExcel() {
     if (typeof XLSX === "undefined") return;
     var rijen = gefilterd.map(function(r) {
-      return { Datum: r.afgetekend_op ? new Date(r.afgetekend_op).toLocaleString("nl-NL") : "", Keuken: r.outlet_code === "west" ? "West" : "Weesp", Boeking: r.boeking_naam || r.boeking_id, Locatie: r.locatie || "", Menu: r.menu_naam || "", Gerecht: r.gerecht_naam || "", Productsoort: r.ps_naam || "", Status: r.status, Medewerker: r.medewerker_naam || "", Porties: r.opgezet_porties || r.geplande_porties || "" };
+      var tijdstempel = r.uitgevoerd_op || r.opgezet_op || r.geregistreerd_op; var medewerker = r.uitgevoerd_door_naam || r.opgezet_door_naam || ""; return { Datum: tijdstempel ? new Date(tijdstempel).toLocaleString("nl-NL") : "", Keuken: r.outlet_code === "west" ? "West" : "Weesp", Boeking: r.boeking_naam || r.boeking_id, Locatie: r.locatie || "", Menu: r.menu_naam || "", Gerecht: r.gerecht_naam || "", Productsoort: r.ps_naam || "", Status: r.status, Medewerker: medewerker, Porties: r.opgezet_porties || r.geplande_porties || "" };
     });
     var ws = XLSX.utils.json_to_sheet(rijen);
     var wb = XLSX.utils.book_new();
@@ -10703,7 +10703,7 @@ function OpzetLogboekScreen() {
   var gefilterd = data.filter(function(r) {
     if (zoek) {
       var zl = zoek.toLowerCase();
-      return (r.boeking_naam || "").toLowerCase().includes(zl) || (r.gerecht_naam || "").toLowerCase().includes(zl) || (r.menu_naam || "").toLowerCase().includes(zl) || (r.medewerker_naam || "").toLowerCase().includes(zl);
+      return (r.boeking_naam || "").toLowerCase().includes(zl) || (r.gerecht_naam || "").toLowerCase().includes(zl) || (r.menu_naam || "").toLowerCase().includes(zl) || (r.uitgevoerd_door_naam || "").toLowerCase().includes(zl) || (r.opgezet_door_naam || "").toLowerCase().includes(zl);
     }
     return true;
   });
@@ -10734,7 +10734,7 @@ function OpzetLogboekScreen() {
     return /* @__PURE__ */ React.createElement("th", { key: h, style: SS.th }, h);
   }))), /* @__PURE__ */ React.createElement("tbody", null, gefilterd.map(function(r) {
     var kl = statusKleur[r.status] || C.muted;
-    return /* @__PURE__ */ React.createElement("tr", { key: r.id, style: { background: r.status === "uitgevoerd" ? "#F0FFF4" : r.status === "opgezet" ? "#F0FAFF" : C.white } }, /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontSize: 10, whiteSpace: "nowrap", color: C.muted } }, r.afgetekend_op ? new Date(r.afgetekend_op).toLocaleString("nl-NL", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : r.geregistreerd_op ? new Date(r.geregistreerd_op).toLocaleString("nl-NL", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "—"), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontSize: 10 } }, r.outlet_code === "west" ? "West" : "Weesp"), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 600, fontSize: 11 } }, r.boeking_naam || r.boeking_id), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontSize: 10, color: C.muted } }, r.locatie || "—"), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontSize: 10 } }, r.menu_naam || "—"), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 700 } }, r.gerecht_naam || "—"), /* @__PURE__ */ React.createElement("td", { style: SS.td }, /* @__PURE__ */ React.createElement("span", { style: { background: kl + "22", color: kl, borderRadius: 8, padding: "1px 7px", fontSize: 10, fontWeight: 700 } }, r.status)), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontSize: 11 } }, r.medewerker_naam || "—"), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, textAlign: "right", fontWeight: 700 } }, r.opgezet_porties || r.geplande_porties || "—"));
+    return /* @__PURE__ */ React.createElement("tr", { key: r.id, style: { background: r.status === "uitgevoerd" ? "#F0FFF4" : r.status === "opgezet" ? "#F0FAFF" : C.white } }, /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontSize: 10, whiteSpace: "nowrap", color: C.muted } }, (function(){ var t = r.uitgevoerd_op || r.opgezet_op || r.geregistreerd_op; return t ? new Date(t).toLocaleString("nl-NL", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "—"; })()), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontSize: 10 } }, r.outlet_code === "west" ? "West" : "Weesp"), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 600, fontSize: 11 } }, r.boeking_naam || r.boeking_id), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontSize: 10, color: C.muted } }, r.locatie || "—"), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontSize: 10 } }, r.menu_naam || "—"), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 700 } }, r.gerecht_naam || "—"), /* @__PURE__ */ React.createElement("td", { style: SS.td }, /* @__PURE__ */ React.createElement("span", { style: { background: kl + "22", color: kl, borderRadius: 8, padding: "1px 7px", fontSize: 10, fontWeight: 700 } }, r.status)), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontSize: 11 } }, (r.uitgevoerd_door_naam || r.opgezet_door_naam || "—")), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, textAlign: "right", fontWeight: 700 } }, r.opgezet_porties || r.geplande_porties || "—"));
   })))));
 }
 function HACCPScreen() {
