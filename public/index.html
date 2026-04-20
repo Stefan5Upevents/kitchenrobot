@@ -37,6 +37,23 @@ label { font-weight: 700 !important; color: #234756 !important; font-size: 12px 
 button { min-height: 32px; }
 /* Cards iets meer ademruimte */
 .up-card, .up-card-alt { padding: 16px 18px !important; }
+/* Leesbaarheid v2 - 2026-04-20 */
+/* Tabellen: iets groter font, duidelijker headers */
+table { font-size: 13px !important; }
+table th { font-weight: 700 !important; letter-spacing: 0.3px !important; color: #234756 !important; padding: 10px 12px !important; }
+table td { padding: 9px 12px !important; line-height: 1.45 !important; }
+/* Cards: subtiele border voor definitie + iets zachtere radius */
+.up-card, .up-card-alt { border: 1px solid #E8ECEF !important; border-radius: 12px !important; }
+/* Muted tekst iets donkerder voor contrast */
+[style*="color:#78909C"], [style*="color: #78909C"] { color: #546E7A !important; }
+/* Mobiel: compacter op smalle schermen */
+@media (max-width: 768px) {
+  body { font-size: 14px !important; }
+  table { font-size: 12px !important; }
+  table th, table td { padding: 8px 8px !important; }
+  .up-card, .up-card-alt { padding: 12px 14px !important; }
+  button { min-height: 40px !important; } /* touch-targets groter */
+}
 </style></head><body><div id='root'></div>
 <script src='https://unpkg.com/react@18/umd/react.production.min.js'></script>
 <script src='https://unpkg.com/react-dom@18/umd/react-dom.production.min.js'></script>
