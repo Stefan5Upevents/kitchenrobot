@@ -11484,6 +11484,42 @@ function ChefScreen({ setSc, setActieve }) {
     var algemeen = hits.find(function(l){ return !l.outlet_code; });
     return algemeen ? algemeen.notion_url : hits[0].notion_url;
   }
+  // NIEUW: toewijzingen + medewerkers
+  var [toewijzingen, setToewijzingen] = React.useState({}); // { boeking_id: { medewerker_id, medewerker_naam } }
+  var [medewerkers, setMedewerkers] = React.useState([]);
+  React.useEffect(function() {
+    if (!supa) return;
+    supa.from('boeking_toewijzingen').select('*').then(function(r) {
+      if (r && r.data) {
+        var map = {};
+        r.data.forEach(function(t){ map[t.boeking_id] = t; });
+        setToewijzingen(map);
+      }
+    });
+    supa.from('kiosk_medewerkers').select('id, naam, rol, actief, outlet_id').eq('actief', true).order('naam').then(function(r) {
+      if (r && r.data) setMedewerkers(r.data);
+    });
+  }, []);
+  function wijzToe(boekingId, boekingNaam, medewerkerId, medewerkerNaam, outletCode) {
+    if (!supa) return;
+    if (!medewerkerId) {
+      // Leegmaken
+      supa.from('boeking_toewijzingen').delete().eq('boeking_id', boekingId).then(function(){
+        setToewijzingen(function(prev){ var n = Object.assign({}, prev); delete n[boekingId]; return n; });
+      });
+      return;
+    }
+    var eigenNaam = (profiel && profiel.naam) || (profiel && profiel.email) || 'chef';
+    var row = {
+      boeking_id: boekingId, boeking_naam: boekingNaam, outlet_code: outletCode || 'west',
+      medewerker_id: medewerkerId, medewerker_naam: medewerkerNaam, aangemaakt_door_naam: eigenNaam
+    };
+    supa.from('boeking_toewijzingen').upsert(row, { onConflict: 'boeking_id,outlet_code' }).then(function(r){
+      if (r && !r.error) {
+        setToewijzingen(function(prev){ var n = Object.assign({}, prev); n[boekingId] = row; return n; });
+      }
+    });
+  }
   // NIEUW: verborgen boekingen (localStorage-persist)
   var [verborgenIds, setVerborgenIds] = React.useState(function() {
     try { return JSON.parse(localStorage.getItem('chef_verborgen_boekingen') || '[]'); } catch(e) { return []; }
@@ -12039,6 +12075,38 @@ function ChefScreen({ setSc, setActieve }) {
               React.createElement('span', { style:{fontWeight:800,marginRight:6} }, '📝'),
               teksten.join('  ·  '),
               extra && React.createElement('span', { style:{fontWeight:800,marginLeft:4} }, extra)
+            );
+          })()
+        ),
+        // NIEUW: toewijzing-dropdown
+        React.createElement('div', { onClick: function(ev){ ev.stopPropagation(); }, style: { display:'flex', alignItems:'center', gap:4 } },
+          (function(){
+            var huidig = toewijzingen[b.id];
+            return React.createElement('select', {
+              value: huidig ? huidig.medewerker_id : '',
+              onChange: function(ev) {
+                var mid = ev.target.value;
+                if (!mid) { wijzToe(b.id, b.naam, null); return; }
+                var m = medewerkers.find(function(x){ return x.id === mid; });
+                if (m) {
+                  // outlet_code ophalen via kiosk_outlets (west/weesp) — vallen terug op 'west' als onbekend
+                  var outlet = window._stamOutlets ? (window._stamOutlets.find(function(o){return o.id === m.outlet_id;}) || {}).code : null;
+                  wijzToe(b.id, b.naam, mid, m.naam, outlet || 'west');
+                }
+              },
+              style: {
+                background: huidig ? '#E3F2FD' : 'transparent',
+                color: huidig ? '#1565C0' : C.muted,
+                border: '1px solid ' + (huidig ? '#90CAF9' : '#D8E8EF'),
+                borderRadius: 100, padding: '3px 8px', fontSize: 11, fontWeight: 700,
+                cursor: 'pointer', fontFamily: 'inherit', maxWidth: 140
+              },
+              title: huidig ? 'Toegewezen aan ' + huidig.medewerker_naam : 'Wijs deze boeking toe'
+            },
+              React.createElement('option', { value: '' }, '👤 Toewijzen'),
+              medewerkers.map(function(m){
+                return React.createElement('option', { key: m.id, value: m.id }, m.naam);
+              })
             );
           })()
         ),
