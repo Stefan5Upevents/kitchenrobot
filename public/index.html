@@ -2062,7 +2062,30 @@ function HomeScreen({ setSc }) {
     });
   }))))))));
 }function BoekingenScreen({ setSc, setActieve }) {
-  var [openId, setOpenId] = useState(null);
+  var [openId, setOpenId] = useState(function() {
+    // v2: herstel uitgeklapte boeking na terug-navigatie
+    try {
+      var stored = sessionStorage.getItem('boekingen_return_openId');
+      if (stored) { sessionStorage.removeItem('boekingen_return_openId'); return stored; }
+    } catch(e) {}
+    return null;
+  });
+  // v2: scroll-positie herstellen
+  var [boekingenScrollHersteld, setBoekingenScrollHersteld] = useState(false);
+  React.useEffect(function() {
+    if (boekingenScrollHersteld) return;
+    var sy = null;
+    try { sy = sessionStorage.getItem('boekingen_return_scrollY'); } catch(e) {}
+    if (!sy) { setBoekingenScrollHersteld(true); return; }
+    try { sessionStorage.removeItem('boekingen_return_scrollY'); } catch(e) {}
+    setTimeout(function() {
+      var y = parseInt(sy) || 0;
+      var el = document.querySelector('.mobile-padding');
+      if (el) el.scrollTop = y;
+      window.scrollTo(0, y);
+      setBoekingenScrollHersteld(true);
+    }, 250);
+  }, [boekingenScrollHersteld]);
   var [sortBoekVeld, setSortBoekVeld] = useState("dag");
   var [sortBoekDir, setSortBoekDir] = useState("asc");
   function toggleSortBoek(veld) {
@@ -2182,6 +2205,13 @@ function HomeScreen({ setSc }) {
             style: { ...btnSA, fontSize: 9, padding: "2px 7px" },
             onClick: function(e) {
               e.stopPropagation();
+              // v2: onthoud context voor terug-knop
+              try {
+                var el2 = document.querySelector('.mobile-padding');
+                var sy2 = (el2 && el2.scrollTop) || window.scrollY || 0;
+                sessionStorage.setItem('buffet_return', JSON.stringify({ source: 'boekingen', boekingId: b.id, scrollY: sy2, ts: Date.now() }));
+                sessionStorage.setItem('boekingen_return_openId', b.id);
+              } catch(err) {}
               setActieve({ boekingId: b.id, psId: grp.psId, pgId: pg4 ? pg4.id : "", boekingNaam: b.naam, boekingTijd: b.deadlineTijd, boekingDag: b.deadlineDag });
               setSc("buffet");
             }
@@ -2245,34 +2275,40 @@ function InputRauw({ gId, formKey_, opzetFactor_, actieveOverride_, onCommit }) 
   );
 }
 function BuffetScreen({ actieve, setActieve, setSc }) {
-  // NIEUW: terug-naar-chef-portaal floating knop (v1)
+  // v2: terug-naar-vorige-scherm floating knop (dynamische tekst + scroll-herstel)
   React.useEffect(function() {
     var ret = null;
-    try { ret = sessionStorage.getItem('chef_return'); } catch(e) {}
+    try { ret = sessionStorage.getItem('buffet_return'); } catch(e) {}
     if (!ret) return;
+    var retData = {};
+    try { retData = JSON.parse(ret); } catch(e) {}
+    var source = retData.source || 'chef';
+    var btnTekst = source === 'boekingen' ? '← Terug naar Boekingen' : '← Terug naar Chef Portaal';
     var wrapper = document.createElement('div');
-    wrapper.id = 'chef-return-btn-wrapper';
+    wrapper.id = 'buffet-return-btn-wrapper';
     wrapper.style.cssText = 'position:fixed;top:70px;left:20px;z-index:9999;';
     var btn = document.createElement('button');
-    btn.textContent = '← Terug naar Chef Portaal';
+    btn.textContent = btnTekst;
     btn.style.cssText = 'background:#FE424D;color:#fff;border:none;border-radius:100px;padding:10px 18px;font-size:13px;font-weight:800;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.15);font-family:inherit;';
     btn.onmouseenter = function() { btn.style.background = '#D63341'; };
     btn.onmouseleave = function() { btn.style.background = '#FE424D'; };
     btn.onclick = function() {
       try {
-        var data = JSON.parse(ret || '{}');
-        // Zet chef_return_boekingId zodat ChefScreen bij mount weer openklapt
-        if (data && data.boekingId) {
-          sessionStorage.setItem('chef_return_boekingId', data.boekingId);
+        // Bewaar source-specifieke herstel-info
+        if (retData.boekingId) {
+          sessionStorage.setItem(source + '_return_boekingId', retData.boekingId);
         }
-        sessionStorage.removeItem('chef_return');
+        if (retData.scrollY != null) {
+          sessionStorage.setItem(source + '_return_scrollY', String(retData.scrollY));
+        }
+        sessionStorage.removeItem('buffet_return');
       } catch(e) {}
-      if (typeof setSc === 'function') setSc('chef');
+      if (typeof setSc === 'function') setSc(source);
     };
     wrapper.appendChild(btn);
     document.body.appendChild(wrapper);
     return function() {
-      var existing = document.getElementById('chef-return-btn-wrapper');
+      var existing = document.getElementById('buffet-return-btn-wrapper');
       if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
     };
   }, [setSc]);
@@ -11160,13 +11196,29 @@ function ChefScreen({ setSc, setActieve }) {
   var [bbqSnapshots, setBbqSnapshots] = React.useState({});
   var [opzetSnapshots, setOpzetSnapshots] = React.useState({});
   var [openBoekingId, setOpenBoekingId] = React.useState(function() {
-    // NIEUW: herstel open-boeking uit sessionStorage na terug-navigatie
     try {
       var stored = sessionStorage.getItem('chef_return_boekingId');
       if (stored) { sessionStorage.removeItem('chef_return_boekingId'); return stored; }
     } catch(e) {}
     return null;
   });
+  // v2: scroll-positie herstellen na terug-navigatie (wacht tot boekingen geladen)
+  var [chefScrollHersteld, setChefScrollHersteld] = React.useState(false);
+  React.useEffect(function() {
+    if (chefScrollHersteld) return;
+    if (!boekingen || boekingen.length === 0) return;
+    var sy = null;
+    try { sy = sessionStorage.getItem('chef_return_scrollY'); } catch(e) {}
+    if (!sy) { setChefScrollHersteld(true); return; }
+    try { sessionStorage.removeItem('chef_return_scrollY'); } catch(e) {}
+    setTimeout(function() {
+      var y = parseInt(sy) || 0;
+      var el = document.querySelector('.mobile-padding');
+      if (el) el.scrollTop = y;
+      window.scrollTo(0, y);
+      setChefScrollHersteld(true);
+    }, 250);
+  }, [boekingen, chefScrollHersteld]);
   var [toast, setToast] = React.useState(null);
   var [openFormulier, setOpenFormulier] = React.useState(null);
   var [actieveOutlet, setActieveOutlet] = React.useState(null);
@@ -11461,8 +11513,12 @@ function ChefScreen({ setSc, setActieve }) {
   }
 
   function gaNaarBuffetformulier(b, ps) {
-    // NIEUW: onthoud welke boeking was open in chef-portaal voor terug-knop
-    try { sessionStorage.setItem('chef_return', JSON.stringify({ boekingId: b.id, ts: Date.now() })); } catch(e) {}
+    // v2: generieke return met source + scroll-positie
+    try {
+      var el1 = document.querySelector('.mobile-padding');
+      var sy1 = (el1 && el1.scrollTop) || window.scrollY || 0;
+      sessionStorage.setItem('buffet_return', JSON.stringify({ source: 'chef', boekingId: b.id, scrollY: sy1, ts: Date.now() }));
+    } catch(e) {}
     if (typeof setActieve === 'function') {
       setActieve({ boekingId: b.id, psId: ps.id, pgId: '', boekingNaam: b.naam, boekingTijd: b.deadline_tijd || '', boekingDag: b.deadline_dag || '' });
       setSc('buffet');
