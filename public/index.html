@@ -8984,6 +8984,8 @@ function LiveDashboardBlok({ outletFilter }) {
   var [margeTop, setMargeTop] = React.useState([]);
   var [margeBottom, setMargeBottom] = React.useState([]);
   var [waste, setWaste] = React.useState(null);
+  var [sparkline, setSparkline] = React.useState([]);
+  var [hoverIdx, setHoverIdx] = React.useState(null);
   var [laatstUpdate, setLaatstUpdate] = React.useState(null);
   var [fout, setFout] = React.useState(null);
 
@@ -9022,6 +9024,13 @@ function LiveDashboardBlok({ outletFilter }) {
         wrij = (res.data && res.data[0]) || { n_registraties_30d:0, kosten_30d:0, kosten_7d:0 };
       }
       setWaste(wrij);
+    });
+    // Sparkline 30 dagen
+    var sbron = outletFilter === 'beide' ? 'v_fin_sparkline_30d_totaal' : 'v_fin_sparkline_30d';
+    var sq = window._supa.from(sbron).select('dag,omzet').order('dag', { ascending: true });
+    if (outletFilter !== 'beide') sq = sq.eq('outlet_code', outletFilter);
+    sq.then(function(res) {
+      if (!res.error) setSparkline(res.data || []);
     });
   }
 
@@ -9089,6 +9098,66 @@ function LiveDashboardBlok({ outletFilter }) {
       KPICard({ label:'Deze maand', waarde:euro(data.maand_mtd), kleur:C.night, trend: trend(data.maand_mtd, data.maand_vj) }),
       KPICard({ label:'Dit jaar', waarde:euro(data.jaar_ytd), kleur:C.night, trend: trend(data.jaar_ytd, data.jaar_vj) })
     ),
+    // SPARKLINE: omzet laatste 30 dagen
+    sparkline.length > 0 && (function() {
+      var W = 800, H = 70, P = 4;
+      var waardes = sparkline.map(function(d){ return parseFloat(d.omzet || 0); });
+      var max = Math.max.apply(null, waardes);
+      if (max === 0) max = 1;
+      var stapX = (W - P*2) / Math.max(sparkline.length - 1, 1);
+      var vandaagIdx = sparkline.findIndex(function(d){ var dt = new Date(d.dag); dt.setHours(0,0,0,0); var td = new Date(); td.setHours(0,0,0,0); return dt.getTime() === td.getTime(); });
+      var punten = sparkline.map(function(d, i) {
+        var x = P + i * stapX;
+        var y = P + (H - P*2) * (1 - (parseFloat(d.omzet||0) / max));
+        return { x: x, y: y, dag: d.dag, omzet: parseFloat(d.omzet||0), gepland: i > vandaagIdx };
+      });
+      var polyStrGer = punten.filter(function(p,i){ return i <= vandaagIdx || vandaagIdx < 0; }).map(function(p){ return p.x+','+p.y; }).join(' ');
+      var polyStrGep = vandaagIdx >= 0 ? punten.filter(function(p,i){ return i >= vandaagIdx; }).map(function(p){ return p.x+','+p.y; }).join(' ') : '';
+      var areaGer = polyStrGer ? ('M'+P+','+(H-P)+' L'+polyStrGer.split(' ').join(' L')+' L'+(punten[vandaagIdx >= 0 ? vandaagIdx : punten.length-1].x)+','+(H-P)+' Z') : '';
+      var hoverPunt = hoverIdx !== null && punten[hoverIdx] ? punten[hoverIdx] : null;
+      var dagNaam = function(d){ var dt = new Date(d); return ['zo','ma','di','wo','do','vr','za'][dt.getDay()] + ' ' + dt.getDate() + '/' + (dt.getMonth()+1); };
+      return React.createElement('div', { style:{background:C.white,borderRadius:10,padding:'10px 14px',marginBottom:12,marginTop:4} },
+        React.createElement('div', { style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:4} },
+          React.createElement('div', { style:{fontSize:10,color:C.night,fontWeight:800,letterSpacing:1,textTransform:'uppercase'} }, '📈 Omzet per dag · laatste 30 dagen'),
+          React.createElement('div', { style:{fontSize:10,color:C.muted,display:'flex',gap:10} },
+            React.createElement('span', null, React.createElement('span', { style:{display:'inline-block',width:10,height:3,background:C.aqua,verticalAlign:'middle',marginRight:4} }), 'gerealiseerd'),
+            vandaagIdx >= 0 && vandaagIdx < punten.length - 1 && React.createElement('span', null, React.createElement('span', { style:{display:'inline-block',width:10,height:3,background:C.orange,verticalAlign:'middle',marginRight:4,borderTop:'1px dashed ' + C.orange} }), 'gepland')
+          )
+        ),
+        React.createElement('svg', {
+          viewBox: '0 0 ' + W + ' ' + H,
+          preserveAspectRatio: 'none',
+          style: { width:'100%', height:H, display:'block', cursor:'crosshair' },
+          onMouseMove: function(e) {
+            var rect = e.currentTarget.getBoundingClientRect();
+            var relX = (e.clientX - rect.left) / rect.width * W;
+            var idx = Math.round((relX - P) / stapX);
+            if (idx < 0) idx = 0; if (idx >= punten.length) idx = punten.length - 1;
+            setHoverIdx(idx);
+          },
+          onMouseLeave: function() { setHoverIdx(null); }
+        },
+          // Area onder gerealiseerd
+          areaGer && React.createElement('path', { d: areaGer, fill: C.aqua, opacity: 0.12 }),
+          // Lijn gerealiseerd
+          polyStrGer && React.createElement('polyline', { points: polyStrGer, fill:'none', stroke: C.aqua, strokeWidth: 2 }),
+          // Lijn gepland (gestippeld)
+          polyStrGep && React.createElement('polyline', { points: polyStrGep, fill:'none', stroke: C.orange, strokeWidth: 2, strokeDasharray: '4,3' }),
+          // Vandaag verticale lijn
+          vandaagIdx >= 0 && React.createElement('line', { x1: punten[vandaagIdx].x, y1: P, x2: punten[vandaagIdx].x, y2: H-P, stroke: C.night, strokeWidth: 1, strokeDasharray: '2,2', opacity: 0.4 }),
+          // Hover punt + tooltip
+          hoverPunt && React.createElement('circle', { cx: hoverPunt.x, cy: hoverPunt.y, r: 4, fill: hoverPunt.gepland ? C.orange : C.aqua, stroke:'#fff', strokeWidth: 2 }),
+          hoverPunt && React.createElement('line', { x1: hoverPunt.x, y1: hoverPunt.y, x2: hoverPunt.x, y2: H-P, stroke: C.muted, strokeWidth: 1, opacity: 0.3 })
+        ),
+        React.createElement('div', { style:{display:'flex',justifyContent:'space-between',fontSize:10,color:C.muted,marginTop:2} },
+          React.createElement('span', null, dagNaam(sparkline[0].dag)),
+          hoverPunt
+            ? React.createElement('strong', { style:{color:hoverPunt.gepland ? C.orange : C.aqua} }, dagNaam(hoverPunt.dag) + ' · ' + '€' + Math.round(hoverPunt.omzet).toLocaleString('nl-NL') + (hoverPunt.gepland ? ' gepland' : ''))
+            : React.createElement('span', { style:{color:C.night,fontWeight:700} }, 'piek €' + Math.round(max).toLocaleString('nl-NL')),
+          React.createElement('span', null, dagNaam(sparkline[sparkline.length-1].dag))
+        )
+      );
+    })(),
     // RIJ 2: Forecast
     React.createElement('div', { style:{fontSize:10,color:C.night,fontWeight:800,letterSpacing:1,textTransform:'uppercase',marginBottom:6} }, '🔮 Forecast & geplande boekingen'),
     React.createElement('div', { style:{display:'flex',gap:8,flexWrap:'wrap'} },
