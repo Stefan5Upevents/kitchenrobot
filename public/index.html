@@ -2505,7 +2505,7 @@ function BuffetScreen({ actieve, setActieve, setSc }) {
   var formulieren = useMemo(function() {
     var lijst = [];
     var psIdSet = {};
-    (window._recrasBoekingen || []).forEach(function(b) {
+    (window._filterBoekingen ? window._filterBoekingen(window._recrasBoekingen || []) : (window._recrasBoekingen || [])).forEach(function(b) {
       b.regels.forEach(function(r) {
         var kop = (window._stamKoppelingen || []).find(function(k) {
           return (k.recras_naam || "").trim() === (r.menuNaam || "").trim();
@@ -2544,7 +2544,7 @@ function BuffetScreen({ actieve, setActieve, setSc }) {
       });
     });
     return lijst;
-  }, [(window._recrasBoekingen || []).length, (window._stamKoppelingen || []).length, (window._stamMenus || []).length]);
+  }, [(window._recrasBoekingen || []).length, (window._stamKoppelingen || []).length, (window._stamMenus || []).length, window._filterOutlet, window._filterStartdatum, window._filterEinddatum]);
   var huidig = actieve && actieve.boekingId ? actieve : formulieren[0] || {};
   var psId = huidig.psId || "";
   var pgId = huidig.pgId || "";
@@ -11520,14 +11520,14 @@ function App({ supabaseInloggen, supabaseUitloggen, supabaseSessie, supabaseProf
       supabaseInloggen(u.email, u.wachtwoord).then(function(data) {
         if (data) {
           setLoginBevestigd(true);
-          setSc("home");
+          setSc("boekingen");
         }
       }).catch(function(err) {
         alert("Inloggen mislukt: " + (err.message || "Controleer e-mail en wachtwoord"));
       });
     } else {
       setUser(u);
-      setSc("home");
+      setSc("boekingen");
     }
   }
   function handleLogout() {
@@ -11535,7 +11535,7 @@ function App({ supabaseInloggen, supabaseUitloggen, supabaseSessie, supabaseProf
       supabaseUitloggen();
     }
     setUser(null);
-    setSc("home");
+    setSc("boekingen");
   }
 
 function AdviezenScreen() {
