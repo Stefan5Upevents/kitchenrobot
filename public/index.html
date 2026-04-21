@@ -610,7 +610,6 @@ function Header({ sc, setSc, user, logout }) {
   var [grpOpen, setGrpOpen] = useState({ Dagelijks: true, Analyse: true, Beheer: true });
   var navGroups = [
     { label: "Dagelijks", items: [
-      ["home", "📥", "Import & Publiceer"],
       ["adviezen", "📥", "Adviezen-inbox"],
       ["boekingen", "📋", "Boekingen"],
       ["buffet", "🍽", "Buffetformulieren"],
@@ -2444,6 +2443,8 @@ function InputRauw({ gId, formKey_, opzetFactor_, actieveOverride_, onCommit }) 
   );
 }
 function BuffetScreen({ actieve, setActieve, setSc }) {
+  var _krForceRenderB = useState(0);
+  useEffect(function(){var h=function(){_krForceRenderB[1](function(x){return x+1;});};window.addEventListener("kr-filter-changed",h);window.addEventListener("recras-boekingen-geladen",h);return function(){window.removeEventListener("kr-filter-changed",h);window.removeEventListener("recras-boekingen-geladen",h);};},[]);
   // v2: terug-naar-vorige-scherm floating knop (dynamische tekst + scroll-herstel)
   React.useEffect(function() {
     var ret = null;
@@ -2714,10 +2715,10 @@ function BuffetScreen({ actieve, setActieve, setSc }) {
     return items;
   }
   if ((window._recrasBoekingen || []).length === 0) {
-    return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: SS.pT }, "Buffetformulieren"), /* @__PURE__ */ React.createElement("div", { style: { ...SS.card, ...alertI } }, "Importeer een Recras boekingenexport via het hoofdscherm. Zorg dat de Recras producten zijn gekoppeld aan menus in Stamgegevens \u2192 Recras Import."));
+    return /* @__PURE__ */ React.createElement("div", null, window._FilterBar ? /* @__PURE__ */ React.createElement(window._FilterBar, { key: "krfb" }) : null, /* @__PURE__ */ React.createElement("div", { style: SS.pT }, "Buffetformulieren"), /* @__PURE__ */ React.createElement("div", { style: { ...SS.card, ...alertI } }, "Importeer een Recras boekingenexport via het hoofdscherm. Zorg dat de Recras producten zijn gekoppeld aan menus in Stamgegevens \u2192 Recras Import."));
   }
   if (formulieren.length === 0) {
-    return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: SS.pT }, "Buffetformulieren"), /* @__PURE__ */ React.createElement("div", { style: { ...SS.card, ...alertW } }, "Boekingen zijn geladen maar geen producten zijn gekoppeld aan menus. Ga naar Stamgegevens \u2192 Recras Import en koppel de Recras producten aan de juiste menus."));
+    return /* @__PURE__ */ React.createElement("div", null, window._FilterBar ? /* @__PURE__ */ React.createElement(window._FilterBar, { key: "krfb" }) : null, /* @__PURE__ */ React.createElement("div", { style: SS.pT }, "Buffetformulieren"), /* @__PURE__ */ React.createElement("div", { style: { ...SS.card, ...alertW } }, "Boekingen zijn geladen maar geen producten zijn gekoppeld aan menus. Ga naar Stamgegevens \u2192 Recras Import en koppel de Recras producten aan de juiste menus."));
   }
   // AUTO-SAVE OPZET: sla formulier tabel op als snapshot (identiek aan website weergave)
   React.useEffect(function() {
@@ -2837,7 +2838,7 @@ function BuffetScreen({ actieve, setActieve, setSc }) {
   }, [boeking && boeking.id, psId, buffetLayout && buffetLayout.dishesPerBuf, JSON.stringify(opgeslagenOverrides[formKey] || {})]);
 
 
-  return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("style", null, `
+  return /* @__PURE__ */ React.createElement("div", null, window._FilterBar ? /* @__PURE__ */ React.createElement(window._FilterBar, { key: "krfb" }) : null, /* @__PURE__ */ React.createElement("style", null, `
         @media print {
           .no-print { display:none !important; }
           body { background: white !important; color: #000 !important; }
@@ -11500,7 +11501,7 @@ function App({ supabaseInloggen, supabaseUitloggen, supabaseSessie, supabaseProf
   var grRef = appGerechten;
   var mnRef = appMenus;
   var [user, setUser] = useState(null);
-  var [sc, setSc] = useState("home");
+  var [sc, setSc] = useState("boekingen");
   var [stamTab, setStamTab] = useState("pg");
   var [actieve, setActieve] = useState(null);
   var useSupabase = typeof supabaseInloggen === "function";
