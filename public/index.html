@@ -57,62 +57,105 @@ table td { padding: 9px 12px !important; line-height: 1.45 !important; }
 
 /*KR-TABLE-CSS*/
 
-/* kr-table: globale consistente tabellenstijl */
+/* kr-table: globale consistente tabellenstijl - v2 met !important overal */
 table.kr-table, .kr-wrap table {
-  font-family: inherit;
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  background: #fff;
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow: 0 1px 0 rgba(35,71,86,.04);
+  font-family: inherit !important;
+  width: 100% !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  background: #fff !important;
+  border-radius: 10px !important;
+  overflow: hidden !important;
+  box-shadow: 0 1px 3px rgba(35,71,86,.08) !important;
+  margin-bottom: 4px !important;
 }
-table.kr-table thead, .kr-wrap table thead { background: #F4F8FB; }
-table.kr-table thead tr, .kr-wrap table thead tr { background: #F4F8FB !important; }
+/* HEADERS - altijd zichtbaar, consistent */
+table.kr-table thead, .kr-wrap table thead {
+  background: #234756 !important;
+}
+table.kr-table thead tr, .kr-wrap table thead tr {
+  background: #234756 !important;
+}
 table.kr-table thead th, .kr-wrap table thead th {
-  text-transform: uppercase;
-  letter-spacing: .5px;
-  font-size: 10px;
-  font-weight: 800;
-  color: #234756;
-  background: #F4F8FB;
-  border-bottom: 2px solid #D8E8EF;
-  padding: 11px 12px !important;
-  text-align: left;
-  white-space: nowrap;
-  position: sticky;
-  top: 0;
-  z-index: 2;
+  text-transform: uppercase !important;
+  letter-spacing: .5px !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  color: #fff !important;
+  background: #234756 !important;
+  border: none !important;
+  border-bottom: 2px solid #3FB8C4 !important;
+  padding: 12px 12px !important;
+  text-align: left !important;
+  white-space: nowrap !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 2 !important;
 }
-table.kr-table tbody tr, .kr-wrap table tbody tr { transition: background .12s; }
-table.kr-table tbody tr:hover, .kr-wrap table tbody tr:hover { background: #EEF5FA !important; }
-table.kr-table tbody tr:nth-child(even):not(:hover), .kr-wrap table tbody tr:nth-child(even):not(:hover) { background: #FCFDFE; }
+/* Number-kolommen (heuristisch rechts-aligned via data-num) */
+table.kr-table thead th[data-num], .kr-wrap table thead th[data-num] { text-align: right !important; }
+/* BODY rijen */
+table.kr-table tbody tr, .kr-wrap table tbody tr {
+  transition: background .12s !important;
+  background: #fff !important;
+}
+table.kr-table tbody tr:nth-child(even), .kr-wrap table tbody tr:nth-child(even) {
+  background: #F8FAFC !important;
+}
+table.kr-table tbody tr:hover, .kr-wrap table tbody tr:hover {
+  background: #E8F5F9 !important;
+}
 table.kr-table tbody td, .kr-wrap table tbody td {
-  border-bottom: 1px solid #F0F4F7;
-  padding: 10px 12px;
-  font-size: 13px;
-  color: #234756;
-  vertical-align: middle;
+  border: none !important;
+  border-bottom: 1px solid #F0F4F7 !important;
+  padding: 10px 12px !important;
+  font-size: 13px !important;
+  color: #234756 !important;
+  vertical-align: middle !important;
 }
-table.kr-table tbody tr:last-child td, .kr-wrap table tbody tr:last-child td { border-bottom: none; }
+table.kr-table tbody tr:last-child td, .kr-wrap table tbody tr:last-child td {
+  border-bottom: none !important;
+}
+/* FOOTER (totalen-rij) */
 table.kr-table tfoot td, .kr-wrap table tfoot td {
-  background: #F8FAFC;
-  border-top: 2px solid #D8E8EF;
-  padding: 10px 12px;
-  font-weight: 800;
-  color: #234756;
+  background: #F0F4F7 !important;
+  border-top: 2px solid #3FB8C4 !important;
+  padding: 11px 12px !important;
+  font-weight: 800 !important;
+  color: #234756 !important;
+  font-size: 13px !important;
+}
+/* LEGE TABEL boodschap wanneer geen data */
+.kr-empty {
+  padding: 30px 20px !important;
+  text-align: center !important;
+  color: #78909C !important;
+  font-style: italic !important;
+  font-size: 13px !important;
+  background: #fff !important;
+  border-radius: 10px !important;
 }
 /* Scroll-wrapper voor brede tabellen */
 .kr-table-scroll {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  border-radius: 10px;
-  background: #fff;
-  box-shadow: 0 1px 0 rgba(35,71,86,.04);
-  margin-bottom: 14px;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  border-radius: 10px !important;
+  background: #fff !important;
+  box-shadow: 0 1px 3px rgba(35,71,86,.08) !important;
+  margin-bottom: 14px !important;
 }
-.kr-table-scroll > table { box-shadow: none; }
+.kr-table-scroll > table { box-shadow: none !important; margin-bottom: 0 !important; }
+/* Op mobiel: alle tabellen krijgen automatisch horizontal scroll via wrapper */
+@media (max-width: 768px) {
+  table.kr-table, .kr-wrap table {
+    display: block !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    white-space: nowrap !important;
+  }
+  table.kr-table thead th { font-size: 9px !important; padding: 10px 8px !important; }
+  table.kr-table tbody td { font-size: 12px !important; padding: 9px 8px !important; }
+}
 /* Lege-tabel hint */
 table.kr-table tbody tr.kr-leeg td, .kr-wrap table tbody tr.kr-leeg td {
   text-align: center;
