@@ -14072,27 +14072,25 @@ function ChefScreen({ setSc, setActieve }) {
 </script>
 
 
-<script id="kr-filter-v3">
+
+<script id="kr-filter-v4">
 (function(){
-  if (window._krFilterV3) return; window._krFilterV3 = true;
+  if (window._krFilterV4) return; window._krFilterV4 = true;
 
   var css = document.createElement('style');
   css.textContent = [
-    '.kr-fb3{position:fixed;top:12px;right:12px;z-index:99999;display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:linear-gradient(135deg,#002D41,#1a3a4a);color:#fff;border-radius:12px;padding:10px 14px;box-shadow:0 4px 20px rgba(0,0,0,0.25);font-family:"Inter",sans-serif;font-size:12px;max-width:calc(100vw - 30px)}',
-    '.kr-fb3.kr-fb3-hidden{display:none}',
-    '.kr-fb3 .kr3l{font-size:10px;font-weight:700;opacity:0.7;text-transform:uppercase;letter-spacing:0.5px}',
-    '.kr-fb3 .kr3g{display:flex;gap:3px;background:rgba(255,255,255,0.08);border-radius:7px;padding:2px}',
-    '.kr-fb3 .kr3b{background:transparent;border:none;color:#fff;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;font-family:inherit;white-space:nowrap}',
-    '.kr-fb3 .kr3b:hover{background:rgba(255,255,255,0.12)}',
-    '.kr-fb3 .kr3b.on{background:#1AA6B7;color:#fff}',
-    '.kr-fb3 input[type=date]{background:rgba(255,255,255,0.95);color:#002D41;border:none;border-radius:6px;padding:5px 7px;font-size:11.5px;font-weight:600;font-family:inherit;cursor:pointer;min-width:130px}',
-    '.kr-fb3 .kr3sep{color:rgba(255,255,255,0.4);font-size:13px;margin:0 2px}',
-    '.kr-fb3 .kr3stat{font-size:11.5px;color:#1AA6B7;font-weight:800;white-space:nowrap;padding:0 6px}',
-    '.kr-fb3 .kr3close{background:rgba(255,255,255,0.15);border:none;color:#fff;width:22px;height:22px;border-radius:50%;cursor:pointer;font-size:13px;font-weight:700;padding:0;display:flex;align-items:center;justify-content:center}',
-    '.kr-fb3 .kr3close:hover{background:rgba(255,59,48,0.8)}',
-    '.kr-fb3-fab{position:fixed;top:12px;right:12px;z-index:99998;background:#002D41;color:#fff;border:none;border-radius:50%;width:44px;height:44px;cursor:pointer;font-size:20px;box-shadow:0 4px 12px rgba(0,0,0,0.25);display:none;align-items:center;justify-content:center}',
-    '.kr-fb3-fab.visible{display:flex}',
-    '@media (max-width:768px){.kr-fb3{top:auto;bottom:12px;right:12px;left:12px;max-width:none;flex-direction:column;align-items:stretch}.kr-fb3 .kr3g{flex-wrap:wrap}}',
+    '.kr-fb4{display:flex;flex-direction:column;gap:10px;background:linear-gradient(135deg,#002D41,#1a3a4a);color:#fff;border-radius:12px;padding:14px 18px;margin-bottom:16px;box-shadow:0 2px 10px rgba(0,45,65,0.15);font-family:inherit}',
+    '.kr-fb4 .kr4row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}',
+    '.kr-fb4 .kr4l{font-size:10.5px;font-weight:700;opacity:0.8;text-transform:uppercase;letter-spacing:0.5px;margin-right:2px}',
+    '.kr-fb4 .kr4g{display:flex;gap:3px;background:rgba(255,255,255,0.08);border-radius:8px;padding:3px}',
+    '.kr-fb4 .kr4b{background:transparent;border:none;color:#fff;padding:7px 14px;border-radius:6px;cursor:pointer;font-size:12.5px;font-weight:600;font-family:inherit;white-space:nowrap;transition:all 0.15s}',
+    '.kr-fb4 .kr4b:hover{background:rgba(255,255,255,0.15)}',
+    '.kr-fb4 .kr4b.on{background:#1AA6B7;color:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.25)}',
+    '.kr-fb4 input[type=date]{background:rgba(255,255,255,0.95);color:#002D41;border:none;border-radius:7px;padding:7px 10px;font-size:12.5px;font-weight:700;font-family:inherit;cursor:pointer;min-width:145px}',
+    '.kr-fb4 input[type=date]:focus{outline:2px solid #1AA6B7;outline-offset:1px}',
+    '.kr-fb4 .kr4sep{color:rgba(255,255,255,0.4);font-size:14px}',
+    '.kr-fb4 .kr4stat{margin-left:auto;font-size:12px;color:#1AA6B7;font-weight:800;white-space:nowrap}',
+    '.kr-fb4 .kr4quick{display:flex;gap:3px;background:rgba(255,255,255,0.08);border-radius:7px;padding:3px}',
   ].join('
 ');
   document.head.appendChild(css);
@@ -14100,7 +14098,6 @@ function ChefScreen({ setSc, setActieve }) {
   function iso(d){try{return d.toISOString().split('T')[0];}catch(e){return '';}}
   function parseIso(s){if(!s)return null;var p=s.split('-');if(p.length!==3)return null;return new Date(Date.UTC(+p[0],(+p[1])-1,+p[2]));}
 
-  // Defaults laden
   function loadState(){
     try{
       var o=localStorage.getItem('kr_f_outlet')||'alle';
@@ -14118,14 +14115,13 @@ function ChefScreen({ setSc, setActieve }) {
   }
   loadState();
 
-  // Filter functie
   window._filterBoekingen=function(lijst){
     var o=window._filterOutlet||'alle';
     var sd=parseIso(window._filterStartdatum);
     var ed=parseIso(window._filterEinddatum);
     if(ed)ed=new Date(ed.getTime()+86399999);
     return (lijst||[]).filter(function(b){
-      if(o!=='alle'&&b.outlet_code!==o&&!(o==='alle_keukens'&&(b.outlet_code==='west'||b.outlet_code==='weesp'||b.outlet_code==='gemengd')))return false;
+      if(o!=='alle'&&b.outlet_code!==o&&b.outlet_code!=='gemengd')return false;
       if(!b.deadline)return true;
       var d=new Date(b.deadline);
       if(sd&&d<sd)return false;
@@ -14134,144 +14130,175 @@ function ChefScreen({ setSc, setActieve }) {
     });
   };
 
-  // Bouw de balk ALTIJD en hang aan document.body
-  var bar = document.createElement('div');
-  bar.className = 'kr-fb3';
-
-  // Outlet
-  var lblO = document.createElement('span'); lblO.className='kr3l'; lblO.textContent='Outlet';
-  var grpO = document.createElement('div'); grpO.className='kr3g';
-  var outletBtns = {};
-  [['alle','🌐'],['west','West'],['weesp','Weesp']].forEach(function(o){
-    var btn = document.createElement('button');
-    btn.className = 'kr3b' + (window._filterOutlet===o[0]?' on':'');
-    btn.textContent = o[1];
-    btn.type = 'button';
-    btn.addEventListener('click', function(ev){
-      ev.preventDefault(); ev.stopPropagation();
-      window._filterOutlet = o[0];
-      try{localStorage.setItem('kr_f_outlet',o[0]);}catch(e){}
-      Object.keys(outletBtns).forEach(function(k){ outletBtns[k].className = 'kr3b' + (k===o[0]?' on':''); });
-      triggerUpdate();
-    });
-    outletBtns[o[0]] = btn;
-    grpO.appendChild(btn);
-  });
-
-  // Datum pickers
-  var lblVan = document.createElement('span'); lblVan.className='kr3l'; lblVan.textContent='Van';
-  var inpStart = document.createElement('input');
-  inpStart.type = 'date';
-  inpStart.value = window._filterStartdatum || '';
-  inpStart.addEventListener('change', function(){
-    window._filterStartdatum = inpStart.value;
-    try{localStorage.setItem('kr_f_startdatum', inpStart.value);}catch(e){}
-    triggerUpdate();
-  });
-
-  var sep = document.createElement('span'); sep.className='kr3sep'; sep.textContent='→';
-  var lblTot = document.createElement('span'); lblTot.className='kr3l'; lblTot.textContent='Tot';
-  var inpEnd = document.createElement('input');
-  inpEnd.type = 'date';
-  inpEnd.value = window._filterEinddatum || '';
-  inpEnd.addEventListener('change', function(){
-    window._filterEinddatum = inpEnd.value;
-    try{localStorage.setItem('kr_f_einddatum', inpEnd.value);}catch(e){}
-    triggerUpdate();
-  });
-
-  // Snelkoppelingen
-  var grpS = document.createElement('div'); grpS.className='kr3g';
-  [[0,7,'Wk'],[0,30,'Mnd'],[0,365,'Jaar'],[-14,14,'±2wk']].forEach(function(r){
-    var btn = document.createElement('button');
-    btn.className = 'kr3b';
-    btn.textContent = r[2];
-    btn.type = 'button';
-    btn.addEventListener('click', function(ev){
-      ev.preventDefault(); ev.stopPropagation();
-      var nu = new Date();
-      var sd = new Date(Date.UTC(nu.getUTCFullYear(), nu.getUTCMonth(), nu.getUTCDate()+r[0]));
-      var ed = new Date(Date.UTC(nu.getUTCFullYear(), nu.getUTCMonth(), nu.getUTCDate()+r[1]));
-      window._filterStartdatum = iso(sd);
-      window._filterEinddatum = iso(ed);
-      inpStart.value = iso(sd);
-      inpEnd.value = iso(ed);
-      try{localStorage.setItem('kr_f_startdatum',iso(sd)); localStorage.setItem('kr_f_einddatum',iso(ed));}catch(e){}
-      triggerUpdate();
-    });
-    grpS.appendChild(btn);
-  });
-
-  // Stat
-  var stat = document.createElement('span'); stat.className='kr3stat';
-  function updStat(){
-    var lst = (window._recrasBoekingen || []);
-    var f = window._filterBoekingen ? window._filterBoekingen(lst) : lst;
-    var pax = f.reduce(function(s,b){return s + (b.personen || 0);}, 0);
-    stat.textContent = f.length + ' · ' + pax + ' pers';
+  // Detecteer welk scherm actief is op basis van content-heuristiek
+  function detectScherm(container){
+    var txt = (container.textContent || '').toLowerCase();
+    // Zoek specifieke woorden die op elk scherm voorkomen
+    // Boekingen-scherm: heeft 'groepsnaam' of 'recras boekingen' of de tabel met 'Deadline'
+    var heeftBoekingTabel = !!container.querySelector('table.kr-table thead') &&
+      (container.querySelector('table.kr-table thead').textContent || '').match(/groepsnaam|deadline|recras/i);
+    // Buffet-scherm: heeft h2 met Buffetformulieren
+    var heeftBuffet = /buffetformulier/i.test(txt) && /formulier|menu/i.test(txt);
+    // Opzet-scherm: heeft 'Opzetoverzicht' of 'Opzet' als header
+    var heeftOpzet = /opzetoverzicht/i.test(txt) || /opzet[^l]/i.test(txt);
+    // Home scherm (import): heeft 'Import' heading
+    var heeftImport = /import/i.test(txt) && /boeking|geïmporteerde/i.test(txt);
+    
+    if (heeftBoekingTabel) return 'boekingen';
+    if (heeftBuffet) return 'buffet';
+    if (heeftOpzet) return 'opzet';
+    if (heeftImport) return 'home';
+    return null;
   }
-  updStat();
-  window.addEventListener('recras-boekingen-geladen', updStat);
 
-  // Close-button (hide balk, toon FAB)
-  var closeBtn = document.createElement('button'); closeBtn.className='kr3close'; closeBtn.textContent='×'; closeBtn.type='button'; closeBtn.title='Verberg filter';
-  closeBtn.addEventListener('click', function(ev){
-    ev.preventDefault(); ev.stopPropagation();
-    bar.classList.add('kr-fb3-hidden');
-    fab.classList.add('visible');
-    try{localStorage.setItem('kr_f_verborgen','1');}catch(e){}
-  });
+  function buildBar(){
+    var bar = document.createElement('div');
+    bar.className = 'kr-fb4';
 
-  // Floating Action Button om balk weer te tonen
-  var fab = document.createElement('button');
-  fab.className = 'kr-fb3-fab';
-  fab.textContent = '🎛';
-  fab.type = 'button';
-  fab.title = 'Filter tonen';
-  fab.addEventListener('click', function(ev){
-    ev.preventDefault(); ev.stopPropagation();
-    bar.classList.remove('kr-fb3-hidden');
-    fab.classList.remove('visible');
-    try{localStorage.setItem('kr_f_verborgen','0');}catch(e){}
-  });
+    // Rij 1: Outlet
+    var row1 = document.createElement('div'); row1.className='kr4row';
+    var lblO = document.createElement('span'); lblO.className='kr4l'; lblO.textContent='Outlet';
+    var grpO = document.createElement('div'); grpO.className='kr4g';
+    var outletBtns = {};
+    [['alle','🌐 Alle'],['west','🏭 West'],['weesp','🏡 Weesp']].forEach(function(o){
+      var btn = document.createElement('button');
+      btn.className = 'kr4b' + (window._filterOutlet===o[0]?' on':'');
+      btn.textContent = o[1];
+      btn.type = 'button';
+      btn.onclick = function(ev){
+        ev.preventDefault(); ev.stopPropagation();
+        window._filterOutlet = o[0];
+        try{localStorage.setItem('kr_f_outlet',o[0]);}catch(e){}
+        Object.keys(outletBtns).forEach(function(k){ outletBtns[k].className = 'kr4b' + (k===o[0]?' on':''); });
+        triggerUpdate();
+      };
+      outletBtns[o[0]] = btn;
+      grpO.appendChild(btn);
+    });
+    row1.appendChild(lblO); row1.appendChild(grpO);
 
-  // Assemble
-  bar.appendChild(lblO); bar.appendChild(grpO);
-  bar.appendChild(lblVan); bar.appendChild(inpStart); bar.appendChild(sep); bar.appendChild(lblTot); bar.appendChild(inpEnd);
-  bar.appendChild(grpS);
-  bar.appendChild(stat);
-  bar.appendChild(closeBtn);
+    // Stat rechts in rij 1
+    var stat = document.createElement('span'); stat.className='kr4stat';
+    row1.appendChild(stat);
 
-  function triggerUpdate(){
+    // Rij 2: Datum van-tot + snelkoppelingen
+    var row2 = document.createElement('div'); row2.className='kr4row';
+    var lblVan = document.createElement('span'); lblVan.className='kr4l'; lblVan.textContent='Van';
+    var inpStart = document.createElement('input');
+    inpStart.type = 'date';
+    inpStart.value = window._filterStartdatum || '';
+    inpStart.onchange = function(){
+      window._filterStartdatum = inpStart.value;
+      try{localStorage.setItem('kr_f_startdatum', inpStart.value);}catch(e){}
+      triggerUpdate();
+    };
+    var sep = document.createElement('span'); sep.className='kr4sep'; sep.textContent='→';
+    var lblTot = document.createElement('span'); lblTot.className='kr4l'; lblTot.textContent='Tot';
+    var inpEnd = document.createElement('input');
+    inpEnd.type = 'date';
+    inpEnd.value = window._filterEinddatum || '';
+    inpEnd.onchange = function(){
+      window._filterEinddatum = inpEnd.value;
+      try{localStorage.setItem('kr_f_einddatum', inpEnd.value);}catch(e){}
+      triggerUpdate();
+    };
+    row2.appendChild(lblVan); row2.appendChild(inpStart); row2.appendChild(sep); row2.appendChild(lblTot); row2.appendChild(inpEnd);
+
+    // Snelkoppelingen
+    var grpQuick = document.createElement('div'); grpQuick.className='kr4quick';
+    [[0,1,'Vandaag'],[0,7,'Week'],[0,14,'2 weken'],[0,30,'Maand'],[0,90,'Kwartaal'],[0,365,'Jaar']].forEach(function(r){
+      var btn = document.createElement('button');
+      btn.className = 'kr4b';
+      btn.textContent = r[2];
+      btn.type = 'button';
+      btn.onclick = function(ev){
+        ev.preventDefault(); ev.stopPropagation();
+        var nu = new Date();
+        var sd = new Date(Date.UTC(nu.getUTCFullYear(), nu.getUTCMonth(), nu.getUTCDate()+r[0]));
+        var ed = new Date(Date.UTC(nu.getUTCFullYear(), nu.getUTCMonth(), nu.getUTCDate()+r[1]));
+        window._filterStartdatum = iso(sd);
+        window._filterEinddatum = iso(ed);
+        inpStart.value = iso(sd);
+        inpEnd.value = iso(ed);
+        try{localStorage.setItem('kr_f_startdatum',iso(sd)); localStorage.setItem('kr_f_einddatum',iso(ed));}catch(e){}
+        triggerUpdate();
+      };
+      grpQuick.appendChild(btn);
+    });
+    row2.appendChild(grpQuick);
+
+    bar.appendChild(row1);
+    bar.appendChild(row2);
+
+    function updStat(){
+      var lst = (window._recrasBoekingen || []);
+      var f = window._filterBoekingen ? window._filterBoekingen(lst) : lst;
+      var pax = f.reduce(function(s,b){return s + (b.personen || 0);}, 0);
+      stat.textContent = f.length + ' boekingen · ' + pax + ' personen';
+    }
     updStat();
-    // Re-render React boekingen-lijst
-    try{ window.dispatchEvent(new Event('kr-filter-changed')); }catch(e){}
-    try{ window.dispatchEvent(new Event('resize')); }catch(e){}
+    bar._updStat = updStat;
+
+    function triggerUpdate(){
+      updStat();
+      try{ window.dispatchEvent(new Event('kr-filter-changed')); }catch(e){}
+      try{ window.dispatchEvent(new Event('resize')); }catch(e){}
+    }
+
+    return bar;
   }
 
-  // Hang aan body ZODRA body klaar is
-  function mount(){
-    if (!document.body) { setTimeout(mount, 50); return; }
-    // Wacht tot user ingelogd is (er is een '.mobile-padding' div)
-    if (!document.querySelector('.mobile-padding')) { setTimeout(mount, 300); return; }
-    // Toevoegen aan body
-    if (!document.body.contains(bar)) document.body.appendChild(bar);
-    if (!document.body.contains(fab)) document.body.appendChild(fab);
-    // Init zichtbaarheid
-    try{
-      if (localStorage.getItem('kr_f_verborgen') === '1') {
-        bar.classList.add('kr-fb3-hidden');
-        fab.classList.add('visible');
+  function probe(){
+    var container = document.querySelector('.mobile-padding > div');
+    if (!container) return;
+    var scherm = detectScherm(container);
+    var bestaand = container.querySelector('.kr-fb4');
+    
+    if (!scherm) {
+      // Geen juist scherm - verwijder bestaande balk
+      if (bestaand) bestaand.remove();
+      return;
+    }
+    
+    // Juist scherm - zorg dat balk bovenaan staat
+    if (!bestaand) {
+      var bar = buildBar();
+      container.insertBefore(bar, container.firstChild);
+    } else {
+      // Update stat (want data kan veranderen)
+      if (bestaand._updStat) bestaand._updStat();
+      // Zorg dat hij ECHT bovenaan staat (React kan hem verplaatsen)
+      if (container.firstChild !== bestaand) {
+        container.insertBefore(bestaand, container.firstChild);
       }
-    }catch(e){}
-    // Check elke 3s dat hij er nog is (als React de body nuked)
-    setInterval(function(){
-      if (!document.body.contains(bar)) document.body.appendChild(bar);
-      if (!document.body.contains(fab)) document.body.appendChild(fab);
-    }, 3000);
+    }
   }
-  if (document.readyState === 'complete' || document.readyState === 'interactive') mount();
-  else document.addEventListener('DOMContentLoaded', mount);
+
+  function start(){
+    // MutationObserver om op React re-renders te reageren
+    var mo = new MutationObserver(function(){ 
+      clearTimeout(window._krProbeTimer);
+      window._krProbeTimer = setTimeout(probe, 100);
+    });
+    var root = document.getElementById('root');
+    if (root) mo.observe(root, { childList: true, subtree: true });
+    // Initial probe
+    probe();
+    // Polling als safety-net
+    setInterval(probe, 2000);
+  }
+
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    setTimeout(start, 500);
+  } else {
+    document.addEventListener('DOMContentLoaded', function(){ setTimeout(start, 500); });
+  }
+
+  // Listen op data-refresh events
+  window.addEventListener('recras-boekingen-geladen', function(){
+    var bar = document.querySelector('.kr-fb4');
+    if (bar && bar._updStat) bar._updStat();
+  });
 })();
 </script>
 </body></html>
