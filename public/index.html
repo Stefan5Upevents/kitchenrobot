@@ -8987,6 +8987,13 @@ function LiveDashboardBlok({ outletFilter }) {
   var [waste, setWaste] = React.useState(null);
   var [sparkline, setSparkline] = React.useState([]);
   var [hoverIdx, setHoverIdx] = React.useState(null);
+  var [forecastTrend, setForecastTrend] = React.useState(null);
+  var [volume, setVolume] = React.useState([]);
+  var [outletVerdeling, setOutletVerdeling] = React.useState([]);
+  var [weekpatroon, setWeekpatroon] = React.useState([]);
+  var [margeTotaal, setMargeTotaal] = React.useState(null);
+  var [margePerPs, setMargePerPs] = React.useState([]);
+  var [productsoortYtd, setProductsoortYtd] = React.useState([]);
   var [laatstUpdate, setLaatstUpdate] = React.useState(null);
   var [fout, setFout] = React.useState(null);
 
@@ -9032,6 +9039,53 @@ function LiveDashboardBlok({ outletFilter }) {
     if (outletFilter !== 'beide') sq = sq.eq('outlet_code', outletFilter);
     sq.then(function(res) {
       if (!res.error) setSparkline(res.data || []);
+    });
+    // NIEUW: Forecast obv historie
+    window._supa.from('v_fin_forecast_trend').select('*').then(function(res) {
+      if (!res.error && res.data && res.data[0]) setForecastTrend(res.data[0]);
+    });
+    // NIEUW: Volume KPI's (huidig + vorig jaar)
+    var vbron = outletFilter === 'beide' ? 'v_fin_volume_totaal' : 'v_fin_volume_kpi';
+    var vq = window._supa.from(vbron).select('*').order('jaar', { ascending: false });
+    if (outletFilter !== 'beide') vq = vq.eq('outlet_code', outletFilter);
+    vq.then(function(res) {
+      if (!res.error) setVolume(res.data || []);
+    });
+    // NIEUW: Outlet verdeling (altijd beide)
+    window._supa.from('v_fin_outlet_verdeling').select('*').then(function(res) {
+      if (!res.error) setOutletVerdeling(res.data || []);
+    });
+    // NIEUW: Weekpatroon
+    var wpq = window._supa.from('v_fin_weekpatroon').select('*');
+    if (outletFilter !== 'beide') wpq = wpq.eq('outlet_code', outletFilter);
+    wpq.then(function(res) {
+      if (res.error) return;
+      // Aggregeer per weekdag als meerdere outlets
+      var arr = res.data || [];
+      var per = {};
+      arr.forEach(function(r){
+        var d = r.weekdag;
+        if (!per[d]) per[d] = { weekdag: d, totaal: 0, n_dagen: 0 };
+        per[d].totaal += parseFloat(r.totaal_omzet || 0);
+        per[d].n_dagen = Math.max(per[d].n_dagen, r.n_dagen || 0);
+      });
+      setWeekpatroon(Object.values(per).sort(function(a,b){ return a.weekdag - b.weekdag; }));
+    });
+    // NIEUW: Marge totaal (altijd over alles)
+    window._supa.from('v_fin_marge_totaal').select('*').then(function(res) {
+      if (!res.error && res.data && res.data[0]) setMargeTotaal(res.data[0]);
+    });
+    // NIEUW: Marge per productsoort
+    var mpq = window._supa.from('v_fin_marge_richtlijn').select('*').order('omzet', { ascending: false });
+    if (outletFilter !== 'beide') mpq = mpq.eq('outlet_code', outletFilter);
+    mpq.then(function(res) {
+      if (!res.error) setMargePerPs(res.data || []);
+    });
+    // NIEUW: Productsoort YTD met vergelijking
+    var psq = window._supa.from('v_fin_productsoort_ytd').select('*');
+    if (outletFilter !== 'beide') psq = psq.eq('outlet_code', outletFilter);
+    psq.then(function(res) {
+      if (!res.error) setProductsoortYtd(res.data || []);
     });
   }
 
@@ -9217,6 +9271,175 @@ function LiveDashboardBlok({ outletFilter }) {
               );
             })
       )
+    ),
+    // NIEUWE RIJ: Smart Forecast obv historische dag-aandeel
+    forecastTrend && React.createElement('div', { style:{marginTop:16} },
+      React.createElement('div', { style:{fontSize:10,color:C.night,fontWeight:800,letterSpacing:1,textTransform:'uppercase',marginBottom:6} }, '🔮 Slimme jaar-forecast (obv trend 2024-2025)'),
+      React.createElement('div', { style:{display:'flex',gap:8,flexWrap:'wrap'} },
+        KPICard({
+          label: 'Jaar-forecast (trend)',
+          waarde: forecastTrend.jaar_forecast_trend ? euro(forecastTrend.jaar_forecast_trend) : '...',
+          kleur: C.orange,
+          sub: 'obv YTD + historische dag-aandeel'
+        }),
+        KPICard({
+          label: 'Hist. aandeel YTD',
+          waarde: forecastTrend.hist_aandeel_ytd ? (parseFloat(forecastTrend.hist_aandeel_ytd) * 100).toFixed(1) + '%' : '...',
+          kleur: C.night,
+          sub: 'dag ' + forecastTrend.huidige_doy + ' van 365 — gem 24+25'
+        }),
+        KPICard({
+          label: 'Vorig jaar totaal',
+          waarde: forecastTrend.vorig_jaar_totaal ? euro(forecastTrend.vorig_jaar_totaal) : '-',
+          kleur: C.muted,
+          sub: 'eindstand 2025'
+        }),
+        KPICard({
+          label: 'Trend vs vj',
+          waarde: forecastTrend.jaar_forecast_trend && forecastTrend.vorig_jaar_totaal && parseFloat(forecastTrend.vorig_jaar_totaal) > 0
+            ? (((parseFloat(forecastTrend.jaar_forecast_trend) - parseFloat(forecastTrend.vorig_jaar_totaal)) / parseFloat(forecastTrend.vorig_jaar_totaal) * 100) > 0 ? '+' : '')
+              + (((parseFloat(forecastTrend.jaar_forecast_trend) - parseFloat(forecastTrend.vorig_jaar_totaal)) / parseFloat(forecastTrend.vorig_jaar_totaal) * 100)).toFixed(0) + '%'
+            : '-',
+          kleur: forecastTrend.jaar_forecast_trend && forecastTrend.vorig_jaar_totaal && parseFloat(forecastTrend.jaar_forecast_trend) > parseFloat(forecastTrend.vorig_jaar_totaal) ? C.green : C.hot,
+          sub: 'voorspelde groei'
+        })
+      )
+    ),
+    // NIEUWE RIJ: Volume KPI's
+    volume.length > 0 && (function() {
+      var huidig = volume.find(function(v){ return parseInt(v.jaar) === new Date().getFullYear(); }) || volume[0];
+      var vorig = volume.find(function(v){ return parseInt(v.jaar) === new Date().getFullYear() - 1; });
+      var trendPct = function(nu, oud) {
+        if (!oud || parseFloat(oud) === 0) return null;
+        var p = Math.round((parseFloat(nu) - parseFloat(oud)) / parseFloat(oud) * 100);
+        return { tekst: (p > 0 ? '+' : '') + p + '%', kleur: p > 0 ? C.green : p < 0 ? C.hot : C.muted, vj: oud };
+      };
+      return React.createElement('div', { style:{marginTop:14} },
+        React.createElement('div', { style:{fontSize:10,color:C.night,fontWeight:800,letterSpacing:1,textTransform:'uppercase',marginBottom:6} }, '📊 Volume KPI’s (YTD t/m zelfde punt vorig jaar)'),
+        React.createElement('div', { style:{display:'flex',gap:8,flexWrap:'wrap'} },
+          KPICard({
+            label: 'Boekingen YTD',
+            waarde: huidig.n_boekingen ? parseInt(huidig.n_boekingen).toLocaleString('nl-NL') : '0',
+            kleur: C.aqua,
+            trend: vorig ? trendPct(huidig.n_boekingen, vorig.n_boekingen) : null
+          }),
+          KPICard({
+            label: 'Gem. € per boeking',
+            waarde: huidig.omzet_per_boeking ? '€' + Math.round(parseFloat(huidig.omzet_per_boeking)).toLocaleString('nl-NL') : '-',
+            kleur: C.night,
+            trend: vorig ? trendPct(huidig.omzet_per_boeking, vorig.omzet_per_boeking) : null
+          }),
+          KPICard({
+            label: 'Gem. groepsgrootte',
+            waarde: huidig.groepsgrootte_gem ? Math.round(parseFloat(huidig.groepsgrootte_gem)) + ' pers' : '-',
+            kleur: C.night,
+            trend: vorig ? trendPct(huidig.groepsgrootte_gem, vorig.groepsgrootte_gem) : null
+          }),
+          KPICard({
+            label: '€ per persoon',
+            waarde: huidig.omzet_per_persoon ? '€' + Math.round(parseFloat(huidig.omzet_per_persoon)) : '-',
+            kleur: C.aqua,
+            trend: vorig ? trendPct(huidig.omzet_per_persoon, vorig.omzet_per_persoon) : null
+          })
+        )
+      );
+    })(),
+    // NIEUWE RIJ: Verdeling west vs weesp (alleen als beide selected)
+    outletFilter === 'beide' && outletVerdeling.length > 0 && (function() {
+      var totaal = outletVerdeling.reduce(function(s, r){ return s + parseFloat(r.ytd || 0); }, 0);
+      return React.createElement('div', { style:{marginTop:14} },
+        React.createElement('div', { style:{fontSize:10,color:C.night,fontWeight:800,letterSpacing:1,textTransform:'uppercase',marginBottom:6} }, '🏢 Verdeling per outlet'),
+        React.createElement('div', { style:{background:C.white,borderRadius:10,padding:'14px 18px',marginBottom:8} },
+          outletVerdeling.map(function(o, i) {
+            var pct = totaal > 0 ? (parseFloat(o.ytd || 0) / totaal * 100) : 0;
+            var kleur = o.outlet_code === 'west' ? '#2196F3' : o.outlet_code === 'weesp' ? '#4CAF50' : C.muted;
+            return React.createElement('div', { key:i, style:{marginBottom: i === outletVerdeling.length - 1 ? 0 : 10} },
+              React.createElement('div', { style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:4,fontSize:12} },
+                React.createElement('strong', { style:{color:C.night} }, (o.outlet_code === 'west' ? '🔵 West' : o.outlet_code === 'weesp' ? '🟢 Weesp' : o.outlet_code) + ' — ' + euro(o.ytd) + ' YTD'),
+                React.createElement('span', { style:{color:kleur,fontWeight:800} }, pct.toFixed(1) + '%')
+              ),
+              React.createElement('div', { style:{height:6,background:'#F0F4F7',borderRadius:6,overflow:'hidden'} },
+                React.createElement('div', { style:{height:'100%',width:pct + '%',background:kleur,borderRadius:6} })
+              ),
+              React.createElement('div', { style:{fontSize:10,color:C.muted,marginTop:3} }, o.boekingen_ytd + ' boekingen · laatste 30 dagen: ' + euro(o.laatste_30d))
+            );
+          })
+        )
+      );
+    })(),
+    // NIEUWE RIJ: Weekpatroon
+    weekpatroon.length > 0 && (function() {
+      var labels = ['zo','ma','di','wo','do','vr','za'];
+      var maxGem = Math.max.apply(null, weekpatroon.map(function(w){ return parseFloat(w.totaal || 0) / Math.max(w.n_dagen, 1); }));
+      if (maxGem === 0) return null;
+      return React.createElement('div', { style:{marginTop:14} },
+        React.createElement('div', { style:{fontSize:10,color:C.night,fontWeight:800,letterSpacing:1,textTransform:'uppercase',marginBottom:6} }, '📅 Weekpatroon (gem omzet per weekdag · laatste 90d)'),
+        React.createElement('div', { style:{background:C.white,borderRadius:10,padding:'14px 18px',display:'flex',gap:6,alignItems:'flex-end',height:100} },
+          weekpatroon.map(function(w, i) {
+            var gem = parseFloat(w.totaal || 0) / Math.max(w.n_dagen, 1);
+            var h = maxGem > 0 ? (gem / maxGem * 70) : 0;
+            var isWeekend = w.weekdag === 0 || w.weekdag === 6;
+            return React.createElement('div', { key:i, style:{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'flex-end',gap:4} },
+              React.createElement('div', { style:{fontSize:10,color:C.muted,fontWeight:700} }, '€' + Math.round(gem / 1000) + 'k'),
+              React.createElement('div', { style:{width:'100%',maxWidth:40,height:h + 'px',background: isWeekend ? C.orange : C.aqua,borderRadius:'6px 6px 0 0',minHeight:4} }),
+              React.createElement('div', { style:{fontSize:10,color:C.night,fontWeight:700} }, labels[w.weekdag])
+            );
+          })
+        )
+      );
+    })(),
+    // NIEUWE RIJ: Marge-richtlijn + kickback
+    margeTotaal && React.createElement('div', { style:{marginTop:14} },
+      React.createElement('div', { style:{fontSize:10,color:C.night,fontWeight:800,letterSpacing:1,textTransform:'uppercase',marginBottom:6} }, '💸 Theoretische marge (richtlijn per productsoort)'),
+      React.createElement('div', { style:{display:'flex',gap:8,flexWrap:'wrap',marginBottom:6} },
+        KPICard({
+          label: 'Bruto marge (richt)',
+          waarde: margeTotaal.bruto_marge_euro ? euro(margeTotaal.bruto_marge_euro) : '-',
+          kleur: C.green,
+          sub: margeTotaal.bruto_marge_pct ? parseFloat(margeTotaal.bruto_marge_pct).toFixed(1) + '% obv richtlijnen' : ''
+        }),
+        KPICard({
+          label: 'Kickback-retour',
+          waarde: margeTotaal.kickback_euro ? euro(margeTotaal.kickback_euro) : '-',
+          kleur: C.aqua,
+          sub: parseFloat(margeTotaal.gebruikt_kickback_pct).toFixed(2) + '% van inkoop'
+        }),
+        KPICard({
+          label: 'Netto marge',
+          waarde: margeTotaal.netto_marge_euro ? euro(margeTotaal.netto_marge_euro) : '-',
+          kleur: C.green,
+          sub: margeTotaal.netto_marge_pct ? parseFloat(margeTotaal.netto_marge_pct).toFixed(1) + '% na kickback' : ''
+        }),
+        KPICard({
+          label: 'Inkoopkosten (richt)',
+          waarde: margeTotaal.totaal_omzet && margeTotaal.bruto_marge_euro ? euro(parseFloat(margeTotaal.totaal_omzet) - parseFloat(margeTotaal.bruto_marge_euro)) : '-',
+          kleur: C.muted,
+          sub: 'theoretisch obv richt-%'
+        })
+      ),
+      React.createElement('div', { style:{fontSize:10,color:C.muted,fontStyle:'italic',marginTop:-4,marginBottom:8} }, 'Richtmarges instelbaar per productsoort in Beheer > (binnenkort). Standaard BBQ 55%, Lunch 65%, IJs 70%, etc.')
+    ),
+    // Marge per productsoort: staafjes
+    margePerPs.length > 0 && React.createElement('div', { style:{background:C.white,borderRadius:10,padding:'12px 16px',marginTop:6} },
+      React.createElement('div', { style:{fontSize:10,color:C.night,fontWeight:800,letterSpacing:1,textTransform:'uppercase',marginBottom:8} }, 'Marge per productsoort (YTD)'),
+      (function(){
+        var maxOmzet = Math.max.apply(null, margePerPs.map(function(p){ return parseFloat(p.omzet || 0); }));
+        return margePerPs.filter(function(p){ return parseFloat(p.omzet||0) > 0; }).map(function(p, i) {
+          var pct = maxOmzet > 0 ? (parseFloat(p.omzet) / maxOmzet * 100) : 0;
+          return React.createElement('div', { key:i, style:{marginBottom:8} },
+            React.createElement('div', { style:{display:'flex',justifyContent:'space-between',fontSize:11,marginBottom:3} },
+              React.createElement('strong', { style:{color:C.night} }, p.productsoort_naam + (outletFilter==='beide' ? ' (' + (p.outlet_code||'?') + ')' : '')),
+              React.createElement('span', null,
+                React.createElement('span', { style:{color:C.muted,marginRight:10} }, euro(p.omzet)),
+                React.createElement('span', { style:{color:C.green,fontWeight:700} }, parseFloat(p.netto_marge_pct||0).toFixed(1) + '% netto')
+              )
+            ),
+            React.createElement('div', { style:{height:5,background:'#F0F4F7',borderRadius:5,overflow:'hidden'} },
+              React.createElement('div', { style:{height:'100%',width:pct + '%',background:C.aqua,borderRadius:5} })
+            )
+          );
+        });
+      })()
     )
   );
 }
