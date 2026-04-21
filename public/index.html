@@ -58,22 +58,74 @@ table td { padding: 9px 12px !important; line-height: 1.45 !important; }
 /*KR-TABLE-CSS*/
 
 /* kr-table: globale consistente tabellenstijl */
-table.kr-table { font-family:inherit; }
-table.kr-table thead th { 
-  text-transform:uppercase; 
-  letter-spacing:.5px; 
-  font-size:10px; 
-  font-weight:800; 
-  color:#78909C; 
-  border-bottom:2px solid #E8EEF2; 
-  padding-top:10px !important; padding-bottom:10px !important; 
-  white-space:nowrap; 
+table.kr-table, .kr-wrap table {
+  font-family: inherit;
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 1px 0 rgba(35,71,86,.04);
 }
-table.kr-table tbody tr { transition:background .12s; }
-table.kr-table tbody tr:hover { background:#F4F8FB !important; }
-table.kr-table tbody tr:nth-child(even):not(:hover) { background:#FCFDFE; }
-table.kr-table tbody td { border-bottom:1px solid #F0F4F7; }
-table.kr-table tbody tr:last-child td { border-bottom:none; }
+table.kr-table thead, .kr-wrap table thead { background: #F4F8FB; }
+table.kr-table thead tr, .kr-wrap table thead tr { background: #F4F8FB !important; }
+table.kr-table thead th, .kr-wrap table thead th {
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  font-size: 10px;
+  font-weight: 800;
+  color: #234756;
+  background: #F4F8FB;
+  border-bottom: 2px solid #D8E8EF;
+  padding: 11px 12px !important;
+  text-align: left;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+table.kr-table tbody tr, .kr-wrap table tbody tr { transition: background .12s; }
+table.kr-table tbody tr:hover, .kr-wrap table tbody tr:hover { background: #EEF5FA !important; }
+table.kr-table tbody tr:nth-child(even):not(:hover), .kr-wrap table tbody tr:nth-child(even):not(:hover) { background: #FCFDFE; }
+table.kr-table tbody td, .kr-wrap table tbody td {
+  border-bottom: 1px solid #F0F4F7;
+  padding: 10px 12px;
+  font-size: 13px;
+  color: #234756;
+  vertical-align: middle;
+}
+table.kr-table tbody tr:last-child td, .kr-wrap table tbody tr:last-child td { border-bottom: none; }
+table.kr-table tfoot td, .kr-wrap table tfoot td {
+  background: #F8FAFC;
+  border-top: 2px solid #D8E8EF;
+  padding: 10px 12px;
+  font-weight: 800;
+  color: #234756;
+}
+/* Scroll-wrapper voor brede tabellen */
+.kr-table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 1px 0 rgba(35,71,86,.04);
+  margin-bottom: 14px;
+}
+.kr-table-scroll > table { box-shadow: none; }
+/* Lege-tabel hint */
+table.kr-table tbody tr.kr-leeg td, .kr-wrap table tbody tr.kr-leeg td {
+  text-align: center;
+  color: #78909C;
+  font-style: italic;
+  padding: 28px 12px !important;
+}
+/* Printable: kleiner en zonder stripes */
+@media print {
+  table.kr-table thead th, .kr-wrap table thead th { position: static; background: #fff !important; font-size: 9px; padding: 4px 6px !important; border-bottom: 1.5px solid #234756; }
+  table.kr-table tbody tr:nth-child(even), .kr-wrap table tbody tr:nth-child(even) { background: #fff !important; }
+  table.kr-table tbody td, .kr-wrap table tbody td { padding: 4px 6px; font-size: 10px; }
+}
 
 </style></head><body><div id='root'></div>
 <script src='https://unpkg.com/react@18/umd/react.production.min.js'></script>
