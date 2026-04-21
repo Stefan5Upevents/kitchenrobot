@@ -2211,6 +2211,8 @@ function HomeScreen({ setSc }) {
     });
   }))))))));
 }function BoekingenScreen({ setSc, setActieve }) {
+  var _krForceRender = useState(0);
+  useEffect(function(){var h=function(){_krForceRender[1](function(x){return x+1;});};window.addEventListener("kr-filter-changed",h);window.addEventListener("recras-boekingen-geladen",h);return function(){window.removeEventListener("kr-filter-changed",h);window.removeEventListener("recras-boekingen-geladen",h);};},[]);
   var [openId, setOpenId] = useState(function() {
     // v2: herstel uitgeklapte boeking na terug-navigatie
     try {
@@ -2303,7 +2305,7 @@ function HomeScreen({ setSc }) {
     var res = va.localeCompare(vb, "nl");
     return sortBoekDir === "asc" ? res : -res;
   });
-  return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: SS.pT }, "Boekingsoverzicht"), /* @__PURE__ */ React.createElement("div", { style: SS.pD }, boekingen.length, " boekingen \u2022 klik op kolomnaam om te sorteren"), /* @__PURE__ */ React.createElement("div", { style: SS.card }, /* @__PURE__ */ React.createElement("div", { style: { overflowX: "auto" } }, /* @__PURE__ */ React.createElement("table", { className:"kr-table", style: SS.tbl }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", { style: SS.th }), [["id", "ID"], ["naam", "Groepsnaam"], ["dag", "Dag"], ["locatie", "Locatie / Plaats"], ["pers", "Pers."], ["prod", "Recras producten"]].map(function(h) {
+  return /* @__PURE__ */ React.createElement("div", null, window._FilterBar ? /* @__PURE__ */ React.createElement(window._FilterBar, { key: "krfb" }) : null, /* @__PURE__ */ React.createElement("div", { style: SS.pT }, "Boekingsoverzicht"), /* @__PURE__ */ React.createElement("div", { style: SS.pD }, boekingen.length, " boekingen \u2022 klik op kolomnaam om te sorteren"), /* @__PURE__ */ React.createElement("div", { style: SS.card }, /* @__PURE__ */ React.createElement("div", { style: { overflowX: "auto" } }, /* @__PURE__ */ React.createElement("table", { className:"kr-table", style: SS.tbl }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", { style: SS.th }), [["id", "ID"], ["naam", "Groepsnaam"], ["dag", "Dag"], ["locatie", "Locatie / Plaats"], ["pers", "Pers."], ["prod", "Recras producten"]].map(function(h) {
     var klik = ["naam", "dag", "locatie"].includes(h[0]);
     return /* @__PURE__ */ React.createElement(
       "th",
@@ -3877,6 +3879,8 @@ function BuffetScreen({ actieve, setActieve, setSc }) {
 );
 }
 function OpzetScreen() {
+  var _krForceRenderO = useState(0);
+  useEffect(function(){var h=function(){_krForceRenderO[1](function(x){return x+1;});};window.addEventListener("kr-filter-changed",h);window.addEventListener("recras-boekingen-geladen",h);return function(){window.removeEventListener("kr-filter-changed",h);window.removeEventListener("recras-boekingen-geladen",h);};},[]);
   var [psId, setPsId] = useState("");
   var [datumVan, setDatumVan] = useState("");
   var [datumTot, setDatumTot] = useState("");
@@ -3971,7 +3975,7 @@ function OpzetScreen() {
   }, [psId, boekingen.length, datumVan, datumTot]);
 
 
-  return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 } }, /* @__PURE__ */ React.createElement("div", { style: SS.pT }, "Opzetoverzicht"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6 } }, /* @__PURE__ */ React.createElement("button", { style: btnSG, className: "no-print", onClick: function() {
+  return /* @__PURE__ */ React.createElement("div", null, window._FilterBar ? /* @__PURE__ */ React.createElement(window._FilterBar, { key: "krfb" }) : null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 } }, /* @__PURE__ */ React.createElement("div", { style: SS.pT }, "Opzetoverzicht"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6 } }, /* @__PURE__ */ React.createElement("button", { style: btnSG, className: "no-print", onClick: function() {
     var origTitle = document.title;
     var psObj = (window._stamProductgroepen || []).reduce(function(found, pg2) {
       return found || (pg2.soorten || []).find(function(s) {
@@ -14074,4 +14078,143 @@ function ChefScreen({ setSc, setActieve }) {
 
 
 
+
+<script id="kr-filterbar-component">
+(function(){
+  if (window._krFilterBar6) return; window._krFilterBar6 = true;
+
+  function iso(d){try{return d.toISOString().split('T')[0];}catch(e){return '';}}
+  function parseIso(s){if(!s)return null;var p=(s||'').split('-');if(p.length!==3)return null;return new Date(Date.UTC(+p[0],(+p[1])-1,+p[2]));}
+
+  // Init defaults in localStorage
+  try {
+    if (!localStorage.getItem('kr_f_outlet')) localStorage.setItem('kr_f_outlet', 'alle');
+    if (!localStorage.getItem('kr_f_startdatum')) {
+      var nu = new Date();
+      localStorage.setItem('kr_f_startdatum', iso(new Date(Date.UTC(nu.getUTCFullYear(), nu.getUTCMonth(), nu.getUTCDate()))));
+      localStorage.setItem('kr_f_einddatum', iso(new Date(Date.UTC(nu.getUTCFullYear(), nu.getUTCMonth(), nu.getUTCDate()+7))));
+    }
+    window._filterOutlet = localStorage.getItem('kr_f_outlet') || 'alle';
+    window._filterStartdatum = localStorage.getItem('kr_f_startdatum') || '';
+    window._filterEinddatum = localStorage.getItem('kr_f_einddatum') || '';
+  } catch(e){}
+
+  // Filter functie
+  window._filterBoekingen = function(lijst){
+    var o = window._filterOutlet || 'alle';
+    var sd = parseIso(window._filterStartdatum);
+    var ed = parseIso(window._filterEinddatum);
+    if (ed) ed = new Date(ed.getTime() + 86399999);
+    return (lijst || []).filter(function(b){
+      if (o !== 'alle' && b.outlet_code !== o && b.outlet_code !== 'gemengd') return false;
+      if (!b.deadline) return true;
+      var d = new Date(b.deadline);
+      if (sd && d < sd) return false;
+      if (ed && d > ed) return false;
+      return true;
+    });
+  };
+
+  // React FilterBar component
+  window._FilterBar = function FilterBar() {
+    if (!window.React) return null;
+    var R = window.React.createElement;
+    var useState = window.React.useState;
+    var useEffect = window.React.useEffect;
+
+    var outletState = useState(window._filterOutlet || 'alle');
+    var outlet = outletState[0]; var setOutlet = outletState[1];
+    var sdState = useState(window._filterStartdatum || '');
+    var startDatum = sdState[0]; var setStartDatum = sdState[1];
+    var edState = useState(window._filterEinddatum || '');
+    var eindDatum = edState[0]; var setEindDatum = edState[1];
+
+    // Sync state -> globals + dispatch event
+    useEffect(function(){
+      window._filterOutlet = outlet;
+      window._filterStartdatum = startDatum;
+      window._filterEinddatum = eindDatum;
+      try {
+        localStorage.setItem('kr_f_outlet', outlet);
+        localStorage.setItem('kr_f_startdatum', startDatum);
+        localStorage.setItem('kr_f_einddatum', eindDatum);
+      } catch(e){}
+      try { window.dispatchEvent(new Event('kr-filter-changed')); } catch(e){}
+    }, [outlet, startDatum, eindDatum]);
+
+    var barStyle = {
+      display:'flex',flexDirection:'column',gap:10,
+      background:'linear-gradient(135deg,#002D41,#1a3a4a)',color:'#fff',
+      borderRadius:12,padding:'14px 18px',marginBottom:16,
+      boxShadow:'0 2px 10px rgba(0,45,65,0.18)',fontFamily:'inherit'
+    };
+    var rowStyle = {display:'flex',gap:10,alignItems:'center',flexWrap:'wrap'};
+    var lblStyle = {fontSize:10.5,fontWeight:700,opacity:0.8,textTransform:'uppercase',letterSpacing:'0.5px'};
+    var grpStyle = {display:'flex',gap:3,background:'rgba(255,255,255,0.08)',borderRadius:8,padding:3};
+    function btnStyle(on){return{
+      background:on?'#1AA6B7':'transparent',border:'none',color:'#fff',
+      padding:'7px 14px',borderRadius:6,cursor:'pointer',
+      fontSize:12.5,fontWeight:600,fontFamily:'inherit',whiteSpace:'nowrap'
+    };}
+    var inputStyle = {
+      background:'rgba(255,255,255,0.95)',color:'#002D41',border:'none',
+      borderRadius:7,padding:'7px 10px',fontSize:12.5,fontWeight:700,
+      fontFamily:'inherit',cursor:'pointer',minWidth:145
+    };
+
+    var outlets = [['alle','🌐 Alle'],['west','🏭 West'],['weesp','🏡 Weesp']];
+    var quicks = [[0,1,'Vandaag'],[0,7,'Week'],[0,14,'2 wk'],[0,30,'Maand'],[0,90,'Kwartaal'],[0,365,'Jaar']];
+
+    function setQuick(r){
+      var nu = new Date();
+      var sd = iso(new Date(Date.UTC(nu.getUTCFullYear(),nu.getUTCMonth(),nu.getUTCDate()+r[0])));
+      var ed = iso(new Date(Date.UTC(nu.getUTCFullYear(),nu.getUTCMonth(),nu.getUTCDate()+r[1])));
+      setStartDatum(sd); setEindDatum(ed);
+    }
+
+    var lst = window._recrasBoekingen || [];
+    var f = window._filterBoekingen ? window._filterBoekingen(lst) : lst;
+    var pax = f.reduce(function(s,b){return s+(b.personen||0);},0);
+    var statTxt = f.length + ' boekingen · ' + pax + ' personen';
+
+    return R('div', { style: barStyle },
+      R('div', { style: rowStyle },
+        R('span', { style: lblStyle }, '🌟 Outlet'),
+        R('div', { style: grpStyle },
+          outlets.map(function(o){
+            return R('button', {
+              key: o[0], type: 'button',
+              style: btnStyle(outlet === o[0]),
+              onClick: function(){ setOutlet(o[0]); }
+            }, o[1]);
+          })
+        ),
+        R('span', { style: {marginLeft:'auto',fontSize:12,color:'#1AA6B7',fontWeight:800,whiteSpace:'nowrap'} }, statTxt)
+      ),
+      R('div', { style: rowStyle },
+        R('span', { style: lblStyle }, '📅 Van'),
+        R('input', {
+          type: 'date', value: startDatum, style: inputStyle,
+          onChange: function(e){ setStartDatum(e.target.value); }
+        }),
+        R('span', { style: {color:'rgba(255,255,255,0.4)',fontSize:14} }, '→'),
+        R('span', { style: lblStyle }, 'Tot'),
+        R('input', {
+          type: 'date', value: eindDatum, style: inputStyle,
+          onChange: function(e){ setEindDatum(e.target.value); }
+        }),
+        R('div', { style: grpStyle },
+          quicks.map(function(q){
+            return R('button', {
+              key: q[2], type: 'button',
+              style: btnStyle(false),
+              onClick: function(){ setQuick(q); }
+            }, q[2]);
+          })
+        )
+      )
+    );
+  };
+})();
+</script>
 </body></html>
