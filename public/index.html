@@ -14071,20 +14071,36 @@ function ChefScreen({ setSc, setActieve }) {
 
 </script>
 
-<script id="kr-filter-v2">
-(function(){
-  if (window._krFilterV2Loaded) return; window._krFilterV2Loaded = true;
 
-  // CSS
+<script id="kr-filter-v3">
+(function(){
+  if (window._krFilterV3) return; window._krFilterV3 = true;
+
   var css = document.createElement('style');
-  css.textContent = ".kr-fb2{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:linear-gradient(135deg,#002D41,#1a3a4a);color:#fff;border-radius:12px;padding:12px 16px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,45,65,0.15)}.kr-fb2 .kfbl{font-size:10.5px;font-weight:700;opacity:0.75;text-transform:uppercase;letter-spacing:0.5px}.kr-fb2 .kfbg{display:flex;gap:3px;background:rgba(255,255,255,0.08);border-radius:8px;padding:3px}.kr-fb2 .kfbb{background:transparent;border:none;color:#fff;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;font-family:inherit;transition:all 0.15s;white-space:nowrap}.kr-fb2 .kfbb:hover{background:rgba(255,255,255,0.12)}.kr-fb2 .kfbb.on{background:#1AA6B7;color:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.2)}.kr-fb2 input[type=date]{background:rgba(255,255,255,0.95);color:#002D41;border:none;border-radius:6px;padding:6px 8px;font-size:11.5px;font-weight:600;font-family:inherit;cursor:pointer;min-width:135px}.kr-fb2 input[type=date]:focus{outline:2px solid #1AA6B7}.kr-fb2 .kfbsep{color:rgba(255,255,255,0.4);font-size:14px}.kr-fb2 .kfbstat{margin-left:auto;font-size:12px;color:#1AA6B7;font-weight:800;white-space:nowrap}.kr-fb2 .kfbreset{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;font-family:inherit}.kr-fb2 .kfbreset:hover{background:rgba(255,255,255,0.2)}";
+  css.textContent = [
+    '.kr-fb3{position:fixed;top:12px;right:12px;z-index:99999;display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:linear-gradient(135deg,#002D41,#1a3a4a);color:#fff;border-radius:12px;padding:10px 14px;box-shadow:0 4px 20px rgba(0,0,0,0.25);font-family:"Inter",sans-serif;font-size:12px;max-width:calc(100vw - 30px)}',
+    '.kr-fb3.kr-fb3-hidden{display:none}',
+    '.kr-fb3 .kr3l{font-size:10px;font-weight:700;opacity:0.7;text-transform:uppercase;letter-spacing:0.5px}',
+    '.kr-fb3 .kr3g{display:flex;gap:3px;background:rgba(255,255,255,0.08);border-radius:7px;padding:2px}',
+    '.kr-fb3 .kr3b{background:transparent;border:none;color:#fff;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;font-family:inherit;white-space:nowrap}',
+    '.kr-fb3 .kr3b:hover{background:rgba(255,255,255,0.12)}',
+    '.kr-fb3 .kr3b.on{background:#1AA6B7;color:#fff}',
+    '.kr-fb3 input[type=date]{background:rgba(255,255,255,0.95);color:#002D41;border:none;border-radius:6px;padding:5px 7px;font-size:11.5px;font-weight:600;font-family:inherit;cursor:pointer;min-width:130px}',
+    '.kr-fb3 .kr3sep{color:rgba(255,255,255,0.4);font-size:13px;margin:0 2px}',
+    '.kr-fb3 .kr3stat{font-size:11.5px;color:#1AA6B7;font-weight:800;white-space:nowrap;padding:0 6px}',
+    '.kr-fb3 .kr3close{background:rgba(255,255,255,0.15);border:none;color:#fff;width:22px;height:22px;border-radius:50%;cursor:pointer;font-size:13px;font-weight:700;padding:0;display:flex;align-items:center;justify-content:center}',
+    '.kr-fb3 .kr3close:hover{background:rgba(255,59,48,0.8)}',
+    '.kr-fb3-fab{position:fixed;top:12px;right:12px;z-index:99998;background:#002D41;color:#fff;border:none;border-radius:50%;width:44px;height:44px;cursor:pointer;font-size:20px;box-shadow:0 4px 12px rgba(0,0,0,0.25);display:none;align-items:center;justify-content:center}',
+    '.kr-fb3-fab.visible{display:flex}',
+    '@media (max-width:768px){.kr-fb3{top:auto;bottom:12px;right:12px;left:12px;max-width:none;flex-direction:column;align-items:stretch}.kr-fb3 .kr3g{flex-wrap:wrap}}',
+  ].join('
+');
   document.head.appendChild(css);
 
   function iso(d){try{return d.toISOString().split('T')[0];}catch(e){return '';}}
-  function parseIso(s){if(!s)return null;var p=s.split('-');return new Date(Date.UTC(+p[0],(+p[1])-1,+p[2]));}
-  function daysDiff(a,b){return Math.round((b.getTime()-a.getTime())/86400000);}
+  function parseIso(s){if(!s)return null;var p=s.split('-');if(p.length!==3)return null;return new Date(Date.UTC(+p[0],(+p[1])-1,+p[2]));}
 
-  // Default: komende week
+  // Defaults laden
   function loadState(){
     try{
       var o=localStorage.getItem('kr_f_outlet')||'alle';
@@ -14102,14 +14118,14 @@ function ChefScreen({ setSc, setActieve }) {
   }
   loadState();
 
-  // Override _filterBoekingen met date-range variant
+  // Filter functie
   window._filterBoekingen=function(lijst){
     var o=window._filterOutlet||'alle';
     var sd=parseIso(window._filterStartdatum);
     var ed=parseIso(window._filterEinddatum);
-    if(ed)ed=new Date(ed.getTime()+86399999); // eind-dag inclusief
+    if(ed)ed=new Date(ed.getTime()+86399999);
     return (lijst||[]).filter(function(b){
-      if(o!=='alle'&&b.outlet_code!==o)return false;
+      if(o!=='alle'&&b.outlet_code!==o&&!(o==='alle_keukens'&&(b.outlet_code==='west'||b.outlet_code==='weesp'||b.outlet_code==='gemengd')))return false;
       if(!b.deadline)return true;
       var d=new Date(b.deadline);
       if(sd&&d<sd)return false;
@@ -14118,125 +14134,144 @@ function ChefScreen({ setSc, setActieve }) {
     });
   };
 
-  function buildBar(host){
-    if(host.querySelector('.kr-fb2'))return;
-    var bar=document.createElement('div');bar.className='kr-fb2';
+  // Bouw de balk ALTIJD en hang aan document.body
+  var bar = document.createElement('div');
+  bar.className = 'kr-fb3';
 
-    // Outlet selector
-    var lblO=document.createElement('span');lblO.className='kfbl';lblO.textContent='Outlet';
-    var grpO=document.createElement('div');grpO.className='kfbg';
-    [['alle','🌐 Alle'],['west','🏭 West'],['weesp','🏡 Weesp']].forEach(function(o){
-      var btn=document.createElement('button');btn.className='kfbb'+(window._filterOutlet===o[0]?' on':'');btn.textContent=o[1];
-      btn.onclick=function(){window._filterOutlet=o[0];try{localStorage.setItem('kr_f_outlet',o[0]);}catch(e){}triggerUpdate();};
-      grpO.appendChild(btn);
+  // Outlet
+  var lblO = document.createElement('span'); lblO.className='kr3l'; lblO.textContent='Outlet';
+  var grpO = document.createElement('div'); grpO.className='kr3g';
+  var outletBtns = {};
+  [['alle','🌐'],['west','West'],['weesp','Weesp']].forEach(function(o){
+    var btn = document.createElement('button');
+    btn.className = 'kr3b' + (window._filterOutlet===o[0]?' on':'');
+    btn.textContent = o[1];
+    btn.type = 'button';
+    btn.addEventListener('click', function(ev){
+      ev.preventDefault(); ev.stopPropagation();
+      window._filterOutlet = o[0];
+      try{localStorage.setItem('kr_f_outlet',o[0]);}catch(e){}
+      Object.keys(outletBtns).forEach(function(k){ outletBtns[k].className = 'kr3b' + (k===o[0]?' on':''); });
+      triggerUpdate();
     });
+    outletBtns[o[0]] = btn;
+    grpO.appendChild(btn);
+  });
 
-    // Datum-range pickers
-    var lblD=document.createElement('span');lblD.className='kfbl';lblD.textContent='Van';
-    var inpStart=document.createElement('input');inpStart.type='date';inpStart.value=window._filterStartdatum||'';
-    inpStart.onchange=function(){window._filterStartdatum=inpStart.value;try{localStorage.setItem('kr_f_startdatum',inpStart.value);}catch(e){}triggerUpdate();};
-    var sep=document.createElement('span');sep.className='kfbsep';sep.textContent='→';
-    var lblD2=document.createElement('span');lblD2.className='kfbl';lblD2.textContent='Tot';
-    var inpEnd=document.createElement('input');inpEnd.type='date';inpEnd.value=window._filterEinddatum||'';
-    inpEnd.onchange=function(){window._filterEinddatum=inpEnd.value;try{localStorage.setItem('kr_f_einddatum',inpEnd.value);}catch(e){}triggerUpdate();};
+  // Datum pickers
+  var lblVan = document.createElement('span'); lblVan.className='kr3l'; lblVan.textContent='Van';
+  var inpStart = document.createElement('input');
+  inpStart.type = 'date';
+  inpStart.value = window._filterStartdatum || '';
+  inpStart.addEventListener('change', function(){
+    window._filterStartdatum = inpStart.value;
+    try{localStorage.setItem('kr_f_startdatum', inpStart.value);}catch(e){}
+    triggerUpdate();
+  });
 
-    // Snelkoppelingen
-    var lblS=document.createElement('span');lblS.className='kfbl';lblS.textContent='Snel';
-    var grpS=document.createElement('div');grpS.className='kfbg';
-    [[0,7,'Week'],[0,14,'2wk'],[0,30,'Maand'],[0,90,'Kwartaal'],[0,365,'Jaar'],[-7,7,'±Week']].forEach(function(r){
-      var btn=document.createElement('button');btn.className='kfbb';btn.textContent=r[2];
-      btn.onclick=function(){
-        var nu=new Date();
-        var sd=new Date(Date.UTC(nu.getUTCFullYear(),nu.getUTCMonth(),nu.getUTCDate()+r[0]));
-        var ed=new Date(Date.UTC(nu.getUTCFullYear(),nu.getUTCMonth(),nu.getUTCDate()+r[1]));
-        window._filterStartdatum=iso(sd);window._filterEinddatum=iso(ed);
-        try{localStorage.setItem('kr_f_startdatum',iso(sd));localStorage.setItem('kr_f_einddatum',iso(ed));}catch(e){}
-        inpStart.value=iso(sd);inpEnd.value=iso(ed);
-        triggerUpdate();
-      };
-      grpS.appendChild(btn);
+  var sep = document.createElement('span'); sep.className='kr3sep'; sep.textContent='→';
+  var lblTot = document.createElement('span'); lblTot.className='kr3l'; lblTot.textContent='Tot';
+  var inpEnd = document.createElement('input');
+  inpEnd.type = 'date';
+  inpEnd.value = window._filterEinddatum || '';
+  inpEnd.addEventListener('change', function(){
+    window._filterEinddatum = inpEnd.value;
+    try{localStorage.setItem('kr_f_einddatum', inpEnd.value);}catch(e){}
+    triggerUpdate();
+  });
+
+  // Snelkoppelingen
+  var grpS = document.createElement('div'); grpS.className='kr3g';
+  [[0,7,'Wk'],[0,30,'Mnd'],[0,365,'Jaar'],[-14,14,'±2wk']].forEach(function(r){
+    var btn = document.createElement('button');
+    btn.className = 'kr3b';
+    btn.textContent = r[2];
+    btn.type = 'button';
+    btn.addEventListener('click', function(ev){
+      ev.preventDefault(); ev.stopPropagation();
+      var nu = new Date();
+      var sd = new Date(Date.UTC(nu.getUTCFullYear(), nu.getUTCMonth(), nu.getUTCDate()+r[0]));
+      var ed = new Date(Date.UTC(nu.getUTCFullYear(), nu.getUTCMonth(), nu.getUTCDate()+r[1]));
+      window._filterStartdatum = iso(sd);
+      window._filterEinddatum = iso(ed);
+      inpStart.value = iso(sd);
+      inpEnd.value = iso(ed);
+      try{localStorage.setItem('kr_f_startdatum',iso(sd)); localStorage.setItem('kr_f_einddatum',iso(ed));}catch(e){}
+      triggerUpdate();
     });
+    grpS.appendChild(btn);
+  });
 
-    // Stats
-    var stat=document.createElement('span');stat.className='kfbstat';
-    function updStat(){
-      var lst=(window._recrasBoekingen||[]);
-      var f=window._filterBoekingen?window._filterBoekingen(lst):lst;
-      var pax=f.reduce(function(s,b){return s+(b.personen||0);},0);
-      stat.textContent=f.length+' boekingen · '+pax+' pers';
-    }
+  // Stat
+  var stat = document.createElement('span'); stat.className='kr3stat';
+  function updStat(){
+    var lst = (window._recrasBoekingen || []);
+    var f = window._filterBoekingen ? window._filterBoekingen(lst) : lst;
+    var pax = f.reduce(function(s,b){return s + (b.personen || 0);}, 0);
+    stat.textContent = f.length + ' · ' + pax + ' pers';
+  }
+  updStat();
+  window.addEventListener('recras-boekingen-geladen', updStat);
+
+  // Close-button (hide balk, toon FAB)
+  var closeBtn = document.createElement('button'); closeBtn.className='kr3close'; closeBtn.textContent='×'; closeBtn.type='button'; closeBtn.title='Verberg filter';
+  closeBtn.addEventListener('click', function(ev){
+    ev.preventDefault(); ev.stopPropagation();
+    bar.classList.add('kr-fb3-hidden');
+    fab.classList.add('visible');
+    try{localStorage.setItem('kr_f_verborgen','1');}catch(e){}
+  });
+
+  // Floating Action Button om balk weer te tonen
+  var fab = document.createElement('button');
+  fab.className = 'kr-fb3-fab';
+  fab.textContent = '🎛';
+  fab.type = 'button';
+  fab.title = 'Filter tonen';
+  fab.addEventListener('click', function(ev){
+    ev.preventDefault(); ev.stopPropagation();
+    bar.classList.remove('kr-fb3-hidden');
+    fab.classList.remove('visible');
+    try{localStorage.setItem('kr_f_verborgen','0');}catch(e){}
+  });
+
+  // Assemble
+  bar.appendChild(lblO); bar.appendChild(grpO);
+  bar.appendChild(lblVan); bar.appendChild(inpStart); bar.appendChild(sep); bar.appendChild(lblTot); bar.appendChild(inpEnd);
+  bar.appendChild(grpS);
+  bar.appendChild(stat);
+  bar.appendChild(closeBtn);
+
+  function triggerUpdate(){
     updStat();
-    window.addEventListener('recras-boekingen-geladen',updStat);
-
-    function triggerUpdate(){
-      updStat();
-      // Forceer re-render door React
-      window.dispatchEvent(new Event('kr-filter-changed'));
-      setTimeout(function(){ window.dispatchEvent(new Event('resize')); },30);
-    }
-
-    bar.appendChild(lblO);bar.appendChild(grpO);
-    bar.appendChild(lblD);bar.appendChild(inpStart);bar.appendChild(sep);bar.appendChild(lblD2);bar.appendChild(inpEnd);
-    bar.appendChild(lblS);bar.appendChild(grpS);
-    bar.appendChild(stat);
-    host.insertBefore(bar,host.firstChild);
+    // Re-render React boekingen-lijst
+    try{ window.dispatchEvent(new Event('kr-filter-changed')); }catch(e){}
+    try{ window.dispatchEvent(new Event('resize')); }catch(e){}
   }
 
-  function shouldShow(container){
-    // Toon op Boekingen, Home (import), Chef, Tijden, Opzet - elke sc die boekingen toont
-    // Heuristiek: kijk of er een kr-table is met relevante koptekst, OF of er een <h2> met 'Boeking'/'Import'/'Chef'/'Opzet'/'Tijden' is
-    var hs = container.querySelectorAll('h1, h2, h3');
-    for (var i=0; i<hs.length; i++) {
-      var t = (hs[i].textContent || '').toLowerCase();
-      if (t.indexOf('boeking')>=0 || t.indexOf('chef')>=0 || t.indexOf('opzet')>=0 || t.indexOf('tijden')>=0 || t.indexOf('buffet')>=0 || t.indexOf('import')>=0 || t.indexOf('kitchen')>=0) return true;
-    }
-    // Als er tabellen zijn met een Groepsnaam/Deadline/Recras-header
-    var tables = container.querySelectorAll('table');
-    for (var j=0; j<tables.length; j++) {
-      var h = (tables[j].querySelector('thead') || {}).textContent || '';
-      if (h.indexOf('Groepsnaam')>=0 || h.indexOf('Deadline')>=0 || h.indexOf('Recras')>=0) return true;
-    }
-    // Ook op home-scherm zonder data
-    if (container.textContent && container.textContent.indexOf('KitchenRobot') >= 0) return true;
-    return false;
+  // Hang aan body ZODRA body klaar is
+  function mount(){
+    if (!document.body) { setTimeout(mount, 50); return; }
+    // Wacht tot user ingelogd is (er is een '.mobile-padding' div)
+    if (!document.querySelector('.mobile-padding')) { setTimeout(mount, 300); return; }
+    // Toevoegen aan body
+    if (!document.body.contains(bar)) document.body.appendChild(bar);
+    if (!document.body.contains(fab)) document.body.appendChild(fab);
+    // Init zichtbaarheid
+    try{
+      if (localStorage.getItem('kr_f_verborgen') === '1') {
+        bar.classList.add('kr-fb3-hidden');
+        fab.classList.add('visible');
+      }
+    }catch(e){}
+    // Check elke 3s dat hij er nog is (als React de body nuked)
+    setInterval(function(){
+      if (!document.body.contains(bar)) document.body.appendChild(bar);
+      if (!document.body.contains(fab)) document.body.appendChild(fab);
+    }, 3000);
   }
-
-  function probe(){
-    // Zoek de hoofd-content div
-    var container = document.querySelector('.mobile-padding > div');
-    if (!container) return;
-    // Verwijder ALLE oude filter-balken (v1 kr-filter-bar en oude v2)
-    document.querySelectorAll('.kr-filter-bar, .kr-fb2').forEach(function(el){ el.remove(); });
-    if (shouldShow(container)) {
-      buildBar(container);
-    }
-  }
-
-  var lastSc = null;
-  function pollSc(){
-    // Haal sc uit de actieve nav-knop of header-title
-    try {
-      var hdr = document.querySelector('[class*="header"], [style*="KitchenRobot"]');
-      var sig = (document.querySelector('.mobile-padding > div') || {}).firstElementChild;
-      var key = (sig && sig.textContent || '').slice(0, 80);
-      if (key !== lastSc) { lastSc = key; probe(); }
-    } catch(e) {}
-  }
-
-  // Observer + polling als backup
-  var mo = new MutationObserver(function(){ setTimeout(probe, 80); });
-  function start(){
-    var r = document.getElementById('root');
-    if (r) mo.observe(r, { childList: true, subtree: true });
-    setInterval(pollSc, 500);
-    probe();
-  }
-
-  if (document.readyState === 'complete' || document.readyState === 'interactive') setTimeout(start, 300);
-  else document.addEventListener('DOMContentLoaded', function(){ setTimeout(start, 300); });
-
-  // Re-render triggeren bij filter-wijziging
-  window.addEventListener('kr-filter-changed', function(){ setTimeout(probe, 30); });
+  if (document.readyState === 'complete' || document.readyState === 'interactive') mount();
+  else document.addEventListener('DOMContentLoaded', mount);
 })();
 </script>
 </body></html>
