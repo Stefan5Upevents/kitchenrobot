@@ -14073,24 +14073,26 @@ function ChefScreen({ setSc, setActieve }) {
 
 
 
-<script id="kr-filter-v4">
+
+<script id="kr-filter-v5">
 (function(){
-  if (window._krFilterV4) return; window._krFilterV4 = true;
+  if (window._krFilterV5) return; window._krFilterV5 = true;
+  console.log('[KR-Filter v5] init');
 
   var css = document.createElement('style');
   css.textContent = [
-    '.kr-fb4{display:flex;flex-direction:column;gap:10px;background:linear-gradient(135deg,#002D41,#1a3a4a);color:#fff;border-radius:12px;padding:14px 18px;margin-bottom:16px;box-shadow:0 2px 10px rgba(0,45,65,0.15);font-family:inherit}',
-    '.kr-fb4 .kr4row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}',
-    '.kr-fb4 .kr4l{font-size:10.5px;font-weight:700;opacity:0.8;text-transform:uppercase;letter-spacing:0.5px;margin-right:2px}',
-    '.kr-fb4 .kr4g{display:flex;gap:3px;background:rgba(255,255,255,0.08);border-radius:8px;padding:3px}',
-    '.kr-fb4 .kr4b{background:transparent;border:none;color:#fff;padding:7px 14px;border-radius:6px;cursor:pointer;font-size:12.5px;font-weight:600;font-family:inherit;white-space:nowrap;transition:all 0.15s}',
-    '.kr-fb4 .kr4b:hover{background:rgba(255,255,255,0.15)}',
-    '.kr-fb4 .kr4b.on{background:#1AA6B7;color:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.25)}',
-    '.kr-fb4 input[type=date]{background:rgba(255,255,255,0.95);color:#002D41;border:none;border-radius:7px;padding:7px 10px;font-size:12.5px;font-weight:700;font-family:inherit;cursor:pointer;min-width:145px}',
-    '.kr-fb4 input[type=date]:focus{outline:2px solid #1AA6B7;outline-offset:1px}',
-    '.kr-fb4 .kr4sep{color:rgba(255,255,255,0.4);font-size:14px}',
-    '.kr-fb4 .kr4stat{margin-left:auto;font-size:12px;color:#1AA6B7;font-weight:800;white-space:nowrap}',
-    '.kr-fb4 .kr4quick{display:flex;gap:3px;background:rgba(255,255,255,0.08);border-radius:7px;padding:3px}',
+    '.kr-fb5{display:flex;flex-direction:column;gap:10px;background:linear-gradient(135deg,#002D41,#1a3a4a);color:#fff;border-radius:12px;padding:14px 18px;margin-bottom:16px;box-shadow:0 2px 10px rgba(0,45,65,0.18);font-family:inherit;position:relative;z-index:10}',
+    '.kr-fb5 .kr5row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}',
+    '.kr-fb5 .kr5l{font-size:10.5px;font-weight:700;opacity:0.8;text-transform:uppercase;letter-spacing:0.5px;margin-right:2px}',
+    '.kr-fb5 .kr5g{display:flex;gap:3px;background:rgba(255,255,255,0.08);border-radius:8px;padding:3px}',
+    '.kr-fb5 .kr5b{background:transparent;border:none;color:#fff;padding:7px 14px;border-radius:6px;cursor:pointer;font-size:12.5px;font-weight:600;font-family:inherit;white-space:nowrap;transition:all 0.15s}',
+    '.kr-fb5 .kr5b:hover{background:rgba(255,255,255,0.15)}',
+    '.kr-fb5 .kr5b.on{background:#1AA6B7;color:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.25)}',
+    '.kr-fb5 input[type=date]{background:rgba(255,255,255,0.95);color:#002D41;border:none;border-radius:7px;padding:7px 10px;font-size:12.5px;font-weight:700;font-family:inherit;cursor:pointer;min-width:145px}',
+    '.kr-fb5 input[type=date]:focus{outline:2px solid #1AA6B7;outline-offset:1px}',
+    '.kr-fb5 .kr5sep{color:rgba(255,255,255,0.4);font-size:14px}',
+    '.kr-fb5 .kr5stat{margin-left:auto;font-size:12px;color:#1AA6B7;font-weight:800;white-space:nowrap}',
+    '.kr-fb5 .kr5quick{display:flex;gap:3px;background:rgba(255,255,255,0.08);border-radius:7px;padding:3px}',
   ].join('
 ');
   document.head.appendChild(css);
@@ -14130,46 +14132,27 @@ function ChefScreen({ setSc, setActieve }) {
     });
   };
 
-  // Detecteer welk scherm actief is op basis van content-heuristiek
-  function detectScherm(container){
-    var txt = (container.textContent || '').toLowerCase();
-    // Zoek specifieke woorden die op elk scherm voorkomen
-    // Boekingen-scherm: heeft 'groepsnaam' of 'recras boekingen' of de tabel met 'Deadline'
-    var heeftBoekingTabel = !!container.querySelector('table.kr-table thead') &&
-      (container.querySelector('table.kr-table thead').textContent || '').match(/groepsnaam|deadline|recras/i);
-    // Buffet-scherm: heeft h2 met Buffetformulieren
-    var heeftBuffet = /buffetformulier/i.test(txt) && /formulier|menu/i.test(txt);
-    // Opzet-scherm: heeft 'Opzetoverzicht' of 'Opzet' als header
-    var heeftOpzet = /opzetoverzicht/i.test(txt) || /opzet[^l]/i.test(txt);
-    // Home scherm (import): heeft 'Import' heading
-    var heeftImport = /import/i.test(txt) && /boeking|geïmporteerde/i.test(txt);
-    
-    if (heeftBoekingTabel) return 'boekingen';
-    if (heeftBuffet) return 'buffet';
-    if (heeftOpzet) return 'opzet';
-    if (heeftImport) return 'home';
-    return null;
-  }
-
   function buildBar(){
     var bar = document.createElement('div');
-    bar.className = 'kr-fb4';
+    bar.className = 'kr-fb5';
+    bar.setAttribute('data-kr-filter', '1');
 
-    // Rij 1: Outlet
-    var row1 = document.createElement('div'); row1.className='kr4row';
-    var lblO = document.createElement('span'); lblO.className='kr4l'; lblO.textContent='Outlet';
-    var grpO = document.createElement('div'); grpO.className='kr4g';
+    // Rij 1: Outlet + stat
+    var row1 = document.createElement('div'); row1.className='kr5row';
+    var lblO = document.createElement('span'); lblO.className='kr5l'; lblO.textContent='🌟 Outlet';
+    var grpO = document.createElement('div'); grpO.className='kr5g';
     var outletBtns = {};
     [['alle','🌐 Alle'],['west','🏭 West'],['weesp','🏡 Weesp']].forEach(function(o){
       var btn = document.createElement('button');
-      btn.className = 'kr4b' + (window._filterOutlet===o[0]?' on':'');
+      btn.className = 'kr5b' + (window._filterOutlet===o[0]?' on':'');
       btn.textContent = o[1];
       btn.type = 'button';
       btn.onclick = function(ev){
         ev.preventDefault(); ev.stopPropagation();
+        console.log('[KR-Filter] outlet ->', o[0]);
         window._filterOutlet = o[0];
         try{localStorage.setItem('kr_f_outlet',o[0]);}catch(e){}
-        Object.keys(outletBtns).forEach(function(k){ outletBtns[k].className = 'kr4b' + (k===o[0]?' on':''); });
+        Object.keys(outletBtns).forEach(function(k){ outletBtns[k].className = 'kr5b' + (k===o[0]?' on':''); });
         triggerUpdate();
       };
       outletBtns[o[0]] = btn;
@@ -14177,38 +14160,38 @@ function ChefScreen({ setSc, setActieve }) {
     });
     row1.appendChild(lblO); row1.appendChild(grpO);
 
-    // Stat rechts in rij 1
-    var stat = document.createElement('span'); stat.className='kr4stat';
+    var stat = document.createElement('span'); stat.className='kr5stat';
     row1.appendChild(stat);
 
-    // Rij 2: Datum van-tot + snelkoppelingen
-    var row2 = document.createElement('div'); row2.className='kr4row';
-    var lblVan = document.createElement('span'); lblVan.className='kr4l'; lblVan.textContent='Van';
+    // Rij 2: Datum + snel
+    var row2 = document.createElement('div'); row2.className='kr5row';
+    var lblVan = document.createElement('span'); lblVan.className='kr5l'; lblVan.textContent='📅 Van';
     var inpStart = document.createElement('input');
     inpStart.type = 'date';
     inpStart.value = window._filterStartdatum || '';
     inpStart.onchange = function(){
+      console.log('[KR-Filter] startdatum ->', inpStart.value);
       window._filterStartdatum = inpStart.value;
       try{localStorage.setItem('kr_f_startdatum', inpStart.value);}catch(e){}
       triggerUpdate();
     };
-    var sep = document.createElement('span'); sep.className='kr4sep'; sep.textContent='→';
-    var lblTot = document.createElement('span'); lblTot.className='kr4l'; lblTot.textContent='Tot';
+    var sep = document.createElement('span'); sep.className='kr5sep'; sep.textContent='→';
+    var lblTot = document.createElement('span'); lblTot.className='kr5l'; lblTot.textContent='Tot';
     var inpEnd = document.createElement('input');
     inpEnd.type = 'date';
     inpEnd.value = window._filterEinddatum || '';
     inpEnd.onchange = function(){
+      console.log('[KR-Filter] einddatum ->', inpEnd.value);
       window._filterEinddatum = inpEnd.value;
       try{localStorage.setItem('kr_f_einddatum', inpEnd.value);}catch(e){}
       triggerUpdate();
     };
     row2.appendChild(lblVan); row2.appendChild(inpStart); row2.appendChild(sep); row2.appendChild(lblTot); row2.appendChild(inpEnd);
 
-    // Snelkoppelingen
-    var grpQuick = document.createElement('div'); grpQuick.className='kr4quick';
-    [[0,1,'Vandaag'],[0,7,'Week'],[0,14,'2 weken'],[0,30,'Maand'],[0,90,'Kwartaal'],[0,365,'Jaar']].forEach(function(r){
+    var grpQuick = document.createElement('div'); grpQuick.className='kr5quick';
+    [[0,1,'Vandaag'],[0,7,'Week'],[0,14,'2 wk'],[0,30,'Maand'],[0,90,'Kwartaal'],[0,365,'Jaar']].forEach(function(r){
       var btn = document.createElement('button');
-      btn.className = 'kr4b';
+      btn.className = 'kr5b';
       btn.textContent = r[2];
       btn.type = 'button';
       btn.onclick = function(ev){
@@ -14249,54 +14232,48 @@ function ChefScreen({ setSc, setActieve }) {
   }
 
   function probe(){
+    // Simpel: ALTIJD tonen in .mobile-padding > div - geen schermdetectie
     var container = document.querySelector('.mobile-padding > div');
-    if (!container) return;
-    var scherm = detectScherm(container);
-    var bestaand = container.querySelector('.kr-fb4');
-    
-    if (!scherm) {
-      // Geen juist scherm - verwijder bestaande balk
-      if (bestaand) bestaand.remove();
+    if (!container) {
+      // Nog niet ingelogd of niet geladen
       return;
     }
-    
-    // Juist scherm - zorg dat balk bovenaan staat
+    var bestaand = container.querySelector(':scope > .kr-fb5');
     if (!bestaand) {
+      console.log('[KR-Filter v5] bouwen en injecteren');
       var bar = buildBar();
       container.insertBefore(bar, container.firstChild);
-    } else {
-      // Update stat (want data kan veranderen)
-      if (bestaand._updStat) bestaand._updStat();
-      // Zorg dat hij ECHT bovenaan staat (React kan hem verplaatsen)
-      if (container.firstChild !== bestaand) {
-        container.insertBefore(bestaand, container.firstChild);
-      }
+    } else if (container.firstChild !== bestaand) {
+      // Verplaats naar boven
+      container.insertBefore(bestaand, container.firstChild);
     }
+    // Update stat want data kan zijn veranderd
+    var curBar = container.querySelector(':scope > .kr-fb5');
+    if (curBar && curBar._updStat) curBar._updStat();
   }
 
   function start(){
-    // MutationObserver om op React re-renders te reageren
-    var mo = new MutationObserver(function(){ 
-      clearTimeout(window._krProbeTimer);
-      window._krProbeTimer = setTimeout(probe, 100);
-    });
+    console.log('[KR-Filter v5] start probing');
     var root = document.getElementById('root');
-    if (root) mo.observe(root, { childList: true, subtree: true });
-    // Initial probe
+    if (root) {
+      var mo = new MutationObserver(function(){
+        clearTimeout(window._krProbeTimer);
+        window._krProbeTimer = setTimeout(probe, 150);
+      });
+      mo.observe(root, { childList: true, subtree: true });
+    }
     probe();
-    // Polling als safety-net
-    setInterval(probe, 2000);
+    setInterval(probe, 1500);
   }
 
   if (document.readyState === 'complete' || document.readyState === 'interactive') {
-    setTimeout(start, 500);
+    setTimeout(start, 600);
   } else {
-    document.addEventListener('DOMContentLoaded', function(){ setTimeout(start, 500); });
+    document.addEventListener('DOMContentLoaded', function(){ setTimeout(start, 600); });
   }
 
-  // Listen op data-refresh events
   window.addEventListener('recras-boekingen-geladen', function(){
-    var bar = document.querySelector('.kr-fb4');
+    var bar = document.querySelector('.kr-fb5');
     if (bar && bar._updStat) bar._updStat();
   });
 })();
