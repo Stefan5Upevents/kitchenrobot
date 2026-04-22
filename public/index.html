@@ -14218,9 +14218,11 @@ function ChefScreen({ setSc, setActieve }) {
 })();
 </script>
 
+
 <script id="kr-bbq-meter">
 (function(){
   if (window._krBbqMeter) return; window._krBbqMeter = true;
+  console.log('[BbqMeter v3] init');
 
   window._BbqConflictMeter = function BbqConflictMeter() {
     if (!window.React) return null;
@@ -14228,11 +14230,16 @@ function ChefScreen({ setSc, setActieve }) {
     var useState = React.useState;
     var useEffect = React.useEffect;
 
-    var state = useState(null);
-    var bbqConflicten = state[0];
-    var setBbqConflicten = state[1];
+    // State: null=nog niet gecheckt, [] = geen conflicten, [..] = conflicten
+    var s1 = useState(null);
+    var bbqConflicten = s1[0];
+    var setBbqConflicten = s1[1];
+    var s2 = useState(0); // tick voor force-rerender
+    var tick = s2[0]; var setTick = s2[1];
+    var s3 = useState(false);
+    var open = s3[0]; var setOpen = s3[1];
 
-    // === LETTERLIJKE KOPIE VAN checkBBQConflicten UIT HomeScreen ===
+    // === LETTERLIJKE KOPIE VAN checkBBQConflicten ===
     function checkBBQConflicten(boekingen2) {
     if (!boekingen2 || boekingen2.length === 0) { setBbqConflicten(null); return; }
     var locatieMap = {};
@@ -14441,26 +14448,92 @@ function ChefScreen({ setSc, setActieve }) {
   }
     // === EINDE KOPIE ===
 
+    // Aantal boekingen dat meet-baar is
+    function getGefilterdeBoekingen() {
+      var all = window._recrasBoekingen || [];
+      if (window._filterBoekingen) return window._filterBoekingen(all);
+      return all;
+    }
+
+    function runCheck() {
+      try {
+        var lijst = getGefilterdeBoekingen();
+        console.log('[BbqMeter] check op', lijst.length, 'boekingen');
+        if (!lijst || lijst.length === 0) {
+          setBbqConflicten([]);
+          return;
+        }
+        checkBBQConflicten(lijst);
+      } catch(e) {
+        console.warn('[BbqMeter] fout:', e);
+        setBbqConflicten([]);
+      }
+    }
+
     useEffect(function(){
-      var doCheck = function(){
-        try {
-          var all = window._recrasBoekingen || [];
-          checkBBQConflicten(all);
-        } catch(e) { console.warn('[BbqMeter] check fout:', e); setBbqConflicten(null); }
-      };
-      // Start check na korte delay zodat stam-data geladen is
-      var t = setTimeout(doCheck, 500);
-      window.addEventListener('recras-boekingen-geladen', doCheck);
+      // Eerste check na korte delay (wachten tot stam-data geladen is)
+      var t1 = setTimeout(runCheck, 800);
+      var handler = function(){ runCheck(); };
+      window.addEventListener('kr-filter-changed', handler);
+      window.addEventListener('recras-boekingen-geladen', handler);
       return function(){
-        clearTimeout(t);
-        window.removeEventListener('recras-boekingen-geladen', doCheck);
+        clearTimeout(t1);
+        window.removeEventListener('kr-filter-changed', handler);
+        window.removeEventListener('recras-boekingen-geladen', handler);
       };
-    }, []);
+    }, [tick]);
 
-    if (!bbqConflicten || bbqConflicten.length === 0) return null;
+    var lijst = getGefilterdeBoekingen();
+    var bekendeConflicten = bbqConflicten ? bbqConflicten.filter(function(c){ return c.type !== 'onbekende_locatie'; }) : null;
+    var onbekendeCount = bbqConflicten ? bbqConflicten.filter(function(c){ return c.type === 'onbekende_locatie'; }).length : 0;
 
-    // === LETTERLIJKE KOPIE VAN RENDER-BLOK UIT HomeScreen ===
-    return React.createElement("div", { style: {
+    // Bepaal status en kleur
+    var status, kleur, bg, icoon, titel;
+    if (bbqConflicten === null) {
+      status = 'checking'; kleur = '#555'; bg = '#F0F4F7'; icoon = '⏳'; titel = 'BBQ-analyse wordt voorbereid…';
+    } else if (lijst.length === 0) {
+      status = 'geen-data'; kleur = '#888'; bg = '#F7F9FA'; icoon = 'ℹ️'; titel = 'Geen boekingen in huidige selectie';
+    } else if (bekendeConflicten && bekendeConflicten.length > 0) {
+      status = 'conflict'; kleur = '#CC3B3B'; bg = '#FFEFEF'; icoon = '🚫'; titel = bekendeConflicten.length + ' BBQ-planning conflict' + (bekendeConflicten.length !== 1 ? 'en' : '') + ' gevonden';
+    } else {
+      status = 'ok'; kleur = '#2A8A3D'; bg = '#E8F5EA'; icoon = '✅'; titel = 'Geen BBQ-planning conflicten';
+    }
+
+    var R = React.createElement;
+
+    // De compacte header-balk
+    var headerStyle = {
+      display:'flex', alignItems:'center', gap:10,
+      background:bg, color:kleur,
+      borderRadius: 12, padding:'12px 16px', marginBottom:12,
+      boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+      cursor: (status === 'conflict') ? 'pointer' : 'default',
+      userSelect: 'none',
+      fontFamily: 'inherit'
+    };
+    var iconStyle = { fontSize: 20 };
+    var titelStyle = { fontWeight: 800, fontSize: 14, flex: 1 };
+    var metaStyle = { fontSize: 11, opacity: 0.7, fontWeight: 600 };
+    var btnStyle = {
+      background: 'rgba(0,0,0,0.08)', color: kleur, border: 'none',
+      padding: '5px 11px', borderRadius: 6, cursor: 'pointer', fontSize: 11, fontWeight: 700, fontFamily: 'inherit'
+    };
+
+    var header = R('div', { style: headerStyle, onClick: function(){ if (status === 'conflict') setOpen(!open); } },
+      R('span', { style: iconStyle }, icoon),
+      R('span', { style: titelStyle }, titel),
+      R('span', { style: metaStyle }, lijst.length + ' boeking' + (lijst.length !== 1 ? 'en' : '') + ' in selectie'),
+      onbekendeCount > 0 ? R('span', { style: { ...metaStyle, color: '#CC8800' } }, '⚠️ ' + onbekendeCount + ' onbekende locatie') : null,
+      R('button', {
+        type: 'button', style: btnStyle,
+        onClick: function(e){ e.stopPropagation(); setTick(function(x){return x+1;}); }
+      }, '🔄 Opnieuw'),
+      (status === 'conflict') ? R('span', { style: { fontSize: 16 } }, open ? '▲' : '▼') : null
+    );
+
+    // Als open + conflict: toon origineel render-blok eronder
+    if (open && status === 'conflict') {
+      var origRender = React.createElement("div", { style: {
     marginBottom: 12,
     padding: "10px 14px",
     borderRadius: 14,
@@ -14482,7 +14555,9 @@ function ChefScreen({ setSc, setActieve }) {
     },
     "Bekijk analyse"
   ));
-    // === EINDE RENDER ===
+      return R('div', null, header, origRender);
+    }
+    return header;
   };
 })();
 </script>
