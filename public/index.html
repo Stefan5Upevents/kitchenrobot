@@ -2317,7 +2317,7 @@ function HomeScreen({ setSc }) {
       h[1],
       klik ? sortBoekIcon(h[0]) : ""
     );
-  }))), /* @__PURE__ */ React.createElement("tbody", null, boekingen.filter(function(b){try{return window._filterUitgebreid?window._filterUitgebreid(b):true;}catch(e){return true;}}).map(function(b, _idx, _gefilterd) {
+  }))), /* @__PURE__ */ React.createElement("tbody", null, (window._splitMultidag?window._splitMultidag(boekingen):boekingen).filter(function(b){try{return window._filterUitgebreid?window._filterUitgebreid(b):true;}catch(e){return true;}}).map(function(b, _idx, _gefilterd) {
     var _prevDag = _idx > 0 && _gefilterd && _gefilterd[_idx-1] && _gefilterd[_idx-1].deadlineDag ? _gefilterd[_idx-1].deadlineDag : null;
     var _curDag = b.deadlineDag || null;
     var _showDagScheider = _idx === 0 || _curDag !== _prevDag;
@@ -2349,7 +2349,7 @@ function HomeScreen({ setSc }) {
       },
       /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, width: 28 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 12, color: C.muted } }, isOpen ? "\u25BC" : "\u25B6")),
       /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontSize: 10, color: C.muted } }, b.id),
-      /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 900 } }, b.naam, (function(){ try { if(!window._boekingDagen) return null; var d = window._boekingDagen(b); if (d.length <= 1) return null; return /* @__PURE__ */ React.createElement("span", { style: { marginLeft:8, fontSize:10, background:"#FFF3E0", color:"#E65100", padding:"2px 7px", borderRadius:4, fontWeight:700, whiteSpace:"nowrap" } }, "📅 " + d.length + " dagen"); } catch(e) { return null; } })()),
+      /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 900 } }, b.naam, (function(){ try { if(!window._boekingDagen) return null; var d = window._boekingDagen(b); if (d.length <= 1) return null; var badgeTxt = b._is_dag_split ? ("📅 dag " + b._dag_nr + "/" + b._totaal_dagen) : ("📅 " + d.length + " dagen"); return /* @__PURE__ */ React.createElement("span", { style: { marginLeft:8, fontSize:10, background:"#FFF3E0", color:"#E65100", padding:"2px 7px", borderRadius:4, fontWeight:700, whiteSpace:"nowrap" } }, badgeTxt); } catch(e) { return null; } })()),
       /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontSize: 11, color: C.muted, whiteSpace: "nowrap" } }, b.deadlineDag || "—"),
       /* @__PURE__ */ React.createElement("td", { style: SS.td }, (function(){var s=(b.status||"").toString().toLowerCase();var isOp=s.indexOf("optie")>=0||s==="o";var heeftStatus=s.length>0;var isDef=heeftStatus && !isOp;var bg=isOp?"#FFE0B2":isDef?"#D4EDDA":"#eee";var col=isOp?"#E65100":isDef?"#155724":"#888";return /* @__PURE__ */ React.createElement("span",{style:{display:"inline-block",background:bg,color:col,padding:"3px 8px",borderRadius:4,fontSize:11,fontWeight:800,whiteSpace:"nowrap"}},isOp?"OPTIE":isDef?"DEF":"—");})()),
       /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontSize: 11, color: C.muted } }, (function(){var I=window._bLocInfo?window._bLocInfo(b):null;if(!I||!I.naam)return "—";return /* @__PURE__ */ React.createElement("div",{style:{display:"flex",alignItems:"center",gap:6,fontSize:13,fontWeight:700}},/* @__PURE__ */ React.createElement("span",{style:{width:10,height:10,borderRadius:5,background:I.outlet==="west"?"#1976D2":I.outlet==="weesp"?"#388E3C":"#999",flexShrink:0}}),/* @__PURE__ */ React.createElement("span",{style:{color:I.outlet==="west"?"#1976D2":I.outlet==="weesp"?"#388E3C":"#333"}},I.naam));})()),
@@ -14501,7 +14501,7 @@ function ChefScreen({ setSc, setActieve }) {
         html += '<div style="color:#666;font-size:12px;margin:4px 0">' + c.uitleg_min + ', huidige gap: ' + Math.round(c.verschil_min) + ' min</div>';
         html += '<div style="font-size:13px">• ' + fmtTijd(c.a_tijd) + ' ' + c.a_naam + ' (' + c.a_pax + 'p, ' + c.a_locatie + ')</div>';
         html += '<div style="font-size:13px">• ' + fmtTijd(c.b_tijd) + ' ' + c.b_naam + ' (' + c.b_pax + 'p, ' + c.b_locatie + ')</div>';
-        if (c.vrije_slots && c.vrije_slots.length) html += '<div style="font-size:12px;color:#666;margin-top:6px">Vrije momenten: ' + c.vrije_slots.map(function(s){return fmtTijd(s.t);}).join(', ') + '</div>';
+        if (c.vrije_slots && c.vrije_slots.length) html += '<div style="font-size:12px;color:#666;margin-top:6px">Vrije momenten: ' + c.vrije_slots.map(function(s){return fmtTijd(s);}).join(', ') + '</div>';
         html += '</div>';
       });
       html += '</div>';
@@ -14617,7 +14617,7 @@ function ChefScreen({ setSc, setActieve }) {
               c.verplaats_keuze === 'a' ? ('verplaats ' + (c.a_status || '').toUpperCase() + ' ' + c.a_naam + ' (' + c.a_pax + 'p)') : ('verplaats ' + (c.b_status || '').toUpperCase() + ' ' + c.b_naam + ' (' + c.b_pax + 'p)')
             ),
             vrije.length > 0 ? R('div', { style:{ marginTop:6, fontSize:11, color:'#666' } }, 'Vrije momenten: ',
-              vrije.map(function(v,vi){ return R('span', { key: vi, style:{ display:'inline-block', margin:'2px 4px 0 0', background:'#D4EDDA', color:'#155724', padding:'2px 8px', borderRadius:4, fontWeight:700 } }, fmtTijd(v.t)); })
+              vrije.map(function(v,vi){ return R('span', { key: vi, style:{ display:'inline-block', margin:'2px 4px 0 0', background:'#D4EDDA', color:'#155724', padding:'2px 8px', borderRadius:4, fontWeight:700 } }, fmtTijd(v)); })
             ) : null
           );
         });
@@ -14671,6 +14671,59 @@ function ChefScreen({ setSc, setActieve }) {
   };
 
   console.log('[BbqMeter v8] ready');
+})();
+</script>
+
+<script id="kr-multidag-split">
+(function(){
+  if (window._krMultidagSplit) return; window._krMultidagSplit = true;
+
+  function fmtDeadlineDag(iso){
+    if (!iso) return '';
+    try {
+      var d = new Date(iso);
+      return d.toLocaleDateString('nl-NL', { weekday:'short', day:'numeric', month:'short' });
+    } catch(e) { return iso; }
+  }
+
+  // window._boekingDagen bestaat al van vorige patch
+  // Deze splitst multi-dag boekingen in aparte virtuele boekingen, 1 per dag
+  window._splitMultidag = function(boekingen){
+    try {
+      if (!Array.isArray(boekingen)) return boekingen;
+      var result = [];
+      for (var i = 0; i < boekingen.length; i++) {
+        var b = boekingen[i];
+        if (!b) continue;
+        var dagen = (window._boekingDagen ? window._boekingDagen(b) : []);
+        if (dagen.length <= 1) { result.push(b); continue; }
+        // Splits per dag
+        for (var j = 0; j < dagen.length; j++) {
+          var dag = dagen[j];
+          var regelsVoorDag = (b.regels || []).filter(function(r){
+            return r && r.starttijd && typeof r.starttijd === 'string' && r.starttijd.substring(0,10) === dag;
+          });
+          if (regelsVoorDag.length === 0) continue;
+          var eersteBegin = regelsVoorDag.map(function(r){ return r.starttijd; }).sort()[0];
+          var dagCopy = Object.assign({}, b, {
+            _orig_id: b.id,
+            _is_dag_split: true,
+            _dag_nr: j + 1,
+            _totaal_dagen: dagen.length,
+            id: b.id + '__dag' + (j+1),  // unieke key voor React + openId
+            regels: regelsVoorDag,
+            datum: dag,
+            deadline: eersteBegin,
+            deadlineDag: fmtDeadlineDag(dag)
+          });
+          result.push(dagCopy);
+        }
+      }
+      return result;
+    } catch(e) { console.warn('[splitMultidag] fout, gebruik originele lijst:', e); return boekingen; }
+  };
+
+  console.log('[MultidagSplit] ready');
 })();
 </script>
 </body></html>
