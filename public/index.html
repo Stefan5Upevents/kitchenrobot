@@ -14811,4 +14811,27 @@ function ChefScreen({ setSc, setActieve }) {
   console.log('[BuffetFilter] ready');
 })();
 </script>
+
+<script id="kr-buffet-filter-fn">
+(function(){
+  if (window._krBuffetFilterFnV1) return; window._krBuffetFilterFnV1 = true;
+  // Wordt aangeroepen voor elk formulier {boekingId, pgId, psId, psNaam, pgNaam, ...}
+  // Past _filterBoekState toe (uit de uitgebreide filter-modal)
+  window._buffetFilterFn = function(f){
+    try {
+      var fs = window._filterBoekState || {};
+      if (fs.productgroep_id && f.pgId !== fs.productgroep_id) return false;
+      if (fs.productsoort_id && f.psId !== fs.productsoort_id) return false;
+      // menu_id / gerecht_id / locatie_id werken op boeking-niveau - check via _filterUitgebreid op de bijbehorende boeking
+      if (fs.menu_id || fs.gerecht_id || fs.locatie_id) {
+        var b = (window._recrasBoekingen || []).find(function(bb){ return bb && bb.id === f.boekingId; });
+        if (!b) return true; // geen boeking gevonden, niet uitfilteren
+        if (window._filterUitgebreid && !window._filterUitgebreid(b)) return false;
+      }
+      return true;
+    } catch(e) { console.warn('[buffetFilterFn]', e); return true; }
+  };
+  console.log('[kr-buffet-filter-fn] ready');
+})();
+</script>
 </body></html>
