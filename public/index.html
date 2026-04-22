@@ -14219,346 +14219,338 @@ function ChefScreen({ setSc, setActieve }) {
 </script>
 
 
+
 <script id="kr-bbq-meter">
 (function(){
-  if (window._krBbqMeter) return; window._krBbqMeter = true;
-  console.log('[BbqMeter v3] init');
+  if (window._krBbqMeter4) return; window._krBbqMeter4 = true;
+  console.log('[BbqMeter v4] init');
+
+  // Kleurconstanten per outlet
+  var OUTLET_KLEUR = { west: '#1976D2', weesp: '#388E3C', gemengd: '#7B1FA2' };
+  var OUTLET_BG    = { west: '#E3F2FD', weesp: '#E8F5E9', gemengd: '#F3E5F5' };
+  var OUTLET_LABEL = { west: 'West', weesp: 'Weesp', gemengd: 'Gemengd' };
+
+  // Globaal: filter-opties worden 1x geladen
+  window._bbqFilterOpties = null;
+  async function laadFilterOpties() {
+    if (window._bbqFilterOpties) return window._bbqFilterOpties;
+    try {
+      if (!window._supa) return null;
+      var r = await window._supa.from('v_bbq_filter_opties').select('*').single();
+      if (r.error) { console.warn('[BbqMeter] filter-opties fout:', r.error); return null; }
+      window._bbqFilterOpties = r.data;
+      return r.data;
+    } catch(e) { console.warn(e); return null; }
+  }
+
+  async function haalConflicten(filters) {
+    if (!window._supa) return null;
+    try {
+      var params = {};
+      if (filters.outlet && filters.outlet !== 'alle') params.p_outlet = filters.outlet;
+      if (filters.startDatum) params.p_start_datum = filters.startDatum;
+      if (filters.eindDatum) params.p_eind_datum = filters.eindDatum;
+      if (filters.productgroep_id) params.p_productgroep_id = filters.productgroep_id;
+      if (filters.productsoort_id) params.p_productsoort_id = filters.productsoort_id;
+      if (filters.menu_id) params.p_menu_id = filters.menu_id;
+      if (filters.gerecht_id) params.p_gerecht_id = filters.gerecht_id;
+      if (filters.locatie_id) params.p_locatie_id = filters.locatie_id;
+      var r = await window._supa.rpc('bbq_conflicten_ophalen', params);
+      if (r.error) { console.warn('[BbqMeter] RPC fout:', r.error); return null; }
+      return r.data;
+    } catch(e) { console.warn('[BbqMeter] fout:', e); return null; }
+  }
+
+  function formatTijd(iso) {
+    if (!iso) return '';
+    try { return iso.split('T')[1].substring(0,5); } catch(e) { return iso; }
+  }
+  function formatDatum(d) {
+    if (!d) return '';
+    var dt = new Date(d);
+    return dt.toLocaleDateString('nl-NL', { weekday:'short', day:'numeric', month:'short', year:'numeric' });
+  }
 
   window._BbqConflictMeter = function BbqConflictMeter() {
     if (!window.React) return null;
-    var React = window.React;
-    var useState = React.useState;
-    var useEffect = React.useEffect;
+    var R = window.React.createElement;
+    var useState = window.React.useState;
+    var useEffect = window.React.useEffect;
 
-    // State: null=nog niet gecheckt, [] = geen conflicten, [..] = conflicten
-    var s1 = useState(null);
-    var bbqConflicten = s1[0];
-    var setBbqConflicten = s1[1];
-    var s2 = useState(0); // tick voor force-rerender
-    var tick = s2[0]; var setTick = s2[1];
-    var s3 = useState(false);
-    var open = s3[0]; var setOpen = s3[1];
+    var s1 = useState(null);       var data = s1[0]; var setData = s1[1];
+    var s2 = useState(true);       var bezig = s2[0]; var setBezig = s2[1];
+    var s3 = useState(0);          var tick = s3[0]; var setTick = s3[1];
+    var s4 = useState(false);      var modalOpen = s4[0]; var setModalOpen = s4[1];
+    var s5 = useState({});         var expanded = s5[0]; var setExpanded = s5[1];
+    var s6 = useState(null);       var opties = s6[0]; var setOpties = s6[1];
 
-    // === LETTERLIJKE KOPIE VAN checkBBQConflicten ===
-    function checkBBQConflicten(boekingen2) {
-    if (!boekingen2 || boekingen2.length === 0) { setBbqConflicten(null); return; }
-    var locatieMap = {};
-    [
-      ["Archery Tag WP","weesp",2,[]],["Basisweg 2, Weesp","weesp",2,[]],["Birdie","weesp",2,[]],
-      ["Boardroom","weesp",2,[]],["Bogey","weesp",2,[]],["Boogschieten WP","weesp",2,[]],
-      ["Bubbel voetbal WP","weesp",2,[]],["CLUPhuis","weesp",2,[]],["Driving range","weesp",2,[]],
-      ["Eagle","weesp",2,[]],["Golfbaan","weesp",2,[]],["Jeu de Boules WP","weesp",2,[]],
-      ["Robinson Crusoe WP","weesp",2,[]],["Terrace WP","weesp",2,[]],["The Barn","weesp",2,[]],
-      ["UP Fairway","weesp",2,[]],["UPstairs","weesp",2,[]],
-      ["Combinatie | Loods 1, 2, 3 & Terrace","voorterrein",1,[]],
-      ["Loods 2","voorterrein",1,[]],["Loods 4","voorterrein",1,[]],["Loods 5","voorterrein",1,[]],
-      ["Loods 6","voorterrein",1,[]],["Pup - Bar","voorterrein",1,[]],["Ronde Tent","voorterrein",1,[]],
-      ["Stretchtent","voorterrein",1,[]],["Terrace","voorterrein",1,[]],["Terras Loods 6","voorterrein",1,[]],
-      ["Beachclub","middenterrein",2,["Beach CLUP","Beach Clup","Beachclub1"]],
-      ["Beachclub 2","middenterrein",2,["Beach Clup 2","Beachclub2"]],
-      ["Loods 7","achterterrein",1,[]],["Loods 7 Patio","achterterrein",1,[]]
-    ].forEach(function(r) {
-      var obj = { zone: r[1], maxSetups: r[2], canonical: r[0] };
-      locatieMap[r[0]] = obj;
-      (r[3] || []).forEach(function(a) { locatieMap[a] = obj; });
-    });
-    var bbqMenuIds = {};
-    (window._stamMenus || []).forEach(function(m) {
-      var n = (m.naam || "").toLowerCase();
-      if (n.includes("bbq") || n.includes("grill") || n.includes("festival food market")) bbqMenuIds[m.id] = true;
-    });
-    var koppelingen = window._stamKoppelingen || [];
-    function getBbqTijdEnPax(b) {
-      var bbqTijd = null, pax = 0;
-      (b.regels || []).forEach(function(r) {
-        var k = koppelingen.find(function(k2) { return k2.recras_naam === r.menuNaam; });
-        if (!k || !bbqMenuIds[k.menu_id]) return;
-        pax += (r.aantal || 0);
-        var t = r.starttijd ? new Date(r.starttijd).getTime() : new Date(b.deadline).getTime();
-        if (bbqTijd === null || t < bbqTijd) bbqTijd = t;
-      });
-      return { bbqTijd: bbqTijd || new Date(b.deadline).getTime(), pax: pax };
-    }
-    function vereistMin(pax) {
-      if (pax > 200) return { min: 60, voorkeur: 60 };
-      if (pax > 100) return { min: 40, voorkeur: 40 };
-      if (pax > 75)  return { min: 25, voorkeur: 25 };
-      if (pax > 50)  return { min: 20, voorkeur: 20 };
-      if (pax > 30)  return { min: 20, voorkeur: 20 };
-      if (pax > 15)  return { min: 15, voorkeur: 15 };
-      return         { min: 10, voorkeur: 10 };
-    }
-    function uitlegMin(pax) {
-      if (pax > 200) return ">200p = min. 60 min";
-      if (pax > 100) return ">100p = min. 40 min";
-      if (pax > 75)  return ">75p = min. 25 min";
-      if (pax > 50)  return ">50p = min. 20 min";
-      if (pax > 30)  return ">30p = min. 20 min";
-      if (pax > 15)  return ">15p = min. 15 min";
-      return "\u226415p = min. 10 min";
-    }
-    function rond5(ms) {
-      var d = new Date(ms); var m = Math.ceil(d.getMinutes() / 5) * 5;
-      if (m >= 60) { d.setHours(d.getHours() + 1); d.setMinutes(0); } else { d.setMinutes(m); }
-      d.setSeconds(0); d.setMilliseconds(0); return d.getTime();
-    }
-    var onbekend = {}, zoneGroepen = {};
-    boekingen2.forEach(function(b) {
-      var tp = getBbqTijdEnPax(b);
-      if (tp.pax === 0) return;
-      var locConf = locatieMap[b.locatie || ""];
-      if (!locConf) {
-        if (b.locatie) { onbekend[b.locatie] = onbekend[b.locatie] || []; onbekend[b.locatie].push(b.naam); }
-        return;
-      }
-      var dag = new Date(tp.bbqTijd).toISOString().split("T")[0];
-      var key = locConf.zone + "|" + dag;
-      if (!zoneGroepen[key]) zoneGroepen[key] = { zone: locConf.zone, dag: dag, maxSetups: locConf.maxSetups, bk: [] };
-      zoneGroepen[key].bk.push(Object.assign({}, b, {
-        _bbqTijd: tp.bbqTijd, _pax: tp.pax,
-        _canonical: locConf.canonical, _status: (b.status || "").toLowerCase()
-      }));
-    });
-    var gevonden = [];
-    Object.keys(zoneGroepen).forEach(function(key) {
-      var groep = zoneGroepen[key];
-      if (groep.bk.length < 2) return;
-      var sorted = groep.bk.slice().sort(function(a, b) { return a._bbqTijd - b._bbqTijd; });
-      var maxSetups = groep.maxSetups;
-      var geadv = {};
-      sorted.forEach(function(bk) { geadv[bk.id] = bk._bbqTijd; });
-      var conflictenOpDag = [];
-      for (var i = 0; i < sorted.length; i++) {
-        for (var j = i + 1; j < Math.min(sorted.length, i + maxSetups + 2); j++) {
-          var a = sorted[i], b = sorted[j];
-          var tA = geadv[a.id], tB = geadv[b.id];
-          var verschilMin = Math.round((tB - tA) / 6e4);
-          if (verschilMin < 0) continue;
-          var reg = vereistMin(b._pax);
-          if (verschilMin >= reg.min) continue;
-          var maxPax = Math.max(a._pax, b._pax);
-          // Selecteer welke boeking te verplaatsen:
-          // 1. Voorkeur: OPTIE boven DEF (minder klantimpact)
-          // 2. Daarna: kleinste groep
-          var aIsOptie = a._status.includes("optie");
-          var bIsOptie = b._status.includes("optie");
-          var tv, vast;
-          if (aIsOptie && !bIsOptie) { tv = a; vast = b; }
-          else if (bIsOptie && !aIsOptie) { tv = b; vast = a; }
-          else { tv = (b._pax <= a._pax) ? b : a; vast = (tv === b) ? a : b; }
-          var tvPax = tv._pax;
-          var ankertijd = vast._bbqTijd;
-          // Vrije slots: zowel eerder (negatieve delta) als later (positieve delta) tov de vaste boeking
-          var kandidaten = [];
-          [-180,-150,-120,-90,-75,-60,-50,-45,-40,-35,-30,30,35,40,45,50,60,75,90,120,150,180].forEach(function(delta) {
-            var k = ankertijd + delta * 6e4;
-            var kuur = new Date(k).getHours();
-            if (kuur < 11 || kuur > 22) return;
-            var vrij = true;
-            for (var si = 0; si < sorted.length; si++) {
-              if (sorted[si].id === tv.id) continue;
-              // Richting bepaalt wie de 2de is: de 2de boeking heeft de minimumtijd nodig
-              var tweedePax = k < sorted[si]._bbqTijd ? sorted[si]._pax : tvPax;
-              var reg2 = vereistMin(tweedePax);
-              if (Math.abs(k - sorted[si]._bbqTijd) / 6e4 < reg2.min) { vrij = false; break; }
-            }
-            if (vrij) kandidaten.push(rond5(k));
-          });
-          var orig = tv._bbqTijd;
-          var uniek = [];
-          kandidaten.forEach(function(v) { if (uniek.indexOf(v) < 0) uniek.push(v); });
-          // Sorteer op minste verschuiving (dichtst bij originele tijd)
-          uniek.sort(function(x, y) { return Math.abs(x - orig) - Math.abs(y - orig); });
-          // Geadv: verplaats de gekozen boeking (eerder of later, afhankelijk van beste slot)
-          if (tv === b) {
-            geadv[b.id] = tA + reg.min * 6e4;
-          } else {
-            geadv[a.id] = tB - reg.min * 6e4;
-          }
-          conflictenOpDag.push({
-            zone: groep.zone, dag: groep.dag, a: a, b: b,
-            verschilMin: verschilMin, vereistMin: reg.min, voorkeur: reg.voorkeur, maxPax: maxPax,
-            uitleg: uitlegMin(b._pax) + " (voor " + b._pax + "p)",
-            nieuweDeadline: new Date(geadv[b.id]).toISOString(),
-            type: maxPax > 200 ? "200+ personen" : "Te weinig tijd",
-            teVerplaatsen: tv, vrijeSlots: uniek.slice(0, 3)
-          });
-        }
-      }
-      if (conflictenOpDag.length > 0) {
-        var geadvFin = {};
-        sorted.forEach(function(bk) { geadvFin[bk.id] = bk._bbqTijd; });
-        for (var pi = 0; pi < sorted.length; pi++) {
-          for (var pj = pi + 1; pj < Math.min(sorted.length, pi + maxSetups + 2); pj++) {
-            var pa = sorted[pi], pb = sorted[pj];
-            var ptA = geadvFin[pa.id], ptB = geadvFin[pb.id];
-            var pVerschil = Math.round((ptB - ptA) / 6e4);
-            if (pVerschil < 0) continue;
-            var pReg = vereistMin(pb._pax);
-            if (pVerschil < pReg.min) {
-              var paOptie = pa._status.includes("optie");
-              var pbOptie = pb._status.includes("optie");
-              // Verplaats OPTIE voorkeur, anders kleinste groep
-              if (paOptie && !pbOptie) {
-                geadvFin[pa.id] = ptB - pReg.min * 6e4; // A eerder
-              } else {
-                geadvFin[pb.id] = ptA + pReg.min * 6e4; // B later
-              }
-            }
-          }
-        }
-        var dagPlanning = sorted.map(function(bk) {
-          var nieuwT = geadvFin[bk.id] !== bk._bbqTijd ? geadvFin[bk.id] : null;
-          return { naam: bk.naam, pax: bk._pax, locatie: bk._canonical,
-            status: bk._status, id: bk.id, origTijd: bk._bbqTijd, nieuweTijd: nieuwT,
-            sortTijd: nieuwT || bk._bbqTijd };
-        }).sort(function(x, y) { return x.sortTijd - y.sortTijd; });
-        conflictenOpDag.forEach(function(c) { c.dagPlanning = dagPlanning; });
-        // Middenterrein tip: check voor voorterrein-conflicten of middenterrein vrij is
-        if (groep.zone === "voorterrein") {
-          conflictenOpDag.forEach(function(c) {
-            var dag = groep.dag;
-            var bbqTijd = c.a._bbqTijd; // starttijd van het conflict
-            var mKeys = ["middenterrein|" + dag];
-            var tips = [];
-            mKeys.forEach(function(mk) {
-              var mg = zoneGroepen[mk];
-              if (!mg) return;
-              // Tel hoeveel setups op middenterrein bezet zijn op dit tijdstip
-              var bezet = mg.bk.filter(function(bk) {
-                return Math.abs(bk._bbqTijd - bbqTijd) / 6e4 < vereistMin(bk._pax).min;
-              });
-              var vrij = mg.maxSetups - bezet.length;
-              if (vrij > 0) {
-                var locaties = mg.bk.map(function(bk){ return bk._canonical; });
-                var uniekeLoc = locaties.filter(function(l,i){ return locaties.indexOf(l)===i; });
-                tips.push({ vrij: vrij, locaties: uniekeLoc });
-              }
-            });
-            if (tips.length > 0) c.middenterreinTip = tips[0];
-          });
-        }
-        gevonden = gevonden.concat(conflictenOpDag);
-      }
-    });
-    if (Object.keys(onbekend).length > 0) gevonden.unshift({ type: "onbekende_locatie", onbekend: onbekend });
-    setBbqConflicten(gevonden);
-    // Email wordt wekelijks automatisch verstuurd via de bbq-analyse cron (elke vrijdag)
-    // Gebruik de handmatige "Stuur naar Stefan" knop in de popup voor on-demand
-  }
-    // === EINDE KOPIE ===
-
-    // Aantal boekingen dat meet-baar is
-    function getGefilterdeBoekingen() {
-      var all = window._recrasBoekingen || [];
-      if (window._filterBoekingen) return window._filterBoekingen(all);
-      return all;
-    }
-
-    function runCheck() {
-      try {
-        var lijst = getGefilterdeBoekingen();
-        console.log('[BbqMeter] check op', lijst.length, 'boekingen');
-        if (!lijst || lijst.length === 0) {
-          setBbqConflicten([]);
-          return;
-        }
-        checkBBQConflicten(lijst);
-      } catch(e) {
-        console.warn('[BbqMeter] fout:', e);
-        setBbqConflicten([]);
-      }
-    }
-
-    useEffect(function(){
-      // Eerste check na korte delay (wachten tot stam-data geladen is)
-      var t1 = setTimeout(runCheck, 800);
-      var handler = function(){ runCheck(); };
-      window.addEventListener('kr-filter-changed', handler);
-      window.addEventListener('recras-boekingen-geladen', handler);
-      return function(){
-        clearTimeout(t1);
-        window.removeEventListener('kr-filter-changed', handler);
-        window.removeEventListener('recras-boekingen-geladen', handler);
+    // Filter-state (apart van FilterBar omdat we eigen uitgebreid filter hebben)
+    var s7 = useState(function(){
+      return {
+        outlet: window._filterOutlet || 'alle',
+        startDatum: window._filterStartdatum || '',
+        eindDatum: window._filterEinddatum || '',
+        productgroep_id: null,
+        productsoort_id: null,
+        menu_id: null,
+        gerecht_id: null,
+        locatie_id: null,
       };
-    }, [tick]);
+    });
+    var filters = s7[0]; var setFilters = s7[1];
 
-    var lijst = getGefilterdeBoekingen();
-    var bekendeConflicten = bbqConflicten ? bbqConflicten.filter(function(c){ return c.type !== 'onbekende_locatie'; }) : null;
-    var onbekendeCount = bbqConflicten ? bbqConflicten.filter(function(c){ return c.type === 'onbekende_locatie'; }).length : 0;
+    // Filter-opties 1x laden
+    useEffect(function(){
+      laadFilterOpties().then(setOpties);
+    }, []);
 
-    // Bepaal status en kleur
+    // Sync met filterbalk (outlet/datum) maar niet overschrijven als uitgebreid filter actief is
+    useEffect(function(){
+      var handler = function(){
+        setFilters(function(f){
+          return Object.assign({}, f, {
+            outlet: window._filterOutlet || 'alle',
+            startDatum: window._filterStartdatum || '',
+            eindDatum: window._filterEinddatum || '',
+          });
+        });
+      };
+      window.addEventListener('kr-filter-changed', handler);
+      return function(){ window.removeEventListener('kr-filter-changed', handler); };
+    }, []);
+
+    // Telkens als filters veranderen → analyseer opnieuw
+    useEffect(function(){
+      setBezig(true);
+      haalConflicten(filters).then(function(d){
+        setData(d);
+        setBezig(false);
+      });
+    }, [filters.outlet, filters.startDatum, filters.eindDatum, filters.productgroep_id, filters.productsoort_id, filters.menu_id, filters.gerecht_id, filters.locatie_id, tick]);
+
+    // Render logica
+    var conflicten = data ? (data.conflicten || []) : [];
+    var aantal = conflicten.length;
+    var totaalBoekingen = data ? data.totaal_boekingen_in_selectie : 0;
+
+    // Bepaal status
     var status, kleur, bg, icoon, titel;
-    if (bbqConflicten === null) {
-      status = 'checking'; kleur = '#555'; bg = '#F0F4F7'; icoon = '⏳'; titel = 'BBQ-analyse wordt voorbereid…';
-    } else if (lijst.length === 0) {
-      status = 'geen-data'; kleur = '#888'; bg = '#F7F9FA'; icoon = 'ℹ️'; titel = 'Geen boekingen in huidige selectie';
-    } else if (bekendeConflicten && bekendeConflicten.length > 0) {
-      status = 'conflict'; kleur = '#CC3B3B'; bg = '#FFEFEF'; icoon = '🚫'; titel = bekendeConflicten.length + ' BBQ-planning conflict' + (bekendeConflicten.length !== 1 ? 'en' : '') + ' gevonden';
-    } else {
-      status = 'ok'; kleur = '#2A8A3D'; bg = '#E8F5EA'; icoon = '✅'; titel = 'Geen BBQ-planning conflicten';
-    }
+    if (bezig) { status='bezig'; kleur='#555'; bg='#F0F4F7'; icoon='⏳'; titel='BBQ-analyse bezig…'; }
+    else if (totaalBoekingen === 0) { status='leeg'; kleur='#888'; bg='#F7F9FA'; icoon='ℹ️'; titel='Geen boekingen in selectie'; }
+    else if (aantal > 0) { status='conflict'; kleur='#C62828'; bg='#FFEBEE'; icoon='🚫'; titel=aantal + ' BBQ-planning conflict' + (aantal!==1?'en':''); }
+    else { status='ok'; kleur='#2E7D32'; bg='#E8F5E9'; icoon='✅'; titel='Geen BBQ-planning conflicten'; }
 
-    var R = React.createElement;
-
-    // De compacte header-balk
+    // Stijlen (groter font!)
     var headerStyle = {
-      display:'flex', alignItems:'center', gap:10,
-      background:bg, color:kleur,
-      borderRadius: 12, padding:'12px 16px', marginBottom:12,
-      boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-      cursor: (status === 'conflict') ? 'pointer' : 'default',
-      userSelect: 'none',
-      fontFamily: 'inherit'
+      display:'flex', alignItems:'center', gap:14, flexWrap:'wrap',
+      background:bg, color:kleur, borderRadius:12, padding:'16px 20px', marginBottom:12,
+      boxShadow:'0 2px 5px rgba(0,0,0,0.08)', fontFamily:'inherit'
     };
-    var iconStyle = { fontSize: 20 };
-    var titelStyle = { fontWeight: 800, fontSize: 14, flex: 1 };
-    var metaStyle = { fontSize: 11, opacity: 0.7, fontWeight: 600 };
+    var iconStyle = { fontSize: 26 };
+    var titelStyle = { fontWeight: 800, fontSize: 17, flex: 1 };
+    var metaStyle = { fontSize: 13, opacity: 0.75, fontWeight: 600 };
     var btnStyle = {
-      background: 'rgba(0,0,0,0.08)', color: kleur, border: 'none',
-      padding: '5px 11px', borderRadius: 6, cursor: 'pointer', fontSize: 11, fontWeight: 700, fontFamily: 'inherit'
+      background:'rgba(0,0,0,0.08)', color:kleur, border:'none',
+      padding:'8px 14px', borderRadius:7, cursor:'pointer', fontSize:12.5, fontWeight:700, fontFamily:'inherit'
     };
 
-    var header = R('div', { style: headerStyle, onClick: function(){ if (status === 'conflict') setOpen(!open); } },
+    var actieveFilterCount = [filters.productgroep_id, filters.productsoort_id, filters.menu_id, filters.gerecht_id, filters.locatie_id].filter(Boolean).length;
+    var filterBtnStyle = Object.assign({}, btnStyle, actieveFilterCount > 0 ? { background:'#FFC107', color:'#000' } : {});
+
+    var alleUitgeklapt = aantal > 0 && Object.keys(expanded).length === aantal && Object.values(expanded).every(Boolean);
+
+    var header = R('div', { style: headerStyle },
       R('span', { style: iconStyle }, icoon),
       R('span', { style: titelStyle }, titel),
-      R('span', { style: metaStyle }, lijst.length + ' boeking' + (lijst.length !== 1 ? 'en' : '') + ' in selectie'),
-      onbekendeCount > 0 ? R('span', { style: { ...metaStyle, color: '#CC8800' } }, '⚠️ ' + onbekendeCount + ' onbekende locatie') : null,
-      R('button', {
-        type: 'button', style: btnStyle,
-        onClick: function(e){ e.stopPropagation(); setTick(function(x){return x+1;}); }
-      }, '🔄 Opnieuw'),
-      (status === 'conflict') ? R('span', { style: { fontSize: 16 } }, open ? '▲' : '▼') : null
+      R('span', { style: metaStyle }, totaalBoekingen + ' boeking' + (totaalBoekingen!==1?'en':'') + ' in selectie'),
+      R('button', { type:'button', style: filterBtnStyle, onClick: function(){ setModalOpen(true); } },
+        '🔍 Filter' + (actieveFilterCount > 0 ? ' (' + actieveFilterCount + ')' : '')),
+      R('button', { type:'button', style: btnStyle, onClick: function(){ setTick(function(x){return x+1;}); } }, '🔄 Opnieuw'),
+      aantal > 0 ? R('button', {
+        type:'button', style: btnStyle,
+        onClick: function(){
+          if (alleUitgeklapt) { setExpanded({}); }
+          else {
+            var nw = {}; for (var i = 0; i < aantal; i++) nw[i] = true;
+            setExpanded(nw);
+          }
+        }
+      }, alleUitgeklapt ? '⬆️ Alles inklappen' : '⬇️ Alles uitklappen') : null
     );
 
-    // Als open + conflict: toon origineel render-blok eronder
-    if (open && status === 'conflict') {
-      var origRender = React.createElement("div", { style: {
-    marginBottom: 12,
-    padding: "10px 14px",
-    borderRadius: 14,
-    fontSize: 12,
-    fontWeight: 700,
-    background: "#FFEBEE",
-    border: "2px solid " + C.hot,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 8
-  } }, /* @__PURE__ */ React.createElement("span", { style: { color: C.hot } }, "🚫 ", bbqConflicten.length, " BBQ planning conflict", bbqConflicten.length !== 1 ? "en" : "", " gevonden — boekingen zitten te dicht op elkaar"), /* @__PURE__ */ React.createElement(
-    "button",
-    {
-      style: { ...btnP, fontSize: 11, padding: "5px 12px" },
-      onClick: function() {
-        window._toonBbqPopup && window._toonBbqPopup(bbqConflicten, stuurBBQConflictEmail);
+    // Conflict-cards
+    var conflictLijst = conflicten.map(function(c, i) {
+      var isOpen = !!expanded[i];
+      var outletK = OUTLET_KLEUR[c.outlet_code] || '#555';
+      var outletBg = OUTLET_BG[c.outlet_code] || '#EEE';
+      var outletLabel = OUTLET_LABEL[c.outlet_code] || c.outlet_code;
+
+      var cardStyle = {
+        background: '#fff', borderRadius: 10, marginBottom: 10,
+        border: '1px solid #e0e0e0', borderLeft: '5px solid ' + outletK,
+        overflow: 'hidden', fontFamily: 'inherit'
+      };
+      var cardHeaderStyle = {
+        display:'flex', alignItems:'center', gap:12, padding:'12px 16px',
+        cursor:'pointer', background: isOpen ? '#FAFAFA' : '#fff', userSelect:'none'
+      };
+      var pillStyle = {
+        background: outletBg, color: outletK, padding: '4px 10px', borderRadius: 100,
+        fontSize: 11.5, fontWeight: 800, whiteSpace: 'nowrap'
+      };
+      var datumStyle = { fontSize: 15, fontWeight: 700, color: '#222' };
+      var locStyle = { fontSize: 14, color: '#444', fontWeight: 600 };
+      var badgeStyle = {
+        background: '#FFE0E0', color: '#C62828', padding:'3px 9px', borderRadius:6,
+        fontSize:12, fontWeight:700, marginLeft:'auto'
+      };
+
+      return R('div', { key: i, style: cardStyle },
+        R('div', { style: cardHeaderStyle, onClick: function(){ setExpanded(function(e){var n=Object.assign({},e); n[i]=!n[i]; return n;}); } },
+          R('span', { style: { fontSize: 18 } }, isOpen ? '▼' : '▶'),
+          R('span', { style: pillStyle }, outletLabel),
+          R('span', { style: datumStyle }, formatDatum(c.datum)),
+          R('span', { style: locStyle }, '📍 ' + (c.locatie_naam || 'onbekend')),
+          R('span', { style: badgeStyle }, c.aantal_boekingen + '/' + c.max_setups + ' setups')
+        ),
+        isOpen ? R('div', { style: { padding: '4px 16px 14px 16px', borderTop: '1px solid #eee' } },
+          R('div', { style: { fontSize: 12, color: '#666', marginBottom: 8, marginTop: 4 } },
+            'Max ' + c.max_setups + ' tegelijk op deze locatie, maar ' + c.aantal_boekingen + ' boekingen gepland:'
+          ),
+          (c.details || []).map(function(b, bi) {
+            return R('div', { key: bi, style: {
+              background:'#F9F9F9', borderRadius:6, padding:'10px 12px', marginBottom:6,
+              fontSize: 13, lineHeight: 1.5
+            } },
+              R('div', { style: { fontWeight: 700, color: '#222', fontSize: 14 } },
+                (b.boeking_naam || b.arrangement || b.boeking_id),
+                b.referentie ? R('span', { style: { fontSize: 11, color:'#888', fontWeight: 500, marginLeft: 8 } }, '#' + b.referentie) : null
+              ),
+              R('div', { style: { color: '#555', marginTop: 2 } },
+                b.starttijd ? ('🕐 ' + formatTijd(b.starttijd) + (b.eindtijd ? ' - ' + formatTijd(b.eindtijd) : '') + ' · ') : '',
+                '👥 ' + (b.personen || 0) + ' personen',
+                b.status ? ' · ' + b.status : ''
+              ),
+              b.menu_naam ? R('div', { style: { color: '#555', marginTop: 2 } }, '🍽 ️ ' + b.menu_naam) : null,
+              b.productgroep_naam ? R('div', { style: { color: '#888', marginTop: 2, fontSize: 12 } }, b.productgroep_naam + (b.productsoort_naam ? ' › ' + b.productsoort_naam : '')) : null
+            );
+          })
+        ) : null
+      );
+    });
+
+    // Filter-modal
+    var modal = null;
+    if (modalOpen) {
+      var overlayStyle = {
+        position:'fixed', top:0, left:0, right:0, bottom:0,
+        background:'rgba(0,0,0,0.5)', zIndex:10000,
+        display:'flex', alignItems:'center', justifyContent:'center', padding: 20
+      };
+      var modalStyle = {
+        background:'#fff', borderRadius:14, padding:24, maxWidth:620, width:'100%',
+        maxHeight:'90vh', overflowY:'auto', boxShadow:'0 10px 40px rgba(0,0,0,0.3)'
+      };
+      var fieldStyle = { marginBottom: 14 };
+      var labelStyle = { display:'block', fontSize:12, fontWeight:700, color:'#555', marginBottom:5, textTransform:'uppercase', letterSpacing:0.5 };
+      var selectStyle = { width:'100%', padding:'9px 10px', border:'1.5px solid #D0D7DC', borderRadius:8, fontSize:14, fontFamily:'inherit', background:'#fff' };
+
+      function mkSelect(veld, label, lijst, extraFilter) {
+        var items = (lijst || []);
+        if (extraFilter) items = items.filter(extraFilter);
+        return R('div', { style: fieldStyle },
+          R('label', { style: labelStyle }, label),
+          R('select', {
+            value: filters[veld] || '',
+            style: selectStyle,
+            onChange: function(e){
+              var v = e.target.value || null;
+              setFilters(function(f){ var n=Object.assign({},f); n[veld]=v; return n; });
+            }
+          },
+            R('option', { value: '' }, '— Alle —'),
+            items.map(function(it){
+              return R('option', { key: it.id, value: it.id },
+                it.naam + (it.outlet_code ? ' (' + OUTLET_LABEL[it.outlet_code] + ')' : '')
+              );
+            })
+          )
+        );
       }
-    },
-    "Bekijk analyse"
-  ));
-      return R('div', null, header, origRender);
+
+      modal = R('div', { style: overlayStyle, onClick: function(){ setModalOpen(false); } },
+        R('div', { style: modalStyle, onClick: function(e){ e.stopPropagation(); } },
+          R('div', { style: { display:'flex', alignItems:'center', marginBottom:18 } },
+            R('h2', { style: { margin:0, fontSize:20, color:'#002D41', flex:1 } }, '🔍 Uitgebreid filter'),
+            R('button', {
+              type:'button',
+              style: { background:'#eee', border:'none', fontSize:18, width:32, height:32, borderRadius:16, cursor:'pointer' },
+              onClick: function(){ setModalOpen(false); }
+            }, '×')
+          ),
+          R('div', { style: fieldStyle },
+            R('label', { style: labelStyle }, 'Filiaal / Outlet'),
+            R('div', { style: { display:'flex', gap:8 } },
+              ['alle','west','weesp'].map(function(o){
+                var aktief = (filters.outlet || 'alle') === o;
+                return R('button', {
+                  key: o, type:'button',
+                  style: {
+                    flex:1, padding:'9px 12px',
+                    background: aktief ? (OUTLET_KLEUR[o] || '#002D41') : '#F0F4F7',
+                    color: aktief ? '#fff' : '#555',
+                    border:'none', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'inherit'
+                  },
+                  onClick: function(){ setFilters(function(f){ var n=Object.assign({},f); n.outlet=o; return n; }); }
+                }, o === 'alle' ? '🌐 Alle' : (o === 'west' ? '🏭 West' : '🏡 Weesp'));
+              })
+            )
+          ),
+          R('div', { style: { display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:14 } },
+            R('div', null,
+              R('label', { style: labelStyle }, 'Vanaf datum'),
+              R('input', { type:'date', value: filters.startDatum || '', style: selectStyle,
+                onChange: function(e){ setFilters(function(f){ var n=Object.assign({},f); n.startDatum=e.target.value; return n; }); } })
+            ),
+            R('div', null,
+              R('label', { style: labelStyle }, 'T/m datum'),
+              R('input', { type:'date', value: filters.eindDatum || '', style: selectStyle,
+                onChange: function(e){ setFilters(function(f){ var n=Object.assign({},f); n.eindDatum=e.target.value; return n; }); } })
+            )
+          ),
+          opties ? mkSelect('productgroep_id', 'Productgroep', opties.productgroepen) : null,
+          opties ? mkSelect('productsoort_id', 'Productsoort', opties.productsoorten, function(ps){
+            return !filters.productgroep_id || ps.productgroep_id === filters.productgroep_id;
+          }) : null,
+          opties ? mkSelect('menu_id', 'Menu', opties.menus, function(m){
+            if (filters.productsoort_id && m.productsoort_id !== filters.productsoort_id) return false;
+            if (filters.productgroep_id && m.productgroep_id !== filters.productgroep_id) return false;
+            return true;
+          }) : null,
+          opties ? mkSelect('gerecht_id', 'Gerecht', opties.gerechten) : null,
+          opties ? mkSelect('locatie_id', 'UP Events Locatie', opties.locaties) : null,
+          R('div', { style: { display:'flex', gap:10, marginTop:18 } },
+            R('button', {
+              type:'button',
+              style: { flex:1, padding:'11px', background:'#eee', border:'none', borderRadius:8, fontSize:14, fontWeight:700, cursor:'pointer', fontFamily:'inherit' },
+              onClick: function(){
+                setFilters({ outlet:'alle', startDatum:'', eindDatum:'', productgroep_id:null, productsoort_id:null, menu_id:null, gerecht_id:null, locatie_id:null });
+              }
+            }, '↻ Filters wissen'),
+            R('button', {
+              type:'button',
+              style: { flex:1, padding:'11px', background:'#002D41', color:'#fff', border:'none', borderRadius:8, fontSize:14, fontWeight:700, cursor:'pointer', fontFamily:'inherit' },
+              onClick: function(){ setModalOpen(false); }
+            }, 'Sluiten ✓')
+          )
+        )
+      );
     }
-    return header;
+
+    return R('div', null, header, conflictLijst, modal);
   };
+
+  console.log('[BbqMeter v4] ready');
 })();
 </script>
 </body></html>
