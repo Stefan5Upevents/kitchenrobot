@@ -2303,7 +2303,7 @@ function HomeScreen({ setSc }) {
     var res = va.localeCompare(vb, "nl");
     return sortBoekDir === "asc" ? res : -res;
   });
-  return /* @__PURE__ */ React.createElement("div", null, window._FilterBar ? /* @__PURE__ */ React.createElement(window._FilterBar, { key: "krfb" }) : null, window._BbqConflictMeter ? /* @__PURE__ */ React.createElement(window._BbqConflictMeter, { key: "krbbq" }) : null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, marginBottom: 4 } }, /* @__PURE__ */ React.createElement("div", { style: SS.pT }, "Boekingsoverzicht"), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: function(){ if(window._openBoekingFilterModal) window._openBoekingFilterModal(); else alert("Uitgebreide filter komt eraan — gebruik de filterbalk hierboven voor outlet+datum."); }, style: { background: "#002D41", color: "#fff", border: "none", padding: "6px 12px", borderRadius: 6, fontSize: 11.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, "🔍 Filter")), /* @__PURE__ */ React.createElement("div", { style: SS.pD }, boekingen.length, " boekingen \u2022 klik op kolomnaam om te sorteren"), /* @__PURE__ */ React.createElement("div", { style: SS.card }, /* @__PURE__ */ React.createElement("div", { style: { overflowX: "auto" } }, /* @__PURE__ */ React.createElement("table", { className:"kr-table", style: SS.tbl }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", { style: SS.th }), [["id", "ID"], ["naam", "Groepsnaam"], ["dag", "Dag"], ["status", "Status"], ["locatie", "Locatie / Plaats"], ["pers", "Pers."], ["prod", "Recras producten"]].map(function(h) {
+  return /* @__PURE__ */ React.createElement("div", null, window._FilterBar ? /* @__PURE__ */ React.createElement(window._FilterBar, { key: "krfb" }) : null, window._BbqConflictMeter ? /* @__PURE__ */ React.createElement(window._BbqConflictMeter, { key: "krbbq" }) : null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, marginBottom: 4 } }, /* @__PURE__ */ React.createElement("div", { style: SS.pT }, "Boekingsoverzicht"), /* @__PURE__ */ React.createElement("button", { type: "button", onClick: function(){ if(window._openBoekingFilterModal) window._openBoekingFilterModal(); else alert("Uitgebreide filter komt eraan — gebruik de filterbalk hierboven voor outlet+datum."); }, style: { background: "#002D41", color: "#fff", border: "none", padding: "6px 12px", borderRadius: 6, fontSize: 11.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" } }, "🔍 Filter"), /* @__PURE__ */ React.createElement("button", { type:"button", onClick: function(){ if(window._toggleAlleBoek) window._toggleAlleBoek(); }, style: { background:"#1976D2", color:"#fff", border:"none", padding:"6px 12px", borderRadius:6, fontSize:11.5, fontWeight:700, cursor:"pointer", fontFamily:"inherit" } }, window._alleBoekOpen ? "⬆️ Inklappen" : "⬇️ Uitklappen")), /* @__PURE__ */ React.createElement("div", { style: SS.pD }, boekingen.length, " boekingen \u2022 klik op kolomnaam om te sorteren"), /* @__PURE__ */ React.createElement("div", { style: SS.card }, /* @__PURE__ */ React.createElement("div", { style: { overflowX: "auto" } }, /* @__PURE__ */ React.createElement("table", { className:"kr-table", style: SS.tbl }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", { style: SS.th }), [["id", "ID"], ["naam", "Groepsnaam"], ["dag", "Dag"], ["status", "Status"], ["locatie", "Locatie / Plaats"], ["pers", "Pers."], ["prod", "Recras producten"]].map(function(h) {
     var klik = ["naam", "dag", "locatie"].includes(h[0]);
     return /* @__PURE__ */ React.createElement(
       "th",
@@ -2321,7 +2321,7 @@ function HomeScreen({ setSc }) {
     var _prevDag = _idx > 0 && boekingen[_idx-1] && boekingen[_idx-1].deadlineDag ? boekingen[_idx-1].deadlineDag : null;
     var _curDag = b.deadlineDag || null;
     var _showDagScheider = _idx === 0 || _curDag !== _prevDag;
-    var isOpen = openId === b.id;
+    var isOpen = !!window._alleBoekOpen || openId === b.id;
     var uniekePsIds = /* @__PURE__ */ new Set();
     b.regels.forEach(function(r) {
       var kop = (window._stamKoppelingen || []).find(function(k) {
@@ -14480,6 +14480,18 @@ function ChefScreen({ setSc, setActieve }) {
     else setTimeout(start, 300);
   }
   start();
+})();
+</script>
+
+<script id="kr-uitklap-toggle">
+(function(){
+  if (window._krUitklapToggle) return; window._krUitklapToggle = true;
+  window._alleBoekOpen = false;
+  window._toggleAlleBoek = function(){
+    window._alleBoekOpen = !window._alleBoekOpen;
+    try { window.dispatchEvent(new Event('kr-filter-changed')); } catch(e) {}
+  };
+  console.log('[UitklapToggle] ready');
 })();
 </script>
 </body></html>
