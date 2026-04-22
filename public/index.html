@@ -14220,55 +14220,33 @@ function ChefScreen({ setSc, setActieve }) {
 
 
 
+
 <script id="kr-bbq-meter">
 (function(){
-  if (window._krBbqMeter4) return; window._krBbqMeter4 = true;
-  console.log('[BbqMeter v4] init');
+  if (window._krBbqMeter5) return; window._krBbqMeter5 = true;
+  console.log('[BbqMeter v5] init');
 
-  // Kleurconstanten per outlet
   var OUTLET_KLEUR = { west: '#1976D2', weesp: '#388E3C', gemengd: '#7B1FA2' };
-  var OUTLET_BG    = { west: '#E3F2FD', weesp: '#E8F5E9', gemengd: '#F3E5F5' };
   var OUTLET_LABEL = { west: 'West', weesp: 'Weesp', gemengd: 'Gemengd' };
 
-  // Globaal: filter-opties worden 1x geladen
-  window._bbqFilterOpties = null;
-  async function laadFilterOpties() {
-    if (window._bbqFilterOpties) return window._bbqFilterOpties;
+  async function haalConflicten(outlet, sd, ed) {
+    if (!window._supa) return null;
     try {
-      if (!window._supa) return null;
-      var r = await window._supa.from('v_bbq_filter_opties').select('*').single();
-      if (r.error) { console.warn('[BbqMeter] filter-opties fout:', r.error); return null; }
-      window._bbqFilterOpties = r.data;
+      var params = {};
+      if (outlet && outlet !== 'alle') params.p_outlet = outlet;
+      if (sd) params.p_start_datum = sd;
+      if (ed) params.p_eind_datum = ed;
+      var r = await window._supa.rpc('bbq_conflicten_ophalen', params);
+      if (r.error) { console.warn('[BbqMeter] RPC fout:', r.error); return null; }
       return r.data;
     } catch(e) { console.warn(e); return null; }
   }
 
-  async function haalConflicten(filters) {
-    if (!window._supa) return null;
-    try {
-      var params = {};
-      if (filters.outlet && filters.outlet !== 'alle') params.p_outlet = filters.outlet;
-      if (filters.startDatum) params.p_start_datum = filters.startDatum;
-      if (filters.eindDatum) params.p_eind_datum = filters.eindDatum;
-      if (filters.productgroep_id) params.p_productgroep_id = filters.productgroep_id;
-      if (filters.productsoort_id) params.p_productsoort_id = filters.productsoort_id;
-      if (filters.menu_id) params.p_menu_id = filters.menu_id;
-      if (filters.gerecht_id) params.p_gerecht_id = filters.gerecht_id;
-      if (filters.locatie_id) params.p_locatie_id = filters.locatie_id;
-      var r = await window._supa.rpc('bbq_conflicten_ophalen', params);
-      if (r.error) { console.warn('[BbqMeter] RPC fout:', r.error); return null; }
-      return r.data;
-    } catch(e) { console.warn('[BbqMeter] fout:', e); return null; }
-  }
-
-  function formatTijd(iso) {
-    if (!iso) return '';
-    try { return iso.split('T')[1].substring(0,5); } catch(e) { return iso; }
-  }
+  function formatTijd(iso) { if (!iso) return ''; try { return iso.split('T')[1].substring(0,5); } catch(e) { return ''; } }
   function formatDatum(d) {
     if (!d) return '';
     var dt = new Date(d);
-    return dt.toLocaleDateString('nl-NL', { weekday:'short', day:'numeric', month:'short', year:'numeric' });
+    return dt.toLocaleDateString('nl-NL', { weekday:'short', day:'numeric', month:'short' });
   }
 
   window._BbqConflictMeter = function BbqConflictMeter() {
@@ -14277,280 +14255,138 @@ function ChefScreen({ setSc, setActieve }) {
     var useState = window.React.useState;
     var useEffect = window.React.useEffect;
 
-    var s1 = useState(null);       var data = s1[0]; var setData = s1[1];
-    var s2 = useState(true);       var bezig = s2[0]; var setBezig = s2[1];
-    var s3 = useState(0);          var tick = s3[0]; var setTick = s3[1];
-    var s4 = useState(false);      var modalOpen = s4[0]; var setModalOpen = s4[1];
-    var s5 = useState({});         var expanded = s5[0]; var setExpanded = s5[1];
-    var s6 = useState(null);       var opties = s6[0]; var setOpties = s6[1];
+    var s1 = useState(null);     var data = s1[0]; var setData = s1[1];
+    var s2 = useState(false);    var popupOpen = s2[0]; var setPopupOpen = s2[1];
 
-    // Filter-state (apart van FilterBar omdat we eigen uitgebreid filter hebben)
-    var s7 = useState(function(){
-      return {
-        outlet: window._filterOutlet || 'alle',
-        startDatum: window._filterStartdatum || '',
-        eindDatum: window._filterEinddatum || '',
-        productgroep_id: null,
-        productsoort_id: null,
-        menu_id: null,
-        gerecht_id: null,
-        locatie_id: null,
-      };
-    });
-    var filters = s7[0]; var setFilters = s7[1];
-
-    // Filter-opties 1x laden
+    // Bij mount + filter-changes opnieuw laden
     useEffect(function(){
-      laadFilterOpties().then(setOpties);
+      function laad(){
+        var o = window._filterOutlet || 'alle';
+        var sd = window._filterStartdatum || null;
+        var ed = window._filterEinddatum || null;
+        haalConflicten(o, sd, ed).then(setData);
+      }
+      setTimeout(laad, 500);
+      window.addEventListener('kr-filter-changed', laad);
+      window.addEventListener('recras-boekingen-geladen', laad);
+      return function(){
+        window.removeEventListener('kr-filter-changed', laad);
+        window.removeEventListener('recras-boekingen-geladen', laad);
+      };
     }, []);
 
-    // Sync met filterbalk (outlet/datum) maar niet overschrijven als uitgebreid filter actief is
-    useEffect(function(){
-      var handler = function(){
-        setFilters(function(f){
-          return Object.assign({}, f, {
-            outlet: window._filterOutlet || 'alle',
-            startDatum: window._filterStartdatum || '',
-            eindDatum: window._filterEinddatum || '',
-          });
-        });
-      };
-      window.addEventListener('kr-filter-changed', handler);
-      return function(){ window.removeEventListener('kr-filter-changed', handler); };
-    }, []);
+    if (!data) return null; // silent tot data geladen is
+    var conflicten = data.conflicten || [];
+    var n = conflicten.length;
 
-    // Telkens als filters veranderen → analyseer opnieuw
-    useEffect(function(){
-      setBezig(true);
-      haalConflicten(filters).then(function(d){
-        setData(d);
-        setBezig(false);
-      });
-    }, [filters.outlet, filters.startDatum, filters.eindDatum, filters.productgroep_id, filters.productsoort_id, filters.menu_id, filters.gerecht_id, filters.locatie_id, tick]);
+    // Oude UI: rode banner alleen bij conflicten
+    if (n === 0) return null;
 
-    // Render logica
-    var conflicten = data ? (data.conflicten || []) : [];
-    var aantal = conflicten.length;
-    var totaalBoekingen = data ? data.totaal_boekingen_in_selectie : 0;
-
-    // Bepaal status
-    var status, kleur, bg, icoon, titel;
-    if (bezig) { status='bezig'; kleur='#555'; bg='#F0F4F7'; icoon='⏳'; titel='BBQ-analyse bezig…'; }
-    else if (totaalBoekingen === 0) { status='leeg'; kleur='#888'; bg='#F7F9FA'; icoon='ℹ️'; titel='Geen boekingen in selectie'; }
-    else if (aantal > 0) { status='conflict'; kleur='#C62828'; bg='#FFEBEE'; icoon='🚫'; titel=aantal + ' BBQ-planning conflict' + (aantal!==1?'en':''); }
-    else { status='ok'; kleur='#2E7D32'; bg='#E8F5E9'; icoon='✅'; titel='Geen BBQ-planning conflicten'; }
-
-    // Stijlen (groter font!)
-    var headerStyle = {
-      display:'flex', alignItems:'center', gap:14, flexWrap:'wrap',
-      background:bg, color:kleur, borderRadius:12, padding:'16px 20px', marginBottom:12,
-      boxShadow:'0 2px 5px rgba(0,0,0,0.08)', fontFamily:'inherit'
+    var bannerStyle = {
+      marginBottom: 12,
+      padding: '12px 16px',
+      borderRadius: 12,
+      fontSize: 13,
+      fontWeight: 700,
+      background: '#FFEBEE',
+      border: '2px solid #CC3B3B',
+      color: '#CC3B3B',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 12,
+      flexWrap: 'wrap',
+      fontFamily: 'inherit'
     };
-    var iconStyle = { fontSize: 26 };
-    var titelStyle = { fontWeight: 800, fontSize: 17, flex: 1 };
-    var metaStyle = { fontSize: 13, opacity: 0.75, fontWeight: 600 };
     var btnStyle = {
-      background:'rgba(0,0,0,0.08)', color:kleur, border:'none',
-      padding:'8px 14px', borderRadius:7, cursor:'pointer', fontSize:12.5, fontWeight:700, fontFamily:'inherit'
+      background: '#CC3B3B', color:'#fff', border:'none',
+      padding:'7px 14px', borderRadius:7,
+      fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'inherit',
+      whiteSpace:'nowrap'
     };
 
-    var actieveFilterCount = [filters.productgroep_id, filters.productsoort_id, filters.menu_id, filters.gerecht_id, filters.locatie_id].filter(Boolean).length;
-    var filterBtnStyle = Object.assign({}, btnStyle, actieveFilterCount > 0 ? { background:'#FFC107', color:'#000' } : {});
-
-    var alleUitgeklapt = aantal > 0 && Object.keys(expanded).length === aantal && Object.values(expanded).every(Boolean);
-
-    var header = R('div', { style: headerStyle },
-      R('span', { style: iconStyle }, icoon),
-      R('span', { style: titelStyle }, titel),
-      R('span', { style: metaStyle }, totaalBoekingen + ' boeking' + (totaalBoekingen!==1?'en':'') + ' in selectie'),
-      R('button', { type:'button', style: filterBtnStyle, onClick: function(){ setModalOpen(true); } },
-        '🔍 Filter' + (actieveFilterCount > 0 ? ' (' + actieveFilterCount + ')' : '')),
-      R('button', { type:'button', style: btnStyle, onClick: function(){ setTick(function(x){return x+1;}); } }, '🔄 Opnieuw'),
-      aantal > 0 ? R('button', {
-        type:'button', style: btnStyle,
-        onClick: function(){
-          if (alleUitgeklapt) { setExpanded({}); }
-          else {
-            var nw = {}; for (var i = 0; i < aantal; i++) nw[i] = true;
-            setExpanded(nw);
-          }
-        }
-      }, alleUitgeklapt ? '⬆️ Alles inklappen' : '⬇️ Alles uitklappen') : null
+    var banner = R('div', { style: bannerStyle },
+      R('span', null, '🚫 ' + n + ' BBQ planning conflict' + (n !== 1 ? 'en' : '') + ' gevonden — boekingen zitten te dicht op elkaar'),
+      R('button', { type:'button', style: btnStyle, onClick: function(){ setPopupOpen(true); } }, 'Bekijk analyse')
     );
 
-    // Conflict-cards
-    var conflictLijst = conflicten.map(function(c, i) {
-      var isOpen = !!expanded[i];
+    // Popup
+    if (!popupOpen) return banner;
+
+    var overlay = {
+      position:'fixed', top:0, left:0, right:0, bottom:0,
+      background:'rgba(0,0,0,0.55)', zIndex:10000,
+      display:'flex', alignItems:'center', justifyContent:'center', padding:20
+    };
+    var modalStyle = {
+      background:'#fff', borderRadius:14, maxWidth:680, width:'100%',
+      maxHeight:'88vh', display:'flex', flexDirection:'column',
+      boxShadow:'0 10px 40px rgba(0,0,0,0.35)', fontFamily:'inherit'
+    };
+    var headerStyle = {
+      padding:'16px 20px', borderBottom:'1px solid #eee',
+      display:'flex', alignItems:'center', gap:10
+    };
+    var listStyle = { flex:1, overflowY:'auto', padding:'8px 16px 16px 16px' };
+    var footerStyle = { padding:'12px 20px', borderTop:'1px solid #eee', display:'flex', gap:10, justifyContent:'flex-end' };
+
+    var conflictRows = conflicten.map(function(c, i){
       var outletK = OUTLET_KLEUR[c.outlet_code] || '#555';
-      var outletBg = OUTLET_BG[c.outlet_code] || '#EEE';
-      var outletLabel = OUTLET_LABEL[c.outlet_code] || c.outlet_code;
-
-      var cardStyle = {
-        background: '#fff', borderRadius: 10, marginBottom: 10,
-        border: '1px solid #e0e0e0', borderLeft: '5px solid ' + outletK,
-        overflow: 'hidden', fontFamily: 'inherit'
-      };
-      var cardHeaderStyle = {
-        display:'flex', alignItems:'center', gap:12, padding:'12px 16px',
-        cursor:'pointer', background: isOpen ? '#FAFAFA' : '#fff', userSelect:'none'
-      };
-      var pillStyle = {
-        background: outletBg, color: outletK, padding: '4px 10px', borderRadius: 100,
-        fontSize: 11.5, fontWeight: 800, whiteSpace: 'nowrap'
-      };
-      var datumStyle = { fontSize: 15, fontWeight: 700, color: '#222' };
-      var locStyle = { fontSize: 14, color: '#444', fontWeight: 600 };
-      var badgeStyle = {
-        background: '#FFE0E0', color: '#C62828', padding:'3px 9px', borderRadius:6,
-        fontSize:12, fontWeight:700, marginLeft:'auto'
-      };
-
-      return R('div', { key: i, style: cardStyle },
-        R('div', { style: cardHeaderStyle, onClick: function(){ setExpanded(function(e){var n=Object.assign({},e); n[i]=!n[i]; return n;}); } },
-          R('span', { style: { fontSize: 18 } }, isOpen ? '▼' : '▶'),
-          R('span', { style: pillStyle }, outletLabel),
-          R('span', { style: datumStyle }, formatDatum(c.datum)),
-          R('span', { style: locStyle }, '📍 ' + (c.locatie_naam || 'onbekend')),
-          R('span', { style: badgeStyle }, c.aantal_boekingen + '/' + c.max_setups + ' setups')
+      var outletL = OUTLET_LABEL[c.outlet_code] || c.outlet_code;
+      var items = (c.details || []);
+      return R('div', {
+        key: i,
+        style: {
+          background:'#FAFAFA', border:'1px solid #eee',
+          borderLeft:'4px solid '+outletK,
+          borderRadius:8, padding:'10px 14px', marginBottom:8
+        }
+      },
+        R('div', { style:{ display:'flex', gap:10, alignItems:'center', marginBottom:6, flexWrap:'wrap' } },
+          R('span', { style:{ fontSize:14, fontWeight:800, color:'#222' } }, formatDatum(c.datum)),
+          R('span', { style:{ fontSize:12.5, color:'#444', fontWeight:600 } }, '📍 ' + (c.locatie_naam || 'onbekend') + ' — ' + outletL),
+          R('span', { style:{
+            marginLeft:'auto', background:'#FFE0E0', color:'#C62828',
+            padding:'2px 8px', borderRadius:5, fontSize:11, fontWeight:700
+          } }, c.aantal_boekingen + '/' + c.max_setups + ' setups')
         ),
-        isOpen ? R('div', { style: { padding: '4px 16px 14px 16px', borderTop: '1px solid #eee' } },
-          R('div', { style: { fontSize: 12, color: '#666', marginBottom: 8, marginTop: 4 } },
-            'Max ' + c.max_setups + ' tegelijk op deze locatie, maar ' + c.aantal_boekingen + ' boekingen gepland:'
-          ),
-          (c.details || []).map(function(b, bi) {
-            return R('div', { key: bi, style: {
-              background:'#F9F9F9', borderRadius:6, padding:'10px 12px', marginBottom:6,
-              fontSize: 13, lineHeight: 1.5
-            } },
-              R('div', { style: { fontWeight: 700, color: '#222', fontSize: 14 } },
-                (b.boeking_naam || b.arrangement || b.boeking_id),
-                b.referentie ? R('span', { style: { fontSize: 11, color:'#888', fontWeight: 500, marginLeft: 8 } }, '#' + b.referentie) : null
-              ),
-              R('div', { style: { color: '#555', marginTop: 2 } },
-                b.starttijd ? ('🕐 ' + formatTijd(b.starttijd) + (b.eindtijd ? ' - ' + formatTijd(b.eindtijd) : '') + ' · ') : '',
-                '👥 ' + (b.personen || 0) + ' personen',
-                b.status ? ' · ' + b.status : ''
-              ),
-              b.menu_naam ? R('div', { style: { color: '#555', marginTop: 2 } }, '🍽 ️ ' + b.menu_naam) : null,
-              b.productgroep_naam ? R('div', { style: { color: '#888', marginTop: 2, fontSize: 12 } }, b.productgroep_naam + (b.productsoort_naam ? ' › ' + b.productsoort_naam : '')) : null
-            );
-          })
-        ) : null
+        R('div', { style:{ fontSize:12, color:'#666', marginBottom:4 } }, 'Gelijktijdig gepland:'),
+        items.map(function(b, bi){
+          return R('div', { key: bi, style:{ fontSize:12.5, padding:'3px 0', color:'#333' } },
+            R('strong', null, b.boeking_naam || b.arrangement || b.boeking_id),
+            b.starttijd ? R('span', { style:{ color:'#888', marginLeft:6 } }, '· 🕐 ' + formatTijd(b.starttijd) + ' · ' + (b.personen || 0) + ' pers') : null,
+            b.menu_naam ? R('span', { style:{ color:'#777', marginLeft:6, fontStyle:'italic' } }, '· ' + b.menu_naam) : null
+          );
+        })
       );
     });
 
-    // Filter-modal
-    var modal = null;
-    if (modalOpen) {
-      var overlayStyle = {
-        position:'fixed', top:0, left:0, right:0, bottom:0,
-        background:'rgba(0,0,0,0.5)', zIndex:10000,
-        display:'flex', alignItems:'center', justifyContent:'center', padding: 20
-      };
-      var modalStyle = {
-        background:'#fff', borderRadius:14, padding:24, maxWidth:620, width:'100%',
-        maxHeight:'90vh', overflowY:'auto', boxShadow:'0 10px 40px rgba(0,0,0,0.3)'
-      };
-      var fieldStyle = { marginBottom: 14 };
-      var labelStyle = { display:'block', fontSize:12, fontWeight:700, color:'#555', marginBottom:5, textTransform:'uppercase', letterSpacing:0.5 };
-      var selectStyle = { width:'100%', padding:'9px 10px', border:'1.5px solid #D0D7DC', borderRadius:8, fontSize:14, fontFamily:'inherit', background:'#fff' };
-
-      function mkSelect(veld, label, lijst, extraFilter) {
-        var items = (lijst || []);
-        if (extraFilter) items = items.filter(extraFilter);
-        return R('div', { style: fieldStyle },
-          R('label', { style: labelStyle }, label),
-          R('select', {
-            value: filters[veld] || '',
-            style: selectStyle,
-            onChange: function(e){
-              var v = e.target.value || null;
-              setFilters(function(f){ var n=Object.assign({},f); n[veld]=v; return n; });
-            }
-          },
-            R('option', { value: '' }, '— Alle —'),
-            items.map(function(it){
-              return R('option', { key: it.id, value: it.id },
-                it.naam + (it.outlet_code ? ' (' + OUTLET_LABEL[it.outlet_code] + ')' : '')
-              );
-            })
-          )
-        );
-      }
-
-      modal = R('div', { style: overlayStyle, onClick: function(){ setModalOpen(false); } },
-        R('div', { style: modalStyle, onClick: function(e){ e.stopPropagation(); } },
-          R('div', { style: { display:'flex', alignItems:'center', marginBottom:18 } },
-            R('h2', { style: { margin:0, fontSize:20, color:'#002D41', flex:1 } }, '🔍 Uitgebreid filter'),
-            R('button', {
-              type:'button',
-              style: { background:'#eee', border:'none', fontSize:18, width:32, height:32, borderRadius:16, cursor:'pointer' },
-              onClick: function(){ setModalOpen(false); }
-            }, '×')
-          ),
-          R('div', { style: fieldStyle },
-            R('label', { style: labelStyle }, 'Filiaal / Outlet'),
-            R('div', { style: { display:'flex', gap:8 } },
-              ['alle','west','weesp'].map(function(o){
-                var aktief = (filters.outlet || 'alle') === o;
-                return R('button', {
-                  key: o, type:'button',
-                  style: {
-                    flex:1, padding:'9px 12px',
-                    background: aktief ? (OUTLET_KLEUR[o] || '#002D41') : '#F0F4F7',
-                    color: aktief ? '#fff' : '#555',
-                    border:'none', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'inherit'
-                  },
-                  onClick: function(){ setFilters(function(f){ var n=Object.assign({},f); n.outlet=o; return n; }); }
-                }, o === 'alle' ? '🌐 Alle' : (o === 'west' ? '🏭 West' : '🏡 Weesp'));
-              })
-            )
-          ),
-          R('div', { style: { display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:14 } },
-            R('div', null,
-              R('label', { style: labelStyle }, 'Vanaf datum'),
-              R('input', { type:'date', value: filters.startDatum || '', style: selectStyle,
-                onChange: function(e){ setFilters(function(f){ var n=Object.assign({},f); n.startDatum=e.target.value; return n; }); } })
-            ),
-            R('div', null,
-              R('label', { style: labelStyle }, 'T/m datum'),
-              R('input', { type:'date', value: filters.eindDatum || '', style: selectStyle,
-                onChange: function(e){ setFilters(function(f){ var n=Object.assign({},f); n.eindDatum=e.target.value; return n; }); } })
-            )
-          ),
-          opties ? mkSelect('productgroep_id', 'Productgroep', opties.productgroepen) : null,
-          opties ? mkSelect('productsoort_id', 'Productsoort', opties.productsoorten, function(ps){
-            return !filters.productgroep_id || ps.productgroep_id === filters.productgroep_id;
-          }) : null,
-          opties ? mkSelect('menu_id', 'Menu', opties.menus, function(m){
-            if (filters.productsoort_id && m.productsoort_id !== filters.productsoort_id) return false;
-            if (filters.productgroep_id && m.productgroep_id !== filters.productgroep_id) return false;
-            return true;
-          }) : null,
-          opties ? mkSelect('gerecht_id', 'Gerecht', opties.gerechten) : null,
-          opties ? mkSelect('locatie_id', 'UP Events Locatie', opties.locaties) : null,
-          R('div', { style: { display:'flex', gap:10, marginTop:18 } },
-            R('button', {
-              type:'button',
-              style: { flex:1, padding:'11px', background:'#eee', border:'none', borderRadius:8, fontSize:14, fontWeight:700, cursor:'pointer', fontFamily:'inherit' },
-              onClick: function(){
-                setFilters({ outlet:'alle', startDatum:'', eindDatum:'', productgroep_id:null, productsoort_id:null, menu_id:null, gerecht_id:null, locatie_id:null });
-              }
-            }, '↻ Filters wissen'),
-            R('button', {
-              type:'button',
-              style: { flex:1, padding:'11px', background:'#002D41', color:'#fff', border:'none', borderRadius:8, fontSize:14, fontWeight:700, cursor:'pointer', fontFamily:'inherit' },
-              onClick: function(){ setModalOpen(false); }
-            }, 'Sluiten ✓')
-          )
+    var popup = R('div', { style: overlay, onClick: function(){ setPopupOpen(false); } },
+      R('div', { style: modalStyle, onClick: function(e){ e.stopPropagation(); } },
+        R('div', { style: headerStyle },
+          R('span', { style:{ fontSize:22 } }, '🚫'),
+          R('h2', { style:{ margin:0, fontSize:18, flex:1, color:'#C62828' } }, n + ' BBQ planning conflict' + (n!==1?'en':'')),
+          R('button', {
+            type:'button',
+            style:{ background:'#eee', border:'none', fontSize:18, width:32, height:32, borderRadius:16, cursor:'pointer' },
+            onClick: function(){ setPopupOpen(false); }
+          }, '×')
+        ),
+        R('div', { style: listStyle }, conflictRows),
+        R('div', { style: footerStyle },
+          R('button', {
+            type:'button',
+            style:{ background:'#002D41', color:'#fff', border:'none', padding:'9px 18px', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'inherit' },
+            onClick: function(){ setPopupOpen(false); }
+          }, 'Sluiten')
         )
-      );
-    }
+      )
+    );
 
-    return R('div', null, header, conflictLijst, modal);
+    return R('div', null, banner, popup);
   };
 
-  console.log('[BbqMeter v4] ready');
+  console.log('[BbqMeter v5] ready');
 })();
 </script>
 </body></html>
