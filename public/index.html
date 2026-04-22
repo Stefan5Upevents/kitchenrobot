@@ -2547,7 +2547,7 @@ function BuffetScreen({ actieve, setActieve, setSc }) {
       });
     });
     return lijst;
-  }, [(window._recrasBoekingen || []).length, (window._stamKoppelingen || []).length, (window._stamMenus || []).length, window._filterOutlet, window._filterStartdatum, window._filterEinddatum]);
+  }, [(window._recrasBoekingen || []).length, (window._stamKoppelingen || []).length, (window._stamMenus || []).length, window._filterOutlet, window._filterStartdatum, window._filterEinddatum, _krForceRenderB[0]]); window.__buffet_alle_formulieren = formulieren; formulieren = (formulieren || []).filter(function(_bf){ try { return window._buffetFilterFn ? window._buffetFilterFn(_bf) : true; } catch(_e) { return true; } });
   var huidig = actieve && actieve.boekingId ? actieve : formulieren[0] || {};
   var psId = huidig.psId || "";
   var pgId = huidig.pgId || "";
@@ -2718,10 +2718,10 @@ function BuffetScreen({ actieve, setActieve, setSc }) {
     return items;
   }
   if ((window._recrasBoekingen || []).length === 0) {
-    return /* @__PURE__ */ React.createElement("div", null, window._FilterBar ? /* @__PURE__ */ React.createElement(window._FilterBar, { key: "krfb" }) : null, /* @__PURE__ */ React.createElement("div", { style: SS.pT }, "Buffetformulieren"), /* @__PURE__ */ React.createElement("div", { style: { ...SS.card, ...alertI } }, "Importeer een Recras boekingenexport via het hoofdscherm. Zorg dat de Recras producten zijn gekoppeld aan menus in Stamgegevens \u2192 Recras Import."));
+    return /* @__PURE__ */ React.createElement("div", null, window._FilterBar ? /* @__PURE__ */ React.createElement(window._FilterBar, { key: "krfb" }) : null, /* @__PURE__ */ React.createElement("div", { style: SS.pT }, "Buffetformulieren"), window._BuffetFilterBar ? /* @__PURE__ */ React.createElement(window._BuffetFilterBar, { key: "krbfb" }) : null, /* @__PURE__ */ React.createElement("div", { style: { ...SS.card, ...alertI } }, "Importeer een Recras boekingenexport via het hoofdscherm. Zorg dat de Recras producten zijn gekoppeld aan menus in Stamgegevens \u2192 Recras Import."));
   }
   if (formulieren.length === 0) {
-    return /* @__PURE__ */ React.createElement("div", null, window._FilterBar ? /* @__PURE__ */ React.createElement(window._FilterBar, { key: "krfb" }) : null, /* @__PURE__ */ React.createElement("div", { style: SS.pT }, "Buffetformulieren"), /* @__PURE__ */ React.createElement("div", { style: { ...SS.card, ...alertW } }, "Boekingen zijn geladen maar geen producten zijn gekoppeld aan menus. Ga naar Stamgegevens \u2192 Recras Import en koppel de Recras producten aan de juiste menus."));
+    return /* @__PURE__ */ React.createElement("div", null, window._FilterBar ? /* @__PURE__ */ React.createElement(window._FilterBar, { key: "krfb" }) : null, /* @__PURE__ */ React.createElement("div", { style: SS.pT }, "Buffetformulieren"), window._BuffetFilterBar ? /* @__PURE__ */ React.createElement(window._BuffetFilterBar, { key: "krbfb" }) : null, /* @__PURE__ */ React.createElement("div", { style: { ...SS.card, ...alertW } }, "Boekingen zijn geladen maar geen producten zijn gekoppeld aan menus. Ga naar Stamgegevens \u2192 Recras Import en koppel de Recras producten aan de juiste menus."));
   }
   // AUTO-SAVE OPZET: sla formulier tabel op als snapshot (identiek aan website weergave)
   React.useEffect(function() {
@@ -2841,7 +2841,7 @@ function BuffetScreen({ actieve, setActieve, setSc }) {
   }, [boeking && boeking.id, psId, buffetLayout && buffetLayout.dishesPerBuf, JSON.stringify(opgeslagenOverrides[formKey] || {})]);
 
 
-  return /* @__PURE__ */ React.createElement("div", null, window._FilterBar ? /* @__PURE__ */ React.createElement(window._FilterBar, { key: "krfb" }) : null, /* @__PURE__ */ React.createElement("style", null, `
+  return /* @__PURE__ */ React.createElement("div", null, window._FilterBar ? /* @__PURE__ */ React.createElement(window._FilterBar, { key: "krfb" }) : null, window._BuffetFilterBar ? /* @__PURE__ */ React.createElement(window._BuffetFilterBar, { key: "krbfb" }) : null, /* @__PURE__ */ React.createElement("style", null, `
         @media print {
           .no-print { display:none !important; }
           body { background: white !important; color: #000 !important; }
@@ -2860,7 +2860,7 @@ function BuffetScreen({ actieve, setActieve, setSc }) {
       return acc;
     }, []);
     var huidigDag = huidig.boekingDag || (dagOptions[0] && dagOptions[0].dag) || "";
-    if (dagOptions.length <= 1) return null;
+    return null;
     return React.createElement("div", {style:{marginBottom:10}},
       React.createElement("div", {style:{fontSize:10,fontWeight:700,color:C.muted,textTransform:"uppercase",letterSpacing:1.2,marginBottom:6}}, "Dag"),
       React.createElement("div", {style:{display:"flex",gap:6,flexWrap:"wrap"}},
@@ -14724,6 +14724,105 @@ function ChefScreen({ setSc, setActieve }) {
   };
 
   console.log('[MultidagSplit] ready');
+})();
+</script>
+
+<script id="kr-buffet-filter">
+(function(){
+  if (window._krBuffetFilter) return; window._krBuffetFilter = true;
+
+  window._buffetFilter = window._buffetFilter || { dag: '__alle__', zoek: '' };
+
+  window._buffetFilterFn = function(f) {
+    try {
+      var bf = window._buffetFilter || { dag:'__alle__', zoek:'' };
+      if (bf.dag && bf.dag !== '__alle__' && f && f.boekingDag !== bf.dag) return false;
+      if (bf.zoek) {
+        var z = (bf.zoek || '').toLowerCase().trim();
+        if (z && ((f && f.boekingNaam) || '').toLowerCase().indexOf(z) < 0) return false;
+      }
+      return true;
+    } catch(e) { return true; }
+  };
+
+  window._BuffetFilterBar = function BuffetFilterBar(){
+    try {
+      if (!window.React) return null;
+      var R = window.React.createElement;
+      var useState = window.React.useState;
+      var useEffect = window.React.useEffect;
+      var useMemo = window.React.useMemo;
+
+      var s2 = useState(window._buffetFilter.dag || '__alle__'); var dag = s2[0]; var setDag = s2[1];
+      var s3 = useState(window._buffetFilter.zoek || ''); var zoek = s3[0]; var setZoek = s3[1];
+
+      useEffect(function(){
+        window._buffetFilter.dag = dag;
+        window._buffetFilter.zoek = zoek;
+        try { window.dispatchEvent(new Event('kr-filter-changed')); } catch(e){}
+      }, [dag, zoek]);
+
+      var dagen = useMemo(function(){
+        try {
+          var alle = (window._recrasBoekingen || []);
+          if (window._filterBoekingen) alle = window._filterBoekingen(alle);
+          var set = {};
+          var meta = {};
+          for (var i = 0; i < alle.length; i++) {
+            var b = alle[i]; if (!b) continue;
+            var dagKey = b.deadlineDag || '';
+            if (!dagKey) continue;
+            set[dagKey] = (set[dagKey] || 0) + 1;
+            if (!meta[dagKey]) meta[dagKey] = b.datum || dagKey;
+          }
+          var arr = Object.keys(set).map(function(k){ return { dag: k, n: set[k], datum: meta[k] }; });
+          arr.sort(function(a,b){ return (a.datum || '').localeCompare(b.datum || ''); });
+          return arr;
+        } catch(e) { return []; }
+      }, [ (window._recrasBoekingen||[]).length, window._filterOutlet, window._filterStartdatum, window._filterEinddatum ]);
+
+      var C = { night: '#002D41', hot: '#FE424D', border:'#D8E8EF', bg:'#F8FAFB', white:'#fff', muted:'#6E8591' };
+      var wrap = { background:C.bg, border:'1.5px solid '+C.border, borderRadius:10, padding:'10px 12px', marginBottom:12, display:'flex', gap:12, flexWrap:'wrap', alignItems:'center', fontFamily:'inherit' };
+      var lbl = { fontSize:10, fontWeight:800, color:C.muted, textTransform:'uppercase', letterSpacing:1, marginRight:4 };
+      var pilBase = function(isAct){ return { background: isAct? C.night : C.white, color: isAct? C.white : C.night, border:'1.5px solid '+(isAct ? C.night : C.border), borderRadius:100, padding:'6px 12px', fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }; };
+      var input = { border:'1.5px solid '+C.border, borderRadius:7, padding:'7px 10px', fontSize:12, fontFamily:'inherit', minWidth:180, background:C.white };
+
+      var totZichtbaar = 0;
+      try {
+        if (Array.isArray(window.__buffet_alle_formulieren)) {
+          totZichtbaar = window.__buffet_alle_formulieren.filter(window._buffetFilterFn).length;
+        }
+      } catch(e){}
+
+      var dagenZichtbaar = dagen.slice(0, 20);
+
+      return R('div', { style: wrap },
+        R('div', { style:{display:'flex',alignItems:'center',gap:6,flexWrap:'wrap'} },
+          R('span', { style: lbl }, 'Dag'),
+          R('button', { type:'button', style: pilBase(dag === '__alle__'), onClick: function(){ setDag('__alle__'); } },
+            'Alle (' + dagen.reduce(function(s,x){return s+x.n;}, 0) + ')'
+          ),
+          dagenZichtbaar.map(function(d){
+            return R('button', { key: d.dag, type:'button', style: pilBase(dag === d.dag), onClick: function(){ setDag(d.dag); } },
+              d.dag + ' · ' + d.n
+            );
+          }),
+          dagen.length > 20 ? R('span', { style:{fontSize:11, color:C.muted} }, '+' + (dagen.length-20) + ' meer, gebruik zoek...') : null
+        ),
+        R('div', { style:{display:'flex',alignItems:'center',gap:6,marginLeft:'auto'} },
+          R('span', { style: lbl }, 'Zoek'),
+          R('input', { type:'text', placeholder:'Groepsnaam...', value: zoek, onChange: function(e){ setZoek(e.target.value); }, style: input }),
+          zoek ? R('button', { type:'button', style:{background:'#eee',border:'none',borderRadius:6,padding:'5px 10px',cursor:'pointer',fontSize:11}, onClick: function(){ setZoek(''); } }, '×') : null
+        ),
+        R('div', { style: { flexBasis:'100%', fontSize:11, color:C.muted, marginTop:2 } },
+          (totZichtbaar > 0 ? totZichtbaar + ' buffetformulier' + (totZichtbaar!==1?'en':'') + ' zichtbaar' : 'geen zichtbaar'),
+          ' — kies hieronder productgroep → productsoort → boeking'
+        )
+      );
+    } catch(e) { console.warn('[BuffetFilterBar] fout:', e); return null; }
+  };
+
+  console.log('[BuffetFilter] ready');
 })();
 </script>
 </body></html>
