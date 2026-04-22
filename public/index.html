@@ -610,7 +610,6 @@ function Header({ sc, setSc, user, logout }) {
   var [grpOpen, setGrpOpen] = useState({ Dagelijks: true, Analyse: true, Beheer: true });
   var navGroups = [
     { label: "Dagelijks", items: [
-      ["home", "🔔", "BBQ Conflicten & Tips"],
       ["adviezen", "📥", "Adviezen-inbox"],
       ["boekingen", "📋", "Boekingen"],
       ["buffet", "🍽", "Buffetformulieren"],
@@ -633,7 +632,6 @@ function Header({ sc, setSc, user, logout }) {
       ["stam:sl", "🛒", "Sligro Import"],
       ["stam:ti", "⏱", "Buffet / Tijden"],
       ["stam:al", "🏷", "Allergenen Stam"],
-      ["stam:re", "📥", "Recras Import"],
       ["stam:ki", "📱", "Kiosk Instellingen"],
       ["stam:dr", "📖", "Draaiboek-links"],
       ["fin_inst", "💸", "Financiële instellingen"],
@@ -14447,17 +14445,14 @@ function ChefScreen({ setSc, setActieve }) {
       var doCheck = function(){
         try {
           var all = window._recrasBoekingen || [];
-          var filt = window._filterBoekingen ? window._filterBoekingen(all) : all;
-          checkBBQConflicten(filt);
+          checkBBQConflicten(all);
         } catch(e) { console.warn('[BbqMeter] check fout:', e); setBbqConflicten(null); }
       };
       // Start check na korte delay zodat stam-data geladen is
       var t = setTimeout(doCheck, 500);
-      window.addEventListener('kr-filter-changed', doCheck);
       window.addEventListener('recras-boekingen-geladen', doCheck);
       return function(){
         clearTimeout(t);
-        window.removeEventListener('kr-filter-changed', doCheck);
         window.removeEventListener('recras-boekingen-geladen', doCheck);
       };
     }, []);
