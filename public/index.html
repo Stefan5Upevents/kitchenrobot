@@ -13745,42 +13745,29 @@ function ChefScreen({ setSc, setActieve }) {
           })()
         );
       })(),
-      // Opzet compacte lijst (gerecht + aantal + presentatie)
+      // Opzet 1-op-1 uit snapshot (geen eigen parse/render)
       (function() {
-        var opzetLijst = opzetSnap ? parseOpzetLijst(opzetSnap.html) : [];
+        var heeftOpzet = opzetSnap && opzetSnap.html && opzetSnap.html.length > 200;
         return React.createElement('div', { style:{marginTop:6} },
-          React.createElement('div', { style:{fontSize:10,fontWeight:700,color:C.muted,marginBottom:4,letterSpacing:0.5} }, '📊 OPZET' + (opzetLijst.length ? ' (' + opzetLijst.length + ' gerechten)' : '')),
-          !opzetSnap ? React.createElement('div', { style:{padding:'10px 12px',fontSize:11,color:C.muted,fontStyle:'italic',background:'#F5F5F5',borderRadius:6,border:'1px dashed #CCC'} },
-            autoGenereer ? '⚡ Wordt gegenereerd...' : 'Nog geen opzet beschikbaar'
-          ) : opzetLijst.length === 0 ? React.createElement('div', { style:{padding:'10px 12px',fontSize:11,color:C.muted,fontStyle:'italic',background:'#F5F5F5',borderRadius:6,border:'1px dashed #CCC'} },
-            'Geen gerechten in opzet'
-          ) : React.createElement('div', { style:{background:'#F5F8FA',borderRadius:6,overflow:'hidden'} },
-            React.createElement('div', { style:{display:'grid',gridTemplateColumns:'1fr 80px 130px',gap:8,padding:'8px 12px',background:C.night,color:'#fff',fontSize:11,fontWeight:700,letterSpacing:0.5} },
-              React.createElement('div', null, 'GERECHT'),
-              React.createElement('div', { style:{textAlign:'right'} }, 'OPZET'),
-              React.createElement('div', { style:{textAlign:'right'} }, 'BUFFETTEN')
-            ),
-            opzetLijst.map(function(r, idx) {
-              return React.createElement('div', {
-                key: idx,
-                style: { display:'grid', gridTemplateColumns:'1fr 80px 130px', gap:8, padding:'7px 12px', fontSize:12, background: idx % 2 === 0 ? '#fff' : '#F5F8FA', borderBottom:'1px solid #EEE' }
-              },
-                React.createElement('div', { style:{fontWeight:600,color:C.night,overflow:'hidden',textOverflow:'ellipsis'} },
-                  r.prio && React.createElement('span', { style:{background:'#FE424D',color:'#fff',borderRadius:3,padding:'1px 4px',fontSize:8,marginRight:4,fontWeight:700} }, 'PRIO'),
-                  r.isGN && React.createElement('span', { style:{background:'#1AA6B7',color:'#fff',borderRadius:3,padding:'1px 4px',fontSize:8,marginRight:4,fontWeight:700} }, 'GN'),
-                  r.gerecht
-                ),
-                React.createElement('div', { style:{textAlign:'right',fontWeight:800,color:'#0277BD',fontSize:13} }, r.opzet),
-                React.createElement('div', { style:{textAlign:'right',fontSize:11,fontWeight:600,color:C.night,overflow:'hidden',textOverflow:'ellipsis'} }, r.presentatie)
-              );
-            })
+          React.createElement('div', { style:{fontSize:10,fontWeight:700,color:C.muted,marginBottom:4,letterSpacing:0.5} }, '📊 OPZET'),
+          !heeftOpzet ? React.createElement('div', { style:{padding:'10px 12px',fontSize:11,color:C.muted,fontStyle:'italic',background:'#F5F5F5',borderRadius:6,border:'1px dashed #CCC'} },
+            autoGenereer ? '⚡ Wordt gegenereerd...' : 'Nog geen opzet beschikbaar — open in Buffetformulieren om te genereren'
+          ) : React.createElement('div', null,
+            React.createElement('iframe', {
+              srcDoc: opzetSnap.html,
+              style:{width:'100%',minHeight:360,maxHeight:600,border:'1px solid #D8E8EF',borderRadius:6,background:'#fff'}
+            }),
+            React.createElement('button', {
+              onClick: function(ev) { ev.stopPropagation(); setOpenFormulier({ naam: b.naam + ' — ' + ps.naam + ' (opzet)', html: opzetSnap.html }); },
+              style:{marginTop:4,background:'transparent',color:C.night,border:'none',fontSize:10,fontWeight:700,cursor:'pointer',textDecoration:'underline'}
+            }, 'Open in volledig scherm')
           )
         );
       })(),
       // BBQ formulier iframe (alleen voor BBQ/buffet)
       ps.isBBQ && React.createElement('div', { style:{marginTop:10} },
         React.createElement('div', { style:{fontSize:10,fontWeight:700,color:C.muted,marginBottom:4,letterSpacing:0.5} }, '📋 BBQ / BUFFET FORMULIER'),
-        bbqSnap ? React.createElement('div', null,
+        (bbqSnap && bbqSnap.html && bbqSnap.html.length > 200) ? React.createElement('div', null,
           React.createElement('iframe', {
             srcDoc: bbqSnap.html,
             style:{width:'100%',minHeight:300,maxHeight:500,border:'1px solid #D8E8EF',borderRadius:6,background:'#fff'}
