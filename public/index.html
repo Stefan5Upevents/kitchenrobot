@@ -15683,4 +15683,47 @@ table[id^="formulier-tabel-"] tbody td {
   }
 }
 </style>
+
+<style id="kr-buffet-formulier-tabel-stijl">
+/* Buffet-formulier tabel kopjes altijd zichtbaar */
+table[id^="formulier-tabel-"] thead {
+  display: table-header-group !important;
+  visibility: visible !important;
+}
+table[id^="formulier-tabel-"] thead tr {
+  background: #002D41 !important;
+}
+table[id^="formulier-tabel-"] thead tr th {
+  color: #ffffff !important;
+  background: #002D41 !important;
+  padding: 11px 12px !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  border: none !important;
+  border-bottom: 2px solid #3FB8C4 !important;
+  white-space: nowrap !important;
+  vertical-align: middle !important;
+}
+table[id^="formulier-tabel-"] thead tr th:first-child {
+  text-align: left !important;
+  border-left: none !important;
+}
+table[id^="formulier-tabel-"] thead tr th:not(:first-child) {
+  text-align: center !important;
+}
+/* tbody rijen ook iets leesbaarder */
+table[id^="formulier-tabel-"] tbody td {
+  padding: 7px 10px !important;
+  border-bottom: 1px solid #EEF3F6 !important;
+}
+@media print {
+  table[id^="formulier-tabel-"] thead tr th {
+    background: #f0f0f0 !important;
+    color: #002D41 !important;
+    border-bottom: 1.5px solid #234756 !important;
+  }
+}
+</style>
 </body></html>
