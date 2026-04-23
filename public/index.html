@@ -13392,7 +13392,7 @@ function ChefScreen({ setSc, setActieve }) {
   React.useEffect(function() {
     if (!supa) return;
     var vandaag = new Date();
-    var over7 = new Date(vandaag.getTime() + 7 * 24 * 60 * 60 * 1000);
+    var over7 = new Date(vandaag.getTime() + 14 * 24 * 60 * 60 * 1000);
     var vanStr = vandaag.toISOString().split('T')[0];
     var totStr = over7.toISOString().split('T')[0];
 
@@ -13408,7 +13408,14 @@ function ChefScreen({ setSc, setActieve }) {
       }
       query.then(function(r) {
         if (r.error) { setLaden(false); return; }
-        setBoekingen(r.data || []);
+        var _tx = (r.data || []).map(function(_b){
+          var _rr = (_b.regels || []).map(function(_r){
+            var _tt = ""; if (_r.begin && typeof _r.begin === "string" && _r.begin.indexOf("T") >= 0) _tt = _r.begin.split("T")[1].substring(0,5);
+            return Object.assign({}, _r, { menuNaam: _r.menuNaam || _r.product_naam || _r.beschrijving || "", starttijdTijd: _r.starttijdTijd || _tt });
+          });
+          return Object.assign({}, _b, { regels: _rr });
+        });
+        setBoekingen(_tx);
         setLaden(false);
       });
 
@@ -13623,6 +13630,12 @@ function ChefScreen({ setSc, setActieve }) {
     if (!supa) return;
     supa.from('recras_wijzigingen').update({ gezien_op: new Date().toISOString() }).eq('boeking_id', boekingId).is('gezien_op', null).then(function() {
       setWijzigingen(function(prev) { var n = Object.assign({}, prev); delete n[boekingId]; return n; });
+    });
+  }
+  function trekGoedkeuringenIn(boekingId) {
+    if (!supa) return;
+    supa.from("chef_goedkeuringen").update({ ingetrokken_op: new Date().toISOString() }).eq("boeking_id", boekingId).is("ingetrokken_op", null).then(function(r){
+      if (!r.error) { setGoedkeuringen(function(prev){ var n = {}; Object.keys(prev).forEach(function(k){ if (!k.startsWith(boekingId + "::")) n[k] = prev[k]; }); return n; }); toonToast("\u21bb Goedkeuringen ingetrokken"); }
     });
   }
 
@@ -13868,7 +13881,7 @@ function ChefScreen({ setSc, setActieve }) {
           style:{background:'transparent',color:C.muted,border:'1px solid ' + C.muted,borderRadius:100,padding:'3px 9px',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}
         }, isVerborgen ? '↻ tonen' : '× verberg'),
         wijz && React.createElement('span', {
-          onClick: function(ev) { ev.stopPropagation(); if (wijz.type === 'geannuleerd' && confirm('Geannuleerde boeking wegklikken?')) markeerWijzigingGezien(b.id); },
+          onClick: function(ev) { ev.stopPropagation(); if (wijz.type === 'geannuleerd') { if (confirm('Geannuleerde boeking wegklikken?')) markeerWijzigingGezien(b.id); } else if (wijz.type === 'gewijzigd') { var _txt = (wijz.detail && wijz.detail.tekst) || 'Deze boeking is gewijzigd in Recras.'; var _k = confirm(_txt + '\n\n[OK] Goedkeuringen intrekken + opnieuw bevestigen\n[Annuleer] Alleen als gezien markeren'); if (_k) { trekGoedkeuringenIn(b.id); markeerWijzigingGezien(b.id); } else { markeerWijzigingGezien(b.id); } } else if (wijz.type === 'nieuw') { markeerWijzigingGezien(b.id); } },
           title: (wijz.detail && wijz.detail.tekst) || wijz.type,
           style:{fontSize:9,fontWeight:800,letterSpacing:0.5,padding:'3px 7px',borderRadius:10,color:'#fff', background: wijz.type === 'geannuleerd' ? '#FE424D' : wijz.type === 'gewijzigd' ? '#FF9800' : '#27AE60', cursor: wijz.type === 'geannuleerd' ? 'pointer' : 'help'}
         }, wijz.type === 'geannuleerd' ? 'GEANNULEERD' : wijz.type === 'gewijzigd' ? 'GEWIJZIGD' : 'NIEUW'),
