@@ -13392,9 +13392,9 @@ function ChefScreen({ setSc, setActieve }) {
   React.useEffect(function() {
     if (!supa) return;
     var vandaag = new Date();
-    var over7 = new Date(vandaag.getTime() + 14 * 24 * 60 * 60 * 1000);
+    var over14 = new Date(vandaag.getTime() + 14 * 24 * 60 * 60 * 1000);
     var vanStr = vandaag.toISOString().split('T')[0];
-    var totStr = over7.toISOString().split('T')[0];
+    var totStr = over14.toISOString().split('T')[0];
 
     function laadAlles() {
       var query = supa.from('recras_boekingen')
@@ -13460,23 +13460,37 @@ function ChefScreen({ setSc, setActieve }) {
     var stamKp = window._stamKoppelingen || [];
     var stamMenus = window._stamMenus || [];
     var stamPg = window._stamProductgroepen || [];
+    var stamPs = window._stamProductsoorten || [];
     var psMap = {};
     (b.regels || []).forEach(function(r) {
       if ((r.menuNaam || '').toLowerCase().includes('add up')) return;
-      var kp = stamKp.find(function(k) { return (k.recras_naam || '').trim() === (r.menuNaam || '').trim(); });
-      if (!kp) return;
-      var m = stamMenus.find(function(mm) { return mm.id === kp.menu_id; });
+      var zoekNaam = ((r.menuNaam || r.product_naam) || '').trim();
+      if (!zoekNaam) return;
+      // 1. Zoek via recras_naam in koppelingen
+      var kp = stamKp.find(function(k) { return (k.recras_naam || '').trim() === zoekNaam; });
+      var m = kp ? stamMenus.find(function(mm) { return mm.id === kp.menu_id; }) : null;
+      // 2. Fallback: zoek direct op menu.naam
+      if (!m) m = stamMenus.find(function(mm) { return (mm.naam || '').trim() === zoekNaam; });
       if (!m) return;
       var psId = m.productsoort_id || m.psId;
       if (!psId) return;
       if (!psMap[psId]) {
-        var psNaam = '?';
-        stamPg.forEach(function(pg) {
-          (pg.soorten || []).forEach(function(ps) { if (ps.id === psId) psNaam = ps.naam; });
-        });
-        var naamL = psNaam.toLowerCase();
+        // Zoek productsoort-naam + productgroep-naam
+        var psNaam = '?'; var pgNaam = '';
+        var ps = stamPs.find(function(p) { return p.id === psId; });
+        if (ps) {
+          psNaam = ps.naam;
+          var pg = stamPg.find(function(g) { return g.id === ps.productgroep_id; });
+          if (pg) pgNaam = pg.naam;
+        } else {
+          // fallback: oude nested structuur pg.soorten
+          stamPg.forEach(function(pg) {
+            (pg.soorten || []).forEach(function(sv) { if (sv.id === psId) { psNaam = sv.naam; pgNaam = pg.naam; } });
+          });
+        }
+        var naamL = (psNaam || '').toLowerCase();
         var isBBQ = naamL.includes('bbq') || naamL.includes('buffet');
-        psMap[psId] = { id: psId, naam: psNaam, isBBQ: isBBQ, pax: 0, starttijd: r.starttijdTijd || b.deadline_tijd || '' };
+        psMap[psId] = { id: psId, naam: psNaam, pgNaam: pgNaam, isBBQ: isBBQ, pax: 0, starttijd: r.starttijdTijd || b.deadline_tijd || '' };
       }
       psMap[psId].pax += (r.aantal || 0);
       if (r.starttijdTijd) psMap[psId].starttijd = r.starttijdTijd;
@@ -14020,7 +14034,7 @@ function ChefScreen({ setSc, setActieve }) {
         vandaagBks.length === 0 ? React.createElement('div', { style:{background:'#E8F5E9',borderRadius:8,padding:16,textAlign:'center',color:C.green,fontSize:12} }, 'Geen boekingen vandaag') : vandaagBks.map(function(b) { return renderBoeking(b); })
       )
     ) : React.createElement(React.Fragment, null,
-      dagen.length === 0 && React.createElement('div', { style:{background:'#E8F5E9',borderRadius:8,padding:20,textAlign:'center',color:C.green,fontSize:13} }, 'Geen boekingen komende 7 dagen'),
+      dagen.length === 0 && React.createElement('div', { style:{background:'#E8F5E9',borderRadius:8,padding:20,textAlign:'center',color:C.green,fontSize:13} }, 'Geen boekingen komende 14 dagen'),
       dagen.map(function(g) {
         if (g.dag === vandaagIso) return null;
         return React.createElement('div', { key: g.dag, style:{marginBottom:18} },
