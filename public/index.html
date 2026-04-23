@@ -14738,6 +14738,7 @@ function ChefScreen({ setSc, setActieve }) {
 })();
 </script>
 
+
 <script id="kr-buffet-filter">
 (function(){
   if (window._krBuffetCascade) return; window._krBuffetCascade = true;
@@ -14761,6 +14762,71 @@ function ChefScreen({ setSc, setActieve }) {
     return (namen[m-1] || '?') + ' ' + y;
   }
 
+  // BOUW formulieren-lijst direct vanuit _recrasBoekingen + stamdata.
+  // Robuuster dan __buffet_alle_formulieren wat afhangt van BuffetScreen render-timing.
+  function bouwAlleFormulieren(){
+    try {
+      var boeks = window._recrasBoekingen || [];
+      if (window._filterBoekingen) {
+        try { boeks = window._filterBoekingen(boeks); } catch(e){}
+      }
+      // Ook uitgebreid-filter toepassen als actief
+      if (window._filterUitgebreid) {
+        boeks = boeks.filter(function(b){ try { return window._filterUitgebreid(b); } catch(e){ return true; } });
+      }
+      var kopLijst = window._stamKoppelingen || [];
+      var menuLijst = window._stamMenus || [];
+      var pgLijst = window._stamProductgroepen || [];
+      var psLijst = window._stamProductsoorten || [];
+
+      var lijst = [];
+      var zien = {};
+      for (var i = 0; i < boeks.length; i++) {
+        var b = boeks[i]; if (!b || !b.regels) continue;
+        for (var j = 0; j < b.regels.length; j++) {
+          var r = b.regels[j]; if (!r) continue;
+          // Zoek menu via koppeling
+          var kop = null;
+          for (var k = 0; k < kopLijst.length; k++) if ((kopLijst[k].recras_naam || '').trim() === ((r.menuNaam || r.product_naam) || '').trim()) { kop = kopLijst[k]; break; }
+          var m = null;
+          if (kop) { for (var mi = 0; mi < menuLijst.length; mi++) if (menuLijst[mi].id === kop.menu_id) { m = menuLijst[mi]; break; } }
+          if (!m) { for (var mi2 = 0; mi2 < menuLijst.length; mi2++) if (menuLijst[mi2].naam === (r.menuNaam || r.product_naam)) { m = menuLijst[mi2]; break; } }
+          if (!m) continue;
+          var psId2 = m.productsoort_id || m.psId;
+          if (!psId2) continue;
+          var dedupKey = b.id + '_' + psId2;
+          if (zien[dedupKey]) continue;
+          zien[dedupKey] = true;
+          // Productsoort info
+          var ps2 = null;
+          for (var si = 0; si < psLijst.length; si++) if (psLijst[si].id === psId2) { ps2 = psLijst[si]; break; }
+          var pgId2 = (ps2 && ps2.productgroep_id) || (m.productgroep_id) || '';
+          var pg2 = null;
+          if (pgId2) { for (var pi = 0; pi < pgLijst.length; pi++) if (pgLijst[pi].id === pgId2) { pg2 = pgLijst[pi]; break; } }
+          // Fallback: probeer ook .soorten-structuur (oudere _stamProductgroepen met embedded soorten)
+          if (!pg2) {
+            for (var pi2 = 0; pi2 < pgLijst.length; pi2++) {
+              var g = pgLijst[pi2];
+              if (g && g.soorten && g.soorten.some && g.soorten.some(function(s){ return s.id === psId2; })) { pg2 = g; if (!pgId2) pgId2 = g.id; break; }
+            }
+          }
+          lijst.push({
+            boekingId: b.id,
+            boekingNaam: b.naam,
+            boekingTijd: r.starttijdTijd || b.deadlineTijd || '',
+            boekingDag: b.deadlineDag || '',
+            psId: psId2,
+            psNaam: ps2 ? ps2.naam : psId2,
+            pgId: pgId2,
+            pgNaam: pg2 ? pg2.naam : '',
+            datum: b.datum || ''
+          });
+        }
+      }
+      return lijst;
+    } catch(e) { console.warn('[bouwAlleFormulieren]', e); return []; }
+  }
+
   window._BuffetFilterBar = function BuffetFilterBar(){
     try {
       if (!window.React) return null;
@@ -14774,7 +14840,13 @@ function ChefScreen({ setSc, setActieve }) {
       useEffect(function(){
         var h = function(){ bump(function(x){return x+1;}); };
         window.addEventListener('recras-boekingen-geladen', h);
-        return function(){ window.removeEventListener('recras-boekingen-geladen', h); };
+        window.addEventListener('kr-filter-changed', h);
+        window.addEventListener('kr-boek-stam-geladen', h);
+        return function(){
+          window.removeEventListener('recras-boekingen-geladen', h);
+          window.removeEventListener('kr-filter-changed', h);
+          window.removeEventListener('kr-boek-stam-geladen', h);
+        };
       }, []);
 
       function update(nieuw){
@@ -14782,10 +14854,10 @@ function ChefScreen({ setSc, setActieve }) {
         setCas(merged);
         window._buffetCascade = merged;
         if (merged.maand && merged.dag && merged.pgId && merged.psId && merged.boekingId) {
-          var alle = window.__buffet_alle_formulieren || [];
+          var alle2 = bouwAlleFormulieren();
           var f = null;
-          for (var i = 0; i < alle.length; i++) {
-            if (alle[i] && alle[i].boekingId === merged.boekingId && alle[i].psId === merged.psId) { f = alle[i]; break; }
+          for (var i = 0; i < alle2.length; i++) {
+            if (alle2[i] && alle2[i].boekingId === merged.boekingId && alle2[i].psId === merged.psId) { f = alle2[i]; break; }
           }
           if (f && window._buffetSetActieve) window._buffetSetActieve(f);
         }
@@ -14803,7 +14875,15 @@ function ChefScreen({ setSc, setActieve }) {
         try { window.dispatchEvent(new Event('kr-filter-changed')); } catch(e){}
       }
 
-      var alle = window.__buffet_alle_formulieren || [];
+      // Gebruik direct _recrasBoekingen + stamdata in plaats van __buffet_alle_formulieren
+      var alle = bouwAlleFormulieren();
+      var aantBoek = (window._recrasBoekingen || []).length;
+      var aantKop = (window._stamKoppelingen || []).length;
+      var aantMenu = (window._stamMenus || []).length;
+      var aantPg = (window._stamProductgroepen || []).length;
+
+      // Debug console
+      try { window.__buffetCascadeDebug = { aantBoek:aantBoek, aantKop:aantKop, aantMenu:aantMenu, aantPg:aantPg, aantFormulier: alle.length }; } catch(e){}
 
       // Stap 1: Maanden
       var maandMap = {};
@@ -14911,12 +14991,27 @@ function ChefScreen({ setSc, setActieve }) {
       if (cas.boekingId) { breadEls.push(R('span', { key:'s4', style:{color:C.muted,margin:'0 2px'} }, '›')); breadEls.push(R('span', { key:'bf', style:{ background:C.night, color:C.white, padding:'3px 9px', borderRadius:5, fontWeight:800, fontSize:12 } }, (boekLabel||'').substring(0,40))); }
       if (cas.maand || cas.dag || cas.pgId || cas.psId) breadEls.push(R('button', { key:'res', type:'button', style:{ marginLeft:'auto', background:'#FFE0E0', color:'#C62828', border:'none', borderRadius:5, padding:'4px 10px', fontSize:11, cursor:'pointer', fontWeight:700 }, onClick: function(){ setCas({}); window._buffetCascade={}; if(window._buffetSetActieve) window._buffetSetActieve({}); try{window.dispatchEvent(new Event('kr-filter-changed'));}catch(e){} } }, '↻ opnieuw'));
 
+      // Debug-info
+      var debugEl = R('div', { style:{ fontSize:10, color:C.muted, marginBottom:8 } },
+        'Status: ' + aantBoek + ' boekingen · ' + aantKop + ' koppelingen · ' + aantMenu + ' menus · ' + aantPg + ' productgroepen · ' + alle.length + ' buffetformulieren'
+      );
+
       var stapEl = null;
-      if (!cas.maand) {
+      if (alle.length === 0) {
+        // Specifieke foutmelding op basis van welke data ontbreekt
+        var reden = '';
+        if (aantBoek === 0) reden = 'Geen boekingen geladen. Outlet en datum-range bovenin controleren.';
+        else if (aantKop === 0 || aantMenu === 0) reden = 'Stamgegevens (menu-koppelingen) nog niet geladen. Wacht 1 seconde en herlaad (F5).';
+        else reden = 'Boekingen geladen maar geen menu-koppelingen gevonden. Ga naar Stamgegevens → Recras Import om te koppelen.';
+        stapEl = R('div', { style: stepWrap },
+          R('div', { style: stepLbl }, 'Geen buffetformulieren beschikbaar'),
+          R('div', { style: { fontSize:12, color:C.muted } }, reden)
+        );
+      } else if (!cas.maand) {
         stapEl = R('div', { style: stepWrap },
           R('div', { style: stepLbl }, '1. Kies een maand'),
           R('div', { style: pillsWrap },
-            maanden.length === 0 ? R('div', { style: { fontSize:12, color:C.muted } }, 'Geen buffetformulieren in huidige outlet/datum-selectie') :
+            maanden.length === 0 ? R('div', { style: { fontSize:12, color:C.muted } }, 'Formulieren hebben geen datum-info') :
             maanden.map(function(m){ return R('button', { key:m.key, type:'button', style: pill(false), onClick: function(){ update({ maand: m.key }); } }, m.label + ' · ' + m.n); })
           )
         );
@@ -14931,6 +15026,7 @@ function ChefScreen({ setSc, setActieve }) {
         stapEl = R('div', { style: stepWrap },
           R('div', { style: stepLbl }, '3. Kies een productgroep op ' + cas.dag),
           R('div', { style: pillsWrap },
+            pgs.length === 0 ? R('div', { style: { fontSize:12, color:C.muted } }, 'Geen productgroepen op deze dag') :
             pgs.map(function(p){ return R('button', { key:p.id, type:'button', style: pill(false), onClick: function(){ update({ pgId: p.id }); } }, p.naam + ' · ' + p.n); })
           )
         );
@@ -14971,12 +15067,13 @@ function ChefScreen({ setSc, setActieve }) {
 
       return R('div', { style: wrap },
         R('div', { style: crumb }, breadEls),
+        debugEl,
         stapEl
       );
-    } catch(e) { console.warn('[BuffetFilterBar] fout:', e); return null; }
+    } catch(e) { console.warn('[BuffetFilterBar] fout:', e); return R('div', { style:{background:'#FFEBEE',padding:12,borderRadius:8,color:'#C62828',fontSize:12,marginBottom:12} }, 'Cascade-fout: ' + (e.message || e)); }
   };
 
-  console.log('[BuffetCascade] ready');
+  console.log('[BuffetCascade v2] ready');
 })();
 </script>
 </body></html>
