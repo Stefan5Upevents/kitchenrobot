@@ -13633,7 +13633,19 @@ function ChefScreen({ setSc, setActieve }) {
       sessionStorage.setItem('buffet_return', JSON.stringify({ source: 'chef', boekingId: b.id, scrollY: sy1, ts: Date.now() }));
     } catch(e) {}
     if (typeof setActieve === 'function') {
-      setActieve({ boekingId: b.id, psId: ps.id, pgId: '', boekingNaam: b.naam, boekingTijd: b.deadline_tijd || '', boekingDag: b.deadline_dag || '' });
+      // Zoek pgId op basis van psId - eerst in _stamProductsoorten (flat), dan in _stamProductgroepen (nested)
+      var _pgId = '';
+      try {
+        var _ps = (window._stamProductsoorten || []).find(function(p){ return p.id === ps.id; });
+        if (_ps && _ps.productgroep_id) _pgId = _ps.productgroep_id;
+        if (!_pgId) {
+          (window._stamProductgroepen || []).forEach(function(g){
+            if (_pgId) return;
+            if (g.soorten && g.soorten.some(function(s){ return s.id === ps.id; })) _pgId = g.id;
+          });
+        }
+      } catch(_e) {}
+      setActieve({ boekingId: b.id, psId: ps.id, pgId: _pgId, boekingNaam: b.naam, boekingTijd: b.deadline_tijd || '', boekingDag: b.deadline_dag || '' });
       setSc('buffet');
     } else {
       alert('Navigatie niet beschikbaar');
