@@ -3919,7 +3919,7 @@ function OpzetScreen() {
     if (!a.is_gn && b.is_gn) return 1;
     return a.volgorde - b.volgorde;
   });
-  var kleuren = [C.aqua, "#2979b0", "#5e35b1", "#00838f", "#2e7d32"];
+  var kleuren = ["#3FB8C4", "#1976D2", "#43A047", "#FB8C00", "#8E24AA"];
   // AUTO-SAVE OPZETLIJST: sla tabel op als snapshot voor kiosk
   React.useEffect(function() {
     if (!psId || !boekingen.length || !window._supa) return;
@@ -15246,4 +15246,119 @@ function ChefScreen({ setSc, setActieve }) {
   console.log('[OpzetCascade] ready');
 })();
 </script>
+
+<style id="kr-opzet-tabel-stijl">
+/* ========== Opzet-tabel styling ========== */
+.kr-opzet-wrapper {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #E1EAEF;
+  box-shadow: 0 2px 12px rgba(0, 45, 65, 0.06);
+  overflow: hidden;
+}
+table[id^="opzet-tabel-"] {
+  border-collapse: collapse !important;
+  width: 100% !important;
+  font-family: inherit !important;
+  background: #fff !important;
+}
+
+/* Headers */
+table[id^="opzet-tabel-"] thead tr th {
+  padding: 14px 12px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.2px !important;
+  vertical-align: top !important;
+  font-size: 12px !important;
+  border-bottom: 3px solid rgba(255,255,255,0.25) !important;
+}
+
+/* Gerecht-kolom header (links) — licht met donkere tekst */
+table[id^="opzet-tabel-"] thead tr th:first-child {
+  background: #F5F8FA !important;
+  color: #002D41 !important;
+  font-size: 13px !important;
+  text-align: left !important;
+  border-right: 2px solid #E1EAEF !important;
+  border-bottom: 2px solid #E1EAEF !important;
+}
+
+/* TOTAAL header (rechts) — donkerblauw */
+table[id^="opzet-tabel-"] thead tr th:last-child {
+  background: #002D41 !important;
+  color: #fff !important;
+  border-left: 3px solid #fff !important;
+  font-size: 13px !important;
+  text-align: center !important;
+}
+
+/* Boeking-headers (midden) — witte tekst op gekleurde achtergrond */
+table[id^="opzet-tabel-"] thead tr th:not(:first-child):not(:last-child) {
+  color: #fff !important;
+  border-left: 2px solid rgba(255,255,255,0.3) !important;
+  text-align: left !important;
+}
+
+/* Cellen — basis */
+table[id^="opzet-tabel-"] tbody td {
+  padding: 11px 14px !important;
+  font-size: 13px !important;
+  border-bottom: 1px solid #EEF3F6 !important;
+  vertical-align: middle !important;
+  color: #234756 !important;
+}
+
+/* Eerste cel (gerecht-naam) — vetgedrukt, duidelijk scheiden */
+table[id^="opzet-tabel-"] tbody td:first-child {
+  font-weight: 700 !important;
+  color: #002D41 !important;
+  background: #FAFCFD !important;
+  border-right: 2px solid #E1EAEF !important;
+}
+
+/* Laatste cel (totaal) — nadruk */
+table[id^="opzet-tabel-"] tbody td:last-child {
+  background: #F5F8FA !important;
+  font-weight: 800 !important;
+  color: #002D41 !important;
+  border-left: 2px solid #E1EAEF !important;
+  text-align: center !important;
+  font-size: 14px !important;
+}
+
+/* Zebra striping (alleen midden-cellen) */
+table[id^="opzet-tabel-"] tbody tr:nth-child(even) td:not(:first-child):not(:last-child) {
+  background: #F9FBFC !important;
+}
+table[id^="opzet-tabel-"] tbody tr:nth-child(odd) td:not(:first-child):not(:last-child) {
+  background: #FFFFFF !important;
+}
+
+/* Hover voor hele rij */
+table[id^="opzet-tabel-"] tbody tr:hover td {
+  background: #EEF7F9 !important;
+}
+table[id^="opzet-tabel-"] tbody tr:hover td:first-child {
+  background: #E3F2F7 !important;
+}
+table[id^="opzet-tabel-"] tbody tr:hover td:last-child {
+  background: #DEECF3 !important;
+}
+
+/* Laatste rij geen border-bottom */
+table[id^="opzet-tabel-"] tbody tr:last-child td {
+  border-bottom: none !important;
+}
+
+/* Print-fallback: terug naar strakker */
+@media print {
+  table[id^="opzet-tabel-"] tbody tr:nth-child(even) td:not(:first-child):not(:last-child) {
+    background: #F0F4F7 !important;
+  }
+  table[id^="opzet-tabel-"] tbody td:first-child,
+  table[id^="opzet-tabel-"] tbody td:last-child {
+    background: #F5F8FA !important;
+  }
+}
+</style>
 </body></html>
