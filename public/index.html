@@ -15636,4 +15636,51 @@ table[id^="opzet-tabel-"] tbody tr:last-child td {
   console.log('[TijdenCascade] ready');
 })();
 </script>
+
+<style id="kr-buffet-tabel-stijl">
+/* ========== Buffet-formulier tabel kopjes forceren ========== */
+table[id^="formulier-tabel-"] thead {
+  display: table-header-group !important;
+  visibility: visible !important;
+}
+table[id^="formulier-tabel-"] thead tr {
+  background: #002D41 !important;
+  color: #ffffff !important;
+}
+table[id^="formulier-tabel-"] thead tr th {
+  background: #002D41 !important;
+  color: #ffffff !important;
+  padding: 12px 10px !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  letter-spacing: 1px !important;
+  text-transform: uppercase !important;
+  border-bottom: 2px solid #3FB8C4 !important;
+  white-space: nowrap !important;
+  vertical-align: middle !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: table-cell !important;
+}
+table[id^="formulier-tabel-"] thead tr th:first-child {
+  text-align: left !important;
+  padding-left: 14px !important;
+}
+table[id^="formulier-tabel-"] thead tr th:not(:first-child) {
+  text-align: center !important;
+}
+/* Cellen onder header iets frissere uitstraling */
+table[id^="formulier-tabel-"] tbody td {
+  vertical-align: middle !important;
+}
+/* Print-safe */
+@media print {
+  table[id^="formulier-tabel-"] thead tr th {
+    background: #002D41 !important;
+    color: #ffffff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+</style>
 </body></html>
