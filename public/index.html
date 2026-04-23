@@ -4167,7 +4167,7 @@ function OpzetScreen() {
 }
 function TijdenScreen() {
   var [appTab, setAppTab] = useState("alle");
-  var dagen = (window._recrasBoekingen || []).map(function(b) {
+  var dagen = (window._filterBoekingen ? window._filterBoekingen(window._recrasBoekingen || []) : (window._recrasBoekingen || [])).map(function(b) {
     return (b.deadline || "").replace("T", " ").split(" ")[0];
   }).filter(function(v, i, a) {
     return v && a.indexOf(v) === i;
@@ -4178,13 +4178,14 @@ function TijdenScreen() {
   var [filterPS, setFilterPS] = useState("alle");
   var [filterTijdVan, setFilterTijdVan] = useState("");
   var [filterTijdTot, setFilterTijdTot] = useState("");
+  React.useEffect(function(){ window._tijdenSetDag = setDag; window._tijdenSetAppTab = setAppTab; window._tijdenSetZoek = setZoekTekst; return function(){ if (window._tijdenSetDag === setDag) window._tijdenSetDag = null; if (window._tijdenSetAppTab === setAppTab) window._tijdenSetAppTab = null; if (window._tijdenSetZoek === setZoekTekst) window._tijdenSetZoek = null; }; }, [setDag, setAppTab, setZoekTekst]);
   useEffect(function() {
-    if (dagen.length > 0 && !dag) setDag(dagen[0]);
+    if (!window._tijdenCascadeActief && dagen.length > 0 && !dag) setDag(dagen[0]);
   }, [dagen.length]);
   function berekenTijdenVoorDag(selectedDag) {
     if (!selectedDag) return [];
     var resultaat = [];
-    var dagBoekingen = (window._recrasBoekingen || []).filter(function(b) {
+    var dagBoekingen = (window._filterBoekingen ? window._filterBoekingen(window._recrasBoekingen || []) : (window._recrasBoekingen || [])).filter(function(b) {
       return (b.deadline || "").replace("T", " ").split(" ")[0] === selectedDag;
     });
     dagBoekingen.forEach(function(b) {
@@ -4393,7 +4394,7 @@ function TijdenScreen() {
       return (x.uur || 0) <= totMin;
     });
   }
-  return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 } }, /* @__PURE__ */ React.createElement("div", { style: SS.pT }, "Tijdenoverzicht"), /* @__PURE__ */ React.createElement("button", { style: btnSG, className: "no-print", onClick: function() {
+  return /* @__PURE__ */ React.createElement("div", null, window._FilterBar ? /* @__PURE__ */ React.createElement(window._FilterBar, { key:"krfb" }) : null, window._TijdenFilterBar ? /* @__PURE__ */ React.createElement(window._TijdenFilterBar, { key:"krtfb" }) : null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 } }, /* @__PURE__ */ React.createElement("div", { style: SS.pT }, "Tijdenoverzicht"), /* @__PURE__ */ React.createElement("button", { style: btnSG, className: "no-print", onClick: function() {
     var origTitle = document.title;
     var dagLabel = dag.replace(/-/g, "");
     document.title = "Tijdenoverzicht \u2013 " + dagLabel;
@@ -4401,7 +4402,7 @@ function TijdenScreen() {
     setTimeout(function() {
       document.title = origTitle;
     }, 1e3);
-  } }, "🖨 Print")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap" }, className: "no-print" }, dagen.length === 0 ? /* @__PURE__ */ React.createElement("div", { style: alertI }, "Importeer eerst boekingen via het hoofdscherm.") : dagen.map(function(d) {
+  } }, "🖨 Print")), /* @__PURE__ */ React.createElement("div", { style: (window._tijdenCascadeActief ? { display: "none" } : { display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap" }), className: "no-print" }, dagen.length === 0 ? /* @__PURE__ */ React.createElement("div", { style: alertI }, "Importeer eerst boekingen via het hoofdscherm.") : dagen.map(function(d) {
     var parts = d.split("-");
     var dt = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
     var dnamen = ["zo", "ma", "di", "wo", "do", "vr", "za"];
@@ -4427,14 +4428,14 @@ function TijdenScreen() {
     var dn = ["zo", "ma", "di", "wo", "do", "vr", "za"];
     var mn = ["jan", "feb", "mrt", "apr", "mei", "jun", "jul", "aug", "sep", "okt", "nov", "dec"];
     return dn[dt.getDay()] + " " + parseInt(parts[2]) + " " + mn[parseInt(parts[1]) - 1];
-  })()), /* @__PURE__ */ React.createElement("div", { style: SS.tabBar, className: "no-print" }, [["alle", "Alle"], ["bbq", "BBQ"], ["oven", "Oven"], ["frituur", "Frituur"]].map(function(item) {
+  })()), /* @__PURE__ */ React.createElement("div", { style: (window._tijdenCascadeActief ? { display: "none" } : SS.tabBar), className: "no-print" }, [["alle", "Alle"], ["bbq", "BBQ"], ["oven", "Oven"], ["frituur", "Frituur"]].map(function(item) {
     return /* @__PURE__ */ React.createElement("button", { key: item[0], style: tabStyle(appTab === item[0]), onClick: function() {
       setAppTab(item[0]);
     } }, item[1]);
   }), /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }), (function() {
     var n = Object.keys(window._formulierTijden || {}).length;
     return n > 0 ? /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: C.green, fontWeight: 700 } }, "✓ ", n, " formulieren geladen") : /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10, color: C.muted } }, "Bezoek buffetformulieren om tijden te laden");
-  })()), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "2fr 1fr 1fr 90px 90px", gap: 8, marginBottom: 12, alignItems: "end" }, className: "no-print" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: SS.lbl }, "🔍 Zoek boeking, menu, locatie..."), /* @__PURE__ */ React.createElement("input", { style: SS.inp, value: zoekTekst, placeholder: "Zoek...", onChange: function(e) {
+  })()), /* @__PURE__ */ React.createElement("div", { style: (window._tijdenCascadeActief ? { display: "none" } : { display: "grid", gridTemplateColumns: "2fr 1fr 1fr 90px 90px", gap: 8, marginBottom: 12, alignItems: "end" }), className: "no-print" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: SS.lbl }, "🔍 Zoek boeking, menu, locatie..."), /* @__PURE__ */ React.createElement("input", { style: SS.inp, value: zoekTekst, placeholder: "Zoek...", onChange: function(e) {
     setZoekTekst(e.target.value);
   } })), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: SS.lbl }, "Locatie"), /* @__PURE__ */ React.createElement("select", { style: SS.inp, value: filterLocatie, onChange: function(e) {
     setFilterLocatie(e.target.value);
@@ -4454,7 +4455,7 @@ function TijdenScreen() {
     setFilterPS("alle");
     setFilterTijdVan("");
     setFilterTijdTot("");
-  } }, "\u2715 Filters wissen")), filtered.length === 0 ? /* @__PURE__ */ React.createElement("div", { style: { ...SS.card, ...alertI } }, dagen.length > 0 ? "Geen tijden voor deze dag/categorie. Open buffetformulieren om tijden te genereren." : "") : /* @__PURE__ */ React.createElement("div", { style: SS.card }, /* @__PURE__ */ React.createElement("table", { className:"kr-table", style: { width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }, className: "opzet-tbl" }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", { style: { background: C.night } }, ["Tijd", "Activiteit", "Kwal.", "Aantal", "Menu", "Boeking", "Locatie", "Deadline"].map(function(h) {
+  } }, "\u2715 Filters wissen")), filtered.length === 0 ? /* @__PURE__ */ React.createElement("div", { style: (dag ? { ...SS.card, ...alertI } : { display: "none" }) }, dag ? "Geen tijden voor deze dag/categorie. Open buffetformulieren om tijden te genereren." : "") : /* @__PURE__ */ React.createElement("div", { style: SS.card }, /* @__PURE__ */ React.createElement("table", { className:"kr-table", style: { width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }, className: "opzet-tbl" }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", { style: { background: C.night } }, ["Tijd", "Activiteit", "Kwal.", "Aantal", "Menu", "Boeking", "Locatie", "Deadline"].map(function(h) {
     return /* @__PURE__ */ React.createElement("th", { key: h, style: { ...SS.th, color: "white", background: "transparent", textAlign: "left" } }, h);
   }))), /* @__PURE__ */ React.createElement("tbody", null, filtered.map(function(item, ii) {
     var kleur = item.isRecras ? C.hot : ak[item.app] || C.night;
@@ -15361,4 +15362,251 @@ table[id^="opzet-tabel-"] tbody tr:last-child td {
   }
 }
 </style>
+
+<script id="kr-tijden-filter">
+(function(){
+  if (window._krTijdenCascade) return; window._krTijdenCascade = true;
+  window._tijdenCascadeActief = true;
+  window._tijdenCascade = window._tijdenCascade || {};
+
+  function pakDatum(b){
+    if (!b) return '';
+    if (b.datum && typeof b.datum === 'string' && b.datum.length >= 10) return b.datum.substring(0,10);
+    if (b.deadline && typeof b.deadline === 'string' && b.deadline.length >= 10) return b.deadline.substring(0,10);
+    return '';
+  }
+  function monthKey(d){ return d && typeof d === 'string' && d.length >= 7 ? d.substring(0,7) : ''; }
+  function monthLabel(mk){
+    if (!mk || mk.length < 7) return '?';
+    var y = mk.substring(0,4);
+    var m = parseInt(mk.substring(5,7));
+    var namen = ['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
+    return (namen[m-1] || '?') + ' ' + y;
+  }
+  function dagLabel(d, deadlineDag){
+    if (deadlineDag) return deadlineDag;
+    if (!d || d.length < 10) return d || '?';
+    var parts = d.split('-');
+    var dt = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+    var dnamen = ['zo','ma','di','wo','do','vr','za'];
+    var mnamen = ['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
+    return dnamen[dt.getDay()] + ' ' + parseInt(parts[2]) + ' ' + mnamen[parseInt(parts[1])-1];
+  }
+
+  var TIJDSEENHEDEN = [
+    { id:'alle', naam:'Alle', icon:'⏰' },
+    { id:'bbq', naam:'BBQ', icon:'🔥' },
+    { id:'oven', naam:'Oven', icon:'♻️' },
+    { id:'frituur', naam:'Frituur', icon:'🍟' }
+  ];
+
+  function bouwBoeks(){
+    var boeks = window._recrasBoekingen || [];
+    if (window._filterBoekingen) { try { boeks = window._filterBoekingen(boeks); } catch(e){} }
+    return boeks;
+  }
+
+  window._TijdenFilterBar = function TijdenFilterBar(){
+    try {
+      if (!window.React) return null;
+      var R = window.React.createElement;
+      var useState = window.React.useState;
+      var useEffect = window.React.useEffect;
+
+      var s1 = useState(Object.assign({}, window._tijdenCascade || {})); var cas = s1[0]; var setCas = s1[1];
+      var s2 = useState(0); var bump = s2[1];
+      var s3 = useState(''); var zoek = s3[0]; var setZoek = s3[1];
+
+      useEffect(function(){
+        var h = function(){ bump(function(x){return x+1;}); };
+        window.addEventListener('recras-boekingen-geladen', h);
+        window.addEventListener('kr-filter-changed', h);
+        return function(){
+          window.removeEventListener('recras-boekingen-geladen', h);
+          window.removeEventListener('kr-filter-changed', h);
+        };
+      }, []);
+
+      function kiesMaand(mk){
+        var nieuw = { maand: mk };
+        setCas(nieuw); window._tijdenCascade = nieuw;
+        if (window._tijdenSetDag) window._tijdenSetDag('');
+        if (window._tijdenSetAppTab) window._tijdenSetAppTab('alle');
+        try { window.dispatchEvent(new Event('kr-filter-changed')); } catch(e){}
+      }
+      function kiesDag(d){
+        var nieuw = { maand: cas.maand, dag: d };
+        setCas(nieuw); window._tijdenCascade = nieuw;
+        if (window._tijdenSetDag) window._tijdenSetDag(d);
+        if (window._tijdenSetAppTab) window._tijdenSetAppTab('alle');
+        try { window.dispatchEvent(new Event('kr-filter-changed')); } catch(e){}
+      }
+      function kiesTijdseenheid(id){
+        var nieuw = { maand: cas.maand, dag: cas.dag, appTab: id };
+        setCas(nieuw); window._tijdenCascade = nieuw;
+        if (window._tijdenSetAppTab) window._tijdenSetAppTab(id);
+        try { window.dispatchEvent(new Event('kr-filter-changed')); } catch(e){}
+      }
+      function resetTot(niveau){
+        var velden = ['maand','dag','appTab'];
+        var idx = velden.indexOf(niveau);
+        if (idx < 0) return;
+        var merged = {};
+        for (var i = 0; i < idx; i++) merged[velden[i]] = cas[velden[i]];
+        setCas(merged); window._tijdenCascade = merged;
+        if (window._tijdenSetDag) window._tijdenSetDag(merged.dag || '');
+        if (window._tijdenSetAppTab) window._tijdenSetAppTab(merged.appTab || 'alle');
+        try { window.dispatchEvent(new Event('kr-filter-changed')); } catch(e){}
+      }
+      function resetAlles(){
+        setCas({}); window._tijdenCascade = {};
+        if (window._tijdenSetDag) window._tijdenSetDag('');
+        if (window._tijdenSetAppTab) window._tijdenSetAppTab('alle');
+        setZoek(''); if (window._tijdenSetZoek) window._tijdenSetZoek('');
+        try { window.dispatchEvent(new Event('kr-filter-changed')); } catch(e){}
+      }
+
+      var boeks = bouwBoeks();
+      var aantBoek = (window._recrasBoekingen || []).length;
+      var aantGefilterd = boeks.length;
+
+      // Stap 1: maanden
+      var maandMap = {};
+      boeks.forEach(function(b){
+        var d = pakDatum(b); if (!d) return;
+        var mk = monthKey(d); if (!mk) return;
+        maandMap[mk] = (maandMap[mk] || 0) + 1;
+      });
+      var maanden = Object.keys(maandMap).sort().map(function(k){ return { key:k, label: monthLabel(k), n: maandMap[k] }; });
+
+      // Stap 2: dagen in gekozen maand
+      var dagMap = {};
+      if (cas.maand) {
+        boeks.forEach(function(b){
+          var d = pakDatum(b); if (!d) return;
+          if (monthKey(d) !== cas.maand) return;
+          if (!dagMap[d]) dagMap[d] = { key:d, label: dagLabel(d, b.deadlineDag), n:0 };
+          dagMap[d].n++;
+        });
+      }
+      var dagen = Object.keys(dagMap).map(function(k){return dagMap[k];}).sort(function(a,b){return a.key.localeCompare(b.key);});
+
+      // Labels
+      var dagLbl = cas.dag ? dagLabel(cas.dag, null) : '';
+      var tijdseenheidLbl = '';
+      if (cas.appTab) { var t = TIJDSEENHEDEN.find(function(x){return x.id === cas.appTab;}); tijdseenheidLbl = t ? t.naam : cas.appTab; }
+
+      var C = { night: '#002D41', active:'#1976D2', border:'#D8E8EF', bg:'#F8FAFB', white:'#fff', muted:'#6E8591', gray:'#EEF3F6' };
+      var wrap = { background:C.bg, border:'1.5px solid '+C.border, borderRadius:10, padding:'14px 16px', marginBottom:14, fontFamily:'inherit' };
+      var crumb = { display:'flex', alignItems:'center', gap:4, marginBottom:12, flexWrap:'wrap', fontSize:12 };
+      var crumbBtn = { background:C.white, color:C.active, border:'1.5px solid '+C.border, padding:'3px 9px', borderRadius:5, cursor:'pointer', fontWeight:700, fontFamily:'inherit', fontSize:12 };
+      var stepWrap = { marginTop:10, padding:'10px 12px', background:C.white, border:'1.5px solid '+C.border, borderRadius:8 };
+      var stepLbl = { fontSize:11, fontWeight:800, color:C.night, marginBottom:8, letterSpacing:0.5 };
+      var pillsWrap = { display:'flex', flexWrap:'wrap', gap:6 };
+      var pill = function(isAct){ return { background: isAct ? C.active : C.gray, color: isAct ? C.white : C.night, border: '1.5px solid ' + (isAct ? C.active : C.border), borderRadius: 8, padding: '8px 14px', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' };};
+
+      // Zoekbalk
+      var zoekBalk = R('div', { style:{ display:'flex', gap:8, alignItems:'center', marginBottom: zoek ? 10 : 14 } },
+        R('span', { style:{ fontSize:16 } }, '🔍'),
+        R('input', { type:'text', placeholder:'Zoek boekingsnaam (typ minstens 2 letters)...', value: zoek,
+          onChange: function(e){ setZoek(e.target.value); },
+          style: { flex:1, padding:'9px 12px', fontSize:13, border:'1.5px solid '+C.border, borderRadius:8, fontFamily:'inherit', outline:'none', background:C.white }
+        }),
+        zoek ? R('button', { type:'button', style:{ background:'#eee', border:'none', padding:'7px 12px', borderRadius:6, cursor:'pointer', fontSize:11, fontWeight:700, fontFamily:'inherit' }, onClick: function(){ setZoek(''); if (window._tijdenSetZoek) window._tijdenSetZoek(''); } }, '× wissen') : null
+      );
+
+      // Zoekresultaten modus
+      var zoekTerm = (zoek || '').toLowerCase().trim();
+      if (zoekTerm.length >= 2) {
+        var matches = boeks.filter(function(b){ return ((b.naam || '') + '').toLowerCase().indexOf(zoekTerm) >= 0; });
+        matches.sort(function(a,b){ return (pakDatum(a) || '').localeCompare(pakDatum(b) || ''); });
+        var getoond = matches.slice(0, 20);
+        var totaal = matches.length;
+
+        var zoekResults;
+        if (totaal === 0) {
+          zoekResults = R('div', { style:{ padding:16, fontSize:12, color:C.muted, background:C.white, border:'1.5px solid '+C.border, borderRadius:8, textAlign:'center' } }, 'Geen boekingen gevonden voor "' + zoek + '"');
+        } else {
+          zoekResults = R('div', null,
+            R('div', { style:{ fontSize:11, color:C.muted, marginBottom:8 } }, totaal + ' boeking' + (totaal !== 1 ? 'en' : '') + ' gevonden' + (totaal > 20 ? ' (eerste 20, typ meer)' : '')),
+            getoond.map(function(b){
+              var d = pakDatum(b);
+              return R('div', { key:b.id, style:{ background:C.white, border:'1.5px solid '+C.border, borderRadius:8, padding:'10px 14px', marginBottom:8, display:'flex', justifyContent:'space-between', alignItems:'center', gap:10, flexWrap:'wrap' } },
+                R('div', null,
+                  R('div', { style:{ fontWeight:800, fontSize:13, color:C.night } }, b.naam || '(naamloos)'),
+                  R('div', { style:{ fontSize:11, color:C.muted, marginTop:2 } }, (b.deadlineDag || d) + ' · ' + (b.deadlineTijd || '—'))
+                ),
+                R('button', { type:'button', style: pill(false), onClick: (function(bb, dd){ return function(){
+                  var mk = monthKey(dd);
+                  var nieuw = { maand: mk, dag: dd, appTab: 'alle' };
+                  setCas(nieuw); window._tijdenCascade = nieuw;
+                  if (window._tijdenSetDag) window._tijdenSetDag(dd);
+                  if (window._tijdenSetAppTab) window._tijdenSetAppTab('alle');
+                  setZoek(''); if (window._tijdenSetZoek) window._tijdenSetZoek('');
+                  try { window.dispatchEvent(new Event('kr-filter-changed')); } catch(e){}
+                };})(b, d) }, '→ bekijk tijden')
+              );
+            })
+          );
+        }
+        return R('div', { style: wrap }, zoekBalk, zoekResults);
+      }
+
+      // Breadcrumb
+      var breadEls = [];
+      breadEls.push(R('span', { key:'l', style:{ fontSize:10, fontWeight:800, color:C.muted, textTransform:'uppercase', letterSpacing:1, marginRight:6 } }, '📍 Tijden'));
+      if (cas.maand) breadEls.push(R('button', { key:'m', type:'button', style:crumbBtn, onClick: function(){ resetTot('dag'); } }, monthLabel(cas.maand)));
+      if (cas.dag) { breadEls.push(R('span', { key:'s1', style:{color:C.muted,margin:'0 2px'} }, '›')); breadEls.push(R('button', { key:'d', type:'button', style:crumbBtn, onClick: function(){ resetTot('appTab'); } }, dagLbl)); }
+      if (cas.appTab) { breadEls.push(R('span', { key:'s2', style:{color:C.muted,margin:'0 2px'} }, '›')); breadEls.push(R('span', { key:'t', style:{ background:C.night, color:C.white, padding:'3px 9px', borderRadius:5, fontWeight:800, fontSize:12 } }, tijdseenheidLbl)); }
+      if (cas.maand || cas.dag || cas.appTab) breadEls.push(R('button', { key:'res', type:'button', style:{ marginLeft:'auto', background:'#FFE0E0', color:'#C62828', border:'none', borderRadius:5, padding:'4px 10px', fontSize:11, cursor:'pointer', fontWeight:700 }, onClick: resetAlles }, '↻ opnieuw'));
+
+      // Stappen
+      var stapEl = null;
+      if (maanden.length === 0) {
+        var reden = '';
+        if (aantBoek === 0) reden = 'Geen boekingen geladen. Outlet en datum-range bovenin controleren.';
+        else if (aantGefilterd === 0) reden = 'Geen boekingen in huidige outlet/datum-selectie.';
+        else reden = 'Boekingen hebben geen datum-info.';
+        stapEl = R('div', { style: stepWrap }, R('div', { style: stepLbl }, 'Geen tijden beschikbaar'), R('div', { style:{ fontSize:12, color:C.muted } }, reden));
+      } else if (!cas.maand) {
+        stapEl = R('div', { style: stepWrap },
+          R('div', { style: stepLbl }, '1. Kies een maand — of zoek hierboven op naam'),
+          R('div', { style: pillsWrap },
+            maanden.map(function(m){ return R('button', { key:m.key, type:'button', style: pill(false), onClick: function(){ kiesMaand(m.key); } }, m.label + ' · ' + m.n); })
+          )
+        );
+      } else if (!cas.dag) {
+        stapEl = R('div', { style: stepWrap },
+          R('div', { style: stepLbl }, '2. Kies een dag in ' + monthLabel(cas.maand)),
+          R('div', { style: pillsWrap },
+            dagen.length === 0 ? R('div', { style:{ fontSize:12, color:C.muted } }, 'Geen dagen in deze maand') :
+            dagen.map(function(d){ return R('button', { key:d.key, type:'button', style: pill(false), onClick: (function(dd){ return function(){ kiesDag(dd); }; })(d.key) }, d.label + ' · ' + d.n); })
+          )
+        );
+      } else if (!cas.appTab) {
+        stapEl = R('div', { style: stepWrap },
+          R('div', { style: stepLbl }, '3. Kies een tijdseenheid'),
+          R('div', { style: pillsWrap },
+            TIJDSEENHEDEN.map(function(t){ return R('button', { key:t.id, type:'button', style: pill(false), onClick: (function(id){ return function(){ kiesTijdseenheid(id); }; })(t.id) }, t.icon + ' ' + t.naam); })
+          )
+        );
+      } else {
+        // Cascade compleet, toon wissel-knoppen
+        var andere = TIJDSEENHEDEN.filter(function(x){ return x.id !== cas.appTab; });
+        stapEl = R('div', { style: Object.assign({}, stepWrap, { background:'#E8F5E9', borderColor:'#4CAF50' }) },
+          R('div', { style:{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' } },
+            R('div', { style:{ fontSize:12, fontWeight:800, color:'#1B5E20' } }, '✓ Tijden actief: ' + dagLbl + ' — ' + tijdseenheidLbl),
+            R('span', { style:{ fontSize:11, color:C.muted } }, '— wissel:'),
+            andere.map(function(t){ return R('button', { key:t.id, type:'button', style:{ background:C.white, color:C.night, border:'1.5px solid '+C.border, borderRadius:6, padding:'4px 10px', fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }, onClick: (function(id){ return function(){ kiesTijdseenheid(id); }; })(t.id) }, t.icon + ' ' + t.naam); })
+          )
+        );
+      }
+
+      return R('div', { style: wrap }, zoekBalk, R('div', { style: crumb }, breadEls), stapEl);
+    } catch(e) { console.warn('[TijdenFilterBar] fout:', e); return window.React.createElement('div', { style:{background:'#FFEBEE',padding:12,borderRadius:8,color:'#C62828',fontSize:12,marginBottom:12} }, 'Cascade-fout: ' + (e.message || e)); }
+  };
+
+  console.log('[TijdenCascade] ready');
+})();
+</script>
 </body></html>
