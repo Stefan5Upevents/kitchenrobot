@@ -13764,19 +13764,13 @@ function ChefScreen({ setSc, setActieve }) {
           )
         );
       })(),
-      // BBQ formulier iframe (alleen voor BBQ/buffet)
+      // BBQ formulier — ingeklapt, grote knop opent modal
       ps.isBBQ && React.createElement('div', { style:{marginTop:10} },
         React.createElement('div', { style:{fontSize:10,fontWeight:700,color:C.muted,marginBottom:4,letterSpacing:0.5} }, '📋 BBQ / BUFFET FORMULIER'),
-        (bbqSnap && bbqSnap.html && bbqSnap.html.length > 200) ? React.createElement('div', null,
-          React.createElement('iframe', {
-            srcDoc: bbqSnap.html,
-            style:{width:'100%',minHeight:300,maxHeight:500,border:'1px solid #D8E8EF',borderRadius:6,background:'#fff'}
-          }),
-          React.createElement('button', {
-            onClick: function(ev) { ev.stopPropagation(); setOpenFormulier({ naam: b.naam + ' — ' + ps.naam, html: bbqSnap.html }); },
-            style:{marginTop:4,background:'transparent',color:C.night,border:'none',fontSize:10,fontWeight:700,cursor:'pointer',textDecoration:'underline'}
-          }, 'Open in volledig scherm')
-        ) : React.createElement('div', { style:{padding:'10px 12px',fontSize:11,color:C.muted,fontStyle:'italic',background:'#F5F5F5',borderRadius:6,border:'1px dashed #CCC'} },
+        (bbqSnap && bbqSnap.html && bbqSnap.html.length > 200) ? React.createElement('button', {
+          onClick: function(ev) { ev.stopPropagation(); setOpenFormulier({ naam: b.naam + ' — ' + ps.naam, html: bbqSnap.html }); },
+          style:{width:'100%',padding:'14px 16px',background:'#EEF7F9',color:C.night,border:'1.5px solid '+C.aqua,borderRadius:8,fontSize:13,fontWeight:800,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:8,fontFamily:'inherit'}
+        }, '📋 Open BBQ-formulier') : React.createElement('div', { style:{padding:'10px 12px',fontSize:11,color:C.muted,fontStyle:'italic',background:'#F5F5F5',borderRadius:6,border:'1px dashed #CCC'} },
           'Nog geen BBQ-formulier gegenereerd. Klik ✏️ Aanpassen om in Buffetformulieren te openen.'
         )
       )
@@ -14054,10 +14048,24 @@ function ChefScreen({ setSc, setActieve }) {
         style:{background:'#fff',borderRadius:12,maxWidth:'900px',width:'100%',maxHeight:'90vh',overflow:'hidden',display:'flex',flexDirection:'column'}
       },
         React.createElement('div', { style:{padding:'14px 20px',background:C.night,color:'#fff',display:'flex',justifyContent:'space-between',alignItems:'center'} },
-          React.createElement('div', { style:{fontWeight:800,fontSize:14} }, '📋 ' + openFormulier.naam),
+          React.createElement('div', { style:{fontWeight:800,fontSize:14,flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',paddingRight:10} }, '📋 ' + openFormulier.naam),
+          React.createElement('button', {
+            onClick: function() { try { window._chefPrintHtml(openFormulier.html, openFormulier.naam); } catch(e){ alert('Print fout: '+(e.message||e)); } },
+            style:{background:'rgba(255,255,255,0.15)',color:'#fff',border:'1px solid rgba(255,255,255,0.3)',borderRadius:8,padding:'5px 12px',cursor:'pointer',fontSize:11,fontWeight:700,marginRight:6,fontFamily:'inherit'}
+          }, '🖨 Print'),
+          React.createElement('button', {
+            onClick: function(ev) {
+              try {
+                var modalEl = ev.target.closest('div[style*="maxWidth"]') || ev.target.parentElement.parentElement.parentElement;
+                var iframe = modalEl ? modalEl.querySelector('iframe') : document.querySelector('iframe[srcdoc]');
+                window._chefScreenshotModal(iframe, 'opzet-' + (openFormulier.naam || ''));
+              } catch(e){ alert('Screenshot fout: '+(e.message||e)); }
+            },
+            style:{background:'rgba(255,255,255,0.15)',color:'#fff',border:'1px solid rgba(255,255,255,0.3)',borderRadius:8,padding:'5px 12px',cursor:'pointer',fontSize:11,fontWeight:700,marginRight:6,fontFamily:'inherit'}
+          }, '📸 Screenshot'),
           React.createElement('button', {
             onClick: function() { setOpenFormulier(null); },
-            style:{background:'transparent',color:'#fff',border:'1px solid rgba(255,255,255,0.3)',borderRadius:8,padding:'4px 12px',cursor:'pointer'}
+            style:{background:'transparent',color:'#fff',border:'1px solid rgba(255,255,255,0.3)',borderRadius:8,padding:'5px 12px',cursor:'pointer',fontSize:11,fontWeight:700,fontFamily:'inherit'}
           }, '✕ Sluiten')
         ),
         React.createElement('iframe', {
@@ -15713,4 +15721,63 @@ table[id^="formulier-tabel-"] tbody td {
   }
 }
 </style>
+
+<script id="kr-chef-modal-helpers">
+(function(){
+  if (window._krChefModalHelpers) return; window._krChefModalHelpers = true;
+
+  // Lazy-load html2canvas
+  window._laadHtml2Canvas = function(){
+    return new Promise(function(resolve, reject){
+      if (window.html2canvas) return resolve(window.html2canvas);
+      var s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+      s.onload = function(){ resolve(window.html2canvas); };
+      s.onerror = reject;
+      document.head.appendChild(s);
+    });
+  };
+
+  // Open snapshot-HTML in nieuw venster + print
+  window._chefPrintHtml = function(html, titel){
+    try {
+      var clean = String(html || '');
+      // Voeg print-trigger toe als die er nog niet is
+      if (clean.indexOf('window.print()') < 0) {
+        clean = clean.replace('</body>', '<script>window.addEventListener("load",function(){setTimeout(function(){window.print();},300);});<\/script></body>');
+      }
+      var w = window.open('', '_blank', 'width=900,height=700');
+      if (!w) { alert('Popup geblokkeerd — sta popups toe voor deze site'); return; }
+      w.document.write(clean);
+      w.document.close();
+      try { w.document.title = titel || 'Print'; } catch(e){}
+    } catch(e) { console.warn('[chef print]', e); alert('Print fout: ' + (e.message || e)); }
+  };
+
+  // Screenshot van modal-inhoud → PNG download
+  window._chefScreenshotModal = async function(iframe, titel){
+    try {
+      if (!iframe) { alert('Geen inhoud om te screenshotten'); return; }
+      var h2c = await window._laadHtml2Canvas();
+      if (!h2c) { alert('Screenshot-bibliotheek niet geladen'); return; }
+      var doc = iframe.contentDocument || iframe.contentWindow.document;
+      var el = doc.body;
+      if (!el) { alert('Iframe-inhoud niet bereikbaar'); return; }
+      // Zet min-height op body voor volledige capture
+      var origMh = el.style.minHeight;
+      el.style.minHeight = doc.documentElement.scrollHeight + 'px';
+      var canvas = await h2c(el, { backgroundColor: '#ffffff', scale: 2, useCORS: true, logging: false });
+      el.style.minHeight = origMh;
+      canvas.toBlob(function(blob){
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = (titel || 'chef-opzet').replace(/[^a-zA-Z0-9_-]/g,'_') + '.png';
+        document.body.appendChild(a); a.click();
+        setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); }, 1000);
+      }, 'image/png');
+    } catch(e) { console.warn('[chef screenshot]', e); alert('Screenshot fout: ' + (e.message || e)); }
+  };
+})();
+</script>
 </body></html>
