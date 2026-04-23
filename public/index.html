@@ -3876,12 +3876,13 @@ function OpzetScreen() {
   var [datumVan, setDatumVan] = useState("");
   var [datumTot, setDatumTot] = useState("");
   var [multiDagModus, setMultiDagModus] = useState(false);
+  React.useEffect(function(){ window._opzetSetPsId = setPsId; return function(){ if (window._opzetSetPsId === setPsId) window._opzetSetPsId = null; }; }, [setPsId]);
   var pg = (window._stamProductgroepen || []).find(function(g) {
     return g.soorten.some(function(s) {
       return s.id === psId;
     });
   });
-  var boekingen = (window._recrasBoekingen || []).filter(function(b) {
+  var boekingen = (window._filterBoekingen ? window._filterBoekingen(window._recrasBoekingen || []) : (window._recrasBoekingen || [])).filter(function(b) {
     // Datum range filter — alleen als multiDagModus aan en van/tot ingevuld
     if (multiDagModus && datumVan && datumTot) {
       var bDatum = (b.deadline || "").replace("T"," ").split(" ")[0];
@@ -3966,7 +3967,7 @@ function OpzetScreen() {
   }, [psId, boekingen.length, datumVan, datumTot]);
 
 
-  return /* @__PURE__ */ React.createElement("div", null, window._FilterBar ? /* @__PURE__ */ React.createElement(window._FilterBar, { key: "krfb" }) : null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 } }, /* @__PURE__ */ React.createElement("div", { style: SS.pT }, "Opzetoverzicht"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6 } }, /* @__PURE__ */ React.createElement("button", { style: btnSG, className: "no-print", onClick: function() {
+  return /* @__PURE__ */ React.createElement("div", null, window._FilterBar ? /* @__PURE__ */ React.createElement(window._FilterBar, { key: "krfb" }) : null, window._OpzetFilterBar ? /* @__PURE__ */ React.createElement(window._OpzetFilterBar, { key: "krofb" }) : null, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 } }, /* @__PURE__ */ React.createElement("div", { style: SS.pT }, "Opzetoverzicht"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6 } }, /* @__PURE__ */ React.createElement("button", { style: btnSG, className: "no-print", onClick: function() {
     var origTitle = document.title;
     var psObj = (window._stamProductgroepen || []).reduce(function(found, pg2) {
       return found || (pg2.soorten || []).find(function(s) {
@@ -4027,7 +4028,7 @@ function OpzetScreen() {
         else alert("\u2705 Opgeslagen in kiosk!");
       });
     }
-  }, "\uD83D\uDCF2 Opslaan in kiosk"))), /* @__PURE__ */ React.createElement("div", { style: { display:"flex", gap:10, alignItems:"center", flexWrap:"wrap", marginBottom:10 }, className:"no-print" },
+  }, "\uD83D\uDCF2 Opslaan in kiosk"))), /* @__PURE__ */ React.createElement("div", { style: (window._opzetCascadeActief ? { display:"none" } : { display:"flex", gap:10, alignItems:"center", flexWrap:"wrap", marginBottom:10 }), className:"no-print" },
   React.createElement("button", {
     style: { background: multiDagModus ? "#E8202B" : "#fff", color: multiDagModus ? "#fff" : "#234756", border:"1.5px solid "+(multiDagModus?"#E8202B":"#D8E8EF"), borderRadius:7, padding:"6px 14px", fontFamily:"inherit", fontWeight:700, fontSize:11, cursor:"pointer" },
     onClick: function() { setMultiDagModus(!multiDagModus); }
@@ -4041,7 +4042,7 @@ function OpzetScreen() {
       "✓ Gecombineerde opzet voor datumbereik"
     )
   )
-), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" }, className: "no-print" }, (window._stamProductgroepen || []).reduce(function(acc, g) {
+), /* @__PURE__ */ React.createElement("div", { style: (window._opzetCascadeActief ? { display: "none" } : { display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" }), className: "no-print" }, (window._stamProductgroepen || []).reduce(function(acc, g) {
     return acc.concat(g.soorten || []);
   }, []).map(function(ps_) {
     var isAct = ps_.id === psId;
@@ -4056,7 +4057,7 @@ function OpzetScreen() {
       },
       ps_.naam
     );
-  })), /* @__PURE__ */ React.createElement("div", { style: SS.card }, /* @__PURE__ */ React.createElement("div", { className: "print-only", style: { marginBottom: 12, paddingBottom: 8, borderBottom: "2px solid #234756" } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 900, fontSize: 20, color: "#234756" } }, "Opzetoverzicht ", (function() {
+  })), /* @__PURE__ */ React.createElement("div", { style: (psId ? SS.card : Object.assign({}, SS.card, { display: "none" })) }, /* @__PURE__ */ React.createElement("div", { className: "print-only", style: { marginBottom: 12, paddingBottom: 8, borderBottom: "2px solid #234756" } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 900, fontSize: 20, color: "#234756" } }, "Opzetoverzicht ", (function() {
     var psO = (window._stamProductgroepen || []).reduce(function(f, pg2) {
       return f || (pg2.soorten || []).find(function(s) {
         return s.id === psId;
@@ -15057,6 +15058,192 @@ function ChefScreen({ setSc, setActieve }) {
   };
 
   console.log('[BuffetCascade v4 met zoek] ready');
+})();
+</script>
+
+<script id="kr-opzet-filter">
+(function(){
+  if (window._krOpzetCascade) return; window._krOpzetCascade = true;
+  window._opzetCascadeActief = true;
+  window._opzetCascade = window._opzetCascade || {};
+
+  function bouwOpties(){
+    try {
+      var boeks = window._recrasBoekingen || [];
+      if (window._filterBoekingen) { try { boeks = window._filterBoekingen(boeks); } catch(e){} }
+      var kopLijst = window._stamKoppelingen || [];
+      var menuLijst = window._stamMenus || [];
+      var pgLijst = window._stamProductgroepen || [];
+      var psLijst = window._stamProductsoorten || [];
+
+      var pgMap = {};
+      var psMap = {};
+
+      for (var i = 0; i < boeks.length; i++) {
+        var b = boeks[i]; if (!b || !b.regels) continue;
+        // filter add up
+        var heeftNormaal = false;
+        for (var jj = 0; jj < b.regels.length; jj++) {
+          var rn = b.regels[jj]; if (!rn) continue;
+          if (!((rn.menuNaam || '') + '').toLowerCase().includes('add up')) { heeftNormaal = true; break; }
+        }
+        if (!heeftNormaal) continue;
+
+        var gezienPs = {};
+        for (var j = 0; j < b.regels.length; j++) {
+          var r = b.regels[j]; if (!r) continue;
+          if (((r.menuNaam || '') + '').toLowerCase().includes('add up')) continue;
+          var zoekNaam = ((r.menuNaam || r.product_naam) || '').trim();
+          var kop = null;
+          for (var k = 0; k < kopLijst.length; k++) if ((kopLijst[k].recras_naam || '').trim() === zoekNaam) { kop = kopLijst[k]; break; }
+          var m = null;
+          if (kop) { for (var mi = 0; mi < menuLijst.length; mi++) if (menuLijst[mi].id === kop.menu_id) { m = menuLijst[mi]; break; } }
+          if (!m) { for (var mi2 = 0; mi2 < menuLijst.length; mi2++) if (menuLijst[mi2].naam === zoekNaam) { m = menuLijst[mi2]; break; } }
+          if (!m) continue;
+          var psId2 = m.productsoort_id || m.psId;
+          if (!psId2) continue;
+          if (gezienPs[psId2]) continue;
+          gezienPs[psId2] = true;
+
+          var ps2 = null;
+          for (var si = 0; si < psLijst.length; si++) if (psLijst[si].id === psId2) { ps2 = psLijst[si]; break; }
+          var pgId2 = (ps2 && ps2.productgroep_id) || m.productgroep_id || '';
+          if (!pgId2) {
+            for (var pi2 = 0; pi2 < pgLijst.length; pi2++) {
+              var g = pgLijst[pi2];
+              if (g && g.soorten && g.soorten.some && g.soorten.some(function(s){ return s.id === psId2; })) { pgId2 = g.id; break; }
+            }
+          }
+          if (!pgId2) continue;
+
+          if (!pgMap[pgId2]) {
+            var pg2 = null;
+            for (var pi = 0; pi < pgLijst.length; pi++) if (pgLijst[pi].id === pgId2) { pg2 = pgLijst[pi]; break; }
+            pgMap[pgId2] = { id: pgId2, naam: (pg2 ? pg2.naam : pgId2), n: 0 };
+          }
+          pgMap[pgId2].n++;
+
+          if (!psMap[psId2]) psMap[psId2] = { id: psId2, naam: (ps2 ? ps2.naam : psId2), pgId: pgId2, n: 0 };
+          psMap[psId2].n++;
+        }
+      }
+      return { 
+        pgs: Object.keys(pgMap).map(function(k){return pgMap[k];}).sort(function(a,b){return (a.naam||'').localeCompare(b.naam||'');}),
+        pss: Object.keys(psMap).map(function(k){return psMap[k];}).sort(function(a,b){return (a.naam||'').localeCompare(b.naam||'');})
+      };
+    } catch(e) { console.warn('[opzet bouwOpties]', e); return { pgs:[], pss:[] }; }
+  }
+
+  window._OpzetFilterBar = function OpzetFilterBar(){
+    try {
+      if (!window.React) return null;
+      var R = window.React.createElement;
+      var useState = window.React.useState;
+      var useEffect = window.React.useEffect;
+
+      var s1 = useState(Object.assign({}, window._opzetCascade || {})); var cas = s1[0]; var setCas = s1[1];
+      var s2 = useState(0); var bump = s2[1];
+
+      useEffect(function(){
+        var h = function(){ bump(function(x){return x+1;}); };
+        window.addEventListener('recras-boekingen-geladen', h);
+        window.addEventListener('kr-filter-changed', h);
+        window.addEventListener('kr-boek-stam-geladen', h);
+        return function(){
+          window.removeEventListener('recras-boekingen-geladen', h);
+          window.removeEventListener('kr-filter-changed', h);
+          window.removeEventListener('kr-boek-stam-geladen', h);
+        };
+      }, []);
+
+      function kiesPg(pgId){
+        var nieuw = { pgId: pgId, psId: null };
+        setCas(nieuw);
+        window._opzetCascade = nieuw;
+        if (window._opzetSetPsId) window._opzetSetPsId('');
+      }
+      function kiesPs(psId, pgId){
+        var nieuw = { pgId: pgId || cas.pgId, psId: psId };
+        setCas(nieuw);
+        window._opzetCascade = nieuw;
+        if (window._opzetSetPsId) window._opzetSetPsId(psId);
+      }
+      function reset(){
+        setCas({});
+        window._opzetCascade = {};
+        if (window._opzetSetPsId) window._opzetSetPsId('');
+      }
+
+      var opties = bouwOpties();
+      var aantBoek = (window._recrasBoekingen || []).length;
+      var aantKop = (window._stamKoppelingen || []).length;
+      var aantMenu = (window._stamMenus || []).length;
+
+      var pgs = opties.pgs;
+      var pssInPg = cas.pgId ? opties.pss.filter(function(x){ return x.pgId === cas.pgId; }) : [];
+
+      var pgLabel = '';
+      if (cas.pgId) { for (var i = 0; i < pgs.length; i++) if (pgs[i].id === cas.pgId) { pgLabel = pgs[i].naam; break; } }
+      var psLabel = '';
+      if (cas.psId) { for (var i = 0; i < opties.pss.length; i++) if (opties.pss[i].id === cas.psId) { psLabel = opties.pss[i].naam; break; } }
+
+      var C = { night: '#002D41', active:'#1976D2', border:'#D8E8EF', bg:'#F8FAFB', white:'#fff', muted:'#6E8591', gray:'#EEF3F6' };
+      var wrap = { background:C.bg, border:'1.5px solid '+C.border, borderRadius:10, padding:'14px 16px', marginBottom:14, fontFamily:'inherit' };
+      var crumb = { display:'flex', alignItems:'center', gap:4, marginBottom:12, flexWrap:'wrap', fontSize:12 };
+      var crumbBtn = { background:C.white, color:C.active, border:'1.5px solid '+C.border, padding:'3px 9px', borderRadius:5, cursor:'pointer', fontWeight:700, fontFamily:'inherit', fontSize:12 };
+      var stepWrap = { marginTop:10, padding:'10px 12px', background:C.white, border:'1.5px solid '+C.border, borderRadius:8 };
+      var stepLbl = { fontSize:11, fontWeight:800, color:C.night, marginBottom:8, letterSpacing:0.5 };
+      var pillsWrap = { display:'flex', flexWrap:'wrap', gap:6 };
+      var pill = function(isAct){ return { background: isAct ? C.active : C.gray, color: isAct ? C.white : C.night, border: '1.5px solid ' + (isAct ? C.active : C.border), borderRadius: 8, padding: '8px 14px', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' };};
+
+      var breadEls = [];
+      breadEls.push(R('span', { key:'l', style:{ fontSize:10, fontWeight:800, color:C.muted, textTransform:'uppercase', letterSpacing:1, marginRight:6 } }, '📍 Opzetlijst'));
+      if (cas.pgId) breadEls.push(R('button', { key:'pg', type:'button', style:crumbBtn, onClick: function(){ kiesPg(cas.pgId); } }, pgLabel));
+      if (cas.psId) { breadEls.push(R('span', { key:'s1', style:{color:C.muted,margin:'0 2px'} }, '›')); breadEls.push(R('span', { key:'ps', style:{ background:C.night, color:C.white, padding:'3px 9px', borderRadius:5, fontWeight:800, fontSize:12 } }, psLabel)); }
+      if (cas.pgId || cas.psId) breadEls.push(R('button', { key:'res', type:'button', style:{ marginLeft:'auto', background:'#FFE0E0', color:'#C62828', border:'none', borderRadius:5, padding:'4px 10px', fontSize:11, cursor:'pointer', fontWeight:700 }, onClick: reset }, '↻ opnieuw'));
+
+      var stapEl = null;
+      if (pgs.length === 0) {
+        var reden = '';
+        if (aantBoek === 0) reden = 'Geen boekingen geladen. Outlet en datum-range bovenin aanpassen.';
+        else if (aantKop === 0 || aantMenu === 0) reden = 'Stamgegevens nog niet geladen. Wacht 1 seconde en herlaad (F5).';
+        else reden = 'Geen productgroepen gevonden in de huidige outlet/datum-selectie.';
+        stapEl = R('div', { style: stepWrap }, R('div', { style: stepLbl }, 'Geen opzetlijsten beschikbaar'), R('div', { style: { fontSize:12, color:C.muted } }, reden));
+      } else if (!cas.pgId) {
+        stapEl = R('div', { style: stepWrap },
+          R('div', { style: stepLbl }, '1. Kies een productgroep'),
+          R('div', { style: pillsWrap },
+            pgs.map(function(p){ return R('button', { key:p.id, type:'button', style: pill(false), onClick: function(){ kiesPg(p.id); } }, p.naam + ' · ' + p.n); })
+          )
+        );
+      } else if (!cas.psId) {
+        stapEl = R('div', { style: stepWrap },
+          R('div', { style: stepLbl }, '2. Kies een productsoort in ' + pgLabel),
+          R('div', { style: pillsWrap },
+            pssInPg.length === 0 ? R('div', { style: { fontSize:12, color:C.muted } }, 'Geen productsoorten in deze productgroep') :
+            pssInPg.map(function(p){ return R('button', { key:p.id, type:'button', style: pill(false), onClick: (function(pId, pgId){ return function(){ kiesPs(pId, pgId); }; })(p.id, p.pgId) }, p.naam + ' · ' + p.n); })
+          )
+        );
+      } else {
+        var andereInPg = pssInPg.filter(function(x){ return x.id !== cas.psId; });
+        stapEl = R('div', { style: Object.assign({}, stepWrap, { background:'#E8F5E9', borderColor:'#4CAF50' }) },
+          R('div', { style: { display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' } },
+            R('div', { style:{ fontSize:12, fontWeight:800, color:'#1B5E20' } }, '✓ Opzetlijst actief voor ' + psLabel),
+            andereInPg.length > 0 ? R('span', { style:{ fontSize:11, color:C.muted } }, '— wissel:') : null,
+            andereInPg.map(function(p){
+              return R('button', { key:p.id, type:'button', style:{ background:C.white, color:C.night, border:'1.5px solid '+C.border, borderRadius:6, padding:'4px 10px', fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }, onClick: (function(pId, pgId){ return function(){ kiesPs(pId, pgId); }; })(p.id, p.pgId) },
+                p.naam + ' · ' + p.n
+              );
+            })
+          )
+        );
+      }
+
+      return R('div', { style: wrap }, R('div', { style: crumb }, breadEls), stapEl);
+    } catch(e) { console.warn('[OpzetFilterBar] fout:', e); return R('div', { style:{background:'#FFEBEE',padding:12,borderRadius:8,color:'#C62828',fontSize:12,marginBottom:12} }, 'Cascade-fout: ' + (e.message || e)); }
+  };
+
+  console.log('[OpzetCascade] ready');
 })();
 </script>
 </body></html>
