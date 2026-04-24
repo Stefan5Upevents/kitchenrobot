@@ -40,7 +40,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .ctx-bar{background:var(--night);color:#fff;border-radius:12px;padding:12px 18px;margin-bottom:14px;font-size:14px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .res-vrij{background:var(--green-bg);border:2px solid var(--green);border-radius:14px;padding:20px;margin-bottom:12px;display:flex;align-items:center;gap:14px}
 .res-vrij .icon{font-size:30px}.res-vrij .title{font-size:17px;font-weight:700;color:var(--green)}.res-vrij .sub{font-size:13px;color:#155c32;margin-top:2px}
-.tl-wrap{background:var(--white);border-radius:14px;padding:22px 24px 18px;margin-bottom:14px;box-shadow:0 1px 10px rgba(0,45,65,.08);width:100%}
+.tl-wrap{background:var(--white);border-radius:14px;padding:22px 24px 18px;margin-bottom:14px;box-shadow:0 1px 10px rgba(0,45,65,.08);width:100%}.tl-zone-row{display:flex;align-items:stretch;margin-bottom:8px;gap:8px}.tl-zone-lbl{width:110px;min-width:110px;font-size:11px;font-weight:700;color:var(--gray);text-transform:capitalize;display:flex;align-items:center;padding-right:4px;letter-spacing:.2px}.tl-zone-active{color:var(--night)}.tl-ticks-wrap{padding-left:118px}.tl-blk.tl-conflict{box-shadow:0 0 0 2px #DC2626}
 .tl-ztitel{font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.7px;margin-bottom:12px}
 .tl-ticks{position:relative;height:22px;margin-bottom:6px}
 .tl-tick{position:absolute;font-size:12px;font-weight:500;color:var(--gray);transform:translateX(-50%);white-space:nowrap}
@@ -298,22 +298,29 @@ function fmtDatum(iso){
   return dn[d.getDay()]+' '+d.getDate()+' '+mn[d.getMonth()];
 }
 
+// Lichte, goed leesbare kleuren
 const BOOK_COLORS=[
-  {bg:'#4A1B0C',bdr:'#993C1D',txt:'#FAECE7'},
-  {bg:'#0C447C',bdr:'#185FA5',txt:'#E6F1FB'},
-  {bg:'#3C3489',bdr:'#534AB7',txt:'#EEEDFE'},
-  {bg:'#085041',bdr:'#0F6E56',txt:'#E1F5EE'},
-  {bg:'#633806',bdr:'#854F0B',txt:'#FAEEDA'},
-  {bg:'#4B1528',bdr:'#993556',txt:'#FBEAF0'},
+  {bg:'#DBEAFE',bdr:'#2563EB',txt:'#1E3A8A'},
+  {bg:'#DCFCE7',bdr:'#16A34A',txt:'#14532D'},
+  {bg:'#FEE2E2',bdr:'#DC2626',txt:'#7F1D1D'},
+  {bg:'#FEF9C3',bdr:'#CA8A04',txt:'#713F12'},
+  {bg:'#F3E8FF',bdr:'#9333EA',txt:'#581C87'},
+  {bg:'#FFEDD5',bdr:'#EA580C',txt:'#7C2D12'},
+  {bg:'#CFFAFE',bdr:'#0891B2',txt:'#164E63'},
+  {bg:'#FCE7F3',bdr:'#DB2777',txt:'#831843'},
 ];
+// Kleur per boekingsnaam (consistent over zones)
+const _bkClrMap=new Map(); let _bkClrIdx=0;
+function bkClr(naam){if(!_bkClrMap.has(naam))_bkClrMap.set(naam,BOOK_COLORS[_bkClrIdx++%BOOK_COLORS.length]);return _bkClrMap.get(naam);}
 function hhmmTL(m){return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');}
 function renderTijdsbalk(data, nieuwTijdMin){
-  const books=data.alle_zone_boekingen||[];
+  const zones=data.alleZones||[];
   const ong=data.ongekoppelde||[];
   const nw=data.nieuw;
-  const _bAll=[nieuwTijdMin,...books.map(b=>b.tijdMin),...books.map(b=>b.tijdMin+b.duurMin),nieuwTijdMin+nw.duurMin];
-  const WF=Math.max(Math.min(..._bAll)-30,Math.max(nieuwTijdMin-120,600));
-  const WT=Math.min(Math.max(..._bAll)+30,Math.min(nieuwTijdMin+300,1380));
+  const gz=data.zone;
+  const allT=[nieuwTijdMin,nieuwTijdMin+nw.duurMin,...zones.flatMap(z=>z.boekingen.flatMap(b=>[b.tijdMin,b.tijdMin+b.duurMin]))];
+  const WF=Math.max(Math.min(...allT)-30,Math.max(nieuwTijdMin-120,600));
+  const WT=Math.min(Math.max(...allT)+30,Math.min(nieuwTijdMin+300,1380));
   function pp(v){return(((Math.max(WF,Math.min(WT,v)))-WF)/(WT-WF)*100).toFixed(2)+'%';}
   function pw(v){return(v/(WT-WF)*100).toFixed(2)+'%';}
   const step=(WT-WF)>270?60:30;
@@ -321,39 +328,42 @@ function renderTijdsbalk(data, nieuwTijdMin){
   for(let t=Math.ceil(WF/step)*step;t<=WT;t+=step){
     ticks+=`<span class="tl-tick" style="left:${pp(t)}">${hhmmTL(t)}</span><div class="tl-tick-l" style="left:${pp(t)}"></div>`;
   }
-  let row='';
-  books.forEach((b,i)=>{
-    const col=BOOK_COLORS[i%BOOK_COLORS.length];
-    const s=b.tijdMin,e=s+b.duurMin,be=e+b.bufferMin;
-    if(e>WF&&s<WT){
-      row+=`<div class="tl-blk" style="left:${pp(s)};width:calc(${pw(Math.min(e,WT)-Math.max(s,WF))} - 1px);background:${col.bg};border-color:${col.bdr};${b.status==='optie'?'background-image:repeating-linear-gradient(45deg,transparent,transparent 3px,rgba(255,255,255,.2) 3px,rgba(255,255,255,.2) 6px)':''}" title="${b.naam} ${b.tijd} ${b.pax}p">
-        <div class="nb" style="color:${col.txt}">${b.naam.split(' ').slice(0,2).join(' ')}</div>
-        <div class="nt" style="color:${col.txt}">${b.tijd} · ${b.pax}p · ${b.duurMin}min</div>
-      </div>`;
+  // Reset kleuren per render
+  _bkClrMap.clear(); _bkClrIdx=0;
+  const gesorteerd=[...zones].sort((a,b)=>a.zone===gz?-1:b.zone===gz?1:a.zone.localeCompare(b.zone));
+  let rijen='';
+  gesorteerd.forEach(z=>{
+    const isGz=z.zone===gz;
+    let row='';
+    z.boekingen.forEach(b=>{
+      const col=bkClr(b.naam);
+      const s=b.tijdMin,e=s+b.duurMin,be=e+b.bufferMin;
+      if(e>WF&&s<WT){
+        row+=`<div class="tl-blk${b.isConflict&&isGz?' tl-conflict':''}" style="left:${pp(s)};width:calc(${pw(Math.min(e,WT)-Math.max(s,WF))} - 1px);background:${col.bg};border-color:${b.isConflict&&isGz?'#DC2626':col.bdr};${b.status==='optie'?'background-image:repeating-linear-gradient(45deg,transparent,transparent 4px,rgba(0,0,0,.07) 4px,rgba(0,0,0,.07) 8px)':''}" title="${b.naam} · ${b.tijd} · ${b.pax}p">
+          <div class="nb" style="color:${col.txt}">${b.naam.split(' ').slice(0,2).join(' ')}</div>
+          <div class="nt" style="color:${col.txt}">${b.tijd} · ${b.pax}p · ${b.duurMin}min</div>
+        </div>`;
+      }
+      if(be>Math.max(e,WF)&&e<WT){
+        row+=`<div class="tl-buf" style="left:${pp(Math.max(e,WF))};width:${pw(Math.min(be,WT)-Math.max(e,WF))};background:${col.bdr};opacity:.2;border-radius:0 3px 3px 0" title="buffer ${b.bufferMin}min"></div>`;
+      }
+    });
+    if(isGz){
+      ong.forEach(o=>{const os=o.tijdMin,oe=os+90;if(oe>WF&&os<WT)row+=`<div class="tl-ong" style="left:${pp(os)};width:calc(${pw(Math.min(oe,WT)-Math.max(os,WF))} - 1px)" title="${o.naam} – locatie ?">?</div>`;});
+      const ns=nieuwTijdMin,ne=ns+nw.duurMin;
+      if(ne>WF&&ns<WT)row+=`<div class="tl-new" style="left:${pp(ns)};width:calc(${pw(Math.min(ne,WT)-Math.max(ns,WF))} - 1px)">${hhmmTL(ns)}<br>${nw.duurMin}min</div>`;
     }
-    if(be>Math.max(e,WF)&&e<WT){
-      row+=`<div class="tl-buf" style="left:${pp(Math.max(e,WF))};width:${pw(Math.min(be,WT)-Math.max(e,WF))};background:${col.bdr};border-radius:0 4px 4px 0" title="Buffer ${b.bufferMin}min"></div>`;
-    }
+    rijen+=`<div class="tl-zone-row"><div class="tl-zone-lbl${isGz?' tl-zone-active':''}">${z.zone}</div><div class="tl-row">${row}</div></div>`;
   });
-  ong.forEach(o=>{
-    const os=o.tijdMin,oe=os+90;
-    if(oe>WF&&os<WT){
-      row+=`<div class="tl-ong" style="left:${pp(os)};width:calc(${pw(Math.min(oe,WT)-Math.max(os,WF))} - 1px)" title="${o.naam} – locatie niet gekoppeld">? ${o.naam.split(' ')[0]}</div>`;
-    }
-  });
-  const ns=nieuwTijdMin,ne=ns+nw.duurMin;
-  if(ne>WF&&ns<WT){
-    row+=`<div class="tl-new" style="left:${pp(ns)};width:calc(${pw(Math.min(ne,WT)-Math.max(ns,WF))} - 1px)">${hhmmTL(ns)}<br>${nw.duurMin}min</div>`;
-  }
-  const legOng=ong.length>0?`<span><div class="tl-dot" style="background:rgba(255,152,0,.15);border:1.5px dashed #FF9800"></div>locatie onbekend</span>`:'';
+  const legOng=ong.length>0?`<span><div class="tl-dot" style="background:#FEF9C3;border:1.5px dashed #CA8A04"></div>locatie onbekend</span>`:'';
   return `<div class="tl-wrap anim">
-    <div class="tl-ztitel">Tijdsbalk — zone: ${data.zone}</div>
-    <div class="tl-ticks">${ticks}</div>
-    <div class="tl-row">${row}</div>
+    <div class="tl-ztitel">Tijdsbalk — alle zones</div>
+    <div class="tl-ticks-wrap"><div class="tl-ticks">${ticks}</div></div>
+    ${rijen}
     <div class="tl-leg">
-      <span><div class="tl-dot" style="background:#4A1B0C;border:1.5px solid #993C1D"></div>bestaand</span>
+      <span><div class="tl-dot" style="background:#DBEAFE;border:1.5px solid #2563EB"></div>bestaand</span>
       <span><div class="tl-dot" style="background:rgba(26,166,183,.15);border:2px dashed #1AA6B7"></div>jouw aanvraag</span>
-      <span><div class="tl-dot" style="background:rgba(100,100,100,.25)"></div>buffer</span>
+      <span style="opacity:.6"><div class="tl-dot" style="background:#bbb"></div>buffer</span>
       ${legOng}
     </div>
   </div>`;
