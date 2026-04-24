@@ -1824,6 +1824,7 @@ function bindHome() {
   });
 }
 
+render(); // direct tonen (login of laad-scherm) zonder te wachten op API
 if (state.sessie_id) {
   laadData();
   setInterval(function() { if (state.sessie_id) laadData(); }, 30000);
