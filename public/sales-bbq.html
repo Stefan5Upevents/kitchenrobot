@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BBQ Check — UP Events Sales</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --night: #002D41; --aqua: #1AA6B7; --aqua2: #148fa0;
+  --green: #1E8A4C; --green-bg: #E6F7EE;
+  --red: #C62828; --red-bg: #FFF0EF;
+  --amber: #FF9800; --gray: #6E8591;
+  --border: #D0E4EC; --bg: #EEF3F6; --white: #fff; --text: #1A3340;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+.hdr{background:var(--night);padding:16px 20px;display:flex;align-items:center;gap:10px}
+.hdr-icon{font-size:22px}
+.hdr-title{font-size:16px;font-weight:700;color:#fff}
+.hdr-sub{font-size:11px;color:var(--aqua);margin-top:1px}
+
+.wrap{max-width:480px;margin:0 auto;padding:22px 16px 60px}
+
+.card{background:var(--white);border-radius:14px;padding:20px 18px;margin-bottom:12px;box-shadow:0 1px 12px rgba(0,45,65,.07)}
+.card-title{font-size:12px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.7px;margin-bottom:14px}
+
+/* PIN */
+.pin-dots{display:flex;justify-content:center;gap:14px;margin-bottom:20px}
+.pin-dot{width:15px;height:15px;border-radius:50%;border:2px solid var(--border);transition:all .15s}
+.pin-dot.on{background:var(--aqua);border-color:var(--aqua)}
+.pin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;max-width:252px;margin:0 auto}
+.pkey{background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:13px 0;font-family:'DM Mono',monospace;font-size:20px;font-weight:500;color:var(--night);cursor:pointer;transition:all .12s}
+.pkey:hover{background:#ddedf3;border-color:var(--aqua)}
+.pkey:active{transform:scale(.93)}
+.pkey.ghost{background:transparent;border-color:transparent;pointer-events:none}
+.pkey.del{font-size:15px;color:var(--gray)}
+.pin-ok{display:block;width:100%;max-width:252px;margin:14px auto 0;background:var(--aqua);color:#fff;border:none;border-radius:10px;padding:13px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:background .15s}
+.pin-ok:disabled{background:var(--border);color:var(--gray);cursor:not-allowed}
+.pin-ok:not(:disabled):hover{background:var(--aqua2)}
+.pin-err{text-align:center;color:var(--red);font-size:13px;font-weight:500;margin-top:10px;min-height:18px}
+
+/* Vestiging */
+.vest-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.vbtn{border:2px solid var(--border);background:var(--bg);border-radius:11px;padding:16px 10px;text-align:center;cursor:pointer;transition:all .15s}
+.vbtn:hover{border-color:var(--aqua)}
+.vbtn.active{background:var(--aqua);border-color:var(--aqua);color:#fff}
+.vbtn .vicon{font-size:26px;margin-bottom:5px}
+.vbtn .vlabel{font-size:15px;font-weight:700}
+
+/* Datum */
+.datum-input{width:100%;background:var(--bg);border:2px solid var(--border);border-radius:10px;padding:11px 14px;font-family:'DM Sans',sans-serif;font-size:16px;color:var(--night);outline:none;cursor:pointer;transition:border-color .15s}
+.datum-input:focus,.datum-input:hover{border-color:var(--aqua)}
+
+/* Tijd */
+.tijd-type{width:100%;background:var(--bg);border:2px solid var(--border);border-radius:10px;padding:11px 14px;font-family:'DM Mono',monospace;font-size:18px;font-weight:500;color:var(--night);outline:none;transition:border-color .15s;margin-bottom:14px}
+.tijd-type:focus{border-color:var(--aqua)}
+
+.picker-label{font-size:11px;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px}
+.uur-grid{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.min-grid{display:flex;flex-wrap:wrap;gap:6px}
+
+.tpbtn{border:1.5px solid var(--border);background:var(--bg);border-radius:7px;padding:7px 10px;font-family:'DM Mono',monospace;font-size:13px;font-weight:500;color:var(--night);cursor:pointer;transition:all .1s;min-width:46px;text-align:center}
+.tpbtn:hover{border-color:var(--aqua);background:#e8f6f8}
+.tpbtn.active{background:var(--aqua);border-color:var(--aqua);color:#fff;font-weight:700}
+
+/* Locatie */
+select{width:100%;background:var(--bg);border:2px solid var(--border);border-radius:10px;padding:11px 12px;font-family:'DM Sans',sans-serif;font-size:15px;color:var(--night);outline:none;cursor:pointer;transition:border-color .15s}
+select:focus{border-color:var(--aqua)}
+
+/* Pax */
+.pax-row{display:flex;align-items:center;gap:10px}
+.pax-btn{width:42px;height:42px;background:var(--bg);border:2px solid var(--border);border-radius:9px;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--night);transition:all .12s;flex-shrink:0}
+.pax-btn:hover{border-color:var(--aqua)}
+.pax-input{flex:1;background:var(--bg);border:2px solid var(--border);border-radius:10px;padding:9px 12px;font-family:'DM Mono',monospace;font-size:22px;font-weight:500;color:var(--night);text-align:center;outline:none}
+.pax-input:focus{border-color:var(--aqua)}
+
+/* Check knop */
+.btn-check{width:100%;background:var(--aqua);color:#fff;border:none;border-radius:11px;padding:15px;font-family:'DM Sans',sans-serif;font-size:16px;font-weight:700;cursor:pointer;transition:background .15s;margin-top:4px}
+.btn-check:hover{background:var(--aqua2)}
+.btn-check:disabled{background:var(--border);color:var(--gray);cursor:not-allowed}
+
+/* Results */
+.spinner{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--aqua);border-radius:50%;animation:spin .7s linear infinite;margin:20px auto;display:none}
+.ctx-bar{background:var(--night);border-radius:9px;padding:9px 13px;font-size:13px;color:#adc9d5;display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-bottom:12px}
+.ctx-bar strong{color:#fff}
+.res-vrij{background:var(--green-bg);border:2px solid var(--green);border-radius:14px;padding:28px 20px;text-align:center}
+.res-vrij .icon{font-size:44px;margin-bottom:10px}
+.res-vrij .title{font-size:21px;font-weight:700;color:var(--green);margin-bottom:5px}
+.res-vrij .sub{font-size:14px;color:#2e7d52}
+.res-conflict{background:var(--red-bg);border:2px solid var(--red);border-radius:14px;padding:18px;margin-bottom:12px}
+.res-conflict .rh{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.res-conflict .icon{font-size:26px}
+.res-conflict .title{font-size:17px;font-weight:700;color:var(--red)}
+.res-conflict .sub{font-size:12px;color:#9b2018;margin-top:2px}
+.c-item{background:#fff;border-radius:10px;padding:11px 13px;margin-bottom:7px;border-left:3px solid var(--red)}
+.c-naam{font-weight:700;font-size:14px}
+.c-meta{font-size:12px;color:var(--gray);margin-top:3px;line-height:1.6}
+.badge{display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:4px;margin-right:5px}
+.b-def{background:var(--aqua);color:#fff}
+.b-opt{background:var(--amber);color:#fff}
+.slots-card{background:var(--white);border-radius:14px;padding:18px;box-shadow:0 1px 12px rgba(0,45,65,.07);margin-bottom:12px}
+.slots-card h3{font-size:12px;font-weight:700;color:var(--night);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
+.slots-row{display:flex;flex-wrap:wrap;gap:8px}
+.slot{background:var(--green-bg);border:2px solid var(--green);border-radius:8px;padding:8px 13px;font-family:'DM Mono',monospace;font-size:15px;font-weight:500;color:var(--green);cursor:pointer;transition:all .12s}
+.slot:hover,.slot.best{background:var(--green);color:#fff;font-weight:700}
+.no-slots{font-size:13px;color:#c85000;font-weight:500}
+.btn-opnieuw{width:100%;background:transparent;border:1.5px solid var(--border);border-radius:10px;padding:11px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;color:var(--gray);cursor:pointer;transition:all .15s;margin-top:4px}
+.btn-opnieuw:hover{border-color:var(--aqua);color:var(--aqua)}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes up{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.anim{animation:up .25s ease}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-icon">🔥</div>
+  <div>
+    <div class="hdr-title">BBQ Conflict Checker</div>
+    <div class="hdr-sub">UP Events Sales — voorzoeking</div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- PIN -->
+<div id="pin-screen" class="anim">
+  <div class="card">
+    <div style="text-align:center;padding:6px 0">
+      <div style="font-size:38px;margin-bottom:12px">🔒</div>
+      <div style="font-size:18px;font-weight:700;color:var(--night);margin-bottom:4px">Inloggen</div>
+      <div style="font-size:13px;color:var(--gray);margin-bottom:20px">Voer de 4-cijferige PIN in</div>
+      <div class="pin-dots">
+        <div class="pin-dot" id="d0"></div><div class="pin-dot" id="d1"></div>
+        <div class="pin-dot" id="d2"></div><div class="pin-dot" id="d3"></div>
+      </div>
+      <div class="pin-grid">
+        <button class="pkey" onclick="pp('1')">1</button>
+        <button class="pkey" onclick="pp('2')">2</button>
+        <button class="pkey" onclick="pp('3')">3</button>
+        <button class="pkey" onclick="pp('4')">4</button>
+        <button class="pkey" onclick="pp('5')">5</button>
+        <button class="pkey" onclick="pp('6')">6</button>
+        <button class="pkey" onclick="pp('7')">7</button>
+        <button class="pkey" onclick="pp('8')">8</button>
+        <button class="pkey" onclick="pp('9')">9</button>
+        <button class="pkey ghost"></button>
+        <button class="pkey" onclick="pp('0')">0</button>
+        <button class="pkey del" onclick="pd()">⌫</button>
+      </div>
+      <button class="pin-ok" id="pin-ok" disabled onclick="pinOk()">OK →</button>
+      <div class="pin-err" id="pin-err"></div>
+    </div>
+  </div>
+</div>
+
+<!-- FORM -->
+<div id="form-screen" style="display:none">
+
+  <div class="card anim">
+    <div class="card-title">1 — Vestiging</div>
+    <div class="vest-row">
+      <div class="vbtn" id="v-west" onclick="kiesVest('west')">
+        <div class="vicon">🏭</div><div class="vlabel">Amsterdam West</div>
+      </div>
+      <div class="vbtn" id="v-weesp" onclick="kiesVest('weesp')">
+        <div class="vicon">⛳</div><div class="vlabel">Weesp</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card anim">
+    <div class="card-title">2 — Datum</div>
+    <input class="datum-input" type="date" id="datum-input" onchange="clearResult()">
+  </div>
+
+  <div class="card anim">
+    <div class="card-title">3 — Starttijd BBQ</div>
+    <input class="tijd-type" type="time" id="tijd-input" step="300"
+      oninput="syncTijdVanInput()" onchange="syncTijdVanInput()">
+    <div class="picker-label">Uur</div>
+    <div class="uur-grid" id="uur-grid"></div>
+    <div class="picker-label" style="margin-top:12px">Minuten</div>
+    <div class="min-grid" id="min-grid"></div>
+  </div>
+
+  <div class="card anim">
+    <div class="card-title">4 — Locatie</div>
+    <select id="locatie-select" onchange="clearResult()">
+      <option value="">— kies eerst een vestiging —</option>
+    </select>
+  </div>
+
+  <div class="card anim">
+    <div class="card-title">5 — Aantal personen</div>
+    <div class="pax-row">
+      <button class="pax-btn" onclick="paxStep(-5)">−</button>
+      <input class="pax-input" type="number" id="pax" value="40" min="1" max="1000">
+      <button class="pax-btn" onclick="paxStep(5)">+</button>
+    </div>
+  </div>
+
+  <button class="btn-check" onclick="doCheck()">🔍 Controleer beschikbaarheid</button>
+  <div class="spinner" id="spinner"></div>
+  <div id="result" style="margin-top:14px"></div>
+</div>
+
+</div>
+
+<script>
+const API = 'https://aezatnwsrhlwtykpixsq.supabase.co/functions/v1/sales-bbq-check';
+
+const LOCATIES = {
+  west:[
+    'Loods 2','Loods 4','Loods 5','Loods 6','Pup - Bar','Ronde Tent',
+    'Stretchtent','Terrace','Terras Loods 6','Combinatie | Loods 1, 2, 3 & Terrace',
+    'Beachclub','Beachclub 2','Loods 7','Loods 7 Patio'
+  ],
+  weesp:[
+    'Archery Tag WP','Basisweg 2, Weesp','Birdie','Boardroom','Bogey',
+    'Boogschieten WP','Bubbel voetbal WP','CLUPhuis','Driving range','Eagle',
+    'Golfbaan','Jeu de Boules WP','Robinson Crusoe WP','Terrace WP',
+    'The Barn','UP Fairway','UPstairs'
+  ]
+};
+
+let PIN='', buf='';
+let selHour=18, selMin=0;
+
+function pp(d){ if(buf.length>=4)return; buf+=d; dots(); document.getElementById('pin-ok').disabled=buf.length<4; }
+function pd(){ buf=buf.slice(0,-1); dots(); document.getElementById('pin-ok').disabled=buf.length<4; document.getElementById('pin-err').textContent=''; }
+function dots(){ for(let i=0;i<4;i++) document.getElementById('d'+i).classList.toggle('on',i<buf.length); }
+function pinOk(){ PIN=buf; document.getElementById('pin-screen').style.display='none'; document.getElementById('form-screen').style.display='block'; initForm(); }
+document.addEventListener('keydown',e=>{
+  if(document.getElementById('pin-screen').style.display==='none') return;
+  if(e.key>='0'&&e.key<='9') pp(e.key);
+  else if(e.key==='Backspace') pd();
+  else if(e.key==='Enter'&&buf.length===4) pinOk();
+});
+
+function initForm(){
+  const d=new Date(); d.setDate(d.getDate()+1);
+  document.getElementById('datum-input').value=d.toISOString().split('T')[0];
+
+  const uurG=document.getElementById('uur-grid');
+  for(let h=11;h<=22;h++){
+    const b=document.createElement('button');
+    b.className='tpbtn'; b.dataset.h=h; b.textContent=pad(h);
+    b.onclick=()=>{ selHour=h; updateTijdKnoppen(); setTijdInput(); clearResult(); };
+    uurG.appendChild(b);
+  }
+
+  const minG=document.getElementById('min-grid');
+  for(let m=0;m<60;m+=5){
+    const b=document.createElement('button');
+    b.className='tpbtn'; b.dataset.m=m; b.textContent=pad(m);
+    b.onclick=()=>{ selMin=m; updateTijdKnoppen(); setTijdInput(); clearResult(); };
+    minG.appendChild(b);
+  }
+
+  updateTijdKnoppen();
+  setTijdInput();
+}
+
+function pad(n){ return String(n).padStart(2,'0'); }
+
+function updateTijdKnoppen(){
+  document.querySelectorAll('#uur-grid .tpbtn').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.h)===selHour));
+  document.querySelectorAll('#min-grid .tpbtn').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.m)===selMin));
+}
+
+function setTijdInput(){
+  document.getElementById('tijd-input').value=pad(selHour)+':'+pad(selMin);
+}
+
+function syncTijdVanInput(){
+  const v=document.getElementById('tijd-input').value;
+  if(!v) return;
+  const [h,m]=v.split(':').map(Number);
+  selHour=h; selMin=m;
+  updateTijdKnoppen();
+  clearResult();
+}
+
+function kiesVest(v){
+  document.getElementById('v-west').classList.toggle('active',v==='west');
+  document.getElementById('v-weesp').classList.toggle('active',v==='weesp');
+  const sel=document.getElementById('locatie-select');
+  sel.innerHTML='<option value="">— kies een locatie —</option>';
+  (LOCATIES[v]||[]).forEach(l=>{ const o=document.createElement('option'); o.value=l; o.textContent=l; sel.appendChild(o); });
+  clearResult();
+}
+
+function paxStep(n){
+  const el=document.getElementById('pax'); el.value=Math.max(1,(parseInt(el.value)||0)+n);
+}
+
+function clearResult(){
+  const el=document.getElementById('result'); el.innerHTML=''; el.style.display='none';
+}
+
+async function doCheck(){
+  const datum=document.getElementById('datum-input').value;
+  const tijd=document.getElementById('tijd-input').value;
+  const locatie=document.getElementById('locatie-select').value;
+  const pax=parseInt(document.getElementById('pax').value);
+  const vest=document.getElementById('v-west').classList.contains('active')?'west':document.getElementById('v-weesp').classList.contains('active')?'weesp':'';
+
+  if(!datum){flash('Kies een datum');return;}
+  if(!tijd){flash('Kies een starttijd');return;}
+  if(!vest){flash('Kies een vestiging');return;}
+  if(!locatie){flash('Kies een locatie');return;}
+  if(!pax||pax<1){flash('Vul het aantal personen in');return;}
+
+  document.querySelector('.btn-check').disabled=true;
+  document.getElementById('spinner').style.display='block';
+  document.getElementById('result').innerHTML='';
+
+  try{
+    const res=await fetch(API,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({pin:PIN,datum,tijd,locatie_naam:locatie,pax})
+    });
+    const data=await res.json();
+    document.getElementById('spinner').style.display='none';
+    document.querySelector('.btn-check').disabled=false;
+
+    if(res.status===401){
+      PIN=''; buf=''; dots();
+      document.getElementById('form-screen').style.display='none';
+      document.getElementById('pin-screen').style.display='block';
+      document.getElementById('pin-err').textContent='Onjuiste PIN — probeer opnieuw';
+      document.getElementById('pin-ok').disabled=true;
+      return;
+    }
+    if(!data.ok){flash('⚠️ '+(data.fout||'Onbekende fout'));return;}
+    toon(data,datum,tijd,locatie,pax);
+  }catch(err){
+    document.getElementById('spinner').style.display='none';
+    document.querySelector('.btn-check').disabled=false;
+    flash('❌ Verbindingsfout — zorg dat je online bent.<br><small style="opacity:.7">'+err.message+'</small>');
+  }
+}
+
+function flash(msg){
+  const el=document.getElementById('result');
+  el.style.display='block';
+  el.innerHTML=`<div style="background:#FFF3E0;border:1.5px solid #FF9800;border-radius:10px;padding:14px;font-size:14px;color:#7B3800">${msg}</div>`;
+  el.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function fmtDatum(iso){
+  const d=new Date(iso+'T00:00:00');
+  const dn=['zo','ma','di','wo','do','vr','za'];
+  const mn=['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
+  return dn[d.getDay()]+' '+d.getDate()+' '+mn[d.getMonth()];
+}
+
+function toon(data,datum,tijd,locatie,pax){
+  const el=document.getElementById('result'); el.style.display='block';
+  const ctx=`<div class="ctx-bar">📅 <strong>${fmtDatum(datum)}</strong> &nbsp;·&nbsp; 🕐 <strong>${tijd}</strong> &nbsp;·&nbsp; 📍 <strong>${locatie}</strong> &nbsp;·&nbsp; 👥 <strong>${pax}p</strong></div>`;
+
+  if(data.vrij){
+    el.innerHTML=ctx+`<div class="res-vrij anim"><div class="icon">✅</div><div class="title">Geen conflict!</div><div class="sub">Deze BBQ kan worden ingepland op ${data.locatie_naam}.</div></div><button class="btn-opnieuw" onclick="clearResult()" style="margin-top:12px">↩ Nieuwe zoekopdracht</button>`;
+    el.scrollIntoView({behavior:'smooth',block:'nearest'});
+    return;
+  }
+
+  let items='';
+  for(const c of data.conflicten){
+    const badge=c.status==='optie'?'<span class="badge b-opt">OPTIE</span>':'<span class="badge b-def">DEF</span>';
+    items+=`<div class="c-item"><div class="c-naam">${badge}${c.naam}</div><div class="c-meta">🕐 ${c.tijd} &nbsp;·&nbsp; 👥 ${c.pax} pers. &nbsp;·&nbsp; 📍 ${c.locatie}<br>Verschil: ${c.verschilMin} min — minimum: ${c.vereistMin} min</div></div>`;
+  }
+
+  let slotsHtml='';
+  if(data.vrijeMomenten&&data.vrijeMomenten.length>0){
+    const btns=data.vrijeMomenten.map((s,i)=>`<div class="slot${i===0?' best':''}" onclick="kiesTijdEnCheck('${s}')">${s}</div>`).join('');
+    slotsHtml=`<div class="slots-card anim"><h3>🟢 Eerste vrije tijdstippen</h3><div class="slots-row">${btns}</div><div style="font-size:11px;color:var(--gray);margin-top:8px">Klik op een tijd om direct opnieuw te checken.</div></div>`;
+  } else {
+    slotsHtml=`<div class="slots-card"><div class="no-slots">⚠️ Geen vrije tijdstippen gevonden op deze dag. Overleg handmatig.</div></div>`;
+  }
+
+  el.innerHTML=ctx+`<div class="res-conflict anim"><div class="rh"><div class="icon">❌</div><div><div class="title">Conflict — niet beschikbaar</div><div class="sub">${data.conflicten.length} boeking(en) overlappen in zone ${data.zone}</div></div></div>${items}</div>${slotsHtml}<button class="btn-opnieuw" onclick="clearResult()">↩ Aanpassen</button>`;
+  el.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function kiesTijdEnCheck(t){
+  const [h,m]=t.split(':').map(Number);
+  selHour=h; selMin=m;
+  updateTijdKnoppen(); setTijdInput();
+  setTimeout(doCheck,200);
+}
+</script>
+</body>
+</html>
