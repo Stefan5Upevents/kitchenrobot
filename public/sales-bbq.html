@@ -111,6 +111,28 @@ select:focus{border-color:var(--aqua)}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes up{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .anim{animation:up .25s ease}
+.tl-wrap{background:var(--white);border-radius:14px;padding:14px 16px;margin-bottom:10px;box-shadow:0 1px 12px rgba(0,45,65,.07)}
+.tl-ztitel{font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.tl-ticks{position:relative;height:16px;margin-bottom:4px}
+.tl-tick{position:absolute;font-size:9px;color:var(--gray);transform:translateX(-50%)}
+.tl-tick-l{position:absolute;top:0;width:1px;height:7px;background:var(--border)}
+.tl-row{position:relative;height:40px;border-radius:7px;background:#EEF3F6;overflow:hidden;margin-bottom:4px}
+.tl-blk{position:absolute;top:3px;height:34px;border-radius:5px;display:flex;flex-direction:column;justify-content:center;padding:0 6px;overflow:hidden;border:1.5px solid transparent;cursor:default}
+.tl-blk .nb{font-size:10px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3}
+.tl-blk .nt{font-size:9px;opacity:.85;white-space:nowrap;line-height:1.3}
+.tl-buf{position:absolute;top:3px;height:34px;opacity:.25;pointer-events:none}
+.tl-new{position:absolute;top:3px;height:34px;border-radius:5px;border:2px dashed #1AA6B7;background:rgba(26,166,183,.13);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#148fa0;text-align:center;padding:0 4px}
+.tl-ong{position:absolute;top:3px;height:34px;border-radius:5px;border:2px dashed #FF9800;background:rgba(255,152,0,.13);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#e65100;text-align:center;padding:0 4px}
+.tl-leg{display:flex;gap:10px;flex-wrap:wrap;margin-top:5px}
+.tl-leg span{font-size:10px;color:var(--gray);display:flex;align-items:center;gap:3px}
+.tl-dot{display:inline-block;width:9px;height:9px;border-radius:2px}
+.ong-card{background:#FFF8E1;border:1.5px solid #FF9800;border-radius:12px;padding:13px 14px;margin-bottom:10px}
+.ong-hdr{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.ong-hdr-icon{font-size:20px}
+.ong-title{font-size:14px;font-weight:700;color:#e65100}
+.ong-sub{font-size:11px;color:#7B3800;margin-top:2px}
+.ong-advies{background:#fff;border-radius:8px;padding:9px 11px;margin-bottom:6px;border-left:3px solid #FF9800;font-size:12px;line-height:1.6}
+.ong-item{background:#fff;border-radius:8px;padding:8px 10px;margin-bottom:5px;border-left:3px solid #FF9800;font-size:12px}
 </style>
 </head>
 <body>
@@ -365,31 +387,114 @@ function fmtDatum(iso){
   return dn[d.getDay()]+' '+d.getDate()+' '+mn[d.getMonth()];
 }
 
+const BOOK_COLORS=[
+  {bg:'#4A1B0C',bdr:'#993C1D',txt:'#FAECE7'},
+  {bg:'#0C447C',bdr:'#185FA5',txt:'#E6F1FB'},
+  {bg:'#3C3489',bdr:'#534AB7',txt:'#EEEDFE'},
+  {bg:'#085041',bdr:'#0F6E56',txt:'#E1F5EE'},
+  {bg:'#633806',bdr:'#854F0B',txt:'#FAEEDA'},
+  {bg:'#4B1528',bdr:'#993556',txt:'#FBEAF0'},
+];
+function hhmmTL(m){return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');}
+function renderTijdsbalk(data, nieuwTijdMin){
+  const books=data.alle_zone_boekingen||[];
+  const ong=data.ongekoppelde||[];
+  const nw=data.nieuw;
+  const WF=Math.max(Math.min(nieuwTijdMin,books.reduce((a,b)=>Math.min(a,b.tijdMin),nieuwTijdMin))-90,600);
+  const WT=Math.min(Math.max(nieuwTijdMin+nw.duurMin,books.reduce((a,b)=>Math.max(a,b.tijdMin+b.duurMin),nieuwTijdMin+nw.duurMin))+90,1380);
+  function pp(v){return(((Math.max(WF,Math.min(WT,v)))-WF)/(WT-WF)*100).toFixed(2)+'%';}
+  function pw(v){return(v/(WT-WF)*100).toFixed(2)+'%';}
+  const step=(WT-WF)>270?60:30;
+  let ticks='';
+  for(let t=Math.ceil(WF/step)*step;t<=WT;t+=step){
+    ticks+=`<span class="tl-tick" style="left:${pp(t)}">${hhmmTL(t)}</span><div class="tl-tick-l" style="left:${pp(t)}"></div>`;
+  }
+  let row='';
+  books.forEach((b,i)=>{
+    const col=BOOK_COLORS[i%BOOK_COLORS.length];
+    const s=b.tijdMin,e=s+b.duurMin,be=e+b.bufferMin;
+    if(e>WF&&s<WT){
+      row+=`<div class="tl-blk" style="left:${pp(s)};width:calc(${pw(Math.min(e,WT)-Math.max(s,WF))} - 1px);background:${col.bg};border-color:${col.bdr};${b.status==='optie'?'background-image:repeating-linear-gradient(45deg,transparent,transparent 3px,rgba(255,255,255,.2) 3px,rgba(255,255,255,.2) 6px)':''}" title="${b.naam} ${b.tijd} ${b.pax}p">
+        <div class="nb" style="color:${col.txt}">${b.naam.split(' ').slice(0,2).join(' ')}</div>
+        <div class="nt" style="color:${col.txt}">${b.tijd} · ${b.pax}p · ${b.duurMin}min</div>
+      </div>`;
+    }
+    if(be>Math.max(e,WF)&&e<WT){
+      row+=`<div class="tl-buf" style="left:${pp(Math.max(e,WF))};width:${pw(Math.min(be,WT)-Math.max(e,WF))};background:${col.bdr};border-radius:0 4px 4px 0" title="Buffer ${b.bufferMin}min"></div>`;
+    }
+  });
+  ong.forEach(o=>{
+    const os=o.tijdMin,oe=os+90;
+    if(oe>WF&&os<WT){
+      row+=`<div class="tl-ong" style="left:${pp(os)};width:calc(${pw(Math.min(oe,WT)-Math.max(os,WF))} - 1px)" title="${o.naam} – locatie niet gekoppeld">? ${o.naam.split(' ')[0]}</div>`;
+    }
+  });
+  const ns=nieuwTijdMin,ne=ns+nw.duurMin;
+  if(ne>WF&&ns<WT){
+    row+=`<div class="tl-new" style="left:${pp(ns)};width:calc(${pw(Math.min(ne,WT)-Math.max(ns,WF))} - 1px)">${hhmmTL(ns)}<br>${nw.duurMin}min</div>`;
+  }
+  const legOng=ong.length>0?`<span><div class="tl-dot" style="background:rgba(255,152,0,.15);border:1.5px dashed #FF9800"></div>locatie onbekend</span>`:'';
+  return `<div class="tl-wrap anim">
+    <div class="tl-ztitel">Tijdsbalk — zone: ${data.zone}</div>
+    <div class="tl-ticks">${ticks}</div>
+    <div class="tl-row">${row}</div>
+    <div class="tl-leg">
+      <span><div class="tl-dot" style="background:#4A1B0C;border:1.5px solid #993C1D"></div>bestaand</span>
+      <span><div class="tl-dot" style="background:rgba(26,166,183,.15);border:2px dashed #1AA6B7"></div>jouw aanvraag</span>
+      <span><div class="tl-dot" style="background:rgba(100,100,100,.25)"></div>buffer</span>
+      ${legOng}
+    </div>
+  </div>`;
+}
 function toon(data,datum,tijd,locatie,pax){
   const el=document.getElementById('result'); el.style.display='block';
   const ctx=`<div class="ctx-bar">📅 <strong>${fmtDatum(datum)}</strong> &nbsp;·&nbsp; 🕐 <strong>${tijd}</strong> &nbsp;·&nbsp; 📍 <strong>${locatie}</strong> &nbsp;·&nbsp; 👥 <strong>${pax}p</strong></div>`;
 
-  if(data.vrij){
-    el.innerHTML=ctx+`<div class="res-vrij anim"><div class="icon">✅</div><div class="title">Geen conflict!</div><div class="sub">Deze BBQ kan worden ingepland op ${data.locatie_naam}.</div></div><button class="btn-opnieuw" onclick="clearResult()" style="margin-top:12px">↩ Nieuwe zoekopdracht</button>`;
+  const nieuwTijdMin=parseInt(tijd.split(':')[0])*60+parseInt(tijd.split(':')[1]);
+
+  // Vrij maar ongekoppelde boekingen aanwezig? Dan alsnog waarschuwen
+  if(data.vrij && (!data.ongekoppelde || data.ongekoppelde.length===0)){
+    el.innerHTML=ctx+`<div class="res-vrij anim"><div class="icon">✅</div><div class="title">Geen conflict!</div><div class="sub">Deze BBQ kan worden ingepland op ${data.locatie_naam}.</div></div>`+renderTijdsbalk(data,nieuwTijdMin)+`<button class="btn-opnieuw" onclick="clearResult()" style="margin-top:4px">↩ Nieuwe zoekopdracht</button>`;
     el.scrollIntoView({behavior:'smooth',block:'nearest'});
     return;
   }
 
+  // Ongekoppelde boekingen = aparte waarschuwing
+  let ongHtml='';
+  if(data.ongekoppelde&&data.ongekoppelde.length>0){
+    let ongItems='';
+    for(const o of data.ongekoppelde){
+      const badge=o.status==='optie'?'<span class="badge b-opt">OPTIE</span>':'<span class="badge b-def">DEF</span>';
+      ongItems+=`<div class="ong-item">${badge}<strong>${o.naam}</strong> &nbsp;·&nbsp; 🕐 ${o.tijd} &nbsp;·&nbsp; 👥 ${o.pax}p</div>`;
+    }
+    ongHtml=`<div class="ong-card anim">
+      <div class="ong-hdr"><div class="ong-hdr-icon">⚠️</div><div><div class="ong-title">Locatie niet gekoppeld</div><div class="ong-sub">${data.ongekoppelde.length} boeking(en) zonder locatie op ${fmtDatum(datum)}</div></div></div>
+      <div class="ong-advies">Los dit eerst op voordat je verder plant — deze boekingen staan wel in Recras maar de locatie is nog niet gekoppeld in het systeem. Dat kan roet in het eten gooien.</div>
+      ${ongItems}
+    </div>`;
+  }
+
+  // Conflict items
   let items='';
-  for(const c of data.conflicten){
-    const badge=c.status==='optie'?'<span class="badge b-opt">OPTIE</span>':'<span class="badge b-def">DEF</span>';
-    items+=`<div class="c-item"><div class="c-naam">${badge}${c.naam}</div><div class="c-meta">🕐 ${c.tijd} &nbsp;·&nbsp; 👥 ${c.pax} pers. &nbsp;·&nbsp; 📍 ${c.locatie}<br>Verschil: ${c.verschilMin} min — minimum: ${c.vereistMin} min</div></div>`;
+  for(const cf of data.conflicten){
+    const badge=cf.status==='optie'?'<span class="badge b-opt">OPTIE</span>':'<span class="badge b-def">DEF</span>';
+    items+=`<div class="c-item"><div class="c-naam">${badge}${cf.naam}</div><div class="c-meta">🕐 ${cf.tijd} &nbsp;·&nbsp; 👥 ${cf.pax} pers. &nbsp;·&nbsp; 📍 ${cf.locatie}<br>Verschil: ${cf.verschilMin} min &mdash; minimum: ${cf.vereistMin} min</div></div>`;
+  }
+
+  let conflictBlock='';
+  if(data.conflicten&&data.conflicten.length>0){
+    conflictBlock=`<div class="res-conflict anim"><div class="rh"><div class="icon">❌</div><div><div class="title">Conflict — niet beschikbaar</div><div class="sub">${data.conflicten.length} boeking(en) overlappen in zone ${data.zone}</div></div></div>${items}</div>`;
   }
 
   let slotsHtml='';
   if(data.vrijeMomenten&&data.vrijeMomenten.length>0){
     const btns=data.vrijeMomenten.map((s,i)=>`<div class="slot${i===0?' best':''}" onclick="kiesTijdEnCheck('${s}')">${s}</div>`).join('');
     slotsHtml=`<div class="slots-card anim"><h3>🟢 Eerste vrije tijdstippen</h3><div class="slots-row">${btns}</div><div style="font-size:11px;color:var(--gray);margin-top:8px">Klik op een tijd om direct opnieuw te checken.</div></div>`;
-  } else {
+  } else if(data.conflicten&&data.conflicten.length>0){
     slotsHtml=`<div class="slots-card"><div class="no-slots">⚠️ Geen vrije tijdstippen gevonden op deze dag. Overleg handmatig.</div></div>`;
   }
 
-  el.innerHTML=ctx+`<div class="res-conflict anim"><div class="rh"><div class="icon">❌</div><div><div class="title">Conflict — niet beschikbaar</div><div class="sub">${data.conflicten.length} boeking(en) overlappen in zone ${data.zone}</div></div></div>${items}</div>${slotsHtml}<button class="btn-opnieuw" onclick="clearResult()">↩ Aanpassen</button>`;
+  el.innerHTML=ctx+ongHtml+renderTijdsbalk(data,nieuwTijdMin)+conflictBlock+slotsHtml+`<button class="btn-opnieuw" onclick="clearResult()">↩ Aanpassen</button>`;
   el.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 
