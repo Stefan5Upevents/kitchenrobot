@@ -78,6 +78,41 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes up{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .anim{animation:up .22s ease}
+.tab-nav{display:flex;background:var(--night);padding:0 16px;gap:2px;border-top:1px solid rgba(255,255,255,.08)}
+.tab-btn{background:none;border:none;color:rgba(255,255,255,.55);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;padding:10px 16px;cursor:pointer;border-bottom:2.5px solid transparent;transition:all .15s}
+.tab-btn.active{color:#fff;border-bottom-color:var(--aqua)}.tab-btn:hover{color:#fff}
+.tab-content{display:none}.tab-content.active{display:block}
+.leg-card{background:var(--white);border-radius:12px;padding:14px 16px;margin-bottom:12px;box-shadow:0 1px 8px rgba(0,45,65,.07)}
+.leg-title{font-size:10px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px}
+.leg-items{display:flex;flex-wrap:wrap;gap:8px}
+.leg-item{display:flex;align-items:center;gap:8px;background:var(--bg);border-radius:8px;padding:7px 11px}
+.leg-swatch{width:14px;height:14px;border-radius:3px;flex-shrink:0}
+.leg-naam{font-size:12px;font-weight:600;color:var(--text);max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.leg-meta{font-size:11px;color:var(--gray)}
+.cnf-view{padding:20px 24px;max-width:960px}
+.cnf-filters{display:flex;gap:8px;margin-bottom:16px}
+.cnf-fbtn{background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:7px 16px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:var(--gray);cursor:pointer;transition:all .12s}
+.cnf-fbtn.active{background:var(--aqua);border-color:var(--aqua);color:#fff}
+.cnf-card{background:var(--white);border-radius:12px;margin-bottom:10px;box-shadow:0 1px 8px rgba(0,45,65,.07);overflow:hidden}
+.cnf-card-hdr{background:var(--night);color:#fff;padding:9px 14px;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700}
+.cnf-zone-badge{background:var(--aqua);color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px}
+.cnf-body{padding:12px 14px}
+.cnf-row{display:flex;gap:8px;margin-bottom:8px}
+.cnf-bk{flex:1;background:var(--bg);border-radius:8px;padding:9px 11px;border-left:3px solid var(--border);min-width:0}
+.cnf-bk.has-conflict{border-left-color:var(--red)}
+.cnf-bk-naam{font-size:13px;font-weight:700;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cnf-bk-meta{font-size:11px;color:var(--gray);line-height:1.6}
+.cnf-gap-info{background:#FFF0EF;border-radius:8px;padding:8px 11px;margin-bottom:8px;font-size:12px;color:var(--red);font-weight:600}
+.cnf-slots-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.cnf-slot{background:var(--green-bg);border:1.5px solid var(--green);border-radius:6px;padding:5px 10px;font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:var(--green)}
+.day-hdr{display:flex;align-items:center;gap:8px;margin:14px 0 7px}
+.day-lbl{background:var(--night);color:#fff;border-radius:4px;padding:2px 10px;font-size:12px;font-weight:700}
+.day-line{flex:1;height:1px;background:var(--border)}
+.bk-row{background:var(--white);border-radius:8px;padding:9px 12px;margin-bottom:5px;border-left:3px solid var(--border);box-shadow:0 1px 4px rgba(0,45,65,.05)}
+.bk-row.has-conflict{border-left-color:var(--red)}
+.bk-naam{font-size:13px;font-weight:700;margin-bottom:2px}
+.bk-meta{font-size:11px;color:var(--gray);line-height:1.6}
+.cnf-loading,.cnf-empty{text-align:center;padding:40px;color:var(--gray);font-size:14px}
 </style>
 </head>
 <body>
@@ -90,6 +125,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   </div>
 </div>
 
+<div class="tab-nav">
+  <button class="tab-btn active" id="tab-btn-checker" onclick="switchTab('checker')">🔍 Voorzoeking</button>
+  <button class="tab-btn" id="tab-btn-conflicten" onclick="switchTab('conflicten')">⚠️ Conflicten</button>
+</div>
+
+<div id="tab-checker" class="tab-content active">
 <div class="page-body">
 
 <div class="form-col">
@@ -372,6 +413,12 @@ function renderTijdsbalk(data, nieuwTijdMin){
     rijen+=`<div class="tl-zone-row"><div class="tl-zone-lbl${isGz?' tl-zone-active':''}">${z.zone}</div><div class="tl-row">${row}</div></div>`;
   });
   const legOng=ong.length>0?`<span><div class="tl-dot" style="background:#FEF9C3;border:1.5px dashed #CA8A04"></div>locatie onbekend</span>`:'';
+  const _legItems=[];
+  _legItems.push({col:{bg:'rgba(26,166,183,.12)',bdr:'#1AA6B7'},naam:'Jouw aanvraag',pax:nw.pax,status:'nieuw',dash:true});
+  if(typeof gesorteerd!=='undefined')gesorteerd.forEach(z=>z.boekingen.forEach(b=>{_legItems.push({col:bkClr(b.naam),naam:b.naam,pax:b.pax,status:b.status,dash:false});}));
+  if(typeof ong!=='undefined')ong.forEach(o=>_legItems.push({col:{bg:'rgba(255,152,0,.12)',bdr:'#FF9800'},naam:o.naam,pax:o.pax,status:'onbekend',dash:true}));
+  const _legHtml='<div class="leg-card"><div class="leg-title">Legenda</div><div class="leg-items">'
+    +_legItems.map(li=>{const sw=li.dash?`border:2px dashed ${li.col.bdr};background:transparent`:`background:${li.col.bg};border:1.5px solid ${li.col.bdr}`;const st=li.status==='optie'?'<span class="badge b-opt">OPTIE</span>':li.status==='definitief'?'<span class="badge b-def">DEF</span>':li.status;return `<div class="leg-item"><div class="leg-swatch" style="${sw}"></div><div><div class="leg-naam">${li.naam}</div><div class="leg-meta">${li.pax}p &middot; ${st}</div></div></div>`;}).join('')+'</div></div>';
   return `<div class="tl-wrap anim">
     <div class="tl-ztitel">Tijdsbalk — alle zones</div>
     <div class="tl-ticks-wrap"><div class="tl-ticks">${ticks}</div></div>
@@ -449,6 +496,78 @@ if (document.readyState === 'loading') {
 } else {
   initForm();
 }
+
+function cfOutlet(o){
+  _cfOutlet=o;
+  ['west','weesp'].forEach(x=>document.getElementById('cfbtn-'+x).classList.toggle('active',x===o));
+  if(window._cfData)renderCnf(window._cfData);else laadCnf();
+}
+const _ANALYSE='https://aezatnwsrhlwtykpixsq.supabase.co/functions/v1/bbq-analyse';
+let _cfOutlet='west';
+window._cfData=null;
+async function laadCnf(){
+  document.getElementById('cnf-content').innerHTML='<div class="cnf-loading">Boekingen ophalen… ⏳</div>';
+  try{
+    const res=await fetch(_ANALYSE,{method:'POST',
+      headers:{'Content-Type':'application/json','apikey':ANON_KEY,'Authorization':'Bearer '+ANON_KEY},
+      body:JSON.stringify({mode:'json',outlet:_cfOutlet})});
+    const d=await res.json();
+    if(!d.ok)throw new Error(d.fout||'Fout');
+    window._cfData=d; renderCnf(d);
+  }catch(e){document.getElementById('cnf-content').innerHTML='<div class="cnf-loading">❌ '+e.message+'</div>';}
+}
+function renderCnf(data){
+  const od=data.outlets[_cfOutlet];
+  if(!od){document.getElementById('cnf-content').innerHTML='<div class="cnf-empty">Geen data</div>';return;}
+  const{conflicten,alleBoekingen,onbekend}=od;
+  let html='';
+  const ongKeys=Object.keys(onbekend||{});
+  if(ongKeys.length>0){
+    html+='<div class="ong-card" style="margin-bottom:14px"><div class="ong-hdr"><div class="ong-hdr-icon">⚠️</div><div><div class="ong-title">Locaties niet gekoppeld</div><div class="ong-sub">'+ongKeys.length+' locatie(s)</div></div></div>';
+    ongKeys.forEach(loc=>{html+='<div class="ong-item"><strong>'+loc+'</strong>: '+(onbekend[loc]||[]).slice(0,3).join(', ')+'</div>';});
+    html+='</div>';
+  }
+  if(conflicten.length>0){
+    html+='<div style="font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">⚠️ Conflicten ('+conflicten.length+')</div>';
+    conflicten.forEach(c=>{
+      const b1b=c.boeking1.status==='optie'?'<span class="badge b-opt">OPTIE</span>':'<span class="badge b-def">DEF</span>';
+      const b2b=c.boeking2.status==='optie'?'<span class="badge b-opt">OPTIE</span>':'<span class="badge b-def">DEF</span>';
+      const vb=c.verplaats.status==='optie'?'<span class="badge b-opt">OPTIE</span>':'<span class="badge b-def">DEF</span>';
+      html+='<div class="cnf-card anim"><div class="cnf-card-hdr">'+c.dagLabel+'<div class="cnf-zone-badge">'+c.zone+'</div></div><div class="cnf-body">';
+      html+='<div class="cnf-gap-info">❌ '+c.verschilMin+' min — minimum: '+c.vereistMin+' min</div>';
+      html+='<div class="cnf-row"><div class="cnf-bk has-conflict">'+b1b+'<div class="cnf-bk-naam">'+c.boeking1.naam+'</div><div class="cnf-bk-meta">🕐 '+c.boeking1.tijd+' · 👥 '+c.boeking1.pax+'p · 📍 '+c.boeking1.locatie+'</div></div>';
+      html+='<div class="cnf-bk has-conflict">'+b2b+'<div class="cnf-bk-naam">'+c.boeking2.naam+'</div><div class="cnf-bk-meta">🕐 '+c.boeking2.tijd+' · 👥 '+c.boeking2.pax+'p · 📍 '+c.boeking2.locatie+'</div></div></div>';
+      if(c.vrijeSlots.length>0){html+='<div style="font-size:11px;color:var(--gray);margin-bottom:5px">💡 Verplaats '+vb+c.verplaats.naam+' ('+c.verplaats.pax+'p) naar:</div><div class="cnf-slots-row">'+c.vrijeSlots.map(s=>'<div class="cnf-slot">'+s+'</div>').join('')+'</div>';}
+      html+='</div></div>';
+    });
+  } else {
+    html+='<div style="background:var(--green-bg);border-radius:10px;padding:16px;text-align:center;font-weight:700;color:var(--green);font-size:14px;margin-bottom:16px">✅ Geen conflicten (90 dagen vooruit)</div>';
+  }
+  if(alleBoekingen.length>0){
+    html+='<div style="font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;margin:16px 0 8px">📅 Alle boekingen ('+alleBoekingen.length+')</div>';
+    const perDag={};
+    alleBoekingen.forEach(b=>{if(!perDag[b.dag])perDag[b.dag]=[];perDag[b.dag].push(b);});
+    Object.keys(perDag).sort().forEach(dag=>{
+      const d2=new Date(dag+'T00:00:00Z');
+      const dn2=['zo','ma','di','wo','do','vr','za'],mn2=['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
+      html+='<div class="day-hdr"><div class="day-lbl">'+dn2[d2.getUTCDay()]+' '+d2.getUTCDate()+' '+mn2[d2.getUTCMonth()]+'</div><div class="day-line"></div></div>';
+      perDag[dag].forEach(b=>{
+        const bb=b.status==='optie'?'<span class="badge b-opt">OPTIE</span>':'<span class="badge b-def">DEF</span>';
+        html+='<div class="bk-row'+(b.hasConflict?' has-conflict':'')+'"><div class="bk-naam">'+bb+b.naam+'</div><div class="bk-meta">🕐 '+b.tijd+' · 👥 '+b.pax+'p · 📍 '+b.locatie+' · '+b.zone+(b.hasConflict?' · <strong style="color:var(--red)">⚠️ conflict</strong>':'')+'</div></div>';
+      });
+    });
+  }
+  document.getElementById('cnf-content').innerHTML=html;
+}
 </script>
+<div id="tab-conflicten" class="tab-content">
+  <div class="cnf-view">
+    <div class="cnf-filters">
+      <button class="cnf-fbtn active" id="cfbtn-west" onclick="cfOutlet('west')">Amsterdam West</button>
+      <button class="cnf-fbtn" id="cfbtn-weesp" onclick="cfOutlet('weesp')">Weesp</button>
+    </div>
+    <div id="cnf-content"><div class="cnf-loading">Laden… ⏳</div></div>
+  </div>
+</div>
 </body>
 </html>
