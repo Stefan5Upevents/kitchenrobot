@@ -527,6 +527,86 @@ let _cfOutlet='west';
 window._cnfLoaded=false;
 window._cfData=null;
 
+
+function renderDagBalkHtml(dagBkns, conflictIds) {
+  const ZO=['voorterrein','middenterrein','achterterrein'];
+  const perZone={};
+  dagBkns.forEach(b=>{
+    if(!perZone[b.zone])perZone[b.zone]=[];
+    const dl=parseHM(b.tijd),dur=vereistMinCnf(b.pax);
+    perZone[b.zone].push({...b,deadlineMin:dl,duurMin:dur,tijdMin:dl-dur});
+  });
+  const zones=Object.keys(perZone).sort((a,b)=>{const ia=ZO.indexOf(a),ib=ZO.indexOf(b);if(ia>=0&&ib>=0)return ia-ib;if(ia>=0)return -1;if(ib>=0)return 1;return a.localeCompare(b);});
+  if(zones.length===0)return '';
+  const allTimes=dagBkns.flatMap(b=>{const d=parseHM(b.tijd),dur=vereistMinCnf(b.pax);return[d-dur,d];});
+  const WF=Math.max(Math.min(...allTimes)-15,600);
+  const WT=Math.min(Math.max(...allTimes)+30,1380);
+  const span=WT-WF;
+  const pp=v=>(((Math.max(WF,Math.min(WT,v)))-WF)/span*100).toFixed(1)+'%';
+  const pw=v=>(v/span*100).toFixed(1)+'%';
+  const step=(WT-WF)>270?60:30;
+  let ticks='';
+  for(let t=Math.ceil(WF/step)*step;t<=WT;t+=step){ticks+=`<span style="position:absolute;font-size:10px;color:#90A4AE;transform:translateX(-50%);white-space:nowrap;left:${pp(t)}">${hhMM(t)}</span>`;}
+  const naamKleur={};let ki=0;
+  dagBkns.forEach(b=>{if(naamKleur[b.naam]===undefined)naamKleur[b.naam]=ki++;});
+  let rows='';
+  zones.forEach(zone=>{
+    const bkns=(perZone[zone]||[]).sort((a,b)=>a.tijdMin-b.tijdMin);
+    let blocks='';
+    bkns.forEach(b=>{
+      const ci=naamKleur[b.naam]%BALK_KLEUREN.length;
+      const isC=conflictIds.has(String(b.id));
+      const bg=BALK_KLEUREN[ci],bdr=isC?'#DC2626':BALK_RAND[ci],txt=BALK_TXT[ci];
+      const optS=b.status==='optie'?'background-image:repeating-linear-gradient(45deg,transparent,transparent 4px,rgba(0,0,0,.08) 4px,rgba(0,0,0,.08) 8px);':'';
+      const w=pw(b.deadlineMin-Math.max(b.tijdMin,WF));
+      const l=pp(b.tijdMin);
+      blocks+=`<div style="position:absolute;top:3px;bottom:3px;left:${l};width:calc(${w} - 1px);background:${bg};${optS}border:${isC?'2.5':'1.5'}px solid ${bdr};border-radius:5px;overflow:hidden;display:flex;flex-direction:column;justify-content:center;padding:0 5px;" title="${b.naam} · ✓ ${b.tijd} · ${b.pax}p"><div style="font-size:11px;font-weight:700;color:${txt};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${b.naam.split(' ').slice(0,2).join(' ')}</div><div style="font-size:10px;color:${txt};opacity:.8">✓ ${b.tijd} · ${b.pax}p</div></div>`;
+    });
+    rows+=`<div style="display:flex;align-items:center;margin-bottom:5px;gap:8px"><div style="width:64px;min-width:64px;font-size:11px;font-weight:600;color:#546E7A;text-align:right;text-transform:capitalize">${zone.replace('terrein','')}</div><div style="flex:1;position:relative;height:52px;background:#EEF3F6;border-radius:7px;overflow:hidden">${blocks}</div></div>`;
+  });
+  return `<div style="background:#fff;border-radius:12px;padding:13px 14px 11px;margin-bottom:10px;box-shadow:0 1px 6px rgba(0,45,65,.07)"><div style="font-size:10px;font-weight:700;color:#90A4AE;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">📅 Tijdsbalk alle zones</div><div style="padding-left:72px"><div style="position:relative;height:20px;margin-bottom:5px">${ticks}</div></div>${rows}</div>`;
+}
+
+function renderCnf(data){
+  const od=data.outlets[_cfOutlet];
+  if(!od){document.getElementById('cnf-content').innerHTML='<div style="background:var(--green-bg);border-radius:10px;padding:16px;text-align:center;font-weight:700;color:var(--green);font-size:14px">✅ Geen conflicten (365 dagen vooruit)</div>';return;}
+  const{conflicten,alleBoekingen,onbekend}=od;
+  let html='';
+  const ongKeys=Object.keys(onbekend||{});
+  if(ongKeys.length>0){
+    html+='<div class="ong-card" style="margin-bottom:14px"><div class="ong-hdr"><div class="ong-hdr-icon">⚠️</div><div><div class="ong-title">Locaties niet gekoppeld</div><div class="ong-sub">'+ongKeys.length+' locatie(s)</div></div></div>';
+    ongKeys.forEach(loc=>{html+='<div class="ong-item"><strong>'+loc+'</strong>: '+(onbekend[loc]||[]).slice(0,3).join(', ')+'</div>';});
+    html+='</div>';
+  }
+  if(conflicten.length===0){
+    html+='<div style="background:var(--green-bg);border-radius:10px;padding:16px;text-align:center;font-weight:700;color:var(--green);font-size:14px">✅ Geen conflicten (365 dagen vooruit)</div>';
+    document.getElementById('cnf-content').innerHTML=html;return;
+  }
+  const aantalDagen=[...new Set(conflicten.map(c=>c.dag))].length;
+  html+='<div style="font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">⚠️ '+conflicten.length+' conflict(en) op '+aantalDagen+' dag(en)</div>';
+  const dagMap={};
+  conflicten.forEach(c=>{if(!dagMap[c.dag])dagMap[c.dag]={label:c.dagLabel,conflicts:[]};dagMap[c.dag].conflicts.push(c);});
+  Object.keys(dagMap).sort().forEach(dag=>{
+    const groep=dagMap[dag];
+    const _wZ=['voorterrein','middenterrein','achterterrein'];const dagBkns=alleBoekingen.filter(b=>b.dag===dag&&(_cfOutlet!=='west'||_wZ.includes(b.zone)));
+    const conflictIds=new Set(groep.conflicts.flatMap(c=>[String(c.boeking1.id),String(c.boeking2.id)]));
+    html+='<div style="display:flex;align-items:center;gap:8px;margin:18px 0 8px"><div style="background:var(--night);color:#fff;border-radius:4px;padding:3px 12px;font-size:13px;font-weight:700">'+groep.label+'</div><div style="font-size:11px;color:var(--gray)">'+groep.conflicts.length+' conflict(en)</div><div style="flex:1;height:1px;background:var(--border)"></div></div>';
+    html+=renderDagBalkHtml(dagBkns,conflictIds);
+    groep.conflicts.forEach(c=>{
+      const b1b=c.boeking1.status==='optie'?'<span class="badge b-opt">OPTIE</span>':'<span class="badge b-def">DEF</span>';
+      const b2b=c.boeking2.status==='optie'?'<span class="badge b-opt">OPTIE</span>':'<span class="badge b-def">DEF</span>';
+      const vb=c.verplaats.status==='optie'?'<span class="badge b-opt">OPTIE</span>':'<span class="badge b-def">DEF</span>';
+      html+='<div class="cnf-card anim" style="margin-bottom:8px"><div class="cnf-card-hdr">'+c.zone+'<div class="cnf-zone-badge">'+c.verschilMin+' min &mdash; min. '+c.vereistMin+' min</div></div><div class="cnf-body">';
+      html+='<div class="cnf-gap-info">❌ '+c.verschilMin+' min aanwezig &mdash; min. '+c.vereistMin+' min nodig</div>';
+      html+='<div class="cnf-row"><div class="cnf-bk has-conflict">'+b1b+'<div class="cnf-bk-naam">'+c.boeking1.naam+'</div><div class="cnf-bk-meta">🕐 '+c.boeking1.tijd+' &middot; 👥 '+c.boeking1.pax+'p &middot; 📍 '+c.boeking1.locatie+'</div></div>';
+      html+='<div class="cnf-bk has-conflict">'+b2b+'<div class="cnf-bk-naam">'+c.boeking2.naam+'</div><div class="cnf-bk-meta">🕐 '+c.boeking2.tijd+' &middot; 👥 '+c.boeking2.pax+'p &middot; 📍 '+c.boeking2.locatie+'</div></div></div>';
+      if(c.vrijeSlots.length>0){html+='<div style="font-size:11px;color:var(--gray);margin-bottom:5px">💡 Verplaats '+vb+c.verplaats.naam+' ('+c.verplaats.pax+'p) naar:</div><div class="cnf-slots-row">'+c.vrijeSlots.map(s=>'<div class="cnf-slot">'+s+'</div>').join('')+'</div>';}
+      html+='</div></div>';
+    });
+  });
+  document.getElementById('cnf-content').innerHTML=html;
+}
+
 function cfOutlet(o){
   _cfOutlet=o;
   ['west','weesp'].forEach(x=>document.getElementById('cfbtn-'+x).classList.toggle('active',x===o));
@@ -634,153 +714,56 @@ function renderMiniTijdsbalk(conflictObj, alleBoekingen, allezones_data) {
 
 function renderCnf(data){
   const od=data.outlets[_cfOutlet];
-  if(!od){document.getElementById('cnf-content').innerHTML='<div class="cnf-empty">Geen data</div>';return;}
+  if(!od){document.getElementById('cnf-content').innerHTML='<div style="background:var(--green-bg);border-radius:10px;padding:16px;text-align:center;font-weight:700;color:var(--green);font-size:14px">✅ Geen conflicten (365 dagen vooruit)</div>';return;}
   const{conflicten,alleBoekingen,onbekend}=od;
   let html='';
-
-  // Ongekoppeld
   const ongKeys=Object.keys(onbekend||{});
   if(ongKeys.length>0){
-    html+='<div class="ong-card" style="margin-bottom:14px"><div class="ong-hdr"><div class="ong-hdr-icon">\u26a0\ufe0f</div><div><div class="ong-title">Locaties niet gekoppeld</div><div class="ong-sub">'+ongKeys.length+' locatie(s)</div></div></div>';
+    html+='<div class="ong-card" style="margin-bottom:14px"><div class="ong-hdr"><div class="ong-hdr-icon">⚠️</div><div><div class="ong-title">Locaties niet gekoppeld</div><div class="ong-sub">'+ongKeys.length+' locatie(s)</div></div></div>';
     ongKeys.forEach(loc=>{html+='<div class="ong-item"><strong>'+loc+'</strong>: '+(onbekend[loc]||[]).slice(0,3).join(', ')+'</div>';});
     html+='</div>';
   }
-
-  if(conflicten.length===0){
-    html+='<div style="background:var(--green-bg);border-radius:10px;padding:16px;text-align:center;font-weight:700;color:var(--green);font-size:14px;margin-bottom:16px">\u2705 Geen conflicten (365 dagen vooruit)</div>';
-  } else {
-    // Kleur per boekingsnaam — consistent over zones
-    const _clrMap=new Map(); let _clrIdx=0;
-    function bClr(naam){if(!_clrMap.has(naam))_clrMap.set(naam,_clrIdx++%BALK_KLEUREN.length);return _clrMap.get(naam);}
-
-    // Groepeer per dag, chronologisch sorteren
-    const dagMap=new Map();
-    conflicten.forEach(c=>{if(!dagMap.has(c.dag))dagMap.set(c.dag,[]);dagMap.get(c.dag).push(c);});
-    const dagPairs=alleBoekingen.reduce((m,b)=>{if(!m.has(b.dag))m.set(b.dag,[]);m.get(b.dag).push(b);return m;},new Map());
-    const sortedDagen=[...dagMap.keys()].sort();
-
-    html+='<div style="font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">\u26a0\ufe0f '+conflicten.length+' conflict(en) op '+sortedDagen.length+' dag(en)</div>';
-
-    const ZO2=['voorterrein','middenterrein','achterterrein'];
-    const DN2=['zo','ma','di','wo','do','vr','za'];
-    const MN2=['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
-
-    sortedDagen.forEach(dag=>{
-      const dagCnf=dagMap.get(dag)||[];
-      const dagBkns=dagPairs.get(dag)||[];
-      const conflictIds=new Set(dagCnf.flatMap(c=>[c.boeking1.id,c.boeking2.id]));
-      const conflictZones=[...new Set(dagCnf.map(c=>c.zone))];
-
-      // Dag header
-      const dd=new Date(dag+'T00:00:00Z');
-      const dagLbl=DN2[dd.getUTCDay()]+' '+dd.getUTCDate()+' '+MN2[dd.getUTCMonth()];
-      html+='<div style="background:var(--white);border-radius:14px;margin-bottom:18px;box-shadow:0 1px 8px rgba(0,45,65,.08);overflow:hidden">';
-      html+='<div style="background:var(--night);color:#fff;padding:10px 16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">';
-      html+='<span style="font-size:14px;font-weight:700">'+dagLbl+'</span>';
-      html+='<span style="font-size:11px;opacity:.55">'+dagCnf.length+' conflict'+(dagCnf.length>1?'en':'')+'</span>';
-      conflictZones.forEach(z=>{html+='<span style="background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px">'+z+'</span>';});
-      html+='</div>';
-
-      // ── TIJDSBALK ALLE ZONES ──
-      const bknsT=dagBkns.map(b=>{
-        const dl=parseHM(b.tijd);const dur=vereistMinCnf(b.pax);
-        return{...b,deadlineMin:dl,tijdMin:dl-dur,duurMin:dur};
-      });
-      if(bknsT.length>0){
-        const allTd=bknsT.flatMap(b=>[b.tijdMin,b.deadlineMin]);
-        const WFd=Math.max(Math.min(...allTd)-15,600);
-        const WTd=Math.min(Math.max(...allTd)+30,1380);
-        const spD=WTd-WFd;
-        const ppD=v=>(((Math.max(WFd,Math.min(WTd,v)))-WFd)/spD*100).toFixed(1)+'%';
-        const pwD=v=>(v/spD*100).toFixed(1)+'%';
-
-        // Ticks
-        const stpD=spD>270?60:30;
-        let ticksD='';
-        for(let t=Math.ceil(WFd/stpD)*stpD;t<=WTd;t+=stpD){
-          ticksD+='<span style="position:absolute;font-size:10px;font-weight:500;color:#6E8591;transform:translateX(-50%);white-space:nowrap;left:'+ppD(t)+'">'+hhMM(t)+'</span>';
-        }
-
-        // Zones in volgorde (alleen zones die die dag voorkomen)
-        const dagZones=[...new Set(bknsT.map(b=>b.zone))].sort((a,b2)=>{
-          const ia=ZO2.indexOf(a),ib=ZO2.indexOf(b2);
-          return(ia<0?99:ia)-(ib<0?99:ib);
-        });
-
-        html+='<div style="padding:12px 16px 10px">';
-        html+='<div style="font-size:10px;font-weight:700;color:#6E8591;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Tijdsbalk \u2014 alle zones</div>';
-        html+='<div style="position:relative;height:20px;margin-bottom:6px;padding-left:120px">'+ticksD+'</div>';
-
-        dagZones.forEach(z=>{
-          const zBkns=bknsT.filter(b=>b.zone===z).sort((a,b2)=>a.tijdMin-b2.tijdMin);
-          const hasConf=zBkns.some(b=>conflictIds.has(b.id));
-          let blokken='';
-          zBkns.forEach((b,i)=>{
-            const ci=bClr(b.naam);
-            const isConf=conflictIds.has(b.id);
-            const bg=BALK_KLEUREN[ci],bdr=isConf?'#DC2626':BALK_RAND[ci],txt=BALK_TXT[ci];
-            const optSt=b.status==='optie'?'background-image:repeating-linear-gradient(45deg,transparent,transparent 4px,rgba(0,0,0,.07) 4px,rgba(0,0,0,.07) 8px);':'';
-            const lft=ppD(b.tijdMin);
-            const wdt=pwD(b.deadlineMin-Math.max(b.tijdMin,WFd));
-            blokken+='<div style="position:absolute;top:3px;height:42px;left:'+lft+';width:calc('+wdt+' - 1px);background:'+bg+';'+optSt
-              +'border:'+(isConf?'2px solid #DC2626':'1.5px solid '+bdr)+';border-radius:5px;overflow:hidden;display:flex;flex-direction:column;justify-content:center;padding:0 7px" '
-              +'title="'+b.naam+' \u2713 '+b.tijd+' \u00b7 '+b.pax+'p">'
-              +'<div style="font-size:11px;font-weight:700;color:'+txt+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+b.naam.split(' ').slice(0,2).join(' ')+'</div>'
-              +'<div style="font-size:10px;color:'+txt+';opacity:.85">'+b.tijd+' \u00b7 '+b.pax+'p'+(b.status==='optie'?' \u00b7 OPT':'')+'</div>'
-              +'</div>';
-          });
-          const zLbl=z.replace('terrein','');
-          const confDot=hasConf?'<span style="display:inline-block;width:6px;height:6px;background:#DC2626;border-radius:50%;margin-left:4px;vertical-align:middle"></span>':'';
-          html+='<div style="display:flex;align-items:stretch;margin-bottom:6px;gap:6px">'
-            +'<div style="width:114px;min-width:114px;font-size:11px;font-weight:600;color:'+(hasConf?'var(--red)':'var(--night)')+';display:flex;align-items:center;flex-shrink:0">'+zLbl+confDot+'</div>'
-            +'<div style="flex:1;position:relative;height:48px;border-radius:6px;background:#EEF3F6;overflow:hidden">'+blokken+'</div>'
-            +'</div>';
-        });
-        html+='</div>';
+  if(conflicten.length>0){
+    html+='<div style="font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">⚠️ Conflicten ('+conflicten.length+')</div>';
+    conflicten.forEach(c=>{
+      const b1b=c.boeking1.status==='optie'?'<span class="badge b-opt">OPTIE</span>':'<span class="badge b-def">DEF</span>';
+      const b2b=c.boeking2.status==='optie'?'<span class="badge b-opt">OPTIE</span>':'<span class="badge b-def">DEF</span>';
+      const vb=c.verplaats.status==='optie'?'<span class="badge b-opt">OPTIE</span>':'<span class="badge b-def">DEF</span>';
+      
+    // Bereken mini-tijdsbalk data voor dit conflict
+    const dagBkns=alleBoekingen.filter(b=>b.dag===c.dag);
+    const dagZoneBkns=dagBkns.filter(b=>b.zone===c.zone).sort((a,b)=>a.tijdMs-b.tijdMs);
+    const andereZones=[...new Set(dagBkns.filter(b=>b.zone!==c.zone).map(b=>b.zone))];
+    html+='<div class="cnf-card anim"><div class="cnf-card-hdr">'+c.dagLabel+'<div class="cnf-zone-badge">'+c.zone+'</div></div><div class="cnf-body">';
+    
+      html+='<div class="cnf-gap-info">❌ '+c.verschilMin+' min &mdash; minimum: '+c.vereistMin+' min</div>';
+      html+='<div class="cnf-row"><div class="cnf-bk has-conflict">'+b1b+'<div class="cnf-bk-naam">'+c.boeking1.naam+'</div><div class="cnf-bk-meta">🕐 '+c.boeking1.tijd+' &middot; 👥 '+c.boeking1.pax+'p &middot; 📍 '+c.boeking1.locatie+'</div></div>';
+      html+='<div class="cnf-bk has-conflict">'+b2b+'<div class="cnf-bk-naam">'+c.boeking2.naam+'</div><div class="cnf-bk-meta">🕐 '+c.boeking2.tijd+' &middot; 👥 '+c.boeking2.pax+'p &middot; 📍 '+c.boeking2.locatie+'</div></div></div>';
+      if(c.vrijeSlots.length>0){
+        html+='<div style="font-size:11px;color:var(--gray);margin-bottom:5px">💡 Verplaats '+vb+c.verplaats.naam+' ('+c.verplaats.pax+'p) naar:</div>';
+        html+='<div class="cnf-slots-row">'+c.vrijeSlots.map(s=>'<div class="cnf-slot">'+s+'</div>').join('')+'</div>';
       }
-
-      // ── CONFLICT PAREN ──
-      html+='<div style="padding:0 16px 14px">';
-      dagCnf.forEach(c=>{
-        const b1b=c.boeking1.status==='optie'?'<span class="badge b-opt">OPTIE</span>':'<span class="badge b-def">DEF</span>';
-        const b2b=c.boeking2.status==='optie'?'<span class="badge b-opt">OPTIE</span>':'<span class="badge b-def">DEF</span>';
-        const vb=c.verplaats.status==='optie'?'<span class="badge b-opt">OPTIE</span>':'<span class="badge b-def">DEF</span>';
-        html+='<div style="background:#FFF0EF;border-radius:8px;padding:10px 12px;margin-bottom:8px;border-left:3px solid var(--red)">';
-        html+='<div style="font-size:11px;font-weight:700;color:var(--red);margin-bottom:6px">\u274c '+c.verschilMin+' min \u2014 minimum: '+c.vereistMin+' min \u00b7 '+c.zone+'</div>';
-        html+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px">';
-        html+='<div style="flex:1;min-width:150px;background:#fff;border-radius:6px;padding:7px 10px">'+b1b+'<strong>'+c.boeking1.naam+'</strong><div style="font-size:11px;color:#6E8591">\u2713 '+c.boeking1.tijd+' \u00b7 '+c.boeking1.pax+'p \u00b7 '+c.boeking1.locatie+'</div></div>';
-        html+='<div style="flex:1;min-width:150px;background:#fff;border-radius:6px;padding:7px 10px">'+b2b+'<strong>'+c.boeking2.naam+'</strong><div style="font-size:11px;color:#6E8591">\u2713 '+c.boeking2.tijd+' \u00b7 '+c.boeking2.pax+'p \u00b7 '+c.boeking2.locatie+'</div></div>';
-        html+='</div>';
-        if(c.vrijeSlots.length>0){
-          html+='<div style="font-size:11px;color:var(--gray);margin-bottom:5px">\ud83d\udca1 Verplaats '+vb+c.verplaats.naam+' ('+c.verplaats.pax+'p) naar:</div>';
-          html+='<div class="cnf-slots-row">'+c.vrijeSlots.map(s=>'<div class="cnf-slot">'+s+'</div>').join('')+'</div>';
-        }
-        html+='</div>';
-      });
-      html+='</div>';
-      html+='</div>'; // dag-card sluiten
+      html+='</div></div>';
     });
+  } else {
+    html+='<div style="background:var(--green-bg);border-radius:10px;padding:16px;text-align:center;font-weight:700;color:var(--green);font-size:14px;margin-bottom:16px">✅ Geen conflicten (365 dagen vooruit)</div>';
   }
-
-  // Alle boekingen (inklapbaar)
-  if(alleBoekingen.length>0){
-    html+='<details style="margin-top:8px"><summary style="cursor:pointer;font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;padding:8px 0">\ud83d\udcc5 Alle boekingen ('+alleBoekingen.length+')</summary><div style="margin-top:8px">';
-    const perDag2={};
-    alleBoekingen.forEach(b=>{if(!perDag2[b.dag])perDag2[b.dag]=[];perDag2[b.dag].push(b);});
-    const DN3=['zo','ma','di','wo','do','vr','za'],MN3=['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
-    Object.keys(perDag2).sort().forEach(dag=>{
-      const dd2=new Date(dag+'T00:00:00Z');
-      html+='<div class="day-hdr"><div class="day-lbl">'+DN3[dd2.getUTCDay()]+' '+dd2.getUTCDate()+' '+MN3[dd2.getUTCMonth()]+'</div><div class="day-line"></div></div>';
-      perDag2[dag].forEach(b=>{
+  if(conflicten.length>0&&alleBoekingen.length>0){
+    html+='<div style="font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;margin:16px 0 8px">📅 Betrokken boekingen</div>';
+    const conflictIds=new Set(conflicten.flatMap(c=>[c.boeking1.id,c.boeking2.id]));
+    const conflictBoekingen=alleBoekingen.filter(b=>conflictIds.has(b.id));
+    const perDag={};
+    conflictBoekingen.forEach(b=>{if(!perDag[b.dag])perDag[b.dag]=[];perDag[b.dag].push(b);});
+    Object.keys(perDag).sort().forEach(dag=>{
+      const d2=new Date(dag+'T00:00:00Z');
+      const dn2=['zo','ma','di','wo','do','vr','za'],mn2=['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
+      html+='<div class="day-hdr"><div class="day-lbl">'+dn2[d2.getUTCDay()]+' '+d2.getUTCDate()+' '+mn2[d2.getUTCMonth()]+'</div><div class="day-line"></div></div>';
+      perDag[dag].forEach(b=>{
         const bb=b.status==='optie'?'<span class="badge b-opt">OPTIE</span>':'<span class="badge b-def">DEF</span>';
-        html+='<div class="bk-row'+(b.hasConflict?' has-conflict':'')+'"><div class="bk-naam">'+bb+b.naam+'</div>'
-          +'<div class="bk-meta">\u2713 '+b.tijd+' \u00b7 \ud83d\udc65 '+b.pax+'p \u00b7 \ud83d\udccd '+b.locatie+' \u00b7 '+b.zone
-          +(b.hasConflict?' \u00b7 <strong style="color:var(--red)">\u26a0\ufe0f conflict</strong>':'')+'</div></div>';
+        html+='<div class="bk-row has-conflict"><div class="bk-naam">'+bb+b.naam+'</div><div class="bk-meta">🕐 '+b.tijd+' &middot; 👥 '+b.pax+'p &middot; 📍 '+b.locatie+' &middot; '+b.zone+'</div></div>';
       });
     });
-    html+='</div></details>';
   }
-
   document.getElementById('cnf-content').innerHTML=html;
 }
 </script>
