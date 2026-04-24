@@ -247,25 +247,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; back
 .preview-banner { background: #FEF3C7; color: #92400E; text-align: center; padding: 8px; font-size: 11px; font-weight: 600; border-bottom: 1px solid #FCD34D; }
 .loader { text-align: center; padding: 40px; opacity: 0.5; font-size: 13px; }
 .leeg { text-align: center; padding: 30px; opacity: 0.5; font-size: 13px; border: 2px dashed #E1E8EB; border-radius: 14px; }
-.opzet-modal{display:flex;flex-direction:column;height:100vh;max-height:100vh}
-.opzet-hdr{flex-shrink:0;padding-bottom:8px}
-.opzet-datum-tabs{display:flex;gap:4px;flex-wrap:wrap;padding:4px 0 0}
-.odtab{background:rgba(255,255,255,.12);color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;position:relative;font-family:inherit}
-.odtab.act{background:#3FB8C4}.odtab.hb{font-weight:900}
-.odot{position:absolute;top:2px;right:3px;width:5px;height:5px;border-radius:50%;background:#FFD54F}
-.opzet-ps-tabs{display:flex;gap:6px;flex-wrap:wrap;padding:4px 0}
-.opstab{background:#F0F4F6;border:none;border-radius:100px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;color:#234756;font-family:inherit;display:flex;align-items:center;gap:6px}
-.opstab.act{background:#234756;color:#fff}
-.oprogress{background:rgba(0,0,0,.15);border-radius:100px;padding:0 5px;font-size:10px}
-.opstab.act .oprogress{background:rgba(255,255,255,.2)}
-.opzet-grid-wrap{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;padding:0}
-.opzet-grid-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
-.opzet-tbl{border-collapse:collapse;min-width:100%}
-.opzet-tbl td,.opzet-tbl th{border-bottom:1px solid #E1E8EB}
-.og-th-naam{position:sticky;left:0;z-index:2}
-.og-td-naam{position:sticky;left:0;z-index:1;white-space:nowrap;max-width:140px;overflow:hidden;text-overflow:ellipsis}
-.og-cel{transition:background .12s,color .12s}
-.opzet-leeg{padding:30px;text-align:center;color:#999;font-size:14px}
 </style>
 </head>
 <body>
@@ -334,7 +315,6 @@ var state = (function(){
     onboarding_stap: null, // NIEUW: 1-4 actief, null=niet actief
     wekker_toast: null, // NIEUW: {tijd, naam} wanneer wekker afgaat
     toewijzingen: {}, // NIEUW: { boeking_id: { medewerker_naam } }
-    opzet_datum: null, opzet_ps: null, opzet_data_cache: {}, opzet_poll_timer: null,
     allergenen_open: false, // NIEUW: modal open?
     allergenen_geladen: false, // NIEUW: data is geladen?
     allergenen_gerechten: [], // NIEUW: alle gerechten met ingredienten
@@ -677,72 +657,6 @@ function bevestigPS(bid, bnaam, ps_naam, gerechten) {
   });
 }
 
-function laadOpzetData(datum, cb) {
-  state.opzet_data_cache = state.opzet_data_cache || {};
-  api('kiosk-vandaag', { outlet_code: state.outlet_code, datum: datum }).then(function(res) {
-    state.opzet_data_cache[datum] = res;
-    if (cb) cb(res);
-  });
-}
-function laadAlleOpzetDagen(cb) {
-  var teller = 0; var totaal = 7;
-  for (var i = 0; i < 7; i++) {
-    (function(offset) {
-      laadOpzetData(datumIsoRel(offset), function() {
-        teller++; if (teller >= totaal && cb) cb();
-      });
-    })(i);
-  }
-}
-function startOpzetPoll() {
-  stopOpzetPoll();
-  state.opzet_poll_timer = setInterval(function() {
-    if (!state.modal || state.modal.type !== 'opzet-grid') { stopOpzetPoll(); return; }
-    var datum = state.opzet_datum || datumIsoRel(1);
-    api('kiosk-vandaag', { outlet_code: state.outlet_code, datum: datum }).then(function(res) {
-      if (state.opzet_data_cache) { state.opzet_data_cache[datum] = res; render(); }
-    });
-  }, 30000);
-}
-function stopOpzetPoll() {
-  if (state.opzet_poll_timer) { clearInterval(state.opzet_poll_timer); state.opzet_poll_timer = null; }
-}
-function aftikOpzetCel(bid, bnaam, gerecht, ps, datum, huidigeStatus) {
-  var nieuw = (huidigeStatus === 'opgezet') ? 'gepland' : 'opgezet';
-  api('kiosk-actie', { actie: 'opzet_aftekenen', sessie_id: state.sessie_id, boeking_id: bid, boeking_naam: bnaam, gerecht_naam: gerecht, ps_naam: ps, datum: datum, outlet_code: state.outlet_code, status: nieuw }).then(function(res) {
-    if (res.ok) {
-      var cached = (state.opzet_data_cache || {})[datum];
-      if (cached) {
-        var vg = cached.voortgang = cached.voortgang || [];
-        var idx = -1;
-        for (var i = 0; i < vg.length; i++) { if (vg[i].boeking_id === bid && vg[i].gerecht_naam === gerecht) { idx = i; break; } }
-        var e2 = { boeking_id: bid, gerecht_naam: gerecht, ps_naam: ps, status: nieuw, opgezet_door_naam: state.medewerker_naam };
-        if (idx >= 0) vg[idx] = e2; else vg.push(e2);
-      }
-      render();
-    } else { alert(res.error || 'Fout bij aftekenen'); }
-  });
-}
-function aftikOpzetBatch(items, ps, datum, nieuwStatus) {
-  var todo = items.filter(function(it) { return it.huidig !== nieuwStatus; });
-  if (!todo.length) return;
-  var teller = 0;
-  // Optimistic: update lokaal alvast
-  var cached = (state.opzet_data_cache || {})[datum];
-  if (cached) {
-    var vg = cached.voortgang = cached.voortgang || [];
-    todo.forEach(function(it) {
-      var idx = -1;
-      for (var i = 0; i < vg.length; i++) { if (vg[i].boeking_id === it.bid && vg[i].gerecht_naam === it.gerecht) { idx = i; break; } }
-      var e3 = { boeking_id: it.bid, gerecht_naam: it.gerecht, ps_naam: ps, status: nieuwStatus, opgezet_door_naam: state.medewerker_naam };
-      if (idx >= 0) vg[idx] = e3; else vg.push(e3);
-    });
-  }
-  render();
-  todo.forEach(function(it) {
-    api('kiosk-actie', { actie: 'opzet_aftekenen', sessie_id: state.sessie_id, boeking_id: it.bid, boeking_naam: it.bnaam, gerecht_naam: it.gerecht, ps_naam: ps, datum: datum, outlet_code: state.outlet_code, status: nieuwStatus }).then(function() { teller++; });
-  });
-}
 function render() {
   var app = document.getElementById('app');
   if (!state.sessie_id) {
@@ -873,26 +787,7 @@ function renderWekkerToast() {
     '</div>' +
     '<button data-wekker-sluit="1" style="background:rgba(255,255,255,.25);color:#fff;border:none;border-radius:100px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;margin-left:8px;">✔ OK</button>' +
   '</div>' +
-  '<style>@keyframes wekkerPulse { 0%,100% { transform:translateX(-50%) scale(1); } 50% { transform:translateX(-50%) scale(1.03); } }.opzet-modal{display:flex;flex-direction:column;height:100vh;max-height:100vh}
-.opzet-hdr{flex-shrink:0;padding-bottom:8px}
-.opzet-datum-tabs{display:flex;gap:4px;flex-wrap:wrap;padding:4px 0 0}
-.odtab{background:rgba(255,255,255,.12);color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;position:relative;font-family:inherit}
-.odtab.act{background:#3FB8C4}.odtab.hb{font-weight:900}
-.odot{position:absolute;top:2px;right:3px;width:5px;height:5px;border-radius:50%;background:#FFD54F}
-.opzet-ps-tabs{display:flex;gap:6px;flex-wrap:wrap;padding:4px 0}
-.opstab{background:#F0F4F6;border:none;border-radius:100px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;color:#234756;font-family:inherit;display:flex;align-items:center;gap:6px}
-.opstab.act{background:#234756;color:#fff}
-.oprogress{background:rgba(0,0,0,.15);border-radius:100px;padding:0 5px;font-size:10px}
-.opstab.act .oprogress{background:rgba(255,255,255,.2)}
-.opzet-grid-wrap{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;padding:0}
-.opzet-grid-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
-.opzet-tbl{border-collapse:collapse;min-width:100%}
-.opzet-tbl td,.opzet-tbl th{border-bottom:1px solid #E1E8EB}
-.og-th-naam{position:sticky;left:0;z-index:2}
-.og-td-naam{position:sticky;left:0;z-index:1;white-space:nowrap;max-width:140px;overflow:hidden;text-overflow:ellipsis}
-.og-cel{transition:background .12s,color .12s}
-.opzet-leeg{padding:30px;text-align:center;color:#999;font-size:14px}
-</style>';
+  '<style>@keyframes wekkerPulse { 0%,100% { transform:translateX(-50%) scale(1); } 50% { transform:translateX(-50%) scale(1.03); } }</style>';
 }
 
 // NIEUW: Welkom-rondleiding voor eerste login
@@ -1211,7 +1106,9 @@ function renderOnderBlokken(d) {
   var alarm = sm.dwingend > 0;
   var hac = d.haccp || {};
   return '<div class="onder-grid">' +
-    '<div class="onder-blok" data-onder="opzet"><div class="icoon">📋</div><div class="label">Opzetlijst</div><div class="stat">Voorbereiding</div></div>' +
+    '<div class="onder-blok" data-onder="dag1"><div class="icoon">📅</div><div class="label">Morgen</div><div class="stat">' + datumNL(datumIsoRel(1)).split(' ').slice(0,2).join(' ') + '</div></div>' +
+    '<div class="onder-blok" data-onder="dag2"><div class="icoon">📅</div><div class="label">Overmorgen</div><div class="stat">' + datumNL(datumIsoRel(2)).split(' ').slice(0,2).join(' ') + '</div></div>' +
+    '<div class="onder-blok" data-onder="dag3"><div class="icoon">📅</div><div class="label">+3 Dagen</div><div class="stat">' + datumNL(datumIsoRel(3)).split(' ').slice(0,2).join(' ') + '</div></div>' +
     '<div class="onder-blok" data-onder="week"><div class="icoon">🗓️</div><div class="label">Verder week</div><div class="stat">Plan vooruit</div></div>' +
     '<div class="onder-blok ' + (alarm ? 'alarm' : '') + '" data-onder="schoonmaak"><div class="icoon">🧽</div><div class="label">Schoonmaak</div><div class="stat">' + (sm.dwingend || 0) + ' rood &middot; ' + (sm.waarschuwing || 0) + ' geel</div></div>' +
     '<div class="onder-blok" data-onder="haccp"><div class="icoon">🌡️</div><div class="label">HACCP</div><div class="stat">' + (hac.gedaan || 0) + '/' + (hac.totaal || 0) + ' gedaan</div></div>' +
@@ -1227,7 +1124,6 @@ function renderModal() {
   if (state.modal && state.modal.type === 'alle-tijden') return renderAlleTijdenModal();
   if (state.modal && state.modal.type === 'dag-overzicht') return renderDagOverzichtModal();
   if (state.modal && state.modal.type === 'week-overzicht') return renderWeekOverzichtModal();
-  if (state.modal && state.modal.type === 'opzet-grid') return renderOpzetModal();
   if (state.modal && state.modal.type === 'schoonmaak') return renderSchoonmaakModal();
   if (state.modal && state.modal.type === 'haccp') return renderHaccpModal();
   if (state.modal && state.modal.type === 'documenten') return renderDocumentenModal();
@@ -1294,89 +1190,6 @@ function renderDagOverzichtModal() {
   '</div>';
 }
 
-function renderOpzetModal() {
-  var dagen = []; for (var i=0;i<7;i++){var d=new Date();d.setDate(d.getDate()+i);dagen.push(d.toISOString().slice(0,10));}
-  var selDatum = state.opzet_datum || dagen[1];
-  var cached = (state.opzet_data_cache||{})[selDatum];
-  var boekingen = (cached&&cached.dagpakket&&cached.dagpakket.boekingen)?cached.dagpakket.boekingen:[];
-  var voortgang = (cached&&cached.voortgang)?cached.voortgang:[];
-  var vgMap = {};
-  voortgang.forEach(function(v){vgMap[v.boeking_id+'||'+v.gerecht_naam]={status:v.status,door:v.opgezet_door_naam||''};});
-  // Items per PS: aggregeer gerechten per boeking
-  var itemsPerPs = {};
-  boekingen.forEach(function(b){
-    var agg={};
-    (b.gerechten||[]).forEach(function(g){
-      var ps=g.ps_naam||'Overig';
-      var k=g.naam+'||'+ps;
-      if(!agg[k])agg[k]={boeking_id:b.id,boeking_naam:b.naam||'',deadline_tijd:b.deadlineTijd||'',gerecht_naam:g.naam,ps_naam:ps,opzet_aantal:0,is_gn:g.is_gn};
-      agg[k].opzet_aantal+=(g.opzet_aantal||g.aantal||0);
-    });
-    Object.keys(agg).forEach(function(k){var it=agg[k];var ps=it.ps_naam;if(!itemsPerPs[ps])itemsPerPs[ps]=[];itemsPerPs[ps].push(it);});
-  });
-  var psLijst=Object.keys(itemsPerPs).sort();
-  var selPs=state.opzet_ps||psLijst[0]||'';
-  if(selPs&&!itemsPerPs[selPs])selPs=psLijst[0]||'';
-  // Datum tabs
-  var dtHtml='<div class="opzet-datum-tabs">'+dagen.map(function(d){
-    var dc=(state.opzet_data_cache||{})[d];
-    var hb=dc&&dc.dagpakket&&(dc.dagpakket.boekingen||[]).length>0;
-    var act=d===selDatum;
-    var dObj=new Date(d+'T00:00:00');
-    var dn=['zo','ma','di','wo','do','vr','za'][dObj.getDay()];
-    var lbl=dn+' '+dObj.getDate();
-    return '<button class="odtab'+(act?' act':'')+(hb?' hb':'')+'" data-opzet-datum="'+d+'">'+(!dc?'...':lbl)+(hb?'<span class="odot"></span>':'')+'</button>';
-  }).join('')+'</div>';
-  // PS tabs
-  var psTabs=psLijst.length>0?'<div class="opzet-ps-tabs">'+psLijst.map(function(ps){
-    var items=itemsPerPs[ps]||[];
-    var ubids={};var ugs={};
-    items.forEach(function(it){ubids[it.boeking_id]=1;ugs[it.gerecht_naam]=1;});
-    var tot=Object.keys(ubids).length*Object.keys(ugs).length;
-    var done=items.filter(function(it){return(vgMap[it.boeking_id+'||'+it.gerecht_naam]||{}).status==='opgezet';}).length;
-    var pct=tot>0?Math.round(done/tot*100):0;
-    return '<button class="opstab'+(ps===selPs?' act':'')+'" data-opzet-ps="'+esc(ps)+'">'+getPSIcon(ps)+' '+esc(ps)+'<span class="oprogress">'+pct+'%</span></button>';
-  }).join('')+'</div>':'<div style="padding:8px;color:#999;font-size:12px">Geen boekingen.</div>';
-  // Grid
-  var gridHtml='<div class="opzet-leeg">'+(!cached?'⏳ Laden...':'Kies een productsoort.')+'</div>';
-  if(selPs&&itemsPerPs[selPs]){
-    var items=itemsPerPs[selPs];
-    var boekMap={};
-    items.forEach(function(it){if(!boekMap[it.boeking_id])boekMap[it.boeking_id]={id:it.boeking_id,naam:it.boeking_naam,tijd:it.deadline_tijd};});
-    var bLijst=Object.keys(boekMap).map(function(bid){return boekMap[bid];}).sort(function(a,b){return(a.tijd||'').localeCompare(b.tijd||'');});
-    var gMap={};
-    items.forEach(function(it){if(!gMap[it.gerecht_naam])gMap[it.gerecht_naam]={is_gn:it.is_gn,bids:{}};gMap[it.gerecht_naam].bids[it.boeking_id]=(gMap[it.gerecht_naam].bids[it.boeking_id]||0)+(it.opzet_aantal||0);});
-    var gNamen=Object.keys(gMap);
-    var hdrRow='<tr><th class="og-th-naam" style="background:#001828;color:#fff;padding:8px 10px;text-align:left;font-size:11px;min-width:130px">Gerecht</th>'+
-      bLijst.map(function(b){
-        var allDone=gNamen.every(function(gn){return(vgMap[b.id+'||'+gn]||{}).status==='opgezet';});
-        return '<th class="og-th-boeking" data-aftik-kolom="1" data-bid="'+esc(b.id)+'" style="background:'+(allDone?'#2E7D32':'#001828')+';color:#fff;padding:6px 10px;font-size:11px;text-align:center;cursor:pointer;min-width:80px;white-space:nowrap">'
-          +'<div style="font-weight:900">'+esc(b.tijd||'?')+'</div>'
-          +'<div style="font-size:10px;opacity:.75">'+esc((b.naam||'').slice(0,14))+'</div>'
-          +'<div style="font-size:10px;opacity:.5">'+(allDone?'✓ klaar':'tikken ↓')+'</div></th>';
-      }).join('')+'</tr>';
-    var dRows=gNamen.map(function(gn){
-      var gm=gMap[gn];
-      var allDone=bLijst.every(function(b){return(vgMap[b.id+'||'+gn]||{}).status==='opgezet';});
-      var cells=bLijst.map(function(b){
-        var amt=gm.bids[b.id]||0;
-        var done=(vgMap[b.id+'||'+gn]||{}).status==='opgezet';
-        var door=done?((vgMap[b.id+'||'+gn]||{}).door||''):'';
-        if(!amt)return '<td style="background:#F7F9FC;text-align:center;padding:6px;border-left:1px solid #E1E8EB"></td>';
-        return '<td class="og-cel'+(done?' done':'')+'" data-aftik-cel="1" data-bid="'+esc(b.id)+'" data-gerecht="'+esc(gn)+'" data-ps="'+esc(selPs)+'" data-datum="'+esc(selDatum)+'" data-bnaam="'+esc(b.naam||'')+'" style="text-align:center;padding:8px 4px;cursor:pointer;background:'+(done?'#43A047':'#F0F4F6')+';color:'+(done?'#fff':'#234756')+';font-weight:700;font-size:16px;border-left:1px solid rgba(255,255,255,.15)">'
-          +'<div>'+amt+'</div>'+(done?'<div style="font-size:9px;opacity:.8;font-weight:400">'+esc(door.split(' ')[0]||'')+'</div>':'')+'</td>';
-      }).join('');
-      return '<tr><td class="og-td-naam" data-aftik-rij="1" data-gerecht="'+esc(gn)+'" data-ps="'+esc(selPs)+'" data-datum="'+esc(selDatum)+'" style="cursor:pointer;padding:6px 10px;font-size:12px;font-weight:600;background:'+(allDone?'#E8F5E9':'#FBFCFD')+';color:'+(allDone?'#2E7D32':'#234756')+';border-right:2px solid #E1E8EB">'
-        +(gm.is_gn?'<span style="background:#3FB8C4;color:#fff;border-radius:3px;padding:0 4px;font-size:9px;margin-right:3px">GN</span>':'')
-        +esc(gn)+'</td>'+cells+'</tr>';
-    }).join('');
-    gridHtml='<div class="opzet-grid-scroll"><table class="opzet-tbl"><thead>'+hdrRow+'</thead><tbody>'+dRows+'</tbody></table></div>';
-  }
-  return '<div class="alle-tijden-modal opzet-modal">'
-    +'<div class="atm-header opzet-hdr"><div style="display:flex;justify-content:space-between;align-items:center;width:100%;margin-bottom:8px"><h3 style="margin:0">📋 Opzetlijst</h3><button class="atm-close" data-close>Sluiten</button></div>'+dtHtml+'</div>'
-    +'<div style="padding:8px 12px;border-bottom:1px solid #E1E8EB;background:#fff">'+psTabs+'</div>'
-    +'<div class="atm-lijst opzet-grid-wrap">'+gridHtml+'</div></div>';
-}
 function renderWeekOverzichtModal() {
   var m = state.modal || {};
   var dagen = m.dagen || []; // [{datumStr, data}]
@@ -1824,7 +1637,6 @@ function bindHome() {
   });
 }
 
-render(); // direct tonen (login of laad-scherm) zonder te wachten op API
 if (state.sessie_id) {
   laadData();
   setInterval(function() { if (state.sessie_id) laadData(); }, 30000);
@@ -1965,7 +1777,6 @@ document.addEventListener('click', function(e) {
       // data-close: modal sluiten
       if (t.hasAttribute && t.hasAttribute('data-close')) {
         e.stopPropagation();
-        stopOpzetPoll();
         state.modal = null;
         render();
         return;
@@ -2068,67 +1879,6 @@ document.addEventListener('click', function(e) {
         render();
         return;
       }
-      // data-opzet-datum: datum tab in opzet modal
-      if (t.hasAttribute && t.hasAttribute('data-opzet-datum')) {
-        e.stopPropagation();
-        var newDat = t.getAttribute('data-opzet-datum');
-        state.opzet_datum = newDat; state.opzet_ps = null;
-        if (!(state.opzet_data_cache||{})[newDat]) laadOpzetData(newDat, function(){render();});
-        render(); return;
-      }
-      // data-opzet-ps: productsoort tab
-      if (t.hasAttribute && t.hasAttribute('data-opzet-ps')) {
-        e.stopPropagation();
-        state.opzet_ps = t.getAttribute('data-opzet-ps');
-        render(); return;
-      }
-      // data-aftik-cel: individuele cel aftikken
-      if (t.hasAttribute && t.hasAttribute('data-aftik-cel')) {
-        e.stopPropagation();
-        var aBid=t.getAttribute('data-bid'), aBnaam=t.getAttribute('data-bnaam');
-        var aGerecht=t.getAttribute('data-gerecht'), aPs=t.getAttribute('data-ps'), aDatum=t.getAttribute('data-datum');
-        var aCached=(state.opzet_data_cache||{})[aDatum]||{};
-        var aVg=aCached.voortgang||[]; var aHuidig='gepland';
-        for(var ai=0;ai<aVg.length;ai++){if(aVg[ai].boeking_id===aBid&&aVg[ai].gerecht_naam===aGerecht){aHuidig=aVg[ai].status||'gepland';break;}}
-        aftikOpzetCel(aBid,aBnaam,aGerecht,aPs,aDatum,aHuidig); return;
-      }
-      // data-aftik-rij: hele gerechtrij aftikken
-      if (t.hasAttribute && t.hasAttribute('data-aftik-rij')) {
-        e.stopPropagation();
-        var rGerecht=t.getAttribute('data-gerecht'), rPs=t.getAttribute('data-ps'), rDatum=t.getAttribute('data-datum');
-        var rCached=(state.opzet_data_cache||{})[rDatum]||{};
-        var rBoek=(rCached.dagpakket&&rCached.dagpakket.boekingen)?rCached.dagpakket.boekingen:[];
-        var rVg=rCached.voortgang||[]; var rVgMap={};
-        rVg.forEach(function(v){rVgMap[v.boeking_id+'||'+v.gerecht_naam]=v.status;});
-        var rItems=[]; var rAllDone=true;
-        rBoek.forEach(function(b){
-          var hg=(b.gerechten||[]).some(function(g){return g.naam===rGerecht&&(g.ps_naam||'')===rPs;});
-          if(!hg)return;
-          var hd=rVgMap[b.id+'||'+rGerecht]||'gepland';
-          if(hd!=='opgezet')rAllDone=false;
-          rItems.push({bid:b.id,bnaam:b.naam||'',gerecht:rGerecht,huidig:hd});
-        });
-        aftikOpzetBatch(rItems,rPs,rDatum,rAllDone?'gepland':'opgezet'); return;
-      }
-      // data-aftik-kolom: hele boeking-kolom aftikken
-      if (t.hasAttribute && t.hasAttribute('data-aftik-kolom')) {
-        e.stopPropagation();
-        var kBid=t.getAttribute('data-bid');
-        var kPs=state.opzet_ps||''; var kDatum=state.opzet_datum||datumIsoRel(1);
-        var kCached=(state.opzet_data_cache||{})[kDatum]||{};
-        var kBoek=(kCached.dagpakket&&kCached.dagpakket.boekingen)?kCached.dagpakket.boekingen:[];
-        var kVg=kCached.voortgang||[]; var kVgMap={};
-        kVg.forEach(function(v){kVgMap[v.boeking_id+'||'+v.gerecht_naam]=v.status;});
-        var kB=null;for(var ki=0;ki<kBoek.length;ki++){if(String(kBoek[ki].id)===String(kBid)){kB=kBoek[ki];break;}}
-        if(!kB)return;
-        var kItems=[]; var kAllDone=true;
-        (kB.gerechten||[]).filter(function(g){return(g.ps_naam||'')===kPs;}).forEach(function(g){
-          var hd=kVgMap[kB.id+'||'+g.naam]||'gepland';
-          if(hd!=='opgezet')kAllDone=false;
-          kItems.push({bid:kB.id,bnaam:kB.naam||'',gerecht:g.naam,huidig:hd});
-        });
-        aftikOpzetBatch(kItems,kPs,kDatum,kAllDone?'gepland':'opgezet'); return;
-      }
       // data-onder: nav-blok onder (morgen/week/schoonmaak/haccp/documenten/meldingen)
       if (t.hasAttribute && t.hasAttribute('data-onder')) {
         e.stopPropagation();
@@ -2141,14 +1891,6 @@ document.addEventListener('click', function(e) {
           return;
         }
         // Morgen: echte modal met boekingen van morgen
-        if (soort === 'opzet') {
-          state.opzet_datum = datumIsoRel(1); state.opzet_ps = null; state.opzet_data_cache = {};
-          state.modal = { type: 'opzet-grid' };
-          render();
-          laadAlleOpzetDagen(function(){ render(); });
-          startOpzetPoll();
-          return;
-        }
         if (soort === 'dag1' || soort === 'morgen') {
           var d1Datum = datumIsoRel(1);
           laadDagData(d1Datum, function(res){
