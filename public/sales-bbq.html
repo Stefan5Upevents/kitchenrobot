@@ -412,7 +412,7 @@ function renderTijdsbalk(data, nieuwTijdMin){
       const col=bkClr(b.naam);
       const s=b.tijdMin,e=s+b.duurMin,be=e+b.bufferMin;
       if(e>WF&&s<WT){
-        row+=`<div class="tl-blk${b.isConflict&&isGz?' tl-conflict':''}" style="left:${pp(s)};width:calc(${pw(Math.min(e,WT)-Math.max(s,WF))} - 1px);background:${col.bg};border-color:${b.isConflict&&isGz?'#DC2626':col.bdr};${b.status==='optie'?'background-image:repeating-linear-gradient(45deg,transparent,transparent 4px,rgba(0,0,0,.07) 4px,rgba(0,0,0,.07) 8px)':''}" title="${b.naam} · klaar om ${b.deadline} · ${b.pax}p">
+        row+=`<div class="tl-blk${b.isConflict&&isGz?' tl-conflict':''}" style="left:${pp(s)};width:calc(${pw(Math.min(e,WT)-Math.max(s,WF))} - 1px);background:${col.bg};border-color:${b.isConflict&&isGz?'#DC2626':col.bdr};${b.status==='optie'?'background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.3) 0px,rgba(255,255,255,.3) 3px,transparent 3px,transparent 7px);opacity:.8;border-style:dashed':''}" title="${b.naam} · klaar om ${b.deadline} · ${b.pax}p">
           <div class="nb" style="color:${col.txt}">${b.naam.split(' ').slice(0,2).join(' ')}</div>
           <div class="nt" style="color:${col.txt}">✓ ${b.deadline} · ${b.pax}p · ${b.duurMin}min</div>
         </div>`;
@@ -527,6 +527,7 @@ let _cfOutlet='west';
 window._cnfLoaded=false;
 window._cfData=null;
 
+function vereistMin2(p){if(p>200)return 60;if(p>100)return 40;if(p>75)return 25;if(p>50)return 20;if(p>30)return 20;if(p>15)return 15;return 10;}
 function cfOutlet(o){
   _cfOutlet=o;
   ['west','weesp'].forEach(x=>document.getElementById('cfbtn-'+x).classList.toggle('active',x===o));
@@ -563,7 +564,8 @@ function renderCnf(data){
   }
   if(conflicten.length>0){
     html+='<div style="font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">⚠️ Conflicten ('+conflicten.length+')</div>';
-    conflicten.forEach(c=>{
+    conflicten.sort((a,b)=>a.dag<b.dag?-1:a.dag>b.dag?1:0);
+  conflicten.forEach(c=>{
       const b1b=c.boeking1.status==='optie'?'<span class="badge b-opt">OPTIE</span>':'<span class="badge b-def">DEF</span>';
       const b2b=c.boeking2.status==='optie'?'<span class="badge b-opt">OPTIE</span>':'<span class="badge b-def">DEF</span>';
       const vb=c.verplaats.status==='optie'?'<span class="badge b-opt">OPTIE</span>':'<span class="badge b-def">DEF</span>';
@@ -574,6 +576,29 @@ function renderCnf(data){
       if(c.vrijeSlots.length>0){
         html+='<div style="font-size:11px;color:var(--gray);margin-bottom:5px">💡 Verplaats '+vb+c.verplaats.naam+' ('+c.verplaats.pax+'p) naar:</div>';
         html+='<div class="cnf-slots-row">'+c.vrijeSlots.map(s=>'<div class="cnf-slot">'+s+'</div>').join('')+'</div>';
+      }
+      // Mini-tijdsbalk: alle boekingen die dag op zelfde zone
+      const _dzb=alleBoekingen.filter(b=>b.dag===c.dag&&b.zone===c.zone);
+      if(_dzb.length>0){
+        const _ms=_dzb.map(b=>b.tijdMs);
+        const _min=Math.min(..._ms)-10*60000, _max=Math.max(..._ms)+25*60000;
+        const _sp=_max-_min||1;
+        const _p=ms=>(((ms-_min)/_sp)*100).toFixed(1)+'%';
+        const _w=(m1,m2)=>(((m2-m1)/_sp)*100).toFixed(1)+'%';
+        const _t=ms=>{const fmt=new Intl.DateTimeFormat('nl-NL',{timeZone:'Europe/Amsterdam',hour:'2-digit',minute:'2-digit',hour12:false});return fmt.format(new Date(ms));};
+        const _C=[{bg:'#DBEAFE',bdr:'#2563EB',txt:'#1E3A8A'},{bg:'#DCFCE7',bdr:'#16A34A',txt:'#14532D'},{bg:'#FEE2E2',bdr:'#DC2626',txt:'#7F1D1D'},{bg:'#FEF9C3',bdr:'#CA8A04',txt:'#713F12'},{bg:'#F3E8FF',bdr:'#9333EA',txt:'#581C87'},{bg:'#FFEDD5',bdr:'#EA580C',txt:'#7C2D12'}];
+        let _r='';
+        const _cIds=new Set([c.boeking1.id,c.boeking2.id]);
+        _dzb.forEach((b,i)=>{
+          const col=_C[i%_C.length];
+          const dMs=vereistMin2(b.pax)*60000;
+          const isC=_cIds.has(b.id);
+          _r+=`<div style="position:absolute;top:3px;height:30px;left:${_p(b.tijdMs)};width:calc(${_w(b.tijdMs,b.tijdMs+dMs)} - 1px);background:${isC?col.bg+'':'col.bg'};border:${isC?'2px solid #DC2626':'1.5px solid '+col.bdr};border-radius:4px;overflow:hidden;box-sizing:border-box;padding:0 4px;display:flex;align-items:center;${b.status==='optie'?'opacity:.75;border-style:dashed':''}"><span style="font-size:9px;font-weight:700;color:${isC?'#DC2626':col.txt};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${b.naam.split(' ')[0]} ${_t(b.tijdMs)}</span></div>`;
+        });
+        let _ticks='';
+        const _stap=30*60000,_ts=Math.ceil(_min/_stap)*_stap;
+        for(let t=_ts;t<=_max;t+=_stap)_ticks+=`<span style="position:absolute;left:${_p(t)};font-size:8px;color:var(--gray);transform:translateX(-50%)">${_t(t)}</span>`;
+        html+=`<div style="margin-top:8px"><div style="font-size:9px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">${c.zone} — alle BBQs die dag</div><div style="position:relative;height:12px;margin-bottom:1px">${_ticks}</div><div style="position:relative;height:36px;background:#EEF3F6;border-radius:6px;overflow:hidden">${_r}</div></div>`;
       }
       html+='</div></div>';
     });
