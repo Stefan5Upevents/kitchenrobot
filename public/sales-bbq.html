@@ -119,7 +119,7 @@ select:focus{border-color:var(--aqua)}
   <div class="hdr-icon">🔥</div>
   <div>
     <div class="hdr-title">BBQ Conflict Checker</div>
-    <div class="hdr-sub">UP Events Sales — voorzoeking</div>
+    <div class="hdr-sub">UP Events Sales — voorzoeking <span style="opacity:.5">v5</span></div>
   </div>
 </div>
 
@@ -329,12 +329,17 @@ async function doCheck(){
     document.getElementById('spinner').style.display='none';
     document.querySelector('.btn-check').disabled=false;
 
-    if(res.status===401){
+    console.log('[sales-bbq] status=', res.status, 'body=', data);
+    if(res.status===401 && data && data.fout==='Verkeerde PIN'){
       PIN=''; buf=''; dots();
       document.getElementById('form-screen').style.display='none';
       document.getElementById('pin-screen').style.display='block';
       document.getElementById('pin-err').textContent='Onjuiste PIN — probeer opnieuw';
       document.getElementById('pin-ok').disabled=true;
+      return;
+    }
+    if(!res.ok){
+      flash('⚠️ Server-fout '+res.status+': '+(data && data.fout ? data.fout : JSON.stringify(data)));
       return;
     }
     if(!data.ok){flash('⚠️ '+(data.fout||'Onbekende fout'));return;}
