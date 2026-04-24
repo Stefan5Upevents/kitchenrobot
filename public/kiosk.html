@@ -1106,7 +1106,9 @@ function renderOnderBlokken(d) {
   var alarm = sm.dwingend > 0;
   var hac = d.haccp || {};
   return '<div class="onder-grid">' +
-    '<div class="onder-blok" data-onder="morgen"><div class="icoon">📅</div><div class="label">Morgen</div><div class="stat">Binnenkort</div></div>' +
+    '<div class="onder-blok" data-onder="dag1"><div class="icoon">📅</div><div class="label">Morgen</div><div class="stat">' + datumNL(datumIsoRel(1)).split(' ').slice(0,2).join(' ') + '</div></div>' +
+    '<div class="onder-blok" data-onder="dag2"><div class="icoon">📅</div><div class="label">Overmorgen</div><div class="stat">' + datumNL(datumIsoRel(2)).split(' ').slice(0,2).join(' ') + '</div></div>' +
+    '<div class="onder-blok" data-onder="dag3"><div class="icoon">📅</div><div class="label">+3 Dagen</div><div class="stat">' + datumNL(datumIsoRel(3)).split(' ').slice(0,2).join(' ') + '</div></div>' +
     '<div class="onder-blok" data-onder="week"><div class="icoon">🗓️</div><div class="label">Verder week</div><div class="stat">Plan vooruit</div></div>' +
     '<div class="onder-blok ' + (alarm ? 'alarm' : '') + '" data-onder="schoonmaak"><div class="icoon">🧽</div><div class="label">Schoonmaak</div><div class="stat">' + (sm.dwingend || 0) + ' rood &middot; ' + (sm.waarschuwing || 0) + ' geel</div></div>' +
     '<div class="onder-blok" data-onder="haccp"><div class="icoon">🌡️</div><div class="label">HACCP</div><div class="stat">' + (hac.gedaan || 0) + '/' + (hac.totaal || 0) + ' gedaan</div></div>' +
@@ -1177,6 +1179,7 @@ function renderDagOverzichtModal() {
         '<div class="dag-info"><div class="dag-naam">' + esc(b.naam || '?') + '</div>' +
         '<div class="dag-meta">' + esc(b.locatie || '') + ' · ' + esc(b.aantal_personen || '?') + 'p</div>' +
         (psBadges ? '<div class="dag-ps">' + psBadges + '</div>' : '') +
+        (function(){ var snaps = b.opzet_snapshots || {}; var psKeys = Object.keys(snaps); if (!psKeys.length) return ''; window._kiosk_opzet_html = window._kiosk_opzet_html || {}; var oh = '<div style="margin-top:8px;border-top:1px solid #eee;padding-top:8px">'; psKeys.forEach(function(ps){ var ck = 'op_'+(b.id||b.boeking_id||'')+'_'+ps.replace(/\W/g,'_'); window._kiosk_opzet_html[ck] = snaps[ps]; oh += '<div style="font-size:10px;font-weight:700;color:#3FB8C4;text-transform:uppercase;margin:4px 0 2px">'+esc(ps)+' \u2014 buffetformulier</div><div class="opzet-holder" data-opzet-key="'+esc(ck)+'" style="background:#F5F8FA;border-radius:8px;min-height:40px"></div>'; }); oh += '</div>'; return oh; })() +
         '</div></div>';
     }).join('');
   }
@@ -1618,6 +1621,19 @@ function bindHome() {
       if (res.ok) { state.modal = null; alert('Melding verstuurd!'); return laadData(); }
       else alert(res.error || 'Fout');
     });
+  // Injecteer opzet buffetformulier iframes
+  Array.prototype.forEach.call(document.querySelectorAll('.opzet-holder[data-opzet-key]'), function(div) {
+    if (div.querySelector('iframe')) return;
+    var key = div.getAttribute('data-opzet-key');
+    var html = (window._kiosk_opzet_html || {})[key];
+    if (html) {
+      var fr = document.createElement('iframe');
+      fr.setAttribute('srcdoc', html);
+      fr.style.cssText = 'width:100%;min-height:280px;border:0;display:block;border-radius:8px;margin-top:2px';
+      fr.onload = function() { try { fr.style.height = (fr.contentWindow.document.body.scrollHeight + 16) + 'px'; } catch(e) {} };
+      div.appendChild(fr);
+    }
+  });
   };
 }
 
@@ -1875,10 +1891,26 @@ document.addEventListener('click', function(e) {
           return;
         }
         // Morgen: echte modal met boekingen van morgen
-        if (soort === 'morgen') {
-          var mDatum = datumIsoRel(1);
-          laadDagData(mDatum, function(res){
-            state.modal = { type: 'dag-overzicht', data: res, label: '📅 Morgen', datumStr: mDatum };
+        if (soort === 'dag1' || soort === 'morgen') {
+          var d1Datum = datumIsoRel(1);
+          laadDagData(d1Datum, function(res){
+            state.modal = { type: 'dag-overzicht', data: res, label: '📅 Morgen · ' + datumNL(d1Datum), datumStr: d1Datum };
+            render();
+          });
+          return;
+        }
+        if (soort === 'dag2') {
+          var d2Datum = datumIsoRel(2);
+          laadDagData(d2Datum, function(res){
+            state.modal = { type: 'dag-overzicht', data: res, label: '📅 Overmorgen · ' + datumNL(d2Datum), datumStr: d2Datum };
+            render();
+          });
+          return;
+        }
+        if (soort === 'dag3') {
+          var d3Datum = datumIsoRel(3);
+          laadDagData(d3Datum, function(res){
+            state.modal = { type: 'dag-overzicht', data: res, label: '📅 +3 Dagen · ' + datumNL(d3Datum), datumStr: d3Datum };
             render();
           });
           return;
