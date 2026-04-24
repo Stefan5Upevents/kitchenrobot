@@ -312,15 +312,16 @@ const BOOK_COLORS=[
 // Kleur per boekingsnaam (consistent over zones)
 const _bkClrMap=new Map(); let _bkClrIdx=0;
 // Buffer formule (zelfde als edge function)
-function bufMin(pax){if(pax>200)return 60;if(pax>100)return 40;if(pax>75)return 25;if(pax>50)return 20;if(pax>30)return 20;if(pax>15)return 15;return 10;}
-// Check of nieuwe BBQ in een zone past
-function zoneVrij(boekingen,prepStart,deadline,pax){
+// Staffel uit opzet_instellingen BBQ Start: minimum gap deadline-to-deadline
+function bufMin(pax){if(pax>200)return 90;if(pax>120)return 75;if(pax>60)return 60;return 45;}
+// Totale prep = staffel + oven(15) + vuur(60)
+function bbqDuurFn(pax){return bufMin(pax)+75;}
+// Check of nieuwe BBQ past in een zone (deadline-to-deadline gap)
+function zoneVrij(boekingen,nieuwDeadline,pax){
   for(const b of boekingen){
-    const gapNaB=b.tijdMin-deadline;   // b prep start - nieuw deadline
-    const gapNaA=prepStart-(b.tijdMin+b.duurMin); // nieuw prep start - b deadline
-    const ov=Math.max(gapNaA,gapNaB)<0;
-    const buf=bufMin(Math.max(pax,b.pax));
-    if(ov||(gapNaA>=0&&gapNaA<buf)||(gapNaB>=0&&gapNaB<buf))return false;
+    const gap=Math.abs(b.deadlineMin-nieuwDeadline);
+    const minG=bufMin(Math.max(pax,b.pax));
+    if(gap<minG)return false;
   }
   return true;
 }
@@ -354,9 +355,9 @@ function renderTijdsbalk(data, nieuwTijdMin){
       const col=bkClr(b.naam);
       const s=b.tijdMin,e=s+b.duurMin,be=e+b.bufferMin;
       if(e>WF&&s<WT){
-        row+=`<div class="tl-blk${b.isConflict&&isGz?' tl-conflict':''}" style="left:${pp(s)};width:calc(${pw(Math.min(e,WT)-Math.max(s,WF))} - 1px);background:${col.bg};border-color:${b.isConflict&&isGz?'#DC2626':col.bdr};${b.status==='optie'?'background-image:repeating-linear-gradient(45deg,transparent,transparent 4px,rgba(0,0,0,.07) 4px,rgba(0,0,0,.07) 8px)':''}" title="${b.naam} · klaar om ${b.deadline||b.tijd} · ${b.pax}p">
+        row+=`<div class="tl-blk${b.isConflict&&isGz?' tl-conflict':''}" style="left:${pp(s)};width:calc(${pw(Math.min(e,WT)-Math.max(s,WF))} - 1px);background:${col.bg};border-color:${b.isConflict&&isGz?'#DC2626':col.bdr};${b.status==='optie'?'background-image:repeating-linear-gradient(45deg,transparent,transparent 4px,rgba(0,0,0,.07) 4px,rgba(0,0,0,.07) 8px)':''}" title="${b.naam} · klaar om ${b.deadline} · ${b.pax}p">
           <div class="nb" style="color:${col.txt}">${b.naam.split(' ').slice(0,2).join(' ')}</div>
-          <div class="nt" style="color:${col.txt}">✓ ${b.deadline||b.tijd} · ${b.pax}p · ${b.duurMin}min</div>
+          <div class="nt" style="color:${col.txt}">✓ ${b.deadline} · ${b.pax}p · ${b.duurMin}min</div>
         </div>`;
       }
       if(be>Math.max(e,WF)&&e<WT){
