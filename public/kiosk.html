@@ -1637,6 +1637,7 @@ function bindHome() {
   });
 }
 
+render(); // direct login-scherm of laadscherm tonen
 if (state.sessie_id) {
   laadData();
   setInterval(function() { if (state.sessie_id) laadData(); }, 30000);
