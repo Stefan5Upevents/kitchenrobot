@@ -318,8 +318,8 @@ function renderTijdsbalk(data, nieuwTijdMin){
   const ong=data.ongekoppelde||[];
   const nw=data.nieuw;
   const gz=data.zone;
-  const allT=[nieuwTijdMin,nieuwTijdMin+nw.duurMin,...zones.flatMap(z=>z.boekingen.flatMap(b=>[b.tijdMin,b.tijdMin+b.duurMin]))];
-  const WF=Math.max(Math.min(...allT)-30,Math.max(nieuwTijdMin-120,600));
+  const allT=[nw.tijdMin,nw.tijdMin+nw.duurMin,...zones.flatMap(z=>z.boekingen.flatMap(b=>[b.tijdMin,b.tijdMin+b.duurMin]))];
+  const WF=Math.max(Math.min(...allT)-30,Math.max(nw.tijdMin-30,600));
   const WT=Math.min(Math.max(...allT)+30,Math.min(nieuwTijdMin+300,1380));
   function pp(v){return(((Math.max(WF,Math.min(WT,v)))-WF)/(WT-WF)*100).toFixed(2)+'%';}
   function pw(v){return(v/(WT-WF)*100).toFixed(2)+'%';}
@@ -341,9 +341,9 @@ function renderTijdsbalk(data, nieuwTijdMin){
       const col=bkClr(b.naam);
       const s=b.tijdMin,e=s+b.duurMin,be=e+b.bufferMin;
       if(e>WF&&s<WT){
-        row+=`<div class="tl-blk${b.isConflict&&isGz?' tl-conflict':''}" style="left:${pp(s)};width:calc(${pw(Math.min(e,WT)-Math.max(s,WF))} - 1px);background:${col.bg};border-color:${b.isConflict&&isGz?'#DC2626':col.bdr};${b.status==='optie'?'background-image:repeating-linear-gradient(45deg,transparent,transparent 4px,rgba(0,0,0,.07) 4px,rgba(0,0,0,.07) 8px)':''}" title="${b.naam} · ${b.tijd} · ${b.pax}p">
+        row+=`<div class="tl-blk${b.isConflict&&isGz?' tl-conflict':''}" style="left:${pp(s)};width:calc(${pw(Math.min(e,WT)-Math.max(s,WF))} - 1px);background:${col.bg};border-color:${b.isConflict&&isGz?'#DC2626':col.bdr};${b.status==='optie'?'background-image:repeating-linear-gradient(45deg,transparent,transparent 4px,rgba(0,0,0,.07) 4px,rgba(0,0,0,.07) 8px)':''}" title="${b.naam} · klaar om ${b.deadline||b.tijd} · ${b.pax}p">
           <div class="nb" style="color:${col.txt}">${b.naam.split(' ').slice(0,2).join(' ')}</div>
-          <div class="nt" style="color:${col.txt}">${b.tijd} · ${b.pax}p · ${b.duurMin}min</div>
+          <div class="nt" style="color:${col.txt}">✓ ${b.deadline||b.tijd} · ${b.pax}p · ${b.duurMin}min</div>
         </div>`;
       }
       if(be>Math.max(e,WF)&&e<WT){
@@ -352,8 +352,8 @@ function renderTijdsbalk(data, nieuwTijdMin){
     });
     if(isGz){
       ong.forEach(o=>{const os=o.tijdMin,oe=os+90;if(oe>WF&&os<WT)row+=`<div class="tl-ong" style="left:${pp(os)};width:calc(${pw(Math.min(oe,WT)-Math.max(os,WF))} - 1px)" title="${o.naam} – locatie ?">?</div>`;});
-      const ns=nieuwTijdMin,ne=ns+nw.duurMin;
-      if(ne>WF&&ns<WT)row+=`<div class="tl-new" style="left:${pp(ns)};width:calc(${pw(Math.min(ne,WT)-Math.max(ns,WF))} - 1px)">${hhmmTL(ns)}<br>${nw.duurMin}min</div>`;
+      const ns=nw.tijdMin,ne=ns+nw.duurMin;
+      if(ne>WF&&ns<WT)row+=`<div class="tl-new" style="left:${pp(ns)};width:calc(${pw(Math.min(ne,WT)-Math.max(ns,WF))} - 1px)">klaar ${hhmmTL(ne)}<br>${nw.duurMin}min</div>`;
     }
     rijen+=`<div class="tl-zone-row"><div class="tl-zone-lbl${isGz?' tl-zone-active':''}">${z.zone}</div><div class="tl-row">${row}</div></div>`;
   });
@@ -402,7 +402,7 @@ function toon(data,datum,tijd,locatie,pax){
   let items='';
   for(const cf of data.conflicten){
     const badge=cf.status==='optie'?'<span class="badge b-opt">OPTIE</span>':'<span class="badge b-def">DEF</span>';
-    items+=`<div class="c-item"><div class="c-naam">${badge}${cf.naam}</div><div class="c-meta">🕐 ${cf.tijd} &nbsp;·&nbsp; 👥 ${cf.pax} pers. &nbsp;·&nbsp; 📍 ${cf.locatie}<br>Verschil: ${cf.verschilMin} min &mdash; minimum: ${cf.vereistMin} min</div></div>`;
+    items+=`<div class="c-item"><div class="c-naam">${badge}${cf.naam}</div><div class="c-meta">✓ klaar om ${cf.tijd} &nbsp;·&nbsp; 👥 ${cf.pax} pers. &nbsp;·&nbsp; 📍 ${cf.locatie}<br>${cf.overlap?'⚠️ Voorbereiding overlapt direct':'Buffer: '+cf.verschilMin+' min — minimum: '+cf.vereistMin+' min'}</div></div>`;
   }
 
   let conflictBlock='';
