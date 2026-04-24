@@ -211,6 +211,7 @@ select:focus{border-color:var(--aqua)}
 
 <script>
 const API = 'https://aezatnwsrhlwtykpixsq.supabase.co/functions/v1/sales-bbq-check';
+const ANON_KEY = 'sb_publishable_qkQzUEM5fvJPSsfScEzNCg_Eug8-d4t';
 
 const LOCATIES = {
   west:[
@@ -321,7 +322,7 @@ async function doCheck(){
   try{
     const res=await fetch(API,{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:{'Content-Type':'application/json','apikey':ANON_KEY,'Authorization':'Bearer '+ANON_KEY},
       body:JSON.stringify({pin:PIN,datum,tijd,locatie_naam:locatie,pax})
     });
     const data=await res.json();
