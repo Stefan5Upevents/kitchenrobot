@@ -4226,7 +4226,7 @@ function TijdenScreen() {
             psDeadline: psTijdStr,
             psMinuten,
             menuNaam: m.naam,
-            aantal: r.aantal || 0,
+            aantal: totPers(b),
             locatie: b.locatie || b.plaats || ""
           };
           // Altijd Recras deadline tonen — ongeacht tijdinstellingen
@@ -4260,7 +4260,7 @@ function TijdenScreen() {
               psDeadline: psInfo.psDeadline,
               menuNaam: psInfo.menuNaam || "",
               locatie: b.locatie || "",
-              aantal: psInfo.aantal || 0,
+              aantal: totPers(b),
               app: (t.kwal || "algemeen").toLowerCase(),
               isRecras: false,
               uur: t.minVal || 0,
@@ -4456,7 +4456,7 @@ function TijdenScreen() {
     setFilterPS("alle");
     setFilterTijdVan("");
     setFilterTijdTot("");
-  } }, "\u2715 Filters wissen")), filtered.length === 0 ? /* @__PURE__ */ React.createElement("div", { style: (dag ? { ...SS.card, ...alertI } : { display: "none" }) }, dag ? "Geen tijden voor deze dag/categorie. Open buffetformulieren om tijden te genereren." : "") : /* @__PURE__ */ React.createElement("div", { style: SS.card }, /* @__PURE__ */ React.createElement("table", { className:"kr-table", style: { width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }, className: "opzet-tbl" }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", { style: { background: C.night } }, ["Tijd", "Activiteit", "Kwal.", "Aantal", "Menu", "Boeking", "Locatie", "Deadline"].map(function(h) {
+  } }, "\u2715 Filters wissen")), filtered.length === 0 ? /* @__PURE__ */ React.createElement("div", { style: (dag ? { ...SS.card, ...alertI } : { display: "none" }) }, dag ? "Geen tijden voor deze dag/categorie. Open buffetformulieren om tijden te genereren." : "") : /* @__PURE__ */ React.createElement("div", { style: SS.card }, /* @__PURE__ */ React.createElement("table", { className:"kr-table", style: { width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }, className: "opzet-tbl" }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", { style: { background: C.night } }, ["Tijd", "Activiteit", "Kwal.", "Totaal", "Menu", "Boeking", "Locatie", "Deadline"].map(function(h) {
     return /* @__PURE__ */ React.createElement("th", { key: h, style: { ...SS.th, color: "#002D41", background: "#EEF3F6", textAlign: "left", fontSize: 11, padding: "10px 12px", borderBottom: "2px solid #C5D8E2" } }, h);
   }))), /* @__PURE__ */ React.createElement("tbody", null, filtered.map(function(item, ii) {
     var kleur = item.isRecras ? C.hot : ak[item.app] || C.night;
