@@ -567,7 +567,7 @@ function renderDagBalkHtml(dagBkns, conflictIds) {
   return `<div style="background:#fff;border-radius:12px;padding:13px 14px 11px;margin-bottom:10px;box-shadow:0 1px 6px rgba(0,45,65,.07)"><div style="font-size:10px;font-weight:700;color:#90A4AE;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">📅 Tijdsbalk alle zones</div><div style="padding-left:72px"><div style="position:relative;height:20px;margin-bottom:5px">${ticks}</div></div>${rows}</div>`;
 }
 
-function renderCnf(data){
+function renderCnfDag(data){
   const od=data.outlets[_cfOutlet];
   if(!od){document.getElementById('cnf-content').innerHTML='<div style="background:var(--green-bg);border-radius:10px;padding:16px;text-align:center;font-weight:700;color:var(--green);font-size:14px">✅ Geen conflicten (365 dagen vooruit)</div>';return;}
   const{conflicten,alleBoekingen,onbekend}=od;
@@ -712,7 +712,7 @@ function renderMiniTijdsbalk(conflictObj, alleBoekingen, allezones_data) {
   </div>`;
 }
 
-function renderCnf(data){
+function renderCnfDag(data){
   const od=data.outlets[_cfOutlet];
   if(!od){document.getElementById('cnf-content').innerHTML='<div style="background:var(--green-bg);border-radius:10px;padding:16px;text-align:center;font-weight:700;color:var(--green);font-size:14px">✅ Geen conflicten (365 dagen vooruit)</div>';return;}
   const{conflicten,alleBoekingen,onbekend}=od;
@@ -766,6 +766,53 @@ function renderCnf(data){
   }
   document.getElementById('cnf-content').innerHTML=html;
 }
+
+
+function renderCnf_v3(data){
+  const od=data.outlets[_cfOutlet];
+  if(!od){document.getElementById('cnf-content').innerHTML='<div style="background:var(--green-bg);border-radius:10px;padding:16px;text-align:center;font-weight:700;color:var(--green);font-size:14px">✅ Geen conflicten (365 dagen vooruit)</div>';return;}
+  const{conflicten,alleBoekingen,onbekend}=od;
+  let html='';
+  const ongKeys=Object.keys(onbekend||{});
+  if(ongKeys.length>0){
+    html+='<div class="ong-card" style="margin-bottom:14px"><div class="ong-hdr"><div class="ong-hdr-icon">⚠️</div><div><div class="ong-title">Locaties niet gekoppeld</div><div class="ong-sub">'+ongKeys.length+' locatie(s)</div></div></div>';
+    ongKeys.forEach(loc=>{html+='<div class="ong-item"><strong>'+loc+'</strong>: '+(onbekend[loc]||[]).slice(0,3).join(', ')+'</div>';});
+    html+='</div>';
+  }
+  if(conflicten.length===0){
+    html+='<div style="background:var(--green-bg);border-radius:10px;padding:16px;text-align:center;font-weight:700;color:var(--green);font-size:14px">✅ Geen conflicten (365 dagen vooruit)</div>';
+    document.getElementById('cnf-content').innerHTML=html;return;
+  }
+  const aantalDagen=[...new Set(conflicten.map(c=>c.dag))].length;
+  html+='<div style="font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">⚠️ '+conflicten.length+' conflict(en) op '+aantalDagen+' dag(en)</div>';
+  // Groepeer per dag, chronologisch
+  const dagMap={};
+  conflicten.forEach(c=>{if(!dagMap[c.dag])dagMap[c.dag]={label:c.dagLabel,conflicts:[]};dagMap[c.dag].conflicts.push(c);});
+  Object.keys(dagMap).sort().forEach(dag=>{
+    const groep=dagMap[dag];
+    const _wZ=['voorterrein','middenterrein','achterterrein'];
+    const dagBkns=alleBoekingen.filter(b=>b.dag===dag&&(_cfOutlet!=='west'||_wZ.includes(b.zone)));
+    const conflictIds=new Set(groep.conflicts.flatMap(c=>[String(c.boeking1.id),String(c.boeking2.id)]));
+    // Dag header
+    html+='<div style="display:flex;align-items:center;gap:8px;margin:18px 0 8px"><div style="background:var(--night);color:#fff;border-radius:4px;padding:3px 12px;font-size:13px;font-weight:700">'+groep.label+'</div><div style="font-size:11px;color:var(--gray)">'+groep.conflicts.length+' conflict(en)</div><div style="flex:1;height:1px;background:var(--border)"></div></div>';
+    // Dag tijdsbalk (alle zones)
+    html+=renderDagBalkHtml(dagBkns,conflictIds);
+    // Conflict kaarten
+    groep.conflicts.forEach(c=>{
+      const b1b=c.boeking1.status==='optie'?'<span class="badge b-opt">OPTIE</span>':'<span class="badge b-def">DEF</span>';
+      const b2b=c.boeking2.status==='optie'?'<span class="badge b-opt">OPTIE</span>':'<span class="badge b-def">DEF</span>';
+      const vb=c.verplaats.status==='optie'?'<span class="badge b-opt">OPTIE</span>':'<span class="badge b-def">DEF</span>';
+      html+='<div class="cnf-card anim" style="margin-bottom:8px"><div class="cnf-card-hdr">'+c.zone+'<div class="cnf-zone-badge">'+c.verschilMin+' min &mdash; min. '+c.vereistMin+' min</div></div><div class="cnf-body">';
+      html+='<div class="cnf-gap-info">❌ '+c.verschilMin+' min aanwezig &mdash; min. '+c.vereistMin+' min nodig</div>';
+      html+='<div class="cnf-row"><div class="cnf-bk has-conflict">'+b1b+'<div class="cnf-bk-naam">'+c.boeking1.naam+'</div><div class="cnf-bk-meta">🕐 '+c.boeking1.tijd+' &middot; 👥 '+c.boeking1.pax+'p &middot; 📍 '+c.boeking1.locatie+'</div></div>';
+      html+='<div class="cnf-bk has-conflict">'+b2b+'<div class="cnf-bk-naam">'+c.boeking2.naam+'</div><div class="cnf-bk-meta">🕐 '+c.boeking2.tijd+' &middot; 👥 '+c.boeking2.pax+'p &middot; 📍 '+c.boeking2.locatie+'</div></div></div>';
+      if(c.vrijeSlots.length>0){html+='<div style="font-size:11px;color:var(--gray);margin-bottom:5px">💡 Verplaats '+vb+c.verplaats.naam+' ('+c.verplaats.pax+'p) naar:</div><div class="cnf-slots-row">'+c.vrijeSlots.map(s=>'<div class="cnf-slot">'+s+'</div>').join('')+'</div>';}
+      html+='</div></div>';
+    });
+  });
+  document.getElementById('cnf-content').innerHTML=html;
+}
+function renderCnf(data){renderCnf_v3(data);}
 </script>
 </body>
 </html>
