@@ -132,6 +132,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .pin-msg.err{color:#EF4444;}
 @keyframes pin-shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
 .pin-dots.shake{animation:pin-shake .35s ease;}
+.pin-numpad{display:grid;grid-template-columns:repeat(3,64px);gap:10px;}
+.pin-btn{height:64px;border-radius:14px;border:none;background:rgba(255,255,255,.08);color:#fff;font-size:22px;font-weight:600;cursor:pointer;transition:background .12s,transform .08s;-webkit-tap-highlight-color:transparent;}
+.pin-btn:active,.pin-btn:hover{background:rgba(63,184,196,.25);transform:scale(.94);}
+.pin-btn.del{font-size:18px;color:rgba(255,255,255,.55);}
 </style>
 
 <div id="pin-overlay">
@@ -146,6 +150,20 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <div class="pin-dot" id="pd5"></div>
   </div>
   <div class="pin-msg" id="pin-msg">Voer toegangscode in</div>
+  <div class="pin-numpad" id="pin-numpad">
+    <button class="pin-btn" onclick="pinKey('1')">1</button>
+    <button class="pin-btn" onclick="pinKey('2')">2</button>
+    <button class="pin-btn" onclick="pinKey('3')">3</button>
+    <button class="pin-btn" onclick="pinKey('4')">4</button>
+    <button class="pin-btn" onclick="pinKey('5')">5</button>
+    <button class="pin-btn" onclick="pinKey('6')">6</button>
+    <button class="pin-btn" onclick="pinKey('7')">7</button>
+    <button class="pin-btn" onclick="pinKey('8')">8</button>
+    <button class="pin-btn" onclick="pinKey('9')">9</button>
+    <button class="pin-btn del" onclick="pinKey('del')">⌫</button>
+    <button class="pin-btn" onclick="pinKey('0')">0</button>
+    <button class="pin-btn del" style="visibility:hidden"></button>
+  </div>
 </div>
 
 <script>
@@ -176,6 +194,19 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     setTimeout(()=>{ov.style.display='none';},420);
   }
 
+  window.pinKey=function(k){
+    const ov=document.getElementById('pin-overlay');
+    if(!ov||ov.style.display==='none')return;
+    if(k==='del'){if(entered.length>0){entered=entered.slice(0,-1);updateDots(false);} return;}
+    if(entered.length<6){
+      entered+=k;updateDots(false);
+      if(entered.length===6){
+        if(entered===CORRECT){unlock();}
+        else{dots.classList.add('shake');updateDots(true);msg.textContent='Onjuiste code';msg.classList.add('err');
+          setTimeout(()=>{dots.classList.remove('shake');reset();},700);}
+      }
+    }
+  };
   document.addEventListener('keydown',function(e){
     const ov=document.getElementById('pin-overlay');
     if(!ov||ov.style.display==='none')return;
