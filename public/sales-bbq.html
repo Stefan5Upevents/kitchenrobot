@@ -117,6 +117,93 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 </head>
 <body>
 
+<!-- PIN LOCKSCREEN -->
+<style>
+#pin-overlay{position:fixed;inset:0;z-index:9999;background:#002D41;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:32px;transition:opacity .4s ease;}
+#pin-overlay.fade-out{opacity:0;pointer-events:none;}
+.pin-logo{font-size:32px;font-weight:800;color:#fff;letter-spacing:-1px;}
+.pin-logo span{color:#3FB8C4;}
+.pin-sub{font-size:13px;color:rgba(255,255,255,.5);margin-top:-24px;letter-spacing:.5px;}
+.pin-dots{display:flex;gap:16px;}
+.pin-dot{width:18px;height:18px;border-radius:50%;border:2px solid rgba(255,255,255,.35);transition:all .15s ease;}
+.pin-dot.filled{background:#3FB8C4;border-color:#3FB8C4;transform:scale(1.1);}
+.pin-dot.error{background:#EF4444;border-color:#EF4444;}
+.pin-msg{font-size:12px;color:rgba(255,255,255,.4);height:16px;transition:color .2s;}
+.pin-msg.err{color:#EF4444;}
+@keyframes pin-shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+.pin-dots.shake{animation:pin-shake .35s ease;}
+</style>
+
+<div id="pin-overlay">
+  <div class="pin-logo">UP Events <span>Sales</span></div>
+  <div class="pin-sub">BBQ CONFLICT CHECKER</div>
+  <div class="pin-dots" id="pin-dots">
+    <div class="pin-dot" id="pd0"></div>
+    <div class="pin-dot" id="pd1"></div>
+    <div class="pin-dot" id="pd2"></div>
+    <div class="pin-dot" id="pd3"></div>
+    <div class="pin-dot" id="pd4"></div>
+    <div class="pin-dot" id="pd5"></div>
+  </div>
+  <div class="pin-msg" id="pin-msg">Voer toegangscode in</div>
+</div>
+
+<script>
+(function(){
+  const CORRECT='997799';
+  let entered='';
+  const dots=document.getElementById('pin-dots');
+  const msg=document.getElementById('pin-msg');
+
+  function updateDots(err){
+    for(let i=0;i<6;i++){
+      const d=document.getElementById('pd'+i);
+      d.classList.toggle('filled',i<entered.length&&!err);
+      d.classList.toggle('error',i<entered.length&&!!err);
+    }
+  }
+
+  function reset(){
+    entered='';
+    updateDots(false);
+    msg.textContent='Voer toegangscode in';
+    msg.classList.remove('err');
+  }
+
+  function unlock(){
+    const ov=document.getElementById('pin-overlay');
+    ov.classList.add('fade-out');
+    setTimeout(()=>{ov.style.display='none';},420);
+  }
+
+  document.addEventListener('keydown',function(e){
+    const ov=document.getElementById('pin-overlay');
+    if(!ov||ov.style.display==='none')return;
+    if(e.key>='0'&&e.key<='9'&&entered.length<6){
+      entered+=e.key;
+      updateDots(false);
+      if(entered.length===6){
+        if(entered===CORRECT){
+          unlock();
+        } else {
+          dots.classList.add('shake');
+          updateDots(true);
+          msg.textContent='Onjuiste code';
+          msg.classList.add('err');
+          setTimeout(()=>{dots.classList.remove('shake');reset();},700);
+        }
+      }
+    } else if(e.key==='Backspace'&&entered.length>0){
+      entered=entered.slice(0,-1);
+      updateDots(false);
+    }
+  });
+})();
+</script>
+<!-- /PIN LOCKSCREEN -->
+
+
+
 <div class="hdr">
   <div class="hdr-icon">🔥</div>
   <div>
