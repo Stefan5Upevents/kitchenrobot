@@ -267,7 +267,7 @@ function totPers(b) {
     return s + r.aantal;
   }, 0);
 }
-function opzetPct(n, psId) {
+function totPersPs(b, psId) { return b.regels.filter(function(r) { if ((r.menuNaam||"").toLowerCase().includes("add up")) return false; var kp=(window._stamKoppelingen||[]).find(function(k){return (k.recras_naam||"").trim()===(r.menuNaam||"").trim();}); var m2=kp?(window._stamMenus||[]).find(function(m){return m.id===kp.menu_id;}):(window._stamMenus||[]).find(function(m){return m.naam===r.menuNaam;}); return m2&&(m2.productsoort_id||m2.psId)===psId; }).reduce(function(s,r){return s+(r.aantal||0);},0); } function opzetPct(n, psId) {
   var instellingen = window._stamTijdenInst || [];
   var instMarges = null;
   if (psId) {
@@ -4067,8 +4067,8 @@ function OpzetScreen() {
     return psO ? "- " + psO.naam : "";
   })()), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: "#7A8FA6", marginTop: 2 } }, "Afgedrukt op ", (/* @__PURE__ */ new Date()).toLocaleDateString("nl-NL", { weekday: "long", day: "numeric", month: "long", year: "numeric" }))), /* @__PURE__ */ React.createElement("div", { style: { overflowX: "auto" } }, /* @__PURE__ */ React.createElement("table", { id: "opzet-tabel-" + psId, style: SS.tbl }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", { style: { ...SS.th, minWidth: 160, background: "#001828" } }, "Gerecht"), boekingen.map(function(b, idx) {
     var kleur = kleuren[idx % kleuren.length];
-    var nBuf = aantalBuf(totPers(b));
-    var pct = opzetPct(totPers(b));
+    var nBuf = aantalBuf(totPersPs(b, psId));
+    var pct = opzetPct(totPersPs(b, psId));
     var menusPs = b.regels.filter(function(r) {
       var kp = (window._stamKoppelingen || []).find(function(k) {
         return (k.recras_naam || "").trim() === (r.menuNaam || "").trim();
@@ -4103,7 +4103,7 @@ function OpzetScreen() {
     var rowBg = ri % 2 === 0 ? C.white : "#F9FAFB";
     return /* @__PURE__ */ React.createElement("tr", { key: g.id, style: { background: rowBg } }, /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 700, background: rowBg, borderRight: "2px solid #E8EEF2" } }, g.is_gn && /* @__PURE__ */ React.createElement("span", { style: { ...tg(C.aqua), marginRight: 4, fontSize: 9 } }, "GN"), g.naam), waarden.map(function(v, i) {
       var b = boekingen[i];
-      var nBuf = aantalBuf(totPers(b));
+      var nBuf = aantalBuf(totPersPs(b, psId));
       var kleur = kleuren[i % kleuren.length];
       var c = (function() {
         if (!g.is_gn || v <= 0) return null;
@@ -4127,7 +4127,7 @@ function OpzetScreen() {
       return /* @__PURE__ */ React.createElement("td", { key: i, style: { ...SS.td, fontSize: 11, background: v === 0 ? "#F0F0F0" : rowBg, color: v === 0 ? C.muted : C.night, borderLeft: "2px solid " + kleur + "33", padding: "8px 10px" } }, v > 0 ? /* @__PURE__ */ React.createElement("div", null, g.toon_in_opzet_alleen_buffet ? (
         // Toon alleen buffet + presentatievorm
         /* @__PURE__ */ React.createElement("div", null, (function() {
-          var nBuf2 = aantalBuf(totPers(b));
+          var nBuf2 = aantalBuf(totPersPs(b, psId));
           if (g.is_gn) {
             var gnf = (g.gerecht_gn_formaten || []).filter(function(gf) {
               return gf.porties_per_bak > 0;
