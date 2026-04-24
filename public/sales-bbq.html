@@ -40,7 +40,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .ctx-bar{background:var(--night);color:#fff;border-radius:12px;padding:12px 18px;margin-bottom:14px;font-size:14px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .res-vrij{background:var(--green-bg);border:2px solid var(--green);border-radius:14px;padding:20px;margin-bottom:12px;display:flex;align-items:center;gap:14px}
 .res-vrij .icon{font-size:30px}.res-vrij .title{font-size:17px;font-weight:700;color:var(--green)}.res-vrij .sub{font-size:13px;color:#155c32;margin-top:2px}
-.tl-wrap{background:var(--white);border-radius:14px;padding:22px 24px 18px;margin-bottom:14px;box-shadow:0 1px 10px rgba(0,45,65,.08);width:100%}.tl-zone-row{display:flex;align-items:stretch;margin-bottom:8px;gap:8px}.tl-zone-lbl{width:110px;min-width:110px;font-size:11px;font-weight:700;color:var(--gray);text-transform:capitalize;display:flex;align-items:center;padding-right:4px;letter-spacing:.2px}.tl-zone-active{color:var(--night)}.tl-ticks-wrap{padding-left:118px}.tl-blk.tl-conflict{box-shadow:0 0 0 2px #DC2626}
+.tl-wrap{background:var(--white);border-radius:14px;padding:22px 24px 18px;margin-bottom:14px;box-shadow:0 1px 10px rgba(0,45,65,.08);width:100%}.tl-zone-row{display:flex;align-items:stretch;margin-bottom:8px;gap:8px}.tl-zone-lbl{width:110px;min-width:110px;font-size:11px;font-weight:700;color:var(--gray);text-transform:capitalize;display:flex;align-items:center;padding-right:4px;letter-spacing:.2px}.tl-zone-active{color:var(--night)}.zb{display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:4px;margin-left:4px;vertical-align:middle}.zb-vrij{background:#DCFCE7;color:#14532D}.zb-bezet{background:#FEE2E2;color:#7F1D1D}.tl-ticks-wrap{padding-left:118px}.tl-blk.tl-conflict{box-shadow:0 0 0 2px #DC2626}
 .tl-ztitel{font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.7px;margin-bottom:12px}
 .tl-ticks{position:relative;height:22px;margin-bottom:6px}
 .tl-tick{position:absolute;font-size:12px;font-weight:500;color:var(--gray);transform:translateX(-50%);white-space:nowrap}
@@ -311,6 +311,19 @@ const BOOK_COLORS=[
 ];
 // Kleur per boekingsnaam (consistent over zones)
 const _bkClrMap=new Map(); let _bkClrIdx=0;
+// Buffer formule (zelfde als edge function)
+function bufMin(pax){if(pax>200)return 60;if(pax>100)return 40;if(pax>75)return 25;if(pax>50)return 20;if(pax>30)return 20;if(pax>15)return 15;return 10;}
+// Check of nieuwe BBQ in een zone past
+function zoneVrij(boekingen,prepStart,deadline,pax){
+  for(const b of boekingen){
+    const gapNaB=b.tijdMin-deadline;   // b prep start - nieuw deadline
+    const gapNaA=prepStart-(b.tijdMin+b.duurMin); // nieuw prep start - b deadline
+    const ov=Math.max(gapNaA,gapNaB)<0;
+    const buf=bufMin(Math.max(pax,b.pax));
+    if(ov||(gapNaA>=0&&gapNaA<buf)||(gapNaB>=0&&gapNaB<buf))return false;
+  }
+  return true;
+}
 function bkClr(naam){if(!_bkClrMap.has(naam))_bkClrMap.set(naam,BOOK_COLORS[_bkClrIdx++%BOOK_COLORS.length]);return _bkClrMap.get(naam);}
 function hhmmTL(m){return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');}
 function renderTijdsbalk(data, nieuwTijdMin){
