@@ -14,14 +14,14 @@
   --border: #D0E4EC; --bg: #EEF3F6; --white: #fff; --text: #1A3340;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;min-width:700px}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
 
 .hdr{background:var(--night);padding:16px 20px;display:flex;align-items:center;gap:10px}
 .hdr-icon{font-size:22px}
 .hdr-title{font-size:16px;font-weight:700;color:#fff}
 .hdr-sub{font-size:11px;color:var(--aqua);margin-top:1px}
 
-.wrap{max-width:600px;margin:0 auto;padding:22px 24px 20px}.result-outer{width:100%;padding:0 32px 60px;box-sizing:border-box}
+.wrap{max-width:480px;margin:0 auto;padding:22px 16px 20px}.result-outer{max-width:1200px;margin:0 auto;padding:0 24px 60px}
 
 .card{background:var(--white);border-radius:14px;padding:20px 18px;margin-bottom:12px;box-shadow:0 1px 12px rgba(0,45,65,.07)}
 .card-title{font-size:12px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.7px;margin-bottom:14px}
@@ -83,7 +83,7 @@ select:focus{border-color:var(--aqua)}
 
 /* Results */
 .spinner{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--aqua);border-radius:50%;animation:spin .7s linear infinite;margin:20px auto;display:none}
-.ctx-bar{width:100%;box-sizing:border-box;background:var(--night);border-radius:9px;padding:9px 13px;font-size:13px;color:#adc9d5;display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-bottom:12px}
+.ctx-bar{background:var(--night);border-radius:9px;padding:9px 13px;font-size:13px;color:#adc9d5;display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-bottom:12px}
 .ctx-bar strong{color:#fff}
 .res-vrij{background:var(--green-bg);border:2px solid var(--green);border-radius:14px;padding:28px 20px;text-align:center}
 .res-vrij .icon{font-size:44px;margin-bottom:10px}
@@ -111,18 +111,18 @@ select:focus{border-color:var(--aqua)}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes up{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .anim{animation:up .25s ease}
-.tl-wrap{background:var(--white);border-radius:14px;padding:24px 28px;margin-bottom:14px;box-shadow:0 1px 12px rgba(0,45,65,.07);width:100%;box-sizing:border-box}
+.tl-wrap{background:var(--white);border-radius:14px;padding:20px 24px;margin-bottom:14px;box-shadow:0 1px 12px rgba(0,45,65,.07)}
 .tl-ztitel{font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
-.tl-ticks{position:relative;height:20px;margin-bottom:6px}
-.tl-tick{position:absolute;font-size:11px;color:var(--gray);transform:translateX(-50%)}
+.tl-ticks{position:relative;height:26px;margin-bottom:8px}
+.tl-tick{position:absolute;font-size:13px;font-weight:500;color:var(--gray);transform:translateX(-50%)}
 .tl-tick-l{position:absolute;top:0;width:1px;height:7px;background:var(--border)}
-.tl-row{position:relative;height:64px;border-radius:8px;background:#EEF3F6;overflow:hidden;margin-bottom:8px;width:100%;display:block}
-.tl-blk{position:absolute;top:4px;height:56px;border-radius:6px;display:flex;flex-direction:column;justify-content:center;padding:0 12px;overflow:hidden;border:2px solid transparent;cursor:default}
-.tl-blk .nb{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.4}
-.tl-blk .nt{font-size:11px;opacity:.9;white-space:nowrap;line-height:1.4}
-.tl-buf{position:absolute;top:4px;height:56px;opacity:.25;pointer-events:none}
-.tl-new{position:absolute;top:4px;height:56px;border-radius:6px;border:2px dashed #1AA6B7;background:rgba(26,166,183,.13);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#148fa0;text-align:center;padding:0 12px}
-.tl-ong{position:absolute;top:4px;height:56px;border-radius:6px;border:2px dashed #FF9800;background:rgba(255,152,0,.13);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#e65100;text-align:center;padding:0 12px}
+.tl-row{position:relative;height:56px;border-radius:8px;background:#EEF3F6;overflow:hidden;margin-bottom:6px}
+.tl-blk{position:absolute;top:4px;height:48px;border-radius:6px;display:flex;flex-direction:column;justify-content:center;padding:0 10px;overflow:hidden;border:2px solid transparent;cursor:default}
+.tl-blk .nb{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.4}
+.tl-blk .nt{font-size:12px;opacity:.9;white-space:nowrap;line-height:1.4}
+.tl-buf{position:absolute;top:4px;height:48px;opacity:.25;pointer-events:none}
+.tl-new{position:absolute;top:4px;height:48px;border-radius:6px;border:2px dashed #1AA6B7;background:rgba(26,166,183,.13);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#148fa0;text-align:center;padding:0 8px}
+.tl-ong{position:absolute;top:4px;height:48px;border-radius:6px;border:2px dashed #FF9800;background:rgba(255,152,0,.13);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#e65100;text-align:center;padding:0 8px}
 .tl-leg{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px}
 .tl-leg span{font-size:12px;color:var(--gray);display:flex;align-items:center;gap:5px}
 .tl-dot{display:inline-block;width:12px;height:12px;border-radius:2px}
@@ -400,8 +400,9 @@ function renderTijdsbalk(data, nieuwTijdMin){
   const books=data.alle_zone_boekingen||[];
   const ong=data.ongekoppelde||[];
   const nw=data.nieuw;
-  const WF=Math.max(Math.min(nieuwTijdMin,books.reduce((a,b)=>Math.min(a,b.tijdMin),nieuwTijdMin))-90,600);
-  const WT=Math.min(Math.max(nieuwTijdMin+nw.duurMin,books.reduce((a,b)=>Math.max(a,b.tijdMin+b.duurMin),nieuwTijdMin+nw.duurMin))+90,1380);
+  const _bAll=[nieuwTijdMin,...books.map(b=>b.tijdMin),...books.map(b=>b.tijdMin+b.duurMin),nieuwTijdMin+nw.duurMin];
+  const WF=Math.max(Math.min(..._bAll)-30,Math.max(nieuwTijdMin-120,600));
+  const WT=Math.min(Math.max(..._bAll)+30,Math.min(nieuwTijdMin+300,1380));
   function pp(v){return(((Math.max(WF,Math.min(WT,v)))-WF)/(WT-WF)*100).toFixed(2)+'%';}
   function pw(v){return(v/(WT-WF)*100).toFixed(2)+'%';}
   const step=(WT-WF)>270?60:30;
