@@ -119,14 +119,14 @@ select:focus{border-color:var(--aqua)}
   <div class="hdr-icon">🔥</div>
   <div>
     <div class="hdr-title">BBQ Conflict Checker</div>
-    <div class="hdr-sub">UP Events Sales — voorzoeking <span style="opacity:.5">v6-debug</span></div>
+    <div class="hdr-sub">UP Events Sales — voorzoeking <span style="opacity:.5">v7-nopin</span></div>
   </div>
 </div>
 
 <div class="wrap">
 
 <!-- PIN -->
-<div id="pin-screen" class="anim">
+<div id="pin-screen" class="anim" style="display:none">
   <div class="card">
     <div style="text-align:center;padding:6px 0">
       <div style="font-size:38px;margin-bottom:12px">🔒</div>
@@ -157,7 +157,7 @@ select:focus{border-color:var(--aqua)}
 </div>
 
 <!-- FORM -->
-<div id="form-screen" style="display:none">
+<div id="form-screen">
 
   <div class="card anim">
     <div class="card-title">1 — Vestiging</div>
@@ -227,7 +227,7 @@ const LOCATIES = {
   ]
 };
 
-let PIN='', buf='';
+let PIN='skip', buf='';
 let selHour=18, selMin=0;
 
 function pp(d){ if(buf.length>=4)return; buf+=d; dots(); document.getElementById('pin-ok').disabled=buf.length<4; }
@@ -323,7 +323,7 @@ async function doCheck(){
     const res=await fetch(API,{
       method:'POST',
       headers:{'Content-Type':'application/json','apikey':ANON_KEY,'Authorization':'Bearer '+ANON_KEY},
-      body:JSON.stringify({pin:PIN,datum,tijd,locatie_naam:locatie,pax})
+      body:JSON.stringify({datum,tijd,locatie_naam:locatie,pax})
     });
     const data=await res.json();
     document.getElementById('spinner').style.display='none';
