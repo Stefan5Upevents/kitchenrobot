@@ -119,7 +119,7 @@ select:focus{border-color:var(--aqua)}
   <div class="hdr-icon">🔥</div>
   <div>
     <div class="hdr-title">BBQ Conflict Checker</div>
-    <div class="hdr-sub">UP Events Sales — voorzoeking <span style="opacity:.5">v7-nopin</span></div>
+    <div class="hdr-sub">UP Events Sales — voorzoeking <span style="opacity:.5">v8-nopin</span></div>
   </div>
 </div>
 
@@ -398,6 +398,13 @@ function kiesTijdEnCheck(t){
   selHour=h; selMin=m;
   updateTijdKnoppen(); setTijdInput();
   setTimeout(doCheck,200);
+}
+
+// Autostart in no-pin modus
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initForm);
+} else {
+  initForm();
 }
 </script>
 </body>
