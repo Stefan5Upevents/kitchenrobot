@@ -21,7 +21,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .hdr-title{font-size:16px;font-weight:700;color:#fff}
 .hdr-sub{font-size:11px;color:var(--aqua);margin-top:1px}
 
-.wrap{max-width:480px;margin:0 auto;padding:22px 16px 20px}.result-outer{max-width:1200px;margin:0 auto;padding:0 24px 60px}
+.page-body{display:flex;min-height:calc(100vh - 68px)}.form-col{width:420px;min-width:420px;flex-shrink:0;padding:20px 20px 40px;border-right:1.5px solid var(--border);background:var(--bg)}.result-col{flex:1;padding:20px 28px 40px;overflow:auto;min-width:0;background:var(--bg)}.wrap{max-width:400px}.result-outer{display:none}
 
 .card{background:var(--white);border-radius:14px;padding:20px 18px;margin-bottom:12px;box-shadow:0 1px 12px rgba(0,45,65,.07)}
 .card-title{font-size:12px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.7px;margin-bottom:14px}
@@ -100,7 +100,7 @@ select:focus{border-color:var(--aqua)}
 .badge{display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:4px;margin-right:5px}
 .b-def{background:var(--aqua);color:#fff}
 .b-opt{background:var(--amber);color:#fff}
-.slots-card{background:var(--white);border-radius:14px;padding:18px;box-shadow:0 1px 12px rgba(0,45,65,.07);margin-bottom:12px}
+.slots-card{background:var(--white);border-radius:14px;padding:18px;box-shadow:0 1px 12px rgba(0,45,65,.07);margin-bottom:12px;width:100%;box-sizing:border-box}
 .slots-card h3{font-size:12px;font-weight:700;color:var(--night);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
 .slots-row{display:flex;flex-wrap:wrap;gap:8px}
 .slot{background:var(--green-bg);border:2px solid var(--green);border-radius:8px;padding:8px 13px;font-family:'DM Mono',monospace;font-size:15px;font-weight:500;color:var(--green);cursor:pointer;transition:all .12s}
@@ -111,14 +111,14 @@ select:focus{border-color:var(--aqua)}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes up{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .anim{animation:up .25s ease}
-.tl-wrap{background:var(--white);border-radius:14px;padding:20px 24px;margin-bottom:14px;box-shadow:0 1px 12px rgba(0,45,65,.07)}
+.tl-wrap{background:var(--white);border-radius:12px;padding:24px 28px;margin-bottom:16px;box-shadow:0 1px 12px rgba(0,45,65,.09);width:100%;box-sizing:border-box}
 .tl-ztitel{font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
 .tl-ticks{position:relative;height:26px;margin-bottom:8px}
 .tl-tick{position:absolute;font-size:13px;font-weight:500;color:var(--gray);transform:translateX(-50%)}
 .tl-tick-l{position:absolute;top:0;width:1px;height:7px;background:var(--border)}
-.tl-row{position:relative;height:56px;border-radius:8px;background:#EEF3F6;overflow:hidden;margin-bottom:6px}
-.tl-blk{position:absolute;top:4px;height:48px;border-radius:6px;display:flex;flex-direction:column;justify-content:center;padding:0 10px;overflow:hidden;border:2px solid transparent;cursor:default}
-.tl-blk .nb{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.4}
+.tl-row{position:relative;height:68px;border-radius:8px;background:#EEF3F6;overflow:hidden;margin-bottom:6px}
+.tl-blk{position:absolute;top:5px;height:58px;border-radius:6px;display:flex;flex-direction:column;justify-content:center;padding:0 14px;overflow:hidden;border:2px solid transparent;cursor:default}
+.tl-blk .nb{font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.4}
 .tl-blk .nt{font-size:12px;opacity:.9;white-space:nowrap;line-height:1.4}
 .tl-buf{position:absolute;top:4px;height:48px;opacity:.25;pointer-events:none}
 .tl-new{position:absolute;top:4px;height:48px;border-radius:6px;border:2px dashed #1AA6B7;background:rgba(26,166,183,.13);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#148fa0;text-align:center;padding:0 8px}
@@ -145,7 +145,7 @@ select:focus{border-color:var(--aqua)}
   </div>
 </div>
 
-<div class="wrap">
+<div class="page-body"><div class="form-col"><div class="wrap">
 
 <!-- PIN -->
 <div id="pin-screen" class="anim" style="display:none">
@@ -226,9 +226,8 @@ select:focus{border-color:var(--aqua)}
 
   <button class="btn-check" onclick="doCheck()">🔍 Controleer beschikbaarheid</button>
   <div class="spinner" id="spinner"></div>
-</div>
-<div class="result-outer"><div id="result"></div></div>
-
+</div></div></div>
+<div class="result-col"><div id="result"></div></div>
 </div>
 
 <script>
