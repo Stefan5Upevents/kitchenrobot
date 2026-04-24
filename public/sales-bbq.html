@@ -536,8 +536,12 @@ function renderDagBalkHtml(dagBkns, conflictIds) {
     const dl=parseHM(b.tijd),dur=vereistMinCnf(b.pax);
     perZone[b.zone].push({...b,deadlineMin:dl,duurMin:dur,tijdMin:dl-dur});
   });
-  const zones=Object.keys(perZone).sort((a,b)=>{const ia=ZO.indexOf(a),ib=ZO.indexOf(b);if(ia>=0&&ib>=0)return ia-ib;if(ia>=0)return -1;if(ib>=0)return 1;return a.localeCompare(b);});
-  if(zones.length===0)return '';
+  const boekingZones=Object.keys(perZone);
+  // West: altijd alle 3 zones tonen (ook leeg) zodat productie vrije zone ziet
+  const zones=(_cfOutlet==='west')
+    ?ZO
+    :boekingZones.sort((a,b)=>{const ia=ZO.indexOf(a),ib=ZO.indexOf(b);if(ia>=0&&ib>=0)return ia-ib;if(ia>=0)return -1;if(ib>=0)return 1;return a.localeCompare(b);});
+  if(boekingZones.length===0)return '';
   const allTimes=dagBkns.flatMap(b=>{const d=parseHM(b.tijd),dur=vereistMinCnf(b.pax);return[d-dur,d];});
   const WF=Math.max(Math.min(...allTimes)-15,600);
   const WT=Math.min(Math.max(...allTimes)+30,1380);
