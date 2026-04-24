@@ -119,7 +119,7 @@ select:focus{border-color:var(--aqua)}
   <div class="hdr-icon">🔥</div>
   <div>
     <div class="hdr-title">BBQ Conflict Checker</div>
-    <div class="hdr-sub">UP Events Sales — voorzoeking <span style="opacity:.5">v5</span></div>
+    <div class="hdr-sub">UP Events Sales — voorzoeking <span style="opacity:.5">v6-debug</span></div>
   </div>
 </div>
 
@@ -330,7 +330,7 @@ async function doCheck(){
     document.querySelector('.btn-check').disabled=false;
 
     console.log('[sales-bbq] status=', res.status, 'body=', data);
-    if(res.status===401 && data && data.fout==='Verkeerde PIN'){
+    if(res.status===401 && data && data.fout==='Verkeerde PIN' && !data.debug){
       PIN=''; buf=''; dots();
       document.getElementById('form-screen').style.display='none';
       document.getElementById('pin-screen').style.display='block';
