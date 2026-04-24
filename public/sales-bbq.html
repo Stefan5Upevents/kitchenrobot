@@ -313,9 +313,9 @@ const BOOK_COLORS=[
 const _bkClrMap=new Map(); let _bkClrIdx=0;
 // Buffer formule (zelfde als edge function)
 // Staffel uit opzet_instellingen BBQ Start: minimum gap deadline-to-deadline
-function bufMin(pax){if(pax>200)return 90;if(pax>120)return 75;if(pax>60)return 60;return 45;}
-// Totale prep = staffel + oven(15) + vuur(60)
-function bbqDuurFn(pax){return bufMin(pax)+75;}
+// Exacte staffel uit boekingsoverzicht — blokbreedte = staffel = minimum gap
+function bufMin(pax){if(pax>200)return 60;if(pax>100)return 40;if(pax>75)return 25;if(pax>50)return 20;if(pax>30)return 20;if(pax>15)return 15;return 10;}
+function bbqDuurFn(pax){return bufMin(pax);}
 // Check of nieuwe BBQ past in een zone (deadline-to-deadline gap)
 function zoneVrij(boekingen,nieuwDeadline,pax){
   for(const b of boekingen){
