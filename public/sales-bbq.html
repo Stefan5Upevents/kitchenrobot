@@ -330,7 +330,9 @@ function renderTijdsbalk(data, nieuwTijdMin){
   }
   // Reset kleuren per render
   _bkClrMap.clear(); _bkClrIdx=0;
-  const gesorteerd=[...zones].sort((a,b)=>a.zone===gz?-1:b.zone===gz?1:a.zone.localeCompare(b.zone));
+  // Gezochte zone altijd tonen, ook als leeg
+  const zonesMetGz=zones.find(z=>z.zone===gz)?zones:[...zones,{zone:gz,boekingen:[]}];
+  const gesorteerd=[...zonesMetGz].sort((a,b)=>a.zone===gz?-1:b.zone===gz?1:a.zone.localeCompare(b.zone));
   let rijen='';
   gesorteerd.forEach(z=>{
     const isGz=z.zone===gz;
