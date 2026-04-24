@@ -1621,7 +1621,8 @@ function bindHome() {
       if (res.ok) { state.modal = null; alert('Melding verstuurd!'); return laadData(); }
       else alert(res.error || 'Fout');
     });
-  // Injecteer opzet buffetformulier iframes
+  };
+  // Injecteer opzet buffetformulier iframes — loopt bij elke render
   Array.prototype.forEach.call(document.querySelectorAll('.opzet-holder[data-opzet-key]'), function(div) {
     if (div.querySelector('iframe')) return;
     var key = div.getAttribute('data-opzet-key');
@@ -1634,7 +1635,6 @@ function bindHome() {
       div.appendChild(fr);
     }
   });
-  };
 }
 
 if (state.sessie_id) {
