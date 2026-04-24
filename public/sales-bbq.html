@@ -397,7 +397,13 @@ function renderTijdsbalk(data, nieuwTijdMin){
   _bkClrMap.clear(); _bkClrIdx=0;
   // Gezochte zone altijd tonen, ook als leeg
   const zonesMetGz=zones.find(z=>z.zone===gz)?zones:[...zones,{zone:gz,boekingen:[]}];
-  const gesorteerd=[...zonesMetGz].sort((a,b)=>a.zone===gz?-1:b.zone===gz?1:a.zone.localeCompare(b.zone));
+  const _ZO=['voorterrein','middenterrein','achterterrein'];
+  const gesorteerd=[...zonesMetGz].sort((a,b)=>{
+    if(a.zone===gz)return -1;if(b.zone===gz)return 1;
+    const ia=_ZO.indexOf(a.zone),ib=_ZO.indexOf(b.zone);
+    if(ia>=0&&ib>=0)return ia-ib;if(ia>=0)return -1;if(ib>=0)return 1;
+    return a.zone.localeCompare(b.zone);
+  });
   let rijen='';
   gesorteerd.forEach(z=>{
     const isGz=z.zone===gz;
