@@ -247,22 +247,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; back
 .preview-banner { background: #FEF3C7; color: #92400E; text-align: center; padding: 8px; font-size: 11px; font-weight: 600; border-bottom: 1px solid #FCD34D; }
 .loader { text-align: center; padding: 40px; opacity: 0.5; font-size: 13px; }
 .leeg { text-align: center; padding: 30px; opacity: 0.5; font-size: 13px; border: 2px dashed #E1E8EB; border-radius: 14px; }
-.opzet-modal{display:flex;flex-direction:column;max-height:98vh}
-.opzet-datum-tabs{display:flex;gap:4px;flex-wrap:wrap;padding:4px 0 2px}
-.odtab{background:rgba(255,255,255,.15);color:#fff;border:none;border-radius:8px;padding:5px 11px;font-size:11px;font-weight:600;cursor:pointer;position:relative;font-family:inherit}
-.odtab.act{background:#3FB8C4}.odtab.hb{font-weight:900}
-.odot{position:absolute;top:2px;right:3px;width:5px;height:5px;border-radius:50%;background:#FFD54F}
-.opzet-ps-tabs{display:flex;gap:6px;flex-wrap:wrap;padding:4px 0}
-.opstab{background:#F0F4F6;border:none;border-radius:100px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;color:#234756;font-family:inherit}
-.opstab.act{background:#234756;color:#fff}
-.oprogress{background:rgba(0,0,0,.12);border-radius:100px;padding:0 5px;font-size:10px;margin-left:4px}
-.opstab.act .oprogress{background:rgba(255,255,255,.2)}
-.opzet-grid-wrap{overflow:auto;flex:1;-webkit-overflow-scrolling:touch}
-.opzet-tbl{border-collapse:collapse;min-width:100%}
-.opzet-tbl td,.opzet-tbl th{border-bottom:1px solid #E1E8EB}
-.og-td-naam{position:sticky;left:0;z-index:1;white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis}
-.og-cel{transition:background .1s}
-.opzet-leeg{padding:28px;text-align:center;color:#999;font-size:14px}
 </style>
 </head>
 <body>
@@ -331,7 +315,6 @@ var state = (function(){
     onboarding_stap: null, // NIEUW: 1-4 actief, null=niet actief
     wekker_toast: null, // NIEUW: {tijd, naam} wanneer wekker afgaat
     toewijzingen: {}, // NIEUW: { boeking_id: { medewerker_naam } }
-    opzet_datum: null, opzet_ps: null, opzet_data_cache: {}, opzet_poll_timer: null,
     allergenen_open: false, // NIEUW: modal open?
     allergenen_geladen: false, // NIEUW: data is geladen?
     allergenen_gerechten: [], // NIEUW: alle gerechten met ingredienten
@@ -674,60 +657,6 @@ function bevestigPS(bid, bnaam, ps_naam, gerechten) {
   });
 }
 
-function laadOpzetData(datum, cb) {
-  state.opzet_data_cache = state.opzet_data_cache || {};
-  api('kiosk-vandaag', { outlet_code: state.outlet_code, datum: datum }).then(function(res) {
-    state.opzet_data_cache[datum] = res;
-    if (cb) cb();
-  }).catch(function(err) { console.error('laadOpzetData fout:', err); });
-}
-function laadAlleOpzetDagen(cb) {
-  var klaar = 0;
-  for (var i = 0; i < 7; i++) {
-    (function(n) { laadOpzetData(datumIsoRel(n), function() { klaar++; if (klaar >= 7 && cb) cb(); }); })(i);
-  }
-}
-function startOpzetPoll() {
-  stopOpzetPoll();
-  state.opzet_poll_timer = setInterval(function() {
-    if (!state.modal || state.modal.type !== 'opzet-grid') { stopOpzetPoll(); return; }
-    laadOpzetData(state.opzet_datum || datumIsoRel(1), function() { render(); });
-  }, 30000);
-}
-function stopOpzetPoll() {
-  if (state.opzet_poll_timer) { clearInterval(state.opzet_poll_timer); state.opzet_poll_timer = null; }
-}
-function aftikOpzetCel(bid, bnaam, gerecht, ps, datum, huidig) {
-  var nieuw = huidig === 'opgezet' ? 'gepland' : 'opgezet';
-  var cache = (state.opzet_data_cache || {})[datum];
-  if (cache) {
-    var vg = cache.voortgang = cache.voortgang || [];
-    var idx = -1;
-    for (var i = 0; i < vg.length; i++) { if (vg[i].boeking_id === bid && vg[i].gerecht_naam === gerecht) { idx = i; break; } }
-    var e2 = { boeking_id: bid, gerecht_naam: gerecht, ps_naam: ps, status: nieuw, opgezet_door_naam: state.medewerker_naam };
-    if (idx >= 0) vg[idx] = e2; else vg.push(e2);
-  }
-  render();
-  api('kiosk-actie', { actie: 'opzet_aftekenen', sessie_id: state.sessie_id, boeking_id: bid, boeking_naam: bnaam, gerecht_naam: gerecht, ps_naam: ps, datum: datum, outlet_code: state.outlet_code, status: nieuw }).catch(function(e) { console.error('aftik fout:', e); });
-}
-function aftikOpzetBatch(items, ps, datum, nieuw) {
-  var todo = items.filter(function(it) { return it.huidig !== nieuw; });
-  if (!todo.length) return;
-  var cache = (state.opzet_data_cache || {})[datum];
-  if (cache) {
-    var vg = cache.voortgang = cache.voortgang || [];
-    todo.forEach(function(it) {
-      var idx = -1;
-      for (var i = 0; i < vg.length; i++) { if (vg[i].boeking_id === it.bid && vg[i].gerecht_naam === it.gerecht) { idx = i; break; } }
-      var e3 = { boeking_id: it.bid, gerecht_naam: it.gerecht, ps_naam: ps, status: nieuw, opgezet_door_naam: state.medewerker_naam };
-      if (idx >= 0) vg[idx] = e3; else vg.push(e3);
-    });
-  }
-  render();
-  todo.forEach(function(it) {
-    api('kiosk-actie', { actie: 'opzet_aftekenen', sessie_id: state.sessie_id, boeking_id: it.bid, boeking_naam: it.bnaam, gerecht_naam: it.gerecht, ps_naam: ps, datum: datum, outlet_code: state.outlet_code, status: nieuw }).catch(function(err) { console.error('batch fout:', err); });
-  });
-}
 function render() {
   var app = document.getElementById('app');
   if (!state.sessie_id) {
@@ -858,23 +787,7 @@ function renderWekkerToast() {
     '</div>' +
     '<button data-wekker-sluit="1" style="background:rgba(255,255,255,.25);color:#fff;border:none;border-radius:100px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;margin-left:8px;">✔ OK</button>' +
   '</div>' +
-  '<style>@keyframes wekkerPulse { 0%,100% { transform:translateX(-50%) scale(1); } 50% { transform:translateX(-50%) scale(1.03); } }.opzet-modal{display:flex;flex-direction:column;max-height:98vh}
-.opzet-datum-tabs{display:flex;gap:4px;flex-wrap:wrap;padding:4px 0 2px}
-.odtab{background:rgba(255,255,255,.15);color:#fff;border:none;border-radius:8px;padding:5px 11px;font-size:11px;font-weight:600;cursor:pointer;position:relative;font-family:inherit}
-.odtab.act{background:#3FB8C4}.odtab.hb{font-weight:900}
-.odot{position:absolute;top:2px;right:3px;width:5px;height:5px;border-radius:50%;background:#FFD54F}
-.opzet-ps-tabs{display:flex;gap:6px;flex-wrap:wrap;padding:4px 0}
-.opstab{background:#F0F4F6;border:none;border-radius:100px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;color:#234756;font-family:inherit}
-.opstab.act{background:#234756;color:#fff}
-.oprogress{background:rgba(0,0,0,.12);border-radius:100px;padding:0 5px;font-size:10px;margin-left:4px}
-.opstab.act .oprogress{background:rgba(255,255,255,.2)}
-.opzet-grid-wrap{overflow:auto;flex:1;-webkit-overflow-scrolling:touch}
-.opzet-tbl{border-collapse:collapse;min-width:100%}
-.opzet-tbl td,.opzet-tbl th{border-bottom:1px solid #E1E8EB}
-.og-td-naam{position:sticky;left:0;z-index:1;white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis}
-.og-cel{transition:background .1s}
-.opzet-leeg{padding:28px;text-align:center;color:#999;font-size:14px}
-</style>';
+  '<style>@keyframes wekkerPulse { 0%,100% { transform:translateX(-50%) scale(1); } 50% { transform:translateX(-50%) scale(1.03); } }</style>';
 }
 
 // NIEUW: Welkom-rondleiding voor eerste login
