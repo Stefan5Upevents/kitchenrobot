@@ -2134,7 +2134,8 @@ function checkWijzigingen() {
   (m.data.boekingen || []).forEach(function(b) { boekingenById[b.id] = b; });
   aft.forEach(function(a) {
     var k = a.boeking_id + '::' + a.gerecht_id;
-    var huidig = cellen[k];
+    var cel = cellen[k];
+    var huidig = cel ? cel.w : null;
     var oud = a.waarde_bij_aftekenen != null ? parseFloat(a.waarde_bij_aftekenen) : null;
     if (oud == null || huidig == null) return;
     if (Math.abs(huidig - oud) < 0.05) return;
@@ -2276,18 +2277,16 @@ function renderOpzetModal() {
   else if (m.stap === 'tabel') inhoud = renderOpzetTabel();
   var titel = m.stap === 'tijd' ? 'Wanneer?' : (m.stap === 'ps' ? 'Productsoort kiezen' : (m.ps_naam || 'Tabel'));
   var sub = (m.stap === 'tabel' && m.ps_naam) ? '· ' + esc(m.ps_naam) : '';
-  return '<div class="modal-bg" data-opzet-bg="1">' +
-    '<div class="modal-card opzet-modal" style="max-width:1200px;width:96vw;max-height:96vh;display:flex;flex-direction:column;padding:0;">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid #E1E8EB;background:#001828;color:#fff;border-radius:12px 12px 0 0;">' +
+  return '<div data-opzet-bg="1" style="position:fixed;inset:0;background:#F5F8FA;z-index:1000;display:flex;flex-direction:column;">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 20px;background:#001828;color:#fff;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,0.15);">' +
         '<div><div style="font-size:11px;opacity:.7;letter-spacing:.5px;text-transform:uppercase">Opzet ' + sub + '</div>' +
         '<div style="font-weight:900;font-size:18px;margin-top:2px">📋 ' + esc(titel) + '</div></div>' +
         '<div style="display:flex;gap:8px;align-items:center">' +
-        (m.stap !== 'tijd' && !m.bevestig_naam_pending && !m.rij_kolom_popup ? '<button data-opzet-actie="terug" style="background:rgba(255,255,255,.15);color:#fff;border:none;border-radius:7px;padding:7px 14px;font-weight:700;cursor:pointer">← Terug</button>' : '') +
-        '<button data-opzet-actie="sluit" style="background:#E8202B;color:#fff;border:none;border-radius:50%;width:36px;height:36px;font-size:18px;font-weight:900;cursor:pointer">✕</button>' +
+        (m.stap !== 'tijd' && !m.bevestig_naam_pending && !m.rij_kolom_popup ? '<button data-opzet-actie="terug" style="background:rgba(255,255,255,.15);color:#fff;border:none;border-radius:7px;padding:9px 16px;font-weight:700;cursor:pointer;font-size:14px">← Terug</button>' : '') +
+        '<button data-opzet-actie="sluit" style="background:#E8202B;color:#fff;border:none;border-radius:50%;width:40px;height:40px;font-size:20px;font-weight:900;cursor:pointer">✕</button>' +
         '</div>' +
       '</div>' +
-      '<div style="flex:1;overflow:auto;padding:18px">' + inhoud + '</div>' +
-    '</div>' +
+      '<div style="flex:1;overflow:auto;padding:20px;">' + inhoud + '</div>' +
   '</div>';
 }
 
@@ -2369,24 +2368,24 @@ function renderOpzetTabel() {
   if (m.fout) return '<div style="padding:18px;background:#FFEBEE;color:#C62828;border-radius:8px">⚠ ' + esc(m.fout) + '</div>';
   if (!m.data || !m.data.boekingen.length) return '<div style="padding:18px;background:#FFF3E0;border-radius:8px;color:#E65100;text-align:center;font-weight:700">Geen boekingen.</div>';
   var d = m.data;
-  var info = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:10px 14px;background:#F5F8FA;border-radius:8px;flex-wrap:wrap;gap:10px">' +
+  var info = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:10px 14px;background:#fff;border-radius:8px;flex-wrap:wrap;gap:10px;border:1px solid #E1E8EB">' +
     '<div style="font-size:13px;color:#234756"><b>' + esc(m.periode_label) + '</b> · ' + d.boekingen.length + ' boekingen · ' + d.gerechten.length + ' gerechten</div>' +
     '<div style="font-size:12px;color:#7A8FA6">Tip: klik kolomkop voor hele boeking, klik gerechtnaam voor hele rij</div>' +
   '</div>';
   var aftMap = {};
   (d.aftekeningen || []).forEach(function(a){ aftMap[a.boeking_id+'::'+a.gerecht_id] = a; });
-  var thead = '<tr><th style="position:sticky;left:0;z-index:2;background:#001828;color:#fff;padding:10px 12px;text-align:left;min-width:200px;font-size:12px">Gerecht</th>';
+  var thead = '<tr><th style="position:sticky;left:0;top:0;z-index:3;background:#001828;color:#fff;padding:10px 12px;text-align:left;min-width:200px;font-size:12px">Gerecht</th>';
   d.boekingen.forEach(function(b) {
     var dt = fmtDatumKort(b.datum);
     var lbl = (m.datums.length > 1 ? dt + ' · ' : '') + esc(b.naam);
     var menusStr = b.menus.map(function(mm){ return esc(mm.naam) + ' ' + mm.aantal + 'p'; }).join(' · ');
-    thead += '<th data-opzet-kolom="' + esc(b.id) + '" style="background:#1976D2;color:#fff;padding:10px 12px;text-align:center;min-width:140px;font-size:12px;cursor:pointer;border-left:1px solid rgba(255,255,255,.15);user-select:none" title="Klik: hele boeking aftekenen">' +
+    thead += '<th data-opzet-kolom="' + esc(b.id) + '" style="background:#1976D2;color:#fff;padding:10px 12px;text-align:center;min-width:160px;font-size:12px;cursor:pointer;border-left:1px solid rgba(255,255,255,.15);user-select:none;position:sticky;top:0;z-index:2" title="Klik: hele boeking aftekenen">' +
       '<div style="font-weight:900;font-size:13px;line-height:1.2">' + lbl + '</div>' +
       '<div style="font-size:10px;opacity:.85;margin-top:3px">' + esc(b.deadline_tijd || '') + ' · ' + b.totaal_pers + 'p · ' + b.opzet_pct + '%</div>' +
       '<div style="font-size:9px;opacity:.7;margin-top:2px">' + menusStr + '</div>' +
     '</th>';
   });
-  thead += '<th style="background:#000d14;color:#fff;padding:10px 12px;text-align:center;min-width:90px;font-size:12px">TOT</th></tr>';
+  thead += '<th style="background:#000d14;color:#fff;padding:10px 12px;text-align:center;min-width:90px;font-size:12px;position:sticky;top:0;z-index:2">TOT</th></tr>';
   var tbody = '';
   d.gerechten.forEach(function(g, ri) {
     var rowBg = ri % 2 === 0 ? '#fff' : '#F9FAFB';
@@ -2394,7 +2393,9 @@ function renderOpzetTabel() {
     var cellen = '';
     d.boekingen.forEach(function(b) {
       var k = b.id + '::' + g.id;
-      var v = d.cellen[k];
+      var cel = d.cellen[k];
+      var v = cel ? cel.w : null;
+      var pres = cel ? cel.p : null;
       var aft = aftMap[k];
       tot += (v || 0);
       var bg = rowBg, fg = '#234756', extra = '';
@@ -2410,12 +2411,17 @@ function renderOpzetTabel() {
       if (v == null || v <= 0) {
         content = '<span style="color:#bbb">—</span>';
       } else {
-        content = '<div style="font-weight:700">' + (g.is_gn ? Math.round(v) : v.toFixed(1)) + '</div>';
-        if (aft) content += '<div style="font-size:9px;opacity:.9;margin-top:2px">✓ ' + esc(aft.medewerker_naam) + '</div>';
+        content = '<div style="font-weight:800;font-size:18px;line-height:1">' + (g.is_gn ? Math.round(v) : v.toFixed(1)) + '</div>';
+        if (pres && pres.label) {
+          var presBg = aft ? 'rgba(255,255,255,.25)' : '#EEF6F8';
+          var presFg = aft ? '#fff' : '#1976D2';
+          content += '<div style="font-size:10px;font-weight:700;margin-top:4px;background:' + presBg + ';color:' + presFg + ';padding:2px 6px;border-radius:4px;display:inline-block">' + esc(pres.label) + '</div>';
+        }
+        if (aft) content += '<div style="font-size:9px;opacity:.9;margin-top:3px">✓ ' + esc(aft.medewerker_naam) + '</div>';
         content += extra;
       }
       var attr = clickable ? ('data-opzet-cel="' + esc(b.id) + '|' + esc(g.id) + '|' + (v || 0) + '"') : '';
-      cellen += '<td ' + attr + ' style="background:' + bg + ';color:' + fg + ';padding:10px 12px;text-align:center;font-size:13px;cursor:' + (clickable ? 'pointer' : 'default') + ';border-bottom:1px solid #E8EEF2;user-select:none' + (aft ? ';font-weight:700' : '') + '">' + content + '</td>';
+      cellen += '<td ' + attr + ' style="background:' + bg + ';color:' + fg + ';padding:10px 10px;text-align:center;font-size:13px;cursor:' + (clickable ? 'pointer' : 'default') + ';border-bottom:1px solid #E8EEF2;user-select:none">' + content + '</td>';
     });
     var totStr = tot > 0 ? (g.is_gn ? Math.round(tot) : tot.toFixed(1)) : '—';
     var gnLabel = g.is_gn ? '<span style="font-size:9px;background:#3FB8C4;color:#fff;padding:1px 4px;border-radius:3px;margin-right:4px;font-weight:900">GN</span>' : '';
@@ -2425,13 +2431,14 @@ function renderOpzetTabel() {
       '<td style="background:#EEF3F7;padding:10px 12px;text-align:center;font-weight:900;color:#234756;font-size:13px;border-bottom:1px solid #E8EEF2">' + totStr + '</td>' +
     '</tr>';
   });
-  var tabel = '<div style="overflow:auto;border:1px solid #E1E8EB;border-radius:8px;max-height:65vh">' +
+  var tabel = '<div style="overflow:auto;border:1px solid #E1E8EB;border-radius:8px;background:#fff;flex:1">' +
     '<table style="border-collapse:collapse;width:100%;font-family:inherit"><thead>' + thead + '</thead><tbody>' + tbody + '</tbody></table>' +
   '</div>';
   var legend = '<div style="margin-top:10px;display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:#7A8FA6">' +
     '<span><b style="background:#43A047;color:#fff;padding:2px 8px;border-radius:4px">✓ groen</b> = afgetekend (klik = ongedaan)</span>' +
     '<span><b style="background:#fff;border:1px solid #D8E8EF;color:#234756;padding:2px 8px;border-radius:4px">wit</b> = nog niet afgetekend</span>' +
     '<span><b style="background:#E65100;color:#fff;padding:2px 8px;border-radius:4px">⚠ oranje</b> = waarde gewijzigd na aftekenen</span>' +
+    '<span><b style="background:#EEF6F8;color:#1976D2;padding:2px 8px;border-radius:4px">blauw</b> = presentatievorm (uit stamgegevens)</span>' +
   '</div>';
   var mwInfo = m.medewerker_naam ? '<div style="margin-top:10px;font-size:12px;color:#234756">Aftekenen als: <b>' + esc(m.medewerker_naam) + '</b></div>' : '';
   return info + tabel + legend + mwInfo;
@@ -2621,7 +2628,8 @@ function klikRij(gerecht_id) {
   var alAft = 0, totMet = 0;
   m.data.boekingen.forEach(function(b) {
     var k = b.id + '::' + gerecht_id;
-    var v = m.data.cellen[k];
+    var cel = m.data.cellen[k];
+    var v = cel ? cel.w : null;
     if (v != null && v > 0) {
       totMet++;
       cellen.push({ boeking_id: b.id, gerecht_id: gerecht_id, waarde: v, datum: b.datum });
@@ -2645,7 +2653,8 @@ function klikKolom(boeking_id) {
   var alAft = 0, totMet = 0;
   m.data.gerechten.forEach(function(g) {
     var k = boeking_id + '::' + g.id;
-    var v = m.data.cellen[k];
+    var cel = m.data.cellen[k];
+    var v = cel ? cel.w : null;
     if (v != null && v > 0) {
       totMet++;
       cellen.push({ boeking_id: boeking_id, gerecht_id: g.id, waarde: v, datum: b.datum });
