@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="theme-color" content="#234756">
 <title>KitchenRobot Kiosk</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -742,6 +745,11 @@ function bindLogin() {
       state.outlet_code = b.getAttribute('data-outlet');
       localStorage.setItem('kiosk_outlet', state.outlet_code);
       state.data = null; state.week_data = {}; state.buffet_data = null;
+      // Tijden ook resetten
+      state.tijden_data = null;
+      state.tijden_laden = false;
+      state.tijden_laatste_load = 0;
+      state.tijden_filter = 'alle';
       laadMedewerkers();
     };
   });
@@ -927,6 +935,14 @@ function renderTijdbalk(tijdschema, nu, boekingen) {
   if (state.tijden_open === undefined) state.tijden_open = false;
   if (state.tijden_laden === undefined) state.tijden_laden = false;
   if (state.tijden_laatste_load === undefined) state.tijden_laatste_load = 0;
+
+  // Anti-stale: als data van verkeerde outlet/datum komt, wis
+  var vandaag = (new Date()).toISOString().split('T')[0];
+  if (state.tijden_data && (state.tijden_data.outlet_code !== state.outlet_code || state.tijden_data.datum !== vandaag)) {
+    state.tijden_data = null;
+    state.tijden_laatste_load = 0;
+  }
+
   // Trigger fetch ALLEEN als nog nooit geladen (rest gebeurt via 30s laadData polling)
   var nuMs = Date.now();
   if (!state.tijden_data && !state.tijden_laden && state.tijden_laatste_load === 0) {
@@ -1100,14 +1116,16 @@ function renderTijdKaart(t, nuMin) {
 function laadKioskTijden() {
   if (!state.outlet_code) return;
   var datum = (new Date()).toISOString().split('T')[0];
-  var cacheKey = 'kiosk_tijden_' + state.outlet_code + '_' + datum;
-  // Toon eerst cache (instant), refresh op achtergrond
-  if (!state.tijden_data) {
+  var outlet = state.outlet_code;
+  var cacheKey = 'kiosk_tijden_' + outlet + '_' + datum;
+  // Toon eerst cache (instant), MITS outlet/datum klopt
+  if (!state.tijden_data || state.tijden_data.outlet_code !== outlet || state.tijden_data.datum !== datum) {
+    state.tijden_data = null; // verkeerde outlet → wis
     try {
       var cached = localStorage.getItem(cacheKey);
       if (cached) {
         var parsed = JSON.parse(cached);
-        if (parsed && parsed.tijden) {
+        if (parsed && parsed.tijden && parsed.outlet_code === outlet && parsed.datum === datum) {
           state.tijden_data = parsed;
         }
       }
@@ -1115,8 +1133,10 @@ function laadKioskTijden() {
   }
   state.tijden_laden = true;
   state.tijden_laatste_load = Date.now();
-  api('kiosk-tijden', { outlet_code: state.outlet_code, datum: datum }).then(function(r) {
+  api('kiosk-tijden', { outlet_code: outlet, datum: datum }).then(function(r) {
     state.tijden_laden = false;
+    // Anti-race: als outlet inmiddels veranderd is, deze response negeren
+    if (state.outlet_code !== outlet) return;
     if (r && r.ok) {
       state.tijden_data = r;
       try { localStorage.setItem(cacheKey, JSON.stringify(r)); } catch (e) {}
@@ -2252,6 +2272,11 @@ document.addEventListener('click', function(e) {
         state.outlet_code = t.getAttribute('data-outlet');
         try { localStorage.setItem('kiosk_outlet', state.outlet_code); } catch(e){}
         state.data = null; state.week_data = {}; state.buffet_data = null;
+        // Tijden ook resetten — anders zie je tijden van de oude outlet
+        state.tijden_data = null;
+        state.tijden_laden = false;
+        state.tijden_laatste_load = 0;
+        state.tijden_filter = 'alle';
         laadMedewerkers();
         return;
       }
