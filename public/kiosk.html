@@ -763,6 +763,8 @@ function bindLogin() {
       state.haccp_meting_punt = null;
       state.haccp_meting_temp = '';
       state.haccp_meting_opmerking = '';
+      // Taak-checklist
+      state.taak_checklist = null;
       laadMedewerkers();
     };
   });
@@ -1727,6 +1729,9 @@ function _tijdAgo(iso) {
 }
 
 function renderSchoonmaakModal() {
+  // Als checklist open: render die in plaats van het overzicht
+  if (state.taak_checklist) return renderTaakChecklistModal();
+
   var taken = (state.data && state.data.schoonmaak_taken) || [];
   var st = (state.data && state.data.schoonmaak) || {};
   var lijst = '';
@@ -1740,18 +1745,195 @@ function renderSchoonmaakModal() {
       else if (t.dagen_geleden === 1) sub = 'Gisteren door ' + (t.laatst_afgetekend_door || '?');
       else sub = t.dagen_geleden + ' dagen geleden door ' + (t.laatst_afgetekend_door || '?');
       sub += ' · ' + esc(t.frequentie || 'taak');
-      return '<div class="sm-rij ' + esc(t.urgentie) + '" data-sm-taak="' + esc(t.id) + '">' +
+      var nSv = (t.subvragen && t.subvragen.length) ? (' · ' + t.subvragen.length + ' vragen') : '';
+      var statusBadge = '';
+      if (t.laatst_status === 'afwijking') {
+        statusBadge = ' <span style="background:#FFEBEE;color:#C62828;padding:2px 6px;border-radius:3px;font-size:9px;font-weight:900;letter-spacing:.3px">⚠ AFWIJKING</span>';
+      }
+      return '<div class="sm-rij ' + esc(t.urgentie) + '" data-tk-open="' + esc(t.id) + '">' +
         '<div class="sm-urg"></div>' +
-        '<div class="sm-info"><div class="sm-naam">' + esc(t.naam) + '</div>' +
-        '<div class="sm-meta">' + sub + '</div></div>' +
-        '<button class="sm-actie" data-sm-taak="' + esc(t.id) + '" data-sm-naam="' + esc(t.naam) + '">Aftekenen</button>' +
+        '<div class="sm-info"><div class="sm-naam">' + esc(t.naam) + statusBadge + '</div>' +
+        '<div class="sm-meta">' + sub + nSv + '</div></div>' +
+        '<button class="sm-actie" data-tk-open="' + esc(t.id) + '">Aftekenen ›</button>' +
       '</div>';
     }).join('');
   }
   return '<div class="alle-tijden-modal">' +
-    '<div class="atm-header"><div><h3>🧽 Schoonmaak</h3><div class="atm-sub">' + (st.dwingend||0) + ' ROOD · ' + (st.waarschuwing||0) + ' GEEL · ' + (st.gedaan_week||0) + ' OK</div></div>' +
+    '<div class="atm-header"><div><h3>🧽 Schoonmaak & HACCP</h3><div class="atm-sub">' + (st.dwingend||0) + ' ROOD · ' + (st.waarschuwing||0) + ' GEEL · ' + (st.gedaan_week||0) + ' OK</div></div>' +
     '<button class="atm-close" data-close>Sluiten</button></div>' +
     '<div class="atm-lijst">' + lijst + '</div></div>';
+}
+
+function renderTaakChecklistModal() {
+  var ck = state.taak_checklist;
+  if (!ck) return '';
+  // Numpad popup voor temperatuur invoer
+  if (ck.numpad_voor) return renderTaakNumpad();
+  // Tekst popup voor vrije_tekst invoer
+  if (ck.tekst_voor) return renderTaakTekstpopup();
+
+  var taak = ck.taak;
+  var subvragen = (taak.subvragen) || [];
+  var antw = ck.antwoorden || {};
+  var hoofdOpm = ck.afwijking_opmerking || '';
+  var correctief = ck.correctieve_actie || '';
+
+  // Bepaal afwijking
+  var heeftAfwijking = false;
+  var aantalBeantwoord = 0;
+  var aantalVerplichtBeantwoord = 0;
+  var aantalVerplichtTotaal = 0;
+  subvragen.forEach(function(sv){
+    if (sv.verplicht) aantalVerplichtTotaal++;
+    var a = antw[sv.id];
+    if (a && a.waarde !== undefined && a.waarde !== '') {
+      aantalBeantwoord++;
+      if (sv.verplicht) aantalVerplichtBeantwoord++;
+      // Afwijking-detectie
+      if (sv.type === 'ja_nee' && a.waarde === 'nee') heeftAfwijking = true;
+      else if ((sv.type === 'temperatuur' || sv.type === 'getal') && a.waarde !== '') {
+        var num = parseFloat(String(a.waarde).replace(',', '.'));
+        if (!isNaN(num)) {
+          if (sv.min_norm != null && num < Number(sv.min_norm)) heeftAfwijking = true;
+          else if (sv.max_norm != null && num > Number(sv.max_norm)) heeftAfwijking = true;
+        }
+      }
+    }
+  });
+  var alleVerplichtKlaar = (aantalVerplichtBeantwoord >= aantalVerplichtTotaal);
+  var canSubmit = alleVerplichtKlaar && (!heeftAfwijking || (hoofdOpm.trim() && correctief.trim()));
+
+  // Render subvragen
+  var rijen = subvragen.map(function(sv){
+    var a = antw[sv.id] || {};
+    var rij = '';
+    if (sv.type === 'ja_nee') {
+      var jaActief = (a.waarde === 'ja');
+      var neeActief = (a.waarde === 'nee');
+      rij = '<div style="display:flex;gap:6px;flex-shrink:0">' +
+        '<button data-tk-ja="' + esc(sv.id) + '" style="background:' + (jaActief ? '#43A047' : '#fff') + ';border:2px solid #43A047;color:' + (jaActief ? '#fff' : '#43A047') + ';padding:10px 18px;border-radius:8px;font-weight:900;font-size:14px;cursor:pointer;font-family:inherit;min-width:60px">✓ JA</button>' +
+        '<button data-tk-nee="' + esc(sv.id) + '" style="background:' + (neeActief ? '#C62828' : '#fff') + ';border:2px solid #C62828;color:' + (neeActief ? '#fff' : '#C62828') + ';padding:10px 18px;border-radius:8px;font-weight:900;font-size:14px;cursor:pointer;font-family:inherit;min-width:60px">✕ NEE</button>' +
+      '</div>';
+    } else if (sv.type === 'temperatuur' || sv.type === 'getal') {
+      var heeftWaarde = (a.waarde !== undefined && a.waarde !== '');
+      var num = heeftWaarde ? parseFloat(String(a.waarde).replace(',', '.')) : NaN;
+      var binnenNorm = !isNaN(num) && (sv.min_norm == null || num >= Number(sv.min_norm)) && (sv.max_norm == null || num <= Number(sv.max_norm));
+      var kleur = !heeftWaarde ? '#7A8FA6' : (binnenNorm ? '#43A047' : '#C62828');
+      rij = '<button data-tk-temp="' + esc(sv.id) + '" style="background:#fff;border:2px solid ' + kleur + ';color:' + kleur + ';padding:10px 14px;border-radius:8px;font-weight:900;font-size:16px;cursor:pointer;font-family:inherit;min-width:90px;font-variant-numeric:tabular-nums">' +
+        (heeftWaarde ? a.waarde + (sv.eenheid || '°') : 'Meet…') + '</button>';
+    } else if (sv.type === 'vrije_tekst') {
+      var heeftTxt = (a.waarde && a.waarde.length > 0);
+      rij = '<button data-tk-tekst="' + esc(sv.id) + '" style="background:#fff;border:2px solid #1976D2;color:#1976D2;padding:10px 14px;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;max-width:200px;text-align:left">' +
+        (heeftTxt ? '✓ ' + esc(String(a.waarde).substring(0, 25)) + (a.waarde.length > 25 ? '…' : '') : '✏ Invullen…') + '</button>';
+    }
+
+    var normTxt = '';
+    if (sv.min_norm != null || sv.max_norm != null) {
+      normTxt = '<span style="font-size:10px;color:#7A8FA6;margin-left:8px">(' +
+        (sv.min_norm != null ? sv.min_norm : '') +
+        (sv.min_norm != null && sv.max_norm != null ? '–' : '') +
+        (sv.max_norm != null ? sv.max_norm : '') + (sv.eenheid || '°') + ')</span>';
+    }
+    var verplichtMarker = sv.verplicht ? '<span style="color:#C62828;font-weight:900">*</span> ' : '';
+    return '<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #EEF3F7">' +
+      '<div style="flex:1;min-width:0">' +
+        '<div style="font-size:13px;font-weight:700;color:#234756;line-height:1.3">' + verplichtMarker + esc(sv.vraag) + normTxt + '</div>' +
+      '</div>' +
+      rij +
+    '</div>';
+  }).join('');
+
+  // Afwijking-blok
+  var afwijkingBlok = '';
+  if (heeftAfwijking) {
+    afwijkingBlok = '<div style="background:#FFEBEE;border:2px solid #C62828;border-radius:8px;padding:14px;margin-top:14px">' +
+      '<div style="font-weight:900;color:#C62828;font-size:14px;margin-bottom:10px">🚨 Afwijking gedetecteerd — verplichte velden</div>' +
+      '<label style="font-size:11px;font-weight:700;color:#234756;display:block;margin-bottom:4px">Wat is er aan de hand? <span style="color:#C62828">*</span></label>' +
+      '<textarea id="tk-afw-opm" rows="2" style="width:100%;border:1.5px solid #D8E8EF;border-radius:6px;padding:8px;font-family:inherit;font-size:12px;resize:vertical;margin-bottom:8px" placeholder="Bijv: Verpakking 1 doos beschadigd">' + esc(hoofdOpm) + '</textarea>' +
+      '<label style="font-size:11px;font-weight:700;color:#234756;display:block;margin-bottom:4px">Wat is jouw correctieve actie? <span style="color:#C62828">*</span></label>' +
+      '<textarea id="tk-corr" rows="2" style="width:100%;border:1.5px solid #D8E8EF;border-radius:6px;padding:8px;font-family:inherit;font-size:12px;resize:vertical" placeholder="Bijv: Doos retour, leverancier gebeld">' + esc(correctief) + '</textarea>' +
+    '</div>';
+  }
+
+  var submitTekst = aantalVerplichtKlaar ? (heeftAfwijking ? '⚠ Aftekenen met afwijking' : '✓ Aftekenen') : ('Vul nog ' + (aantalVerplichtTotaal - aantalVerplichtBeantwoord) + ' verplichte vraag/vragen in');
+
+  var laatste = '';
+  if (taak.laatst_afgetekend_op) {
+    var d = new Date(taak.laatst_afgetekend_op);
+    var datum = String(d.getDate()).padStart(2,'0') + '-' + String(d.getMonth()+1).padStart(2,'0');
+    var tijd = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+    laatste = '<div style="font-size:11px;color:#7A8FA6;margin-top:4px">Laatst afgetekend: ' + datum + ' om ' + tijd + ' door ' + esc(taak.laatst_afgetekend_door || '?') + (taak.laatst_status === 'afwijking' ? ' · <span style="color:#C62828;font-weight:700">⚠ met afwijking</span>' : '') + '</div>';
+  }
+
+  return '<div class="alle-tijden-modal" style="max-width:520px">' +
+    '<div class="atm-header"><div><h3>' + esc(taak.naam) + '</h3><div class="atm-sub">' + esc(taak.frequentie || '') + ' · ' + esc(taak.categorie || '') + '</div></div>' +
+    '<button class="atm-close" data-tk-sluit>×</button></div>' +
+    '<div style="padding:14px">' +
+      (taak.beschrijving ? '<div style="font-size:12px;color:#234756;background:#F5F8FA;padding:10px;border-radius:6px;margin-bottom:14px">' + esc(taak.beschrijving) + '</div>' : '') +
+      laatste +
+      '<div style="margin-top:10px">' + rijen + '</div>' +
+      afwijkingBlok +
+      '<button data-tk-opslaan ' + (canSubmit ? '' : 'disabled') + ' style="width:100%;margin-top:18px;background:' + (canSubmit ? (heeftAfwijking ? '#C62828' : '#43A047') : '#D8E8EF') + ';color:' + (canSubmit ? '#fff' : '#7A8FA6') + ';border:none;padding:14px;border-radius:8px;font-weight:900;font-size:15px;cursor:' + (canSubmit ? 'pointer' : 'not-allowed') + ';font-family:inherit">' + submitTekst + '</button>' +
+    '</div>' +
+  '</div>';
+}
+
+function renderTaakNumpad() {
+  var ck = state.taak_checklist;
+  if (!ck || !ck.numpad_voor) return '';
+  var taak = ck.taak;
+  var sv = (taak.subvragen || []).find(function(x){ return x.id === ck.numpad_voor; });
+  if (!sv) return '';
+  var ant = ck.antwoorden[sv.id] || {};
+  var temp = ck.numpad_temp || ant.waarde || '';
+  var num = temp ? parseFloat(String(temp).replace(',', '.')) : NaN;
+  var binnen = !isNaN(num) && (sv.min_norm == null || num >= Number(sv.min_norm)) && (sv.max_norm == null || num <= Number(sv.max_norm));
+  var kleur = isNaN(num) ? '#B0BEC5' : (binnen ? '#43A047' : '#C62828');
+  var eenheid = sv.eenheid || '°';
+  var normTxt = ((sv.min_norm != null) ? sv.min_norm + eenheid : '') + ((sv.min_norm != null && sv.max_norm != null) ? ' tot ' : '') + ((sv.max_norm != null) ? sv.max_norm + eenheid : '');
+
+  function nb(label, action) {
+    return '<button data-tk-np="' + action + '" style="background:#F5F8FA;border:1.5px solid #D8E8EF;color:#234756;padding:0;border-radius:8px;font-weight:800;font-size:24px;cursor:pointer;font-family:inherit;height:60px">' + label + '</button>';
+  }
+  var numpad = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:14px">' +
+    nb('1','d:1') + nb('2','d:2') + nb('3','d:3') +
+    nb('4','d:4') + nb('5','d:5') + nb('6','d:6') +
+    nb('7','d:7') + nb('8','d:8') + nb('9','d:9') +
+    nb('-','d:-') + nb('0','d:0') + nb(',','d:,') +
+    nb('⌫','back') + '<button data-tk-np="clear" style="background:#FFEBEE;border:1.5px solid #C62828;color:#C62828;padding:0;border-radius:8px;font-weight:800;font-size:14px;cursor:pointer;font-family:inherit;height:60px">CLR</button>' +
+    nb('.','d:.') +
+  '</div>';
+
+  return '<div class="alle-tijden-modal" style="max-width:380px">' +
+    '<div class="atm-header"><div><h3>' + esc(sv.vraag) + '</h3><div class="atm-sub">Norm: ' + esc(normTxt || 'geen') + '</div></div>' +
+    '<button class="atm-close" data-tk-np="sluit">×</button></div>' +
+    '<div style="padding:14px">' +
+      '<div style="background:#F5F8FA;border:2px solid ' + kleur + ';border-radius:10px;padding:18px;text-align:center">' +
+        '<div style="font-size:48px;font-weight:900;color:' + kleur + ';line-height:1;font-variant-numeric:tabular-nums">' + (temp || '—') + eenheid + '</div>' +
+        '<div style="font-size:11px;color:#7A8FA6;margin-top:4px">' + (isNaN(num) ? 'Voer waarde in' : (binnen ? '✓ binnen norm' : '⚠ buiten norm')) + '</div>' +
+      '</div>' +
+      numpad +
+      '<button data-tk-np="ok" ' + (isNaN(num) ? 'disabled' : '') + ' style="width:100%;margin-top:14px;background:' + (isNaN(num) ? '#D8E8EF' : '#1976D2') + ';color:' + (isNaN(num) ? '#7A8FA6' : '#fff') + ';border:none;padding:13px;border-radius:8px;font-weight:900;font-size:14px;cursor:' + (isNaN(num) ? 'not-allowed' : 'pointer') + ';font-family:inherit">✓ Bevestigen</button>' +
+    '</div>' +
+  '</div>';
+}
+
+function renderTaakTekstpopup() {
+  var ck = state.taak_checklist;
+  if (!ck || !ck.tekst_voor) return '';
+  var taak = ck.taak;
+  var sv = (taak.subvragen || []).find(function(x){ return x.id === ck.tekst_voor; });
+  if (!sv) return '';
+  var ant = ck.antwoorden[sv.id] || {};
+  var waarde = (ck.tekst_waarde !== undefined) ? ck.tekst_waarde : (ant.waarde || '');
+  return '<div class="alle-tijden-modal" style="max-width:460px">' +
+    '<div class="atm-header"><div><h3>' + esc(sv.vraag) + '</h3></div>' +
+    '<button class="atm-close" data-tk-tk="sluit">×</button></div>' +
+    '<div style="padding:14px">' +
+      '<textarea id="tk-tk-input" rows="6" style="width:100%;border:1.5px solid #D8E8EF;border-radius:6px;padding:10px;font-family:inherit;font-size:13px;resize:vertical">' + esc(waarde) + '</textarea>' +
+      '<button data-tk-tk="ok" style="width:100%;margin-top:12px;background:#1976D2;color:#fff;border:none;padding:13px;border-radius:8px;font-weight:900;font-size:14px;cursor:pointer;font-family:inherit">✓ Bevestigen</button>' +
+    '</div>' +
+  '</div>';
 }
 
 function renderHaccpModal() {
@@ -2414,6 +2596,8 @@ document.addEventListener('click', function(e) {
         state.haccp_meting_punt = null;
         state.haccp_meting_temp = '';
         state.haccp_meting_opmerking = '';
+        // Taak-checklist
+        state.taak_checklist = null;
         render();
         return;
       }
@@ -2433,6 +2617,8 @@ document.addEventListener('click', function(e) {
         state.haccp_meting_punt = null;
         state.haccp_meting_temp = '';
         state.haccp_meting_opmerking = '';
+        // Taak-checklist
+        state.taak_checklist = null;
         laadMedewerkers();
         return;
       }
@@ -2454,17 +2640,11 @@ document.addEventListener('click', function(e) {
         });
         return;
       }
-      // data-sm-taak: schoonmaak taak aftekenen
-      if (t.hasAttribute && t.hasAttribute('data-sm-taak')) {
+      // data-sm-taak: oude simpele aftekening → nu via data-tk-open
+      // data-tk-open: opent checklist-modal voor de taak
+      if (t.hasAttribute && t.hasAttribute('data-tk-open')) {
         e.stopPropagation();
-        var taakId = t.getAttribute('data-sm-taak');
-        var taakNaam = t.getAttribute('data-sm-naam') || '';
-        if (confirm('Aftekenen: ' + taakNaam + '?')) {
-          api('kiosk-actie', { actie: 'schoonmaak_aftekenen', sessie_id: state.sessie_id, taak_template_id: taakId }).then(function(res){
-            if (res.ok) { state.modal = null; laadData().then(function(){ state.modal = { type: 'schoonmaak' }; render(); }); }
-            else alert(res.error || 'Mislukt');
-          });
-        }
+        openTaakChecklist(t.getAttribute('data-tk-open'));
         return;
       }
       // data-hc-punt: HACCP meting invoeren
@@ -3194,7 +3374,7 @@ function renderOpzetRijKolomPopup() {
 
 document.addEventListener('click', function(ev) {
   // Early returns alleen voor performance — handlers zelf doen de check
-  if (!state.opzet_modal && !state.tijden_fullscreen && !state.tijd_naam_popup && !state.tijden_data && !state.haccp_data && !state.haccp_meting_punt) return;
+  if (!state.opzet_modal && !state.tijden_fullscreen && !state.tijd_naam_popup && !state.tijden_data && !state.haccp_data && !state.haccp_meting_punt && !state.taak_checklist) return;
   var t = ev.target;
   while (t && t !== document) {
     if (t.hasAttribute && t.hasAttribute('data-opzet-bg')) {
@@ -3338,6 +3518,52 @@ document.addEventListener('click', function(ev) {
       handleHaccpNumpadActie(t.getAttribute('data-haccp-numpad'));
       return;
     }
+    // ============== TAAK CHECKLIST (schoonmaak/HACCP-taak) ==============
+    if (t.hasAttribute && t.hasAttribute('data-tk-sluit')) {
+      ev.stopPropagation();
+      sluitTaakChecklist();
+      return;
+    }
+    if (t.hasAttribute && t.hasAttribute('data-tk-ja')) {
+      ev.stopPropagation();
+      bewaarHoofdOpmerking();
+      zetTaakAntwoord(t.getAttribute('data-tk-ja'), 'ja');
+      return;
+    }
+    if (t.hasAttribute && t.hasAttribute('data-tk-nee')) {
+      ev.stopPropagation();
+      bewaarHoofdOpmerking();
+      zetTaakAntwoord(t.getAttribute('data-tk-nee'), 'nee');
+      return;
+    }
+    if (t.hasAttribute && t.hasAttribute('data-tk-temp')) {
+      ev.stopPropagation();
+      bewaarHoofdOpmerking();
+      openTaakNumpad(t.getAttribute('data-tk-temp'));
+      return;
+    }
+    if (t.hasAttribute && t.hasAttribute('data-tk-tekst')) {
+      ev.stopPropagation();
+      bewaarHoofdOpmerking();
+      openTaakTekst(t.getAttribute('data-tk-tekst'));
+      return;
+    }
+    if (t.hasAttribute && t.hasAttribute('data-tk-np')) {
+      ev.stopPropagation();
+      handleTaakNumpadActie(t.getAttribute('data-tk-np'));
+      return;
+    }
+    if (t.hasAttribute && t.hasAttribute('data-tk-tk')) {
+      ev.stopPropagation();
+      handleTaakTekstActie(t.getAttribute('data-tk-tk'));
+      return;
+    }
+    if (t.hasAttribute && t.hasAttribute('data-tk-opslaan')) {
+      ev.stopPropagation();
+      bewaarHoofdOpmerking();
+      submitTaakChecklist();
+      return;
+    }
     t = t.parentNode;
   }
 }, true);
@@ -3433,6 +3659,136 @@ function handleHaccpNumpadActie(actie) {
       }
     });
   }
+}
+
+// ============== TAAK CHECKLIST HELPERS ==============
+function openTaakChecklist(taakId) {
+  var taken = (state.data && state.data.schoonmaak_taken) || [];
+  var taak = taken.find ? taken.find(function(x){ return x.id === taakId; }) : null;
+  if (!taak) { for (var i=0; i<taken.length; i++) { if (taken[i].id === taakId) { taak = taken[i]; break; } } }
+  if (!taak) return;
+  state.taak_checklist = {
+    taak: taak,
+    antwoorden: {},
+    afwijking_opmerking: '',
+    correctieve_actie: '',
+    numpad_voor: null,
+    numpad_temp: '',
+    tekst_voor: null,
+    tekst_waarde: ''
+  };
+  render();
+}
+
+function sluitTaakChecklist() {
+  state.taak_checklist = null;
+  render();
+}
+
+function bewaarHoofdOpmerking() {
+  var ck = state.taak_checklist;
+  if (!ck) return;
+  var opm = document.getElementById('tk-afw-opm');
+  var corr = document.getElementById('tk-corr');
+  if (opm) ck.afwijking_opmerking = opm.value;
+  if (corr) ck.correctieve_actie = corr.value;
+}
+
+function zetTaakAntwoord(subvraagId, waarde) {
+  var ck = state.taak_checklist;
+  if (!ck) return;
+  if (!ck.antwoorden[subvraagId]) ck.antwoorden[subvraagId] = {};
+  ck.antwoorden[subvraagId].waarde = waarde;
+  render();
+}
+
+function openTaakNumpad(subvraagId) {
+  var ck = state.taak_checklist;
+  if (!ck) return;
+  ck.numpad_voor = subvraagId;
+  ck.numpad_temp = (ck.antwoorden[subvraagId] && ck.antwoorden[subvraagId].waarde) || '';
+  render();
+}
+
+function openTaakTekst(subvraagId) {
+  var ck = state.taak_checklist;
+  if (!ck) return;
+  ck.tekst_voor = subvraagId;
+  ck.tekst_waarde = (ck.antwoorden[subvraagId] && ck.antwoorden[subvraagId].waarde) || '';
+  render();
+}
+
+function handleTaakNumpadActie(actie) {
+  var ck = state.taak_checklist;
+  if (!ck) return;
+  if (actie === 'sluit') { ck.numpad_voor = null; ck.numpad_temp = ''; render(); return; }
+  if (actie === 'clear') { ck.numpad_temp = ''; render(); return; }
+  if (actie === 'back') { ck.numpad_temp = (ck.numpad_temp || '').slice(0, -1); render(); return; }
+  if (actie.indexOf('d:') === 0) {
+    ck.numpad_temp = (ck.numpad_temp || '') + actie.substring(2);
+    render();
+    return;
+  }
+  if (actie === 'ok') {
+    var num = parseFloat((ck.numpad_temp || '').replace(',', '.'));
+    if (isNaN(num)) return;
+    if (!ck.antwoorden[ck.numpad_voor]) ck.antwoorden[ck.numpad_voor] = {};
+    ck.antwoorden[ck.numpad_voor].waarde = ck.numpad_temp;
+    ck.numpad_voor = null;
+    ck.numpad_temp = '';
+    render();
+  }
+}
+
+function handleTaakTekstActie(actie) {
+  var ck = state.taak_checklist;
+  if (!ck) return;
+  // Lees textarea-waarde
+  var input = document.getElementById('tk-tk-input');
+  if (input) ck.tekst_waarde = input.value;
+  if (actie === 'sluit') { ck.tekst_voor = null; ck.tekst_waarde = ''; render(); return; }
+  if (actie === 'ok') {
+    if (!ck.antwoorden[ck.tekst_voor]) ck.antwoorden[ck.tekst_voor] = {};
+    ck.antwoorden[ck.tekst_voor].waarde = ck.tekst_waarde || '';
+    ck.tekst_voor = null;
+    ck.tekst_waarde = '';
+    render();
+  }
+}
+
+function submitTaakChecklist() {
+  var ck = state.taak_checklist;
+  if (!ck) return;
+  var taak = ck.taak;
+  // Bouw antwoorden array voor edge function
+  var antwoordenArr = [];
+  Object.keys(ck.antwoorden).forEach(function(svId){
+    var a = ck.antwoorden[svId];
+    if (a && a.waarde !== undefined && a.waarde !== '') {
+      antwoordenArr.push({
+        subvraag_id: svId,
+        type: ((taak.subvragen || []).find(function(x){ return x.id === svId; }) || {}).type || 'vrije_tekst',
+        waarde: a.waarde,
+        opmerking: a.opmerking || ''
+      });
+    }
+  });
+  api('kiosk-taak-aftekenen', {
+    sessie_id: state.sessie_id,
+    taak_template_id: taak.id,
+    antwoorden: antwoordenArr,
+    afwijking_opmerking: ck.afwijking_opmerking || '',
+    correctieve_actie: ck.correctieve_actie || ''
+  }).then(function(res){
+    if (res.ok) {
+      state.taak_checklist = null;
+      laadData().then(function(){ render(); });
+    } else {
+      var msg = res.error || 'Mislukt';
+      if (res.fouten && res.fouten.length) msg += '\n\n' + res.fouten.join('\n');
+      alert(msg);
+    }
+  }).catch(function(e){ alert('Netwerkfout: ' + e); });
 }
 
 function sluitOpzetModal() {
