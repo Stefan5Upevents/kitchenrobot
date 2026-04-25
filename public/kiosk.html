@@ -571,6 +571,8 @@ function laadData() {
   laadDraaiboekLinks();
   // NIEUW: toewijzingen parallel laden
   laadToewijzingen();
+  // NIEUW: tijden PARALLEL laden — niet wachten op kiosk-vandaag
+  laadKioskTijden();
   // NIEUW: onboarding check - alleen eerste keer
   try {
     if (state.sessie_id && !localStorage.getItem('kiosk_onboarding_voltooid')) {
@@ -919,16 +921,19 @@ if (!window._wekkerInterval) {
 }
 
 function renderTijdbalk(tijdschema, nu, boekingen) {
-  // Init state als nodig + start polling
-  if (!state.tijden_data) state.tijden_data = null;
+  // Init state als nodig
+  if (state.tijden_data === undefined) state.tijden_data = null;
   if (!state.tijden_filter) state.tijden_filter = 'alle';
-  if (!state.tijden_open) state.tijden_open = false;
-  if (!state.tijden_laden) state.tijden_laden = false;
-  if (!state.tijden_laatste_load) state.tijden_laatste_load = 0;
-  // Trigger eerste load + interval
+  if (state.tijden_open === undefined) state.tijden_open = false;
+  if (state.tijden_laden === undefined) state.tijden_laden = false;
+  if (state.tijden_laatste_load === undefined) state.tijden_laatste_load = 0;
+  // Trigger fetch ALLEEN als nog nooit geladen (rest gebeurt via 30s laadData polling)
   var nuMs = Date.now();
-  if (!state.tijden_data && !state.tijden_laden) { laadKioskTijden(); }
-  if (nuMs - state.tijden_laatste_load > 60000 && !state.tijden_laden) { laadKioskTijden(); }
+  if (!state.tijden_data && !state.tijden_laden && state.tijden_laatste_load === 0) {
+    laadKioskTijden();
+  } else if (nuMs - state.tijden_laatste_load > 60000 && !state.tijden_laden) {
+    laadKioskTijden();
+  }
 
   var d = state.tijden_data;
   if (!d) return '<div class="tijdbalk-v2"><div style="padding:14px;text-align:center;color:#7A8FA6;font-size:12px">⏳ Tijden laden…</div></div>';
@@ -1095,11 +1100,28 @@ function renderTijdKaart(t, nuMin) {
 function laadKioskTijden() {
   if (!state.outlet_code) return;
   var datum = (new Date()).toISOString().split('T')[0];
+  var cacheKey = 'kiosk_tijden_' + state.outlet_code + '_' + datum;
+  // Toon eerst cache (instant), refresh op achtergrond
+  if (!state.tijden_data) {
+    try {
+      var cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        var parsed = JSON.parse(cached);
+        if (parsed && parsed.tijden) {
+          state.tijden_data = parsed;
+        }
+      }
+    } catch (e) {}
+  }
   state.tijden_laden = true;
   state.tijden_laatste_load = Date.now();
   api('kiosk-tijden', { outlet_code: state.outlet_code, datum: datum }).then(function(r) {
     state.tijden_laden = false;
-    if (r && r.ok) { state.tijden_data = r; render(); }
+    if (r && r.ok) {
+      state.tijden_data = r;
+      try { localStorage.setItem(cacheKey, JSON.stringify(r)); } catch (e) {}
+      render();
+    }
   }).catch(function(e) { state.tijden_laden = false; console.warn('kiosk-tijden:', e); });
 }
 
