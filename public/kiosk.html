@@ -570,6 +570,9 @@ function laadToewijzingen() {
 }
 
 function laadData() {
+  // Guard: geen dubbele calls
+  if (state._laadDataBezig) return state._laadDataBelofte || Promise.resolve();
+  state._laadDataBezig = true;
   // NIEUW: draaiboek-links parallel laden (non-blocking)
   laadDraaiboekLinks();
   // NIEUW: toewijzingen parallel laden
@@ -582,10 +585,15 @@ function laadData() {
       state.onboarding_stap = 1;
     }
   } catch(e){}
-  return api('kiosk-vandaag', { outlet_code: state.outlet_code }).then(function(res) {
+  state._laadDataBelofte = api('kiosk-vandaag', { outlet_code: state.outlet_code }).then(function(res) {
     state.data = res;
+    state._laadDataBezig = false;
     render();
+  }).catch(function(e) {
+    state._laadDataBezig = false;
+    console.warn('laadData error:', e);
   });
+  return state._laadDataBelofte;
 }
 
 function login(pincode) {
@@ -1140,7 +1148,8 @@ function laadKioskTijden() {
     if (r && r.ok) {
       state.tijden_data = r;
       try { localStorage.setItem(cacheKey, JSON.stringify(r)); } catch (e) {}
-      render();
+      // Render alleen als de hoofd-data al geladen is, anders zou het de loader-render opnieuw triggeren
+      if (state.data) render();
     }
   }).catch(function(e) { state.tijden_laden = false; console.warn('kiosk-tijden:', e); });
 }
