@@ -314,8 +314,17 @@ var state = (function(){
   if (_urlOutlet === 'west' || _urlOutlet === 'weesp') {
     try { localStorage.setItem('kiosk_outlet', _urlOutlet); } catch(e){}
   }
+  var _outlet = _urlOutlet || localStorage.getItem('kiosk_outlet') || 'weesp';
+  // Sync URL met de daadwerkelijke outlet (kan afwijken als URL geen outlet had)
+  try {
+    var _url = new URL(window.location.href);
+    if (_url.searchParams.get('outlet') !== _outlet) {
+      _url.searchParams.set('outlet', _outlet);
+      window.history.replaceState({}, '', _url.toString());
+    }
+  } catch(e){}
   return {
-    outlet_code: _urlOutlet || localStorage.getItem('kiosk_outlet') || 'weesp',
+    outlet_code: _outlet,
     sessie_id: localStorage.getItem('kiosk_sessie'),
     medewerker_naam: localStorage.getItem('kiosk_naam'),
     rol: localStorage.getItem('kiosk_rol'),
@@ -768,6 +777,12 @@ function bindLogin() {
     b.onclick = function() {
       state.outlet_code = b.getAttribute('data-outlet');
       localStorage.setItem('kiosk_outlet', state.outlet_code);
+      // URL bijwerken zodat je weet op welke outlet je bent ingelogd
+      try {
+        var _u = new URL(window.location.href);
+        _u.searchParams.set('outlet', state.outlet_code);
+        window.history.replaceState({}, '', _u.toString());
+      } catch(e){}
       state.data = null; state.week_data = {}; state.buffet_data = null;
       // Tijden ook resetten
       state.tijden_data = null;
@@ -2133,14 +2148,14 @@ function renderHaccpNumpad() {
     '<button data-haccp-numpad="prefill:' + p.sensor_temp + '" style="background:#E3F2FD;color:#1976D2;border:1.5px solid #1976D2;padding:8px 12px;border-radius:6px;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;margin-bottom:10px;width:100%">📡 Sensor zegt ' + Number(p.sensor_temp).toFixed(1) + '° — vul in</button>' : '';
 
   function nb(label, action) {
-    return '<button data-haccp-numpad="' + action + '" style="background:#F5F8FA;border:1.5px solid #D8E8EF;color:#234756;padding:0;border-radius:8px;font-weight:800;font-size:24px;cursor:pointer;font-family:inherit;height:60px">' + label + '</button>';
+    return '<button data-haccp-numpad="' + action + '" style="background:#F5F8FA;border:1.5px solid #D8E8EF;color:#234756;padding:0;border-radius:10px;font-weight:800;font-size:28px;cursor:pointer;font-family:inherit;height:72px">' + label + '</button>';
   }
-  var numpad = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px">' +
+  var numpad = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px">' +
     nb('1','d:1') + nb('2','d:2') + nb('3','d:3') +
     nb('4','d:4') + nb('5','d:5') + nb('6','d:6') +
     nb('7','d:7') + nb('8','d:8') + nb('9','d:9') +
     nb('-','d:-') + nb('0','d:0') + nb(',','d:,') +
-    nb('⌫','back') + '<button data-haccp-numpad="clear" style="background:#FFEBEE;border:1.5px solid #C62828;color:#C62828;padding:0;border-radius:8px;font-weight:800;font-size:14px;cursor:pointer;font-family:inherit;height:60px">CLR</button>' +
+    nb('⌫','back') + '<button data-haccp-numpad="clear" style="background:#FFEBEE;border:1.5px solid #C62828;color:#C62828;padding:0;border-radius:10px;font-weight:800;font-size:16px;cursor:pointer;font-family:inherit;height:72px">CLR</button>' +
     nb('.','d:.') +
   '</div>';
 
@@ -2155,18 +2170,18 @@ function renderHaccpNumpad() {
 
   var canSubmit = !isNaN(tempNum) && (!verplichteOpmerking || state.haccp_meting_opmerking.trim().length > 0);
 
-  return '<div class="alle-tijden-modal" style="max-width:420px">' +
+  return '<div class="alle-tijden-modal">' +
     '<div class="atm-header"><div><h3>📏 ' + esc(p.naam) + '</h3><div class="atm-sub">Norm: ' + p.min + '° tot ' + p.max + '°</div></div>' +
     '<button class="atm-close" data-haccp-numpad="sluit">Sluiten</button></div>' +
-    '<div style="padding:14px">' +
+    '<div class="atm-lijst" style="padding:18px 20px;max-width:520px;margin:0 auto;width:100%;box-sizing:border-box">' +
       alarmBanner + voorvulKnop +
-      '<div style="background:#F5F8FA;border:2px solid ' + displayKleur + ';border-radius:10px;padding:18px;text-align:center">' +
-        '<div style="font-size:48px;font-weight:900;color:' + displayKleur + ';line-height:1;font-variant-numeric:tabular-nums">' + (temp || '—') + '°</div>' +
-        '<div style="font-size:11px;color:#7A8FA6;margin-top:4px">' + (isNaN(tempNum) ? 'Voer temperatuur in' : (binnenNorm ? '✓ binnen norm' : '⚠ buiten norm')) + '</div>' +
+      '<div style="background:#F5F8FA;border:2px solid ' + displayKleur + ';border-radius:12px;padding:24px;text-align:center">' +
+        '<div style="font-size:64px;font-weight:900;color:' + displayKleur + ';line-height:1;font-variant-numeric:tabular-nums">' + (temp || '—') + '°</div>' +
+        '<div style="font-size:13px;color:#7A8FA6;margin-top:6px">' + (isNaN(tempNum) ? 'Voer temperatuur in' : (binnenNorm ? '✓ binnen norm' : '⚠ buiten norm')) + '</div>' +
       '</div>' +
       numpad +
       opmerkingVeld +
-      '<button data-haccp-numpad="opslaan" ' + (canSubmit ? '' : 'disabled') + ' style="width:100%;margin-top:14px;background:' + (canSubmit ? '#43A047' : '#D8E8EF') + ';color:' + (canSubmit ? '#fff' : '#7A8FA6') + ';border:none;padding:14px;border-radius:8px;font-weight:900;font-size:15px;cursor:' + (canSubmit ? 'pointer' : 'not-allowed') + ';font-family:inherit">✓ Meting opslaan</button>' +
+      '<button data-haccp-numpad="opslaan" ' + (canSubmit ? '' : 'disabled') + ' style="width:100%;margin-top:16px;background:' + (canSubmit ? '#43A047' : '#D8E8EF') + ';color:' + (canSubmit ? '#fff' : '#7A8FA6') + ';border:none;padding:16px;border-radius:10px;font-weight:900;font-size:16px;cursor:' + (canSubmit ? 'pointer' : 'not-allowed') + ';font-family:inherit">✓ Meting opslaan</button>' +
     '</div>' +
   '</div>';
 }
