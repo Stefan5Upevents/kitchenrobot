@@ -758,6 +758,11 @@ function bindLogin() {
       state.tijden_laden = false;
       state.tijden_laatste_load = 0;
       state.tijden_filter = 'alle';
+      // HACCP ook resetten
+      state.haccp_data = null;
+      state.haccp_meting_punt = null;
+      state.haccp_meting_temp = '';
+      state.haccp_meting_opmerking = '';
       laadMedewerkers();
     };
   });
@@ -1750,33 +1755,165 @@ function renderSchoonmaakModal() {
 }
 
 function renderHaccpModal() {
-  var punten = (state.data && state.data.haccp_punten_lijst) || [];
-  var h = (state.data && state.data.haccp) || {};
+  // Eerste render → laad sensor data
+  if (state.haccp_data === undefined) state.haccp_data = null;
+  if (!state.haccp_data && !state.haccp_data_laden) {
+    state.haccp_data_laden = true;
+    api('kiosk-haccp-data', { outlet_code: state.outlet_code }).then(function(r) {
+      state.haccp_data_laden = false;
+      if (r && r.ok) { state.haccp_data = r; render(); }
+    }).catch(function(e){ state.haccp_data_laden = false; console.warn('haccp-data:', e); });
+  }
+  // Numpad popup voor temp invoer
+  if (state.haccp_meting_punt) return renderHaccpNumpad();
+
+  var d = state.haccp_data;
+  if (!d) {
+    return '<div class="alle-tijden-modal">' +
+      '<div class="atm-header"><div><h3>🌡️ HACCP</h3><div class="atm-sub">Sensoren ophalen…</div></div>' +
+      '<button class="atm-close" data-close>Sluiten</button></div>' +
+      '<div style="padding:30px;text-align:center;color:#7A8FA6">⏳ Laden…</div>' +
+    '</div>';
+  }
+  var t = d.tellingen || {};
+  var punten = d.punten || [];
+  var alarmenLijst = punten.filter(function(p){ return p.status === 'alarm'; });
+  var alarmBanner = alarmenLijst.length > 0 ?
+    '<div style="background:#C62828;color:#fff;padding:12px 16px;margin:0 -16px 12px;font-size:13px;font-weight:700;line-height:1.3">' +
+      '🚨 ' + alarmenLijst.length + ' ' + (alarmenLijst.length === 1 ? 'koeling' : 'koelingen') + ' ≥' + (d.drempel_minuten || 30) + ' min buiten norm. ' +
+      '<b>Handmatig meten verplicht.</b><br><span style="opacity:.85;font-weight:400;font-size:11px">' +
+      alarmenLijst.map(function(p){ return p.naam; }).join(', ') +
+      '</span>' +
+    '</div>' : '';
+
   var lijst = '';
   if (punten.length === 0) {
     lijst = '<div class="atm-empty">Geen HACCP-meetpunten gedefinieerd.</div>';
   } else {
-    lijst = punten.map(function(p){
-      var icon = (p.type === 'koeling' || p.type === 'vriezer') ? '❄️' : (p.type === 'warm' ? '🔥' : '🌡️');
-      var tempHtml;
-      if (p.laatste_meting) {
-        var afwijk = p.laatste_meting.binnen_norm ? '' : ' afwijking';
-        tempHtml = '<div class="hc-temp' + afwijk + '">' + Number(p.laatste_meting.gemeten_temp).toFixed(1) + '°</div>';
+    lijst = punten.map(function(p) {
+      var icon = (p.type === 'koeling') ? '❄️' : (p.type === 'vriezer') ? '🧊' : (p.type === 'frituur') ? '🍟' : '🌡️';
+      // Status-styling
+      var configMap = {
+        ok:              { rand: '#43A047', bg: '#fff',     status_lbl: '✓ OK',      status_kl: '#43A047', knop_kl: '#43A047', knop_lbl: '✓ Sensor accepteren' },
+        waarschuwing:    { rand: '#FF9800', bg: '#FFF8E1',  status_lbl: '⚠ Net buiten', status_kl: '#E65100', knop_kl: '#FF9800', knop_lbl: '📏 Meet handmatig' },
+        alarm:           { rand: '#C62828', bg: '#FFEBEE',  status_lbl: '🚨 ALARM',   status_kl: '#C62828', knop_kl: '#C62828', knop_lbl: '📏 Meet nu handmatig' },
+        sensor_offline:  { rand: '#7A8FA6', bg: '#F0F4F6',  status_lbl: '📡 offline',  status_kl: '#7A8FA6', knop_kl: '#1976D2', knop_lbl: '📏 Meet handmatig' },
+        leeg:            { rand: '#D8E8EF', bg: '#fff',     status_lbl: '⚪ leeg',    status_kl: '#7A8FA6', knop_kl: '#1976D2', knop_lbl: '📏 Meet handmatig' },
+        geen_data:       { rand: '#D8E8EF', bg: '#fff',     status_lbl: '⚪',         status_kl: '#7A8FA6', knop_kl: '#1976D2', knop_lbl: '📏 Meet handmatig' }
+      };
+      var conf = configMap[p.status] || configMap.geen_data;
+      var sensorBlok = '';
+      if (p.heeft_sensor && p.laatste_sensor) {
+        var ls = p.laatste_sensor;
+        var tempKleur = ls.binnen_norm ? '#234756' : '#C62828';
+        var min = ls.minuten_geleden;
+        var minStr = min === 0 ? 'nu' : (min === 1 ? '1 min' : min + ' min');
+        sensorBlok = '<div style="text-align:right;flex-shrink:0;min-width:80px">' +
+          '<div style="font-size:22px;font-weight:900;color:' + tempKleur + ';line-height:1">' + ls.temperatuur.toFixed(1) + '°</div>' +
+          '<div style="font-size:9px;color:#7A8FA6;margin-top:2px">📡 ' + minStr + ' geleden</div>' +
+        '</div>';
+      } else if (p.heeft_sensor) {
+        sensorBlok = '<div style="text-align:right;flex-shrink:0;min-width:80px;font-size:11px;color:#7A8FA6">📡 geen data</div>';
       } else {
-        tempHtml = '<div class="hc-temp leeg">Meet</div>';
+        sensorBlok = '<div style="text-align:right;flex-shrink:0;min-width:80px;font-size:11px;color:#B0BEC5">geen sensor</div>';
       }
-      var norm = 'Norm: ' + (p.min_temp != null ? Number(p.min_temp).toFixed(1) + '°' : '') + ' - ' + (p.max_temp != null ? Number(p.max_temp).toFixed(1) + '°' : '');
-      if (p.laatste_meting) norm += ' · ' + _tijdAgo(p.laatste_meting.gemeten_op) + ' door ' + esc(p.laatste_meting.door || '?');
-      return '<div class="hc-rij" data-hc-punt="' + esc(p.id) + '" data-hc-naam="' + esc(p.naam) + '" data-hc-min="' + (p.min_temp || '') + '" data-hc-max="' + (p.max_temp || '') + '">' +
-        '<div class="hc-icon">' + icon + '</div>' +
-        '<div class="hc-info"><div class="hc-naam">' + esc(p.naam) + '</div><div class="hc-norm">' + norm + '</div></div>' +
-        tempHtml + '</div>';
+      var streakInfo = (p.streak.minuten > 0) ?
+        '<div style="font-size:10px;color:' + conf.status_kl + ';font-weight:700;margin-top:2px">⏱ ' + p.streak.minuten + ' min buiten norm</div>' : '';
+      var laatsteHandmatigInfo = '';
+      if (p.laatste_handmatig) {
+        var lh = p.laatste_handmatig;
+        var hu = new Date(lh.gemeten_op);
+        var hStr = String(hu.getHours()).padStart(2,'0') + ':' + String(hu.getMinutes()).padStart(2,'0');
+        laatsteHandmatigInfo = '<div style="font-size:10px;color:#7A8FA6;margin-top:2px">✓ ' + lh.gemeten_temp + '° om ' + hStr + ' (' + esc(lh.door || '?') + ')</div>';
+      }
+      var puntJson = btoa(unescape(encodeURIComponent(JSON.stringify({
+        id: p.id, naam: p.naam, type: p.type, min: p.min_temp, max: p.max_temp,
+        status: p.status, sensor_temp: p.laatste_sensor ? p.laatste_sensor.temperatuur : null,
+        streak_min: p.streak.minuten
+      }))));
+      // 2 knoppen indien sensor ok: accept + handmatig override
+      var knoppen = '';
+      if (p.status === 'ok' && p.heeft_sensor && p.laatste_sensor) {
+        knoppen = '<button data-haccp-accept="' + puntJson + '" style="background:#43A047;color:#fff;border:none;padding:9px 12px;border-radius:6px;font-weight:800;font-size:12px;cursor:pointer;font-family:inherit;flex:1">✓ Sensor accepteren</button>' +
+          '<button data-haccp-handmatig="' + puntJson + '" style="background:#fff;border:1.5px solid #D8E8EF;color:#234756;padding:9px 10px;border-radius:6px;font-weight:700;font-size:11px;cursor:pointer;font-family:inherit">📏</button>';
+      } else {
+        knoppen = '<button data-haccp-handmatig="' + puntJson + '" style="background:' + conf.knop_kl + ';color:#fff;border:none;padding:9px 14px;border-radius:6px;font-weight:800;font-size:12px;cursor:pointer;font-family:inherit;flex:1">' + conf.knop_lbl + '</button>';
+      }
+
+      return '<div style="background:' + conf.bg + ';border:2px solid ' + conf.rand + ';border-radius:10px;padding:10px 12px;margin-bottom:8px">' +
+        '<div style="display:flex;align-items:center;gap:10px">' +
+          '<div style="font-size:24px;flex-shrink:0">' + icon + '</div>' +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">' +
+              '<div style="font-weight:900;font-size:14px;color:#234756">' + esc(p.naam) + '</div>' +
+              '<span style="font-size:9px;font-weight:900;background:' + conf.status_kl + ';color:#fff;padding:2px 6px;border-radius:3px;letter-spacing:.3px">' + conf.status_lbl + '</span>' +
+            '</div>' +
+            '<div style="font-size:11px;color:#7A8FA6;margin-top:2px">Norm: ' + p.min_temp + '° tot ' + p.max_temp + '°</div>' +
+            streakInfo + laatsteHandmatigInfo +
+          '</div>' +
+          sensorBlok +
+        '</div>' +
+        '<div style="display:flex;gap:6px;margin-top:8px">' + knoppen + '</div>' +
+      '</div>';
     }).join('');
   }
+  var sub = (t.ok || 0) + ' ✅ · ' + (t.waarschuwing || 0) + ' 🟧 · ' + (t.alarm || 0) + ' 🚨' + (t.sensor_offline ? ' · ' + t.sensor_offline + ' 📡' : '') + (t.leeg ? ' · ' + t.leeg + ' ⚪' : '');
   return '<div class="alle-tijden-modal">' +
-    '<div class="atm-header"><div><h3>🌡️ HACCP</h3><div class="atm-sub">' + (h.gedaan||0) + ' VAN ' + (h.totaal||0) + ' VANDAAG GEMETEN</div></div>' +
+    '<div class="atm-header"><div><h3>🌡️ HACCP — sensoren</h3><div class="atm-sub">' + sub + '</div></div>' +
     '<button class="atm-close" data-close>Sluiten</button></div>' +
-    '<div class="atm-lijst">' + lijst + '</div></div>';
+    '<div class="atm-lijst" style="padding:0 14px 14px">' + alarmBanner + lijst + '</div></div>';
+}
+
+function renderHaccpNumpad() {
+  var p = state.haccp_meting_punt;
+  if (!p) return '';
+  if (state.haccp_meting_temp === undefined) state.haccp_meting_temp = '';
+  if (state.haccp_meting_opmerking === undefined) state.haccp_meting_opmerking = '';
+  var verplichteOpmerking = (p.status === 'alarm' || p.status === 'waarschuwing');
+  var temp = state.haccp_meting_temp;
+  var tempNum = temp ? parseFloat(temp.replace(',', '.')) : NaN;
+  var binnenNorm = !isNaN(tempNum) && tempNum >= p.min && tempNum <= p.max;
+  var displayKleur = isNaN(tempNum) ? '#B0BEC5' : (binnenNorm ? '#43A047' : '#C62828');
+  var voorvulKnop = (p.sensor_temp != null && state.haccp_meting_temp === '') ?
+    '<button data-haccp-numpad="prefill:' + p.sensor_temp + '" style="background:#E3F2FD;color:#1976D2;border:1.5px solid #1976D2;padding:8px 12px;border-radius:6px;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;margin-bottom:10px;width:100%">📡 Sensor zegt ' + Number(p.sensor_temp).toFixed(1) + '° — vul in</button>' : '';
+
+  function nb(label, action) {
+    return '<button data-haccp-numpad="' + action + '" style="background:#F5F8FA;border:1.5px solid #D8E8EF;color:#234756;padding:0;border-radius:8px;font-weight:800;font-size:24px;cursor:pointer;font-family:inherit;height:60px">' + label + '</button>';
+  }
+  var numpad = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px">' +
+    nb('1','d:1') + nb('2','d:2') + nb('3','d:3') +
+    nb('4','d:4') + nb('5','d:5') + nb('6','d:6') +
+    nb('7','d:7') + nb('8','d:8') + nb('9','d:9') +
+    nb('-','d:-') + nb('0','d:0') + nb(',','d:,') +
+    nb('⌫','back') + '<button data-haccp-numpad="clear" style="background:#FFEBEE;border:1.5px solid #C62828;color:#C62828;padding:0;border-radius:8px;font-weight:800;font-size:14px;cursor:pointer;font-family:inherit;height:60px">CLR</button>' +
+    nb('.','d:.') +
+  '</div>';
+
+  var alarmBanner = (p.status === 'alarm') ?
+    '<div style="background:#C62828;color:#fff;padding:10px;border-radius:6px;margin-bottom:10px;font-size:12px;font-weight:700">🚨 Sensor staat ' + p.streak_min + ' min buiten norm. Meet zelf met een thermometer en bevestig of het echt afwijkt.</div>' : '';
+
+  var opmerkingVeld = '';
+  if (verplichteOpmerking || (!isNaN(tempNum) && !binnenNorm)) {
+    opmerkingVeld = '<div style="margin-top:12px"><label style="font-size:11px;font-weight:700;color:#234756;display:block;margin-bottom:4px">Wat is er aan de hand + correctieve actie? ' + (verplichteOpmerking ? '<span style="color:#C62828">*verplicht</span>' : '') + '</label>' +
+      '<textarea id="haccp-opm" rows="3" style="width:100%;border:1.5px solid #D8E8EF;border-radius:6px;padding:8px;font-family:inherit;font-size:12px;resize:vertical" placeholder="Bijv: deur stond open, koeling aangezet">' + esc(state.haccp_meting_opmerking) + '</textarea></div>';
+  }
+
+  var canSubmit = !isNaN(tempNum) && (!verplichteOpmerking || state.haccp_meting_opmerking.trim().length > 0);
+
+  return '<div class="alle-tijden-modal" style="max-width:420px">' +
+    '<div class="atm-header"><div><h3>📏 ' + esc(p.naam) + '</h3><div class="atm-sub">Norm: ' + p.min + '° tot ' + p.max + '°</div></div>' +
+    '<button class="atm-close" data-haccp-numpad="sluit">Sluiten</button></div>' +
+    '<div style="padding:14px">' +
+      alarmBanner + voorvulKnop +
+      '<div style="background:#F5F8FA;border:2px solid ' + displayKleur + ';border-radius:10px;padding:18px;text-align:center">' +
+        '<div style="font-size:48px;font-weight:900;color:' + displayKleur + ';line-height:1;font-variant-numeric:tabular-nums">' + (temp || '—') + '°</div>' +
+        '<div style="font-size:11px;color:#7A8FA6;margin-top:4px">' + (isNaN(tempNum) ? 'Voer temperatuur in' : (binnenNorm ? '✓ binnen norm' : '⚠ buiten norm')) + '</div>' +
+      '</div>' +
+      numpad +
+      opmerkingVeld +
+      '<button data-haccp-numpad="opslaan" ' + (canSubmit ? '' : 'disabled') + ' style="width:100%;margin-top:14px;background:' + (canSubmit ? '#43A047' : '#D8E8EF') + ';color:' + (canSubmit ? '#fff' : '#7A8FA6') + ';border:none;padding:14px;border-radius:8px;font-weight:900;font-size:15px;cursor:' + (canSubmit ? 'pointer' : 'not-allowed') + ';font-family:inherit">✓ Meting opslaan</button>' +
+    '</div>' +
+  '</div>';
 }
 
 function renderDocumentenModal() {
@@ -2272,6 +2409,11 @@ document.addEventListener('click', function(e) {
       if (t.hasAttribute && t.hasAttribute('data-close')) {
         e.stopPropagation();
         state.modal = null;
+        // HACCP modal sluit → haccp_data wissen zodat het volgende keer vers laadt
+        state.haccp_data = null;
+        state.haccp_meting_punt = null;
+        state.haccp_meting_temp = '';
+        state.haccp_meting_opmerking = '';
         render();
         return;
       }
@@ -2286,6 +2428,11 @@ document.addEventListener('click', function(e) {
         state.tijden_laden = false;
         state.tijden_laatste_load = 0;
         state.tijden_filter = 'alle';
+        // HACCP ook resetten
+        state.haccp_data = null;
+        state.haccp_meting_punt = null;
+        state.haccp_meting_temp = '';
+        state.haccp_meting_opmerking = '';
         laadMedewerkers();
         return;
       }
@@ -3047,7 +3194,7 @@ function renderOpzetRijKolomPopup() {
 
 document.addEventListener('click', function(ev) {
   // Early returns alleen voor performance — handlers zelf doen de check
-  if (!state.opzet_modal && !state.tijden_fullscreen && !state.tijd_naam_popup && !state.tijden_data) return;
+  if (!state.opzet_modal && !state.tijden_fullscreen && !state.tijd_naam_popup && !state.tijden_data && !state.haccp_data && !state.haccp_meting_punt) return;
   var t = ev.target;
   while (t && t !== document) {
     if (t.hasAttribute && t.hasAttribute('data-opzet-bg')) {
@@ -3175,9 +3322,118 @@ document.addEventListener('click', function(ev) {
       render();
       return;
     }
+    // ============== HACCP ==============
+    if (t.hasAttribute && t.hasAttribute('data-haccp-accept')) {
+      ev.stopPropagation();
+      handleHaccpAccept(t.getAttribute('data-haccp-accept'));
+      return;
+    }
+    if (t.hasAttribute && t.hasAttribute('data-haccp-handmatig')) {
+      ev.stopPropagation();
+      openHaccpNumpad(t.getAttribute('data-haccp-handmatig'));
+      return;
+    }
+    if (t.hasAttribute && t.hasAttribute('data-haccp-numpad')) {
+      ev.stopPropagation();
+      handleHaccpNumpadActie(t.getAttribute('data-haccp-numpad'));
+      return;
+    }
     t = t.parentNode;
   }
 }, true);
+
+// ============== HACCP HELPERS ==============
+function _decodeHaccpJson(b64) {
+  try { return JSON.parse(decodeURIComponent(escape(atob(b64)))); } catch(e) { return null; }
+}
+function handleHaccpAccept(b64) {
+  var p = _decodeHaccpJson(b64);
+  if (!p || p.sensor_temp == null) return;
+  api('kiosk-actie', { 
+    actie: 'haccp_meting', 
+    sessie_id: state.sessie_id, 
+    haccp_punt_id: p.id, 
+    gemeten_temp: p.sensor_temp, 
+    opmerking: '', 
+    correctieve_actie: '',
+    bron: 'sensor_accept'
+  }).then(function(res) {
+    if (res.ok) {
+      state.haccp_data = null;
+      laadData();
+      render();
+    } else {
+      alert(res.error || 'Mislukt');
+    }
+  });
+}
+function openHaccpNumpad(b64) {
+  var p = _decodeHaccpJson(b64);
+  if (!p) return;
+  state.haccp_meting_punt = p;
+  state.haccp_meting_temp = '';
+  state.haccp_meting_opmerking = '';
+  render();
+}
+function handleHaccpNumpadActie(actie) {
+  // Lees opmerking-textarea voor render zodat het niet verloren gaat
+  var opmEl = document.getElementById('haccp-opm');
+  if (opmEl) state.haccp_meting_opmerking = opmEl.value;
+
+  if (actie === 'sluit') {
+    state.haccp_meting_punt = null;
+    state.haccp_meting_temp = '';
+    state.haccp_meting_opmerking = '';
+    render();
+    return;
+  }
+  if (actie === 'clear') { state.haccp_meting_temp = ''; render(); return; }
+  if (actie === 'back') { state.haccp_meting_temp = (state.haccp_meting_temp || '').slice(0, -1); render(); return; }
+  if (actie.indexOf('prefill:') === 0) {
+    state.haccp_meting_temp = actie.substring(8);
+    render();
+    return;
+  }
+  if (actie.indexOf('d:') === 0) {
+    var ch = actie.substring(2);
+    state.haccp_meting_temp = (state.haccp_meting_temp || '') + ch;
+    render();
+    return;
+  }
+  if (actie === 'opslaan') {
+    var p = state.haccp_meting_punt;
+    if (!p) return;
+    var temp = parseFloat((state.haccp_meting_temp || '').replace(',', '.'));
+    if (isNaN(temp)) return;
+    var opmerking = state.haccp_meting_opmerking || '';
+    var verplichteOpm = (p.status === 'alarm' || p.status === 'waarschuwing');
+    var buitenNorm = (temp < p.min || temp > p.max);
+    if ((verplichteOpm || buitenNorm) && !opmerking.trim()) {
+      alert('Vul een opmerking + correctieve actie in');
+      return;
+    }
+    api('kiosk-actie', {
+      actie: 'haccp_meting',
+      sessie_id: state.sessie_id,
+      haccp_punt_id: p.id,
+      gemeten_temp: temp,
+      opmerking: opmerking,
+      correctieve_actie: opmerking,
+      bron: 'handmatig'
+    }).then(function(res) {
+      if (res.ok) {
+        state.haccp_meting_punt = null;
+        state.haccp_meting_temp = '';
+        state.haccp_meting_opmerking = '';
+        state.haccp_data = null;
+        laadData();
+        render();
+      } else {
+        alert(res.error || 'Mislukt');
+      }
+    });
+  }
+}
 
 function sluitOpzetModal() {
   state.opzet_modal = null;
