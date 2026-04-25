@@ -939,7 +939,10 @@ function renderTijdbalk(tijdschema, nu, boekingen) {
 
   // Filter: verberg verlopen (>30 min na deadline tijd zelf voor afzonderlijke tijden, of voor Recras: >30 min na deadline)
   // Regel: tijd verdwijnt als (huidige tijd) > (tijd + 30 min)
-  var actief = d.tijden.filter(function(t) { return t.min > nuMin - 30; });
+  if (!state.tijden_toon_verlopen) state.tijden_toon_verlopen = false;
+  var actiefBasis = state.tijden_toon_verlopen ? d.tijden : d.tijden.filter(function(t) { return t.min > nuMin - 30; });
+  var totaalVerlopen = d.tijden.length - d.tijden.filter(function(t){ return t.min > nuMin - 30; }).length;
+  var actief = actiefBasis;
 
   // Filter op kwalificatie
   var f = state.tijden_filter;
@@ -968,13 +971,19 @@ function renderTijdbalk(tijdschema, nu, boekingen) {
     return '<button data-tijd-filter="' + p.id + '" style="background:' + bg + ';color:' + fg + ';border:1.5px solid ' + br + ';padding:6px 10px;border-radius:100px;font-size:11px;font-weight:700;cursor:pointer;margin-right:5px;white-space:nowrap;font-family:inherit">' + p.icon + ' ' + p.lab + (c > 0 ? ' <span style="opacity:.85">' + c + '</span>' : '') + '</button>';
   }).join('');
 
+  var verlopenKnop = totaalVerlopen > 0 ?
+    '<button data-tijd-verl-toggle="1" style="background:' + (state.tijden_toon_verlopen ? '#7A8FA6' : '#fff') + ';color:' + (state.tijden_toon_verlopen ? '#fff' : '#7A8FA6') + ';border:1.5px solid #B0BEC5;padding:5px 10px;border-radius:100px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">' + (state.tijden_toon_verlopen ? '✓ verlopen aan' : '📜 ' + totaalVerlopen + ' verlopen') + '</button>' : '';
+
   if (!gefilterd.length) {
     return '<div class="tijdbalk-v2">' +
       '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px 6px;flex-wrap:wrap;gap:6px">' +
         '<div style="font-size:11px;font-weight:700;color:#234756;letter-spacing:.5px;text-transform:uppercase">⏰ Tijdschema vandaag · ' + nu + '</div>' +
+        verlopenKnop +
       '</div>' +
       '<div style="padding:0 12px 8px;overflow-x:auto;white-space:nowrap;display:flex">' + pillenHtml + '</div>' +
-      '<div style="padding:18px;text-align:center;color:#7A8FA6;font-size:12px">Geen tijden in deze categorie</div>' +
+      '<div style="padding:14px;text-align:center;color:#7A8FA6;font-size:12px">' +
+        (state.tijden_filter !== 'alle' ? 'Geen tijden in deze categorie' : (totaalVerlopen > 0 ? 'Geen actieve tijden meer · ' + totaalVerlopen + ' verlopen' : 'Geen tijden voor vandaag')) +
+      '</div>' +
     '</div>';
   }
 
@@ -1009,7 +1018,10 @@ function renderTijdbalk(tijdschema, nu, boekingen) {
   return '<div class="tijdbalk-v2">' +
     '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px 6px;flex-wrap:wrap;gap:6px">' +
       '<div style="font-size:11px;font-weight:700;color:#234756;letter-spacing:.5px;text-transform:uppercase">⏰ Tijdschema vandaag · ' + nu + '</div>' +
-      '<div style="font-size:10px;color:#7A8FA6">' + gefilterd.length + (state.tijden_open ? '' : ' · top ' + Math.min(topN, gefilterd.length)) + '</div>' +
+      '<div style="display:flex;align-items:center;gap:6px">' +
+        verlopenKnop +
+        '<div style="font-size:10px;color:#7A8FA6">' + gefilterd.length + (state.tijden_open ? '' : ' · top ' + Math.min(topN, gefilterd.length)) + '</div>' +
+      '</div>' +
     '</div>' +
     '<div style="padding:0 12px 8px;overflow-x:auto;white-space:nowrap;display:flex">' + pillenHtml + '</div>' +
     '<div style="padding:0 12px 12px">' + kaartenHtml + meerKnop + '</div>' +
@@ -1143,7 +1155,14 @@ function renderTijdenFullscreen() {
   var rijen = '';
   var nuLijnGetoond = false;
   if (gefilterd.length === 0) {
-    rijen = '<tr><td colspan="9" style="padding:30px;text-align:center;color:#7A8FA6">Geen resultaten</td></tr>';
+    var nVerlopen = alleTijden.filter(function(t){ return t.min <= nuMin - 30; }).length;
+    var verlopenSugg = (!state.tfs_verlopen_aan && nVerlopen > 0) ?
+      '<button data-tfs-verl-aan="1" style="background:#FF9800;color:#fff;border:none;padding:10px 18px;border-radius:8px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;margin-top:14px">📜 Toon ' + nVerlopen + ' verlopen tijden</button>' : '';
+    rijen = '<tr><td colspan="9" style="padding:30px;text-align:center;color:#7A8FA6">' +
+      '<div style="font-size:14px;margin-bottom:6px">' + (alleTijden.length === 0 ? 'Geen tijden voor vandaag' : 'Geen actieve tijden in deze filter') + '</div>' +
+      (alleTijden.length === 0 ? '<div style="font-size:11px;color:#B0BEC5">Geen boekingen op deze dag of nog niet gepubliceerd</div>' : '') +
+      verlopenSugg +
+    '</td></tr>';
   } else {
     gefilterd.forEach(function(t, idx) {
       if (!nuLijnGetoond && t.min >= nuMin && !state.tfs_verlopen_aan) {
@@ -3047,6 +3066,12 @@ document.addEventListener('click', function(ev) {
       render();
       return;
     }
+    if (t.hasAttribute && t.hasAttribute('data-tijd-verl-toggle')) {
+      ev.stopPropagation();
+      state.tijden_toon_verlopen = !state.tijden_toon_verlopen;
+      render();
+      return;
+    }
     if (t.hasAttribute && t.hasAttribute('data-tijd-aft')) {
       ev.stopPropagation();
       tijdAftekenen(t.getAttribute('data-tijd-aft'), true);
@@ -3089,6 +3114,12 @@ document.addEventListener('click', function(ev) {
     if (t.hasAttribute && t.hasAttribute('data-tfs-aft-uit')) {
       ev.stopPropagation();
       tijdAftekenen(t.getAttribute('data-tfs-aft-uit'), false);
+      return;
+    }
+    if (t.hasAttribute && t.hasAttribute('data-tfs-verl-aan')) {
+      ev.stopPropagation();
+      state.tfs_verlopen_aan = true;
+      render();
       return;
     }
     t = t.parentNode;
