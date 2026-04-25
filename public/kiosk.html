@@ -2994,7 +2994,8 @@ function renderOpzetRijKolomPopup() {
 // ============== EVENT HANDLERS ==============
 
 document.addEventListener('click', function(ev) {
-  if (!state.opzet_modal) return;
+  // Early returns alleen voor performance — handlers zelf doen de check
+  if (!state.opzet_modal && !state.tijden_fullscreen && !state.tijd_naam_popup && !state.tijden_data) return;
   var t = ev.target;
   while (t && t !== document) {
     if (t.hasAttribute && t.hasAttribute('data-opzet-bg')) {
