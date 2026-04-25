@@ -19,6 +19,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; back
 .topbar .outlet { font-size: 11px; background: #3FB8C4; padding: 4px 10px; border-radius: 100px; font-weight: 600; white-space: nowrap; }
 .topbar .logout { background: transparent; color: white; border: 0; font-size: 12px; padding: 6px 10px; border-radius: 8px; opacity: 0.7; }
 .tijdbalk { background: white; border-radius: 14px; padding: 12px; margin-bottom: 14px; border: 1px solid #E1E8EB; overflow-x: auto; white-space: nowrap; }
+.tijdbalk-v2 { background: white; border-radius: 14px; margin-bottom: 14px; border: 1px solid #E1E8EB; }
 .tijdbalk::-webkit-scrollbar { display: none; }
 .tijdbalk h3 { font-size: 11px; opacity: 0.6; margin-bottom: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
 .tijdmoment { display: inline-flex; flex-direction: column; margin-right: 8px; padding: 6px 10px; background: #F8FAFC; border-radius: 10px; border: 1px solid #E1E8EB; min-width: 80px; }
@@ -772,7 +773,7 @@ function renderHome() {
   '</div><div class="screen">' +
     renderTijdbalk(d.tijdschema, nu, boekingen) + renderModeSwitch() + renderBoekingen(boekingen, voortgang, d.tijdschema, nu) + renderOnderBlokken(d) +
     '<button class="meld-chef-knop" id="btn-meld-chef">🛠 Meld chef: er moet iets besteld / is op / defect</button>' +
-  '</div>' + (state.modal ? renderModal() : '') + (state.onboarding_stap ? renderOnboarding() : '') + (state.wekker_toast ? renderWekkerToast() : '') + (state.allergenen_open ? renderAllergenenModal() : '');
+  '</div>' + (state.modal ? renderModal() : '') + (state.onboarding_stap ? renderOnboarding() : '') + (state.wekker_toast ? renderWekkerToast() : '') + (state.allergenen_open ? renderAllergenenModal() : '') + (state.tijd_naam_popup ? renderTijdNaamPopup() : '');
 }
 
 // NIEUW: Wekker-toast wanneer een wekker afgaat
@@ -899,26 +900,265 @@ if (!window._wekkerInterval) {
 }
 
 function renderTijdbalk(tijdschema, nu, boekingen) {
-  var lijst = (tijdschema && tijdschema.length) ? tijdschema : (boekingen || []).map(function(b){
-    var tijd = b.deadlineTijd || (b.deadline||'').slice(11,16) || '?';
-    var hh = parseInt((tijd||'00:00').slice(0,2)) || 0;
-    var mm = parseInt((tijd||'00:00').slice(3,5)) || 0;
-    return { tijd: tijd, naam: (b.naam||'').slice(0,14), minVal: hh*60 + mm };
-  });
-  if (!lijst.length) return '<div class="tijdbalk" data-onder="alle-tijden"><h3>Tijdschema <span class="hint">TIK →</span></h3><div style="font-size:12px;opacity:0.5;padding:6px 0;">Geen tijden voor vandaag</div></div>';
+  // Init state als nodig + start polling
+  if (!state.tijden_data) state.tijden_data = null;
+  if (!state.tijden_filter) state.tijden_filter = 'alle';
+  if (!state.tijden_open) state.tijden_open = false;
+  if (!state.tijden_laden) state.tijden_laden = false;
+  if (!state.tijden_laatste_load) state.tijden_laatste_load = 0;
+  // Trigger eerste load + interval
+  var nuMs = Date.now();
+  if (!state.tijden_data && !state.tijden_laden) { laadKioskTijden(); }
+  if (nuMs - state.tijden_laatste_load > 60000 && !state.tijden_laden) { laadKioskTijden(); }
+
+  var d = state.tijden_data;
+  if (!d) return '<div class="tijdbalk-v2"><div style="padding:14px;text-align:center;color:#7A8FA6;font-size:12px">⏳ Tijden laden…</div></div>';
+  if (!d.tijden || !d.tijden.length) return '<div class="tijdbalk-v2"><div style="padding:14px;text-align:center;color:#7A8FA6;font-size:12px">Geen tijden voor vandaag</div></div>';
+
+  // Huidig tijdstip in minuten
   var nuMin = parseInt(nu.slice(0,2)) * 60 + parseInt(nu.slice(3,5));
-  lijst = lijst.filter(function(t){ return (t.minVal||0) >= nuMin - 15; });
-  if (!lijst.length) return '<div class="tijdbalk" data-onder="alle-tijden"><h3>Tijdschema <span class="hint">TIK →</span></h3><div style="font-size:12px;opacity:0.5;padding:6px 0;">Nog geen tijden actueel</div></div>';
-  var items = lijst.map(function(t) {
-    var mv = t.minVal || 0;
-    var verlopen = mv < nuMin;
-    var huidig = !verlopen && Math.abs(mv - nuMin) < 30;
-    var wAan = wekkerAan(t.tijd, t.naam||'');
-    var belKleur = wAan ? '#FF9800' : '#B0BEC5';
-    var belIcoon = '<span data-wekker-tijd="' + esc(t.tijd) + '" data-wekker-naam="' + esc(t.naam||'') + '" style="cursor:pointer;font-size:14px;color:' + belKleur + ';margin-left:4px;" title="' + (wAan ? 'Wekker aan' : 'Zet wekker') + '">' + (wAan ? '🔔' : '🔕') + '</span>';
-    return '<div class="tijdmoment ' + (verlopen ? 'verlopen' : '') + ' ' + (huidig ? 'huidig' : '') + '"><div class="tijd">' + esc(t.tijd) + belIcoon + '</div><div class="naam">' + esc(t.naam||'') + '</div></div>';
+
+  // Filter: verberg verlopen (>30 min na deadline tijd zelf voor afzonderlijke tijden, of voor Recras: >30 min na deadline)
+  // Regel: tijd verdwijnt als (huidige tijd) > (tijd + 30 min)
+  var actief = d.tijden.filter(function(t) { return t.min > nuMin - 30; });
+
+  // Filter op kwalificatie
+  var f = state.tijden_filter;
+  var gefilterd = (f === 'alle') ? actief : actief.filter(function(t) {
+    if (f === 'deadline') return t.is_recras;
+    return t.kwal === f;
+  });
+
+  // Filter pillen — kleurcodering matcht admin
+  var pills = [
+    { id: 'alle', lab: 'Alles', kl: '#1976D2', icon: '📋' },
+    { id: 'bbq', lab: 'BBQ', kl: '#5D4037', icon: '🔥' },
+    { id: 'oven', lab: 'Oven', kl: '#FF6D00', icon: '🍳' },
+    { id: 'frituur', lab: 'Frituur', kl: '#E65100', icon: '🍟' },
+    { id: 'deadline', lab: 'Deadline', kl: '#C62828', icon: '🚨' }
+  ];
+  var counts = {};
+  actief.forEach(function(t){ counts[t.is_recras ? 'deadline' : t.kwal] = (counts[t.is_recras ? 'deadline' : t.kwal] || 0) + 1; });
+  counts.alle = actief.length;
+  var pillenHtml = pills.map(function(p){
+    var c = counts[p.id] || 0;
+    var actiefP = (state.tijden_filter === p.id);
+    var bg = actiefP ? p.kl : '#fff';
+    var fg = actiefP ? '#fff' : '#234756';
+    var br = actiefP ? p.kl : '#D8E8EF';
+    return '<button data-tijd-filter="' + p.id + '" style="background:' + bg + ';color:' + fg + ';border:1.5px solid ' + br + ';padding:6px 10px;border-radius:100px;font-size:11px;font-weight:700;cursor:pointer;margin-right:5px;white-space:nowrap;font-family:inherit">' + p.icon + ' ' + p.lab + (c > 0 ? ' <span style="opacity:.85">' + c + '</span>' : '') + '</button>';
   }).join('');
-  return '<div class="tijdbalk" data-onder="alle-tijden"><h3>Tijdschema vandaag <span class="hint">TIK → ALLE</span></h3>' + items + '</div>';
+
+  if (!gefilterd.length) {
+    return '<div class="tijdbalk-v2">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px 6px;flex-wrap:wrap;gap:6px">' +
+        '<div style="font-size:11px;font-weight:700;color:#234756;letter-spacing:.5px;text-transform:uppercase">⏰ Tijdschema vandaag · ' + nu + '</div>' +
+      '</div>' +
+      '<div style="padding:0 12px 8px;overflow-x:auto;white-space:nowrap;display:flex">' + pillenHtml + '</div>' +
+      '<div style="padding:18px;text-align:center;color:#7A8FA6;font-size:12px">Geen tijden in deze categorie</div>' +
+    '</div>';
+  }
+
+  // Top 5 vs alles
+  var topN = 5;
+  var toonLijst = state.tijden_open ? gefilterd : gefilterd.slice(0, topN);
+  var verborgen = gefilterd.length - toonLijst.length;
+
+  // Render kaarten + NU-lijn
+  var nuLijnGetoond = false;
+  var kaartenHtml = '';
+  toonLijst.forEach(function(t, idx) {
+    // NU-lijn: voor de eerste tijd >= nuMin
+    if (!nuLijnGetoond && t.min >= nuMin) {
+      kaartenHtml += '<div style="height:1px;background:linear-gradient(90deg,#E8202B 0%,#E8202B 70%,transparent 100%);margin:6px 0;position:relative"><span style="position:absolute;left:0;top:-9px;background:#E8202B;color:#fff;font-size:10px;font-weight:900;padding:2px 8px;border-radius:100px">🔴 NU ' + esc(nu) + '</span></div>';
+      nuLijnGetoond = true;
+    }
+    kaartenHtml += renderTijdKaart(t, nuMin);
+  });
+  // Als alle tijden in toekomst maar geen NU getoond: aan begin tonen
+  if (!nuLijnGetoond && toonLijst.length && toonLijst[0].min > nuMin) {
+    kaartenHtml = '<div style="height:1px;background:linear-gradient(90deg,#E8202B 0%,#E8202B 70%,transparent 100%);margin:6px 0;position:relative"><span style="position:absolute;left:0;top:-9px;background:#E8202B;color:#fff;font-size:10px;font-weight:900;padding:2px 8px;border-radius:100px">🔴 NU ' + esc(nu) + '</span></div>' + kaartenHtml;
+  }
+
+  var meerKnop = '';
+  if (verborgen > 0) {
+    meerKnop = '<button data-tijd-open="1" style="width:100%;background:#fff;border:1.5px dashed #3FB8C4;color:#1976D2;padding:10px;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;margin-top:6px;font-family:inherit">▼ Toon ' + verborgen + ' meer tijden</button>';
+  } else if (state.tijden_open && gefilterd.length > topN) {
+    meerKnop = '<button data-tijd-open="0" style="width:100%;background:#fff;border:1.5px solid #D8E8EF;color:#234756;padding:8px;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;margin-top:6px;font-family:inherit">▲ Inklappen (eerstvolgende ' + topN + ')</button>';
+  }
+
+  return '<div class="tijdbalk-v2">' +
+    '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px 6px;flex-wrap:wrap;gap:6px">' +
+      '<div style="font-size:11px;font-weight:700;color:#234756;letter-spacing:.5px;text-transform:uppercase">⏰ Tijdschema vandaag · ' + nu + '</div>' +
+      '<div style="font-size:10px;color:#7A8FA6">' + gefilterd.length + (state.tijden_open ? '' : ' · top ' + Math.min(topN, gefilterd.length)) + '</div>' +
+    '</div>' +
+    '<div style="padding:0 12px 8px;overflow-x:auto;white-space:nowrap;display:flex">' + pillenHtml + '</div>' +
+    '<div style="padding:0 12px 12px">' + kaartenHtml + meerKnop + '</div>' +
+  '</div>';
+}
+
+function renderTijdKaart(t, nuMin) {
+  var kwalKleur = { bbq: '#5D4037', oven: '#FF6D00', frituur: '#E65100', deadline: '#C62828', algemeen: '#607D8B' };
+  var kwalIcoon = { bbq: '🔥', oven: '🍳', frituur: '🍟', deadline: '🚨', algemeen: '⏱' };
+  var kwalLabel = { bbq: 'BBQ', oven: 'OVEN', frituur: 'FRITUUR', deadline: 'DEADLINE', algemeen: '' };
+  var kw = t.is_recras ? 'deadline' : (t.kwal || 'algemeen');
+  var kl = kwalKleur[kw] || '#607D8B';
+  var ic = kwalIcoon[kw] || '⏱';
+  var lab = kwalLabel[kw] || '';
+
+  var diffMin = t.min - nuMin;
+  var diffStr = '';
+  if (diffMin === 0) diffStr = 'NU';
+  else if (diffMin > 0 && diffMin < 60) diffStr = 'over ' + diffMin + ' min';
+  else if (diffMin >= 60) { var u = Math.floor(diffMin/60); var m = diffMin % 60; diffStr = 'over ' + u + 'u' + (m > 0 ? ' ' + m + 'm' : ''); }
+  else diffStr = 'verlopen';
+  var huidig = (Math.abs(diffMin) < 30 && diffMin >= -30 && diffMin < 30);
+
+  var bg = t.afgetekend ? '#43A047' : (huidig ? '#FFF8E1' : '#fff');
+  var fg = t.afgetekend ? '#fff' : '#234756';
+  var border = t.afgetekend ? '#43A047' : (huidig ? '#FFC107' : '#D8E8EF');
+  var leftBar = '<div style="width:5px;background:' + (t.afgetekend ? '#fff' : kl) + ';border-radius:8px 0 0 8px;flex-shrink:0"></div>';
+
+  var wAan = wekkerAan(t.tijd, t.activiteit);
+  var belKleur = wAan ? '#FF9800' : (t.afgetekend ? 'rgba(255,255,255,.7)' : '#B0BEC5');
+  var belIcoon = '<span data-wekker-tijd="' + esc(t.tijd) + '" data-wekker-naam="' + esc(t.activiteit) + '" style="cursor:pointer;font-size:18px;color:' + belKleur + ';margin-left:6px;flex-shrink:0;padding:4px" title="' + (wAan ? 'Wekker aan' : 'Zet wekker') + '">' + (wAan ? '🔔' : '🔕') + '</span>';
+
+  var aftBtn;
+  if (t.afgetekend) {
+    aftBtn = '<button data-tijd-aft-uit="' + esc(t.aft_key) + '" style="background:rgba(255,255,255,.25);color:#fff;border:1.5px solid rgba(255,255,255,.4);padding:6px 12px;border-radius:6px;font-weight:700;font-size:11px;cursor:pointer;font-family:inherit;flex-shrink:0">✓ Afgetekend</button>';
+  } else {
+    aftBtn = '<button data-tijd-aft="' + esc(t.aft_key) + '" style="background:#43A047;color:#fff;border:none;padding:8px 14px;border-radius:6px;font-weight:800;font-size:12px;cursor:pointer;font-family:inherit;flex-shrink:0;box-shadow:0 1px 3px rgba(67,160,71,.3)">✓ Aftekenen</button>';
+  }
+
+  var labelChip = lab ? '<span style="background:' + (t.afgetekend ? 'rgba(255,255,255,.22)' : kl) + ';color:#fff;font-size:9px;font-weight:900;padding:2px 6px;border-radius:3px;letter-spacing:.5px;margin-right:6px">' + lab + '</span>' : '';
+
+  var aftekendoorRegel = t.afgetekend && t.afgetekend_door ? '<div style="font-size:10px;opacity:.85;margin-top:3px">✓ ' + esc(t.afgetekend_door) + '</div>' : '';
+
+  return '<div style="display:flex;background:' + bg + ';color:' + fg + ';border:1.5px solid ' + border + ';border-radius:8px;margin-bottom:6px;overflow:hidden;align-items:stretch">' +
+    leftBar +
+    '<div style="flex:1;padding:8px 10px;min-width:0">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">' +
+        '<div style="display:flex;align-items:baseline;gap:6px;flex-wrap:wrap">' +
+          '<div style="font-size:18px;font-weight:900;letter-spacing:-.5px">' + esc(t.tijd) + '</div>' +
+          '<div style="font-size:10px;font-weight:700;opacity:' + (t.afgetekend ? '.75' : '.6') + ';letter-spacing:.3px">' + esc(diffStr) + '</div>' +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:4px">' + belIcoon + aftBtn + '</div>' +
+      '</div>' +
+      '<div style="margin-top:5px">' +
+        labelChip +
+        '<span style="font-size:13px;font-weight:700">' + ic + ' ' + esc(t.activiteit) + '</span>' +
+      '</div>' +
+      '<div style="margin-top:4px;font-size:11px;opacity:.85;line-height:1.4">' +
+        '<b>' + esc(t.boeking_naam) + '</b> · ' + t.aantal + 'p' +
+        (t.ps_naam ? ' · ' + esc(t.ps_naam) : '') +
+      '</div>' +
+      '<div style="font-size:10px;opacity:.7;margin-top:2px">' +
+        (t.menu_naam ? esc(t.menu_naam) + ' · ' : '') +
+        (t.locatie ? '📍 ' + esc(t.locatie) : '') +
+      '</div>' +
+      aftekendoorRegel +
+    '</div>' +
+  '</div>';
+}
+
+function laadKioskTijden() {
+  if (!state.outlet_code) return;
+  var datum = (new Date()).toISOString().split('T')[0];
+  state.tijden_laden = true;
+  state.tijden_laatste_load = Date.now();
+  api('kiosk-tijden', { outlet_code: state.outlet_code, datum: datum }).then(function(r) {
+    state.tijden_laden = false;
+    if (r && r.ok) { state.tijden_data = r; render(); }
+  }).catch(function(e) { state.tijden_laden = false; console.warn('kiosk-tijden:', e); });
+}
+
+function renderTijdNaamPopup() {
+  var huidig = '';
+  if (state.tijden_medewerker_naam) {
+    huidig = '<div style="text-align:center;margin-bottom:18px">' +
+      '<div style="font-size:14px;color:#234756">Ben jij nog steeds:</div>' +
+      '<div style="font-size:24px;font-weight:900;color:#3FB8C4;margin-top:4px">' + esc(state.tijden_medewerker_naam) + '?</div>' +
+      '<button data-tijd-naam="' + esc(state.tijden_medewerker_naam) + '" style="background:#43A047;color:#fff;border:none;border-radius:10px;padding:14px 30px;font-weight:900;font-size:15px;cursor:pointer;margin-top:14px">✓ Ja, ga door</button>' +
+    '</div><div style="text-align:center;font-size:12px;color:#7A8FA6;margin:14px 0">— of —</div>';
+  }
+  var lijst = (state.medewerkers || []).map(function(mw) {
+    var initial = esc((mw.naam || '?').charAt(0).toUpperCase());
+    return '<button data-tijd-naam="' + esc(mw.naam) + '" style="background:#fff;border:2px solid #D8E8EF;border-radius:10px;padding:14px;cursor:pointer;font-family:inherit;text-align:left;display:flex;align-items:center;gap:12px">' +
+      '<div style="width:36px;height:36px;border-radius:50%;background:#3FB8C4;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900">' + initial + '</div>' +
+      '<div><div style="font-weight:900;color:#234756">' + esc(mw.naam) + '</div><div style="font-size:11px;color:#7A8FA6">' + esc(mw.rol || 'kok') + '</div></div>' +
+    '</button>';
+  }).join('');
+  return '<div data-tijd-naam-bg="1" style="position:fixed;inset:0;background:rgba(0,40,65,.6);z-index:1100;display:flex;align-items:center;justify-content:center;padding:18px">' +
+    '<div style="background:#fff;border-radius:14px;max-width:520px;width:100%;max-height:88vh;overflow:auto;padding:22px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">' +
+        '<div style="font-size:18px;font-weight:900;color:#234756">⏰ Tijd aftekenen</div>' +
+        '<button data-tijd-naam-sluit="1" style="background:#E8202B;color:#fff;border:none;border-radius:50%;width:36px;height:36px;font-size:18px;font-weight:900;cursor:pointer">✕</button>' +
+      '</div>' +
+      huidig +
+      '<div style="font-size:13px;color:#234756;font-weight:700;margin-bottom:8px">Kies wie je bent:</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px">' + lijst + '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+function tijdAftekenen(aftKey, zet) {
+  if (!state.tijden_data) return;
+  var t = state.tijden_data.tijden.find(function(x) { return x.aft_key === aftKey; });
+  if (!t) return;
+  // Naam ophalen via dezelfde flow als opzet
+  if (zet) {
+    var nu = Date.now();
+    var laatste = state.opzet_modal && state.opzet_modal.last_actie_op || 0;
+    var grace = 5 * 60 * 1000;
+    if (!state.tijden_medewerker_naam || (nu - laatste > grace)) {
+      // Open naam-popup gedeeld met opzet
+      state.tijden_aft_pending = aftKey;
+      openTijdNaamPopup();
+      return;
+    }
+    doTijdAftekenen(aftKey, true, state.tijden_medewerker_naam);
+  } else {
+    doTijdAftekenen(aftKey, false, '');
+  }
+}
+
+function doTijdAftekenen(aftKey, zet, naam) {
+  var t = state.tijden_data.tijden.find(function(x) { return x.aft_key === aftKey; });
+  if (!t) return;
+  var datum = state.tijden_data.datum;
+  api('kiosk-tijden-aftekening', {
+    actie: zet ? 'set' : 'unset',
+    datum: datum, outlet_code: state.outlet_code,
+    boeking_id: t.boeking_id, ps_id: t.ps_id || null,
+    tijd_str: t.tijd, activiteit: t.activiteit, is_recras: !!t.is_recras,
+    medewerker_naam: naam || ''
+  }).then(function(r) {
+    if (r && r.ok) {
+      // Optimistic update
+      t.afgetekend = zet;
+      t.afgetekend_door = zet ? naam : null;
+      render();
+      // Hard refresh na 500ms
+      setTimeout(laadKioskTijden, 500);
+    } else {
+      alert('Fout: ' + (r && r.error || 'onbekend'));
+    }
+  });
+}
+
+function openTijdNaamPopup() {
+  state.tijd_naam_popup = true;
+  render();
+}
+
+function bevestigTijdNaam(naam) {
+  state.tijden_medewerker_naam = naam;
+  if (state.opzet_modal) state.opzet_modal.last_actie_op = Date.now();
+  state.tijd_naam_popup = false;
+  var pending = state.tijden_aft_pending;
+  state.tijden_aft_pending = null;
+  if (pending) doTijdAftekenen(pending, true, naam);
+  else render();
 }
 
 function renderModeSwitch() {
@@ -2596,6 +2836,41 @@ document.addEventListener('click', function(ev) {
         if (m2.ps_id) laadOpzetData(m2.ps_id, m2.ps_naam);
         else laadOpzetOverzicht();
       }
+      return;
+    }
+    if (t.hasAttribute && t.hasAttribute('data-tijd-filter')) {
+      ev.stopPropagation();
+      state.tijden_filter = t.getAttribute('data-tijd-filter');
+      state.tijden_open = false;
+      render();
+      return;
+    }
+    if (t.hasAttribute && t.hasAttribute('data-tijd-open')) {
+      ev.stopPropagation();
+      state.tijden_open = (t.getAttribute('data-tijd-open') === '1');
+      render();
+      return;
+    }
+    if (t.hasAttribute && t.hasAttribute('data-tijd-aft')) {
+      ev.stopPropagation();
+      tijdAftekenen(t.getAttribute('data-tijd-aft'), true);
+      return;
+    }
+    if (t.hasAttribute && t.hasAttribute('data-tijd-aft-uit')) {
+      ev.stopPropagation();
+      tijdAftekenen(t.getAttribute('data-tijd-aft-uit'), false);
+      return;
+    }
+    if (t.hasAttribute && t.hasAttribute('data-tijd-naam')) {
+      ev.stopPropagation();
+      bevestigTijdNaam(t.getAttribute('data-tijd-naam'));
+      return;
+    }
+    if (t.hasAttribute && t.hasAttribute('data-tijd-naam-sluit')) {
+      ev.stopPropagation();
+      state.tijd_naam_popup = false;
+      state.tijden_aft_pending = null;
+      render();
       return;
     }
     t = t.parentNode;
