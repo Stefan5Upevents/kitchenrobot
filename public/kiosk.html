@@ -1106,10 +1106,7 @@ function renderOnderBlokken(d) {
   var alarm = sm.dwingend > 0;
   var hac = d.haccp || {};
   return '<div class="onder-grid">' +
-    '<div class="onder-blok" data-onder="dag1"><div class="icoon">📅</div><div class="label">Morgen</div><div class="stat">' + datumNL(datumIsoRel(1)).split(' ').slice(0,2).join(' ') + '</div></div>' +
-    '<div class="onder-blok" data-onder="dag2"><div class="icoon">📅</div><div class="label">Overmorgen</div><div class="stat">' + datumNL(datumIsoRel(2)).split(' ').slice(0,2).join(' ') + '</div></div>' +
-    '<div class="onder-blok" data-onder="dag3"><div class="icoon">📅</div><div class="label">+3 Dagen</div><div class="stat">' + datumNL(datumIsoRel(3)).split(' ').slice(0,2).join(' ') + '</div></div>' +
-    '<div class="onder-blok" data-onder="week"><div class="icoon">🗓️</div><div class="label">Verder week</div><div class="stat">Plan vooruit</div></div>' +
+    '<div class="onder-blok onder-opzet" data-onder="opzet"><div class="icoon">📋</div><div class="label">Opzet</div><div class="stat">Buffetformulier &middot; aftekenen</div></div>' +
     '<div class="onder-blok ' + (alarm ? 'alarm' : '') + '" data-onder="schoonmaak"><div class="icoon">🧽</div><div class="label">Schoonmaak</div><div class="stat">' + (sm.dwingend || 0) + ' rood &middot; ' + (sm.waarschuwing || 0) + ' geel</div></div>' +
     '<div class="onder-blok" data-onder="haccp"><div class="icoon">🌡️</div><div class="label">HACCP</div><div class="stat">' + (hac.gedaan || 0) + '/' + (hac.totaal || 0) + ' gedaan</div></div>' +
     '<div class="onder-blok" data-onder="documenten"><div class="icoon">📄</div><div class="label">Documenten</div><div class="stat">Buffet &middot; BBQ-PDF</div></div>' +
@@ -1130,6 +1127,7 @@ function renderModal() {
   if (state.modal && state.modal.type === 'doc-inhoud') return renderDocInhoudModal();
   if (state.modal && state.modal.type === 'meldingen') return renderMeldingenLijstModal();
   if (state.modal && state.modal.type === 'buffet') return renderBbqBuffetModalV2();
+  if (state.modal && state.modal.type === 'opzet') return renderOpzetModal();
   return '';
 }
 
@@ -1943,6 +1941,7 @@ document.addEventListener('click', function(e) {
         if (soort === 'haccp') { state.modal = { type: 'haccp' }; render(); return; }
         if (soort === 'documenten') { state.modal = { type: 'documenten' }; render(); return; }
         if (soort === 'meldingen') { state.modal = { type: 'meldingen' }; render(); return; }
+        if (soort === 'opzet') { openOpzetModal(); return; }
         if (soort === 'buffet') {
           state.modal = { type: 'buffet', laden: true };
           render();
@@ -1985,6 +1984,679 @@ document.addEventListener('click', function(e) {
     console.error('global click handler error', globalErr);
   }
 }, true); // true = capture phase, runs before .onclick
+
+// ============================================================
+// OPZET MODAL — kiosk-opzet-data + kiosk-opzet-aftekening
+// ============================================================
+
+state.opzet_modal = null;
+
+function openOpzetModal() {
+  state.opzet_modal = {
+    stap: 'tijd',
+    datums: [todayIso()],
+    periode_label: 'Vandaag',
+    periode_keuze: 'vandaag',
+    eigen_van: '',
+    eigen_tot: '',
+    overzicht: null,
+    overzicht_laden: false,
+    ps_id: null,
+    ps_naam: '',
+    data: null,
+    data_laden: false,
+    fout: '',
+    medewerker_naam: state.medewerker_naam || '',
+    medewerker_id: null,
+    last_actie_op: Date.now(),
+    bevestig_naam_pending: null,
+    rij_kolom_popup: null,
+    gemelde_wijzigingen: {}
+  };
+  state.modal = { type: 'opzet' };
+  laadOpzetOverzicht();
+}
+
+function todayIso() {
+  var d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function offsetIso(n) {
+  var d = new Date();
+  d.setDate(d.getDate() + n);
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function toIso(d) {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function rangeIso(van, tot) {
+  var lijst = [];
+  var d = new Date(van + 'T00:00:00');
+  var e = new Date(tot + 'T00:00:00');
+  while (d <= e) {
+    lijst.push(toIso(d));
+    d.setDate(d.getDate() + 1);
+  }
+  return lijst;
+}
+
+function dezeWeekIso() {
+  var d = new Date();
+  var dow = d.getDay() || 7;
+  var ma = new Date(d); ma.setDate(d.getDate() - (dow - 1));
+  var zo = new Date(ma); zo.setDate(ma.getDate() + 6);
+  return rangeIso(toIso(ma), toIso(zo));
+}
+
+function volgendeWeekIso() {
+  var d = new Date(); d.setDate(d.getDate() + 7);
+  var dow = d.getDay() || 7;
+  var ma = new Date(d); ma.setDate(d.getDate() - (dow - 1));
+  var zo = new Date(ma); zo.setDate(ma.getDate() + 6);
+  return rangeIso(toIso(ma), toIso(zo));
+}
+
+function fmtDatumKort(iso) {
+  if (!iso) return '';
+  var p = iso.split('-');
+  if (p.length !== 3) return iso;
+  var d = new Date(parseInt(p[0]), parseInt(p[1])-1, parseInt(p[2]));
+  var dn = ['zo','ma','di','wo','do','vr','za'];
+  var mn = ['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
+  return dn[d.getDay()] + ' ' + parseInt(p[2]) + ' ' + mn[parseInt(p[1])-1];
+}
+
+function laadOpzetOverzicht() {
+  if (!state.opzet_modal) return;
+  state.opzet_modal.overzicht_laden = true;
+  state.opzet_modal.fout = '';
+  render();
+  api('kiosk-opzet-data', { outlet_code: state.outlet_code, datums: state.opzet_modal.datums }).then(function(res) {
+    if (!state.opzet_modal) return;
+    state.opzet_modal.overzicht_laden = false;
+    if (!res || !res.ok) {
+      state.opzet_modal.fout = (res && res.error) || 'Onbekende fout';
+    } else {
+      state.opzet_modal.overzicht = res;
+    }
+    render();
+  }).catch(function(e) {
+    if (!state.opzet_modal) return;
+    state.opzet_modal.overzicht_laden = false;
+    state.opzet_modal.fout = String(e);
+    render();
+  });
+}
+
+function laadOpzetData(ps_id, ps_naam) {
+  if (!state.opzet_modal) return;
+  state.opzet_modal.ps_id = ps_id;
+  state.opzet_modal.ps_naam = ps_naam || '';
+  state.opzet_modal.data_laden = true;
+  state.opzet_modal.fout = '';
+  state.opzet_modal.stap = 'tabel';
+  state.opzet_modal.gemelde_wijzigingen = {};
+  render();
+  api('kiosk-opzet-data', { outlet_code: state.outlet_code, datums: state.opzet_modal.datums, ps_id: ps_id }).then(function(res) {
+    if (!state.opzet_modal) return;
+    state.opzet_modal.data_laden = false;
+    if (!res || !res.ok) {
+      state.opzet_modal.fout = (res && res.error) || 'Onbekende fout';
+    } else {
+      state.opzet_modal.data = res;
+      checkWijzigingen();
+    }
+    render();
+  }).catch(function(e) {
+    if (!state.opzet_modal) return;
+    state.opzet_modal.data_laden = false;
+    state.opzet_modal.fout = String(e);
+    render();
+  });
+}
+
+function herlaadOpzetTabel() {
+  if (!state.opzet_modal || !state.opzet_modal.ps_id) return;
+  laadOpzetData(state.opzet_modal.ps_id, state.opzet_modal.ps_naam);
+}
+
+function checkWijzigingen() {
+  var m = state.opzet_modal;
+  if (!m || !m.data) return;
+  var aft = m.data.aftekeningen || [];
+  var cellen = m.data.cellen || {};
+  var gerechtenById = {};
+  (m.data.gerechten || []).forEach(function(g) { gerechtenById[g.id] = g; });
+  var boekingenById = {};
+  (m.data.boekingen || []).forEach(function(b) { boekingenById[b.id] = b; });
+  aft.forEach(function(a) {
+    var k = a.boeking_id + '::' + a.gerecht_id;
+    var huidig = cellen[k];
+    var oud = a.waarde_bij_aftekenen != null ? parseFloat(a.waarde_bij_aftekenen) : null;
+    if (oud == null || huidig == null) return;
+    if (Math.abs(huidig - oud) < 0.05) return;
+    var sleutel = a.datum + '|' + a.boeking_id + '|' + a.gerecht_id + '|' + oud + '|' + huidig;
+    if (m.gemelde_wijzigingen[sleutel]) return;
+    m.gemelde_wijzigingen[sleutel] = true;
+    var g = gerechtenById[a.gerecht_id];
+    var b = boekingenById[a.boeking_id];
+    api('kiosk-opzet-aftekening', {
+      actie: 'wijziging_melding',
+      datum: a.datum,
+      ps_id: a.ps_id,
+      outlet_code: state.outlet_code,
+      medewerker_naam: m.medewerker_naam || 'Kiosk',
+      melding: {
+        boeking_id: a.boeking_id,
+        boeking_naam: b ? b.naam : a.boeking_id,
+        gerecht_naam: g ? g.naam : a.gerecht_id,
+        oud: oud,
+        nieuw: huidig,
+        afgetekend_door: a.medewerker_naam
+      }
+    }).catch(function(){});
+  });
+}
+
+function isAfgetekend(boeking_id, gerecht_id) {
+  var m = state.opzet_modal;
+  if (!m || !m.data) return null;
+  var lst = m.data.aftekeningen || [];
+  for (var i = 0; i < lst.length; i++) {
+    if (lst[i].boeking_id === boeking_id && lst[i].gerecht_id === gerecht_id) return lst[i];
+  }
+  return null;
+}
+
+function bevestigNaamIndienNodig(daarnaCb) {
+  var m = state.opzet_modal;
+  if (!m) { daarnaCb(); return; }
+  var nu = Date.now();
+  var idleMin = 5 * 60 * 1000;
+  if (!m.medewerker_naam || (nu - (m.last_actie_op || 0)) > idleMin) {
+    m.bevestig_naam_pending = daarnaCb;
+    if (state.medewerkers && state.medewerkers.length) {
+      render();
+      return;
+    }
+    laadMedewerkers().then(function(){ render(); });
+    return;
+  }
+  m.last_actie_op = nu;
+  daarnaCb();
+}
+
+function boekingenDatumOp(boeking_id) {
+  var m = state.opzet_modal;
+  if (!m || !m.data) return null;
+  var lst = m.data.boekingen || [];
+  for (var i = 0; i < lst.length; i++) {
+    if (lst[i].id === boeking_id) return lst[i].datum;
+  }
+  return null;
+}
+
+function doAftekenenCel(boeking_id, gerecht_id, waarde, type) {
+  bevestigNaamIndienNodig(function(){
+    var m = state.opzet_modal; if (!m) return;
+    api('kiosk-opzet-aftekening', {
+      actie: 'set',
+      datum: boekingenDatumOp(boeking_id) || m.datums[0],
+      ps_id: m.ps_id,
+      outlet_code: state.outlet_code,
+      medewerker_naam: m.medewerker_naam,
+      type: type || 'cel',
+      cellen: [{ boeking_id: boeking_id, gerecht_id: gerecht_id, waarde: waarde }]
+    }).then(function(){ herlaadOpzetTabel(); });
+  });
+}
+
+function doAftekenenMeerdere(cellen, type) {
+  bevestigNaamIndienNodig(function(){
+    var m = state.opzet_modal; if (!m) return;
+    var perDatum = {};
+    cellen.forEach(function(c) {
+      var d = c.datum || (boekingenDatumOp(c.boeking_id) || m.datums[0]);
+      if (!perDatum[d]) perDatum[d] = [];
+      perDatum[d].push(c);
+    });
+    var keys = Object.keys(perDatum);
+    var klaar = 0;
+    keys.forEach(function(d) {
+      api('kiosk-opzet-aftekening', {
+        actie: 'set', datum: d, ps_id: m.ps_id, outlet_code: state.outlet_code,
+        medewerker_naam: m.medewerker_naam, type: type || 'cel',
+        cellen: perDatum[d]
+      }).then(function(){ klaar++; if (klaar === keys.length) herlaadOpzetTabel(); });
+    });
+  });
+}
+
+function doOntAftekenen(boeking_id, gerecht_id) {
+  var m = state.opzet_modal; if (!m) return;
+  api('kiosk-opzet-aftekening', {
+    actie: 'unset',
+    datum: boekingenDatumOp(boeking_id) || m.datums[0],
+    ps_id: m.ps_id,
+    cellen: [{ boeking_id: boeking_id, gerecht_id: gerecht_id }]
+  }).then(function(){ herlaadOpzetTabel(); });
+}
+
+function doOntAftekenenMeerdere(cellen) {
+  var m = state.opzet_modal; if (!m) return;
+  var perDatum = {};
+  cellen.forEach(function(c) {
+    var d = c.datum || (boekingenDatumOp(c.boeking_id) || m.datums[0]);
+    if (!perDatum[d]) perDatum[d] = [];
+    perDatum[d].push(c);
+  });
+  var keys = Object.keys(perDatum);
+  var klaar = 0;
+  keys.forEach(function(d) {
+    api('kiosk-opzet-aftekening', {
+      actie: 'unset', datum: d, ps_id: m.ps_id,
+      cellen: perDatum[d]
+    }).then(function(){ klaar++; if (klaar === keys.length) herlaadOpzetTabel(); });
+  });
+}
+
+// ============== RENDER ==============
+
+function renderOpzetModal() {
+  var m = state.opzet_modal;
+  if (!m) return '';
+  var inhoud = '';
+  if (m.bevestig_naam_pending) inhoud = renderOpzetBevestigNaam();
+  else if (m.rij_kolom_popup) inhoud = renderOpzetRijKolomPopup();
+  else if (m.stap === 'tijd') inhoud = renderOpzetTijd();
+  else if (m.stap === 'ps') inhoud = renderOpzetPs();
+  else if (m.stap === 'tabel') inhoud = renderOpzetTabel();
+  var titel = m.stap === 'tijd' ? 'Wanneer?' : (m.stap === 'ps' ? 'Productsoort kiezen' : (m.ps_naam || 'Tabel'));
+  var sub = (m.stap === 'tabel' && m.ps_naam) ? '· ' + esc(m.ps_naam) : '';
+  return '<div class="modal-bg" data-opzet-bg="1">' +
+    '<div class="modal-card opzet-modal" style="max-width:1200px;width:96vw;max-height:96vh;display:flex;flex-direction:column;padding:0;">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid #E1E8EB;background:#001828;color:#fff;border-radius:12px 12px 0 0;">' +
+        '<div><div style="font-size:11px;opacity:.7;letter-spacing:.5px;text-transform:uppercase">Opzet ' + sub + '</div>' +
+        '<div style="font-weight:900;font-size:18px;margin-top:2px">📋 ' + esc(titel) + '</div></div>' +
+        '<div style="display:flex;gap:8px;align-items:center">' +
+        (m.stap !== 'tijd' && !m.bevestig_naam_pending && !m.rij_kolom_popup ? '<button data-opzet-actie="terug" style="background:rgba(255,255,255,.15);color:#fff;border:none;border-radius:7px;padding:7px 14px;font-weight:700;cursor:pointer">← Terug</button>' : '') +
+        '<button data-opzet-actie="sluit" style="background:#E8202B;color:#fff;border:none;border-radius:50%;width:36px;height:36px;font-size:18px;font-weight:900;cursor:pointer">✕</button>' +
+        '</div>' +
+      '</div>' +
+      '<div style="flex:1;overflow:auto;padding:18px">' + inhoud + '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+function renderOpzetTijd() {
+  var m = state.opzet_modal;
+  var keuzes = [
+    { key:'vandaag', label:'Vandaag', sub:fmtDatumKort(todayIso()) },
+    { key:'morgen', label:'Morgen', sub:fmtDatumKort(offsetIso(1)) },
+    { key:'overmorgen', label:'Overmorgen', sub:fmtDatumKort(offsetIso(2)) },
+    { key:'deze_week', label:'Deze week', sub:'ma t/m zo' },
+    { key:'volgende_week', label:'Volgende week', sub:'ma t/m zo' },
+    { key:'eigen', label:'Eigen selectie', sub:'datum kiezen' }
+  ];
+  var btns = keuzes.map(function(k) {
+    var act = m.periode_keuze === k.key;
+    return '<button data-opzet-tijd="' + k.key + '" style="background:' + (act ? '#3FB8C4' : '#fff') + ';color:' + (act ? '#fff' : '#234756') + ';border:2px solid ' + (act ? '#3FB8C4' : '#D8E8EF') + ';border-radius:12px;padding:18px 14px;font-family:inherit;cursor:pointer;text-align:left;">' +
+      '<div style="font-weight:900;font-size:16px">' + esc(k.label) + '</div>' +
+      '<div style="font-size:12px;opacity:.8;margin-top:2px">' + esc(k.sub) + '</div>' +
+    '</button>';
+  }).join('');
+  var eigen = '';
+  if (m.periode_keuze === 'eigen') {
+    eigen = '<div style="margin-top:14px;padding:14px;background:#F5F8FA;border-radius:10px">' +
+      '<div style="font-size:12px;font-weight:700;color:#234756;margin-bottom:8px">Selecteer periode</div>' +
+      '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">' +
+        '<label style="font-size:12px;color:#234756">Van: <input type="date" id="opzet-eigen-van" value="' + esc(m.eigen_van || todayIso()) + '" style="border:1.5px solid #D8E8EF;border-radius:7px;padding:6px 10px;font-family:inherit;font-size:13px"></label>' +
+        '<label style="font-size:12px;color:#234756">Tot: <input type="date" id="opzet-eigen-tot" value="' + esc(m.eigen_tot || todayIso()) + '" style="border:1.5px solid #D8E8EF;border-radius:7px;padding:6px 10px;font-family:inherit;font-size:13px"></label>' +
+        '<button data-opzet-actie="eigen-toepassen" style="background:#234756;color:#fff;border:none;border-radius:7px;padding:7px 14px;font-weight:700;cursor:pointer">Toepassen</button>' +
+      '</div>' +
+    '</div>';
+  }
+  var samenvatting = '';
+  if (m.datums.length > 0) {
+    samenvatting = '<div style="margin-top:14px;padding:10px 14px;background:#E8F5E9;border-left:4px solid #43A047;border-radius:7px;color:#1B5E20;font-size:13px">' +
+      '<b>Geselecteerd:</b> ' + esc(m.periode_label) + ' (' + m.datums.length + ' ' + (m.datums.length === 1 ? 'dag' : 'dagen') + ')' +
+    '</div>';
+  }
+  var foutHtml = m.fout ? '<div style="margin-top:14px;padding:10px;background:#FFEBEE;color:#C62828;border-radius:7px">⚠ ' + esc(m.fout) + '</div>' : '';
+  var loaderHtml = m.overzicht_laden ? '<div style="text-align:center;padding:24px;color:#3FB8C4;font-weight:700">⏳ Boekingen laden…</div>' : '';
+  var verderBtn = '';
+  if (!m.overzicht_laden && m.overzicht && m.overzicht.totaal_boekingen > 0) {
+    verderBtn = '<div style="margin-top:18px;text-align:right"><button data-opzet-actie="naar-ps" style="background:#3FB8C4;color:#fff;border:none;border-radius:10px;padding:14px 28px;font-weight:900;font-size:15px;cursor:pointer">Volgende: productsoort kiezen →</button></div>';
+  }
+  var leegHtml = '';
+  if (!m.overzicht_laden && m.overzicht && m.overzicht.totaal_boekingen === 0) {
+    leegHtml = '<div style="margin-top:14px;padding:18px;background:#FFF3E0;border-radius:8px;color:#E65100;text-align:center;font-weight:700">Geen boekingen voor deze periode in ' + esc(state.outlet_code) + '.</div>';
+  }
+  return '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px">' + btns + '</div>' +
+    eigen + samenvatting + loaderHtml + leegHtml + foutHtml + verderBtn;
+}
+
+function renderOpzetPs() {
+  var m = state.opzet_modal;
+  if (m.overzicht_laden) return '<div style="text-align:center;padding:40px;color:#3FB8C4;font-weight:700">⏳ Bezig met laden…</div>';
+  if (m.fout) return '<div style="padding:18px;background:#FFEBEE;color:#C62828;border-radius:8px">⚠ ' + esc(m.fout) + '</div>';
+  if (!m.overzicht || !m.overzicht.productgroepen.length) {
+    return '<div style="padding:18px;background:#FFF3E0;border-radius:8px;color:#E65100;text-align:center;font-weight:700">Geen productsoorten met boekingen voor deze periode.</div>';
+  }
+  var groepen = m.overzicht.productgroepen.map(function(g) {
+    var soorten = g.productsoorten.map(function(ps) {
+      return '<button data-opzet-ps="' + esc(ps.id) + '" data-opzet-ps-naam="' + esc(g.naam + ' › ' + ps.naam) + '" style="background:#fff;border:2px solid #D8E8EF;border-radius:12px;padding:18px 14px;cursor:pointer;font-family:inherit;text-align:left;display:flex;flex-direction:column;gap:6px;">' +
+        '<div style="font-size:24px">' + getPSIcon(ps.naam) + '</div>' +
+        '<div style="font-weight:900;font-size:15px;color:#234756">' + esc(ps.naam) + '</div>' +
+        '<div style="font-size:12px;color:#3FB8C4;font-weight:700">' + ps.n_boekingen + ' boeking' + (ps.n_boekingen === 1 ? '' : 'en') + '</div>' +
+      '</button>';
+    }).join('');
+    return '<div style="margin-bottom:18px">' +
+      '<div style="font-size:13px;font-weight:900;color:#234756;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid #E1E8EB">' + esc(g.naam) + '</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px">' + soorten + '</div>' +
+    '</div>';
+  }).join('');
+  var head = '<div style="font-size:13px;color:#7A8FA6;margin-bottom:14px">Periode: <b style="color:#234756">' + esc(m.periode_label) + '</b> · ' + m.overzicht.totaal_boekingen + ' boekingen totaal</div>';
+  return head + groepen;
+}
+
+function renderOpzetTabel() {
+  var m = state.opzet_modal;
+  if (m.data_laden) return '<div style="text-align:center;padding:40px;color:#3FB8C4;font-weight:700">⏳ Tabel laden…</div>';
+  if (m.fout) return '<div style="padding:18px;background:#FFEBEE;color:#C62828;border-radius:8px">⚠ ' + esc(m.fout) + '</div>';
+  if (!m.data || !m.data.boekingen.length) return '<div style="padding:18px;background:#FFF3E0;border-radius:8px;color:#E65100;text-align:center;font-weight:700">Geen boekingen.</div>';
+  var d = m.data;
+  var info = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:10px 14px;background:#F5F8FA;border-radius:8px;flex-wrap:wrap;gap:10px">' +
+    '<div style="font-size:13px;color:#234756"><b>' + esc(m.periode_label) + '</b> · ' + d.boekingen.length + ' boekingen · ' + d.gerechten.length + ' gerechten</div>' +
+    '<div style="font-size:12px;color:#7A8FA6">Tip: klik kolomkop voor hele boeking, klik gerechtnaam voor hele rij</div>' +
+  '</div>';
+  var aftMap = {};
+  (d.aftekeningen || []).forEach(function(a){ aftMap[a.boeking_id+'::'+a.gerecht_id] = a; });
+  var thead = '<tr><th style="position:sticky;left:0;z-index:2;background:#001828;color:#fff;padding:10px 12px;text-align:left;min-width:200px;font-size:12px">Gerecht</th>';
+  d.boekingen.forEach(function(b) {
+    var dt = fmtDatumKort(b.datum);
+    var lbl = (m.datums.length > 1 ? dt + ' · ' : '') + esc(b.naam);
+    var menusStr = b.menus.map(function(mm){ return esc(mm.naam) + ' ' + mm.aantal + 'p'; }).join(' · ');
+    thead += '<th data-opzet-kolom="' + esc(b.id) + '" style="background:#1976D2;color:#fff;padding:10px 12px;text-align:center;min-width:140px;font-size:12px;cursor:pointer;border-left:1px solid rgba(255,255,255,.15);user-select:none" title="Klik: hele boeking aftekenen">' +
+      '<div style="font-weight:900;font-size:13px;line-height:1.2">' + lbl + '</div>' +
+      '<div style="font-size:10px;opacity:.85;margin-top:3px">' + esc(b.deadline_tijd || '') + ' · ' + b.totaal_pers + 'p · ' + b.opzet_pct + '%</div>' +
+      '<div style="font-size:9px;opacity:.7;margin-top:2px">' + menusStr + '</div>' +
+    '</th>';
+  });
+  thead += '<th style="background:#000d14;color:#fff;padding:10px 12px;text-align:center;min-width:90px;font-size:12px">TOT</th></tr>';
+  var tbody = '';
+  d.gerechten.forEach(function(g, ri) {
+    var rowBg = ri % 2 === 0 ? '#fff' : '#F9FAFB';
+    var tot = 0;
+    var cellen = '';
+    d.boekingen.forEach(function(b) {
+      var k = b.id + '::' + g.id;
+      var v = d.cellen[k];
+      var aft = aftMap[k];
+      tot += (v || 0);
+      var bg = rowBg, fg = '#234756', extra = '';
+      if (aft) {
+        bg = '#43A047'; fg = '#fff';
+        var oud = aft.waarde_bij_aftekenen != null ? parseFloat(aft.waarde_bij_aftekenen) : null;
+        if (oud != null && v != null && Math.abs(v - oud) >= 0.05) {
+          extra = '<div style="font-size:9px;background:#E65100;color:#fff;padding:2px 5px;border-radius:4px;margin-top:3px;display:inline-block">⚠ was ' + oud + '</div>';
+        }
+      }
+      var clickable = (v != null && v > 0);
+      var content;
+      if (v == null || v <= 0) {
+        content = '<span style="color:#bbb">—</span>';
+      } else {
+        content = '<div style="font-weight:700">' + (g.is_gn ? Math.round(v) : v.toFixed(1)) + '</div>';
+        if (aft) content += '<div style="font-size:9px;opacity:.9;margin-top:2px">✓ ' + esc(aft.medewerker_naam) + '</div>';
+        content += extra;
+      }
+      var attr = clickable ? ('data-opzet-cel="' + esc(b.id) + '|' + esc(g.id) + '|' + (v || 0) + '"') : '';
+      cellen += '<td ' + attr + ' style="background:' + bg + ';color:' + fg + ';padding:10px 12px;text-align:center;font-size:13px;cursor:' + (clickable ? 'pointer' : 'default') + ';border-bottom:1px solid #E8EEF2;user-select:none' + (aft ? ';font-weight:700' : '') + '">' + content + '</td>';
+    });
+    var totStr = tot > 0 ? (g.is_gn ? Math.round(tot) : tot.toFixed(1)) : '—';
+    var gnLabel = g.is_gn ? '<span style="font-size:9px;background:#3FB8C4;color:#fff;padding:1px 4px;border-radius:3px;margin-right:4px;font-weight:900">GN</span>' : '';
+    tbody += '<tr>' +
+      '<td data-opzet-rij="' + esc(g.id) + '" style="position:sticky;left:0;z-index:1;background:' + rowBg + ';padding:10px 12px;font-weight:700;color:#234756;border-right:2px solid #E1E8EB;border-bottom:1px solid #E8EEF2;cursor:pointer;font-size:13px;user-select:none" title="Klik: hele rij aftekenen voor zichtbare boekingen">' + gnLabel + esc(g.naam) + '</td>' +
+      cellen +
+      '<td style="background:#EEF3F7;padding:10px 12px;text-align:center;font-weight:900;color:#234756;font-size:13px;border-bottom:1px solid #E8EEF2">' + totStr + '</td>' +
+    '</tr>';
+  });
+  var tabel = '<div style="overflow:auto;border:1px solid #E1E8EB;border-radius:8px;max-height:65vh">' +
+    '<table style="border-collapse:collapse;width:100%;font-family:inherit"><thead>' + thead + '</thead><tbody>' + tbody + '</tbody></table>' +
+  '</div>';
+  var legend = '<div style="margin-top:10px;display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:#7A8FA6">' +
+    '<span><b style="background:#43A047;color:#fff;padding:2px 8px;border-radius:4px">✓ groen</b> = afgetekend (klik = ongedaan)</span>' +
+    '<span><b style="background:#fff;border:1px solid #D8E8EF;color:#234756;padding:2px 8px;border-radius:4px">wit</b> = nog niet afgetekend</span>' +
+    '<span><b style="background:#E65100;color:#fff;padding:2px 8px;border-radius:4px">⚠ oranje</b> = waarde gewijzigd na aftekenen</span>' +
+  '</div>';
+  var mwInfo = m.medewerker_naam ? '<div style="margin-top:10px;font-size:12px;color:#234756">Aftekenen als: <b>' + esc(m.medewerker_naam) + '</b></div>' : '';
+  return info + tabel + legend + mwInfo;
+}
+
+function renderOpzetBevestigNaam() {
+  var m = state.opzet_modal;
+  var huidig = '';
+  if (m.medewerker_naam) {
+    huidig = '<div style="text-align:center;margin-bottom:18px">' +
+      '<div style="font-size:14px;color:#234756">Ben jij nog steeds:</div>' +
+      '<div style="font-size:24px;font-weight:900;color:#3FB8C4;margin-top:4px">' + esc(m.medewerker_naam) + '?</div>' +
+      '<button data-opzet-actie="naam-ja" style="background:#43A047;color:#fff;border:none;border-radius:10px;padding:14px 30px;font-weight:900;font-size:15px;cursor:pointer;margin-top:14px">✓ Ja, ga door</button>' +
+    '</div><div style="text-align:center;font-size:12px;color:#7A8FA6;margin:14px 0">— of —</div>';
+  }
+  var lijst = (state.medewerkers || []).map(function(mw) {
+    var initial = esc((mw.naam || '?').charAt(0).toUpperCase());
+    return '<button data-opzet-naam="' + esc(mw.naam) + '" data-opzet-naam-id="' + esc(mw.id) + '" style="background:#fff;border:2px solid #D8E8EF;border-radius:10px;padding:14px;cursor:pointer;font-family:inherit;text-align:left;display:flex;align-items:center;gap:12px">' +
+      '<div style="width:36px;height:36px;border-radius:50%;background:#3FB8C4;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900">' + initial + '</div>' +
+      '<div><div style="font-weight:900;color:#234756">' + esc(mw.naam) + '</div><div style="font-size:11px;color:#7A8FA6">' + esc(mw.rol || 'kok') + '</div></div>' +
+    '</button>';
+  }).join('');
+  return huidig +
+    '<div style="font-size:13px;color:#234756;font-weight:700;margin-bottom:8px">Kies wie je bent:</div>' +
+    '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px">' + lijst + '</div>';
+}
+
+function renderOpzetRijKolomPopup() {
+  var p = state.opzet_modal.rij_kolom_popup;
+  if (!p) return '';
+  var titel = p.type === 'rij' ? 'Hele rij aftekenen?' : 'Hele boeking aftekenen?';
+  var sub = p.type === 'rij' ? ('Gerecht "' + esc(p.gerecht_naam) + '" voor alle ' + p.aantal + ' zichtbare boekingen') : ('Alle ' + p.aantal + ' gerechten voor "' + esc(p.boeking_naam) + '"');
+  var actieLabel = p.modus === 'set' ? '✓ Ja, alles aftekenen' : '✗ Ja, alles ongedaan maken';
+  var actieKleur = p.modus === 'set' ? '#43A047' : '#E65100';
+  var icoon = p.type === 'rij' ? '↔️' : '↕️';
+  return '<div style="text-align:center;padding:30px 20px">' +
+    '<div style="font-size:48px;margin-bottom:14px">' + icoon + '</div>' +
+    '<div style="font-size:20px;font-weight:900;color:#234756">' + titel + '</div>' +
+    '<div style="font-size:14px;color:#7A8FA6;margin-top:8px">' + sub + '</div>' +
+    '<div style="margin-top:24px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">' +
+      '<button data-opzet-actie="rk-bevestig" style="background:' + actieKleur + ';color:#fff;border:none;border-radius:10px;padding:14px 24px;font-weight:900;font-size:15px;cursor:pointer">' + actieLabel + '</button>' +
+      '<button data-opzet-actie="rk-annuleer" style="background:#fff;border:2px solid #D8E8EF;color:#234756;border-radius:10px;padding:14px 24px;font-weight:700;font-size:15px;cursor:pointer">Annuleren</button>' +
+    '</div>' +
+  '</div>';
+}
+
+// ============== EVENT HANDLERS ==============
+
+document.addEventListener('click', function(ev) {
+  if (!state.opzet_modal) return;
+  var t = ev.target;
+  while (t && t !== document) {
+    if (t.hasAttribute && t.hasAttribute('data-opzet-bg')) {
+      if (ev.target === t) {
+        ev.stopPropagation();
+        sluitOpzetModal();
+        return;
+      }
+    }
+    if (t.hasAttribute && t.hasAttribute('data-opzet-actie')) {
+      ev.stopPropagation();
+      handleOpzetActie(t.getAttribute('data-opzet-actie'));
+      return;
+    }
+    if (t.hasAttribute && t.hasAttribute('data-opzet-tijd')) {
+      ev.stopPropagation();
+      kiesPeriode(t.getAttribute('data-opzet-tijd'));
+      return;
+    }
+    if (t.hasAttribute && t.hasAttribute('data-opzet-ps')) {
+      ev.stopPropagation();
+      laadOpzetData(t.getAttribute('data-opzet-ps'), t.getAttribute('data-opzet-ps-naam') || '');
+      return;
+    }
+    if (t.hasAttribute && t.hasAttribute('data-opzet-cel')) {
+      ev.stopPropagation();
+      var p = (t.getAttribute('data-opzet-cel') || '').split('|');
+      if (p.length >= 3) klikCel(p[0], p[1], parseFloat(p[2]) || 0);
+      return;
+    }
+    if (t.hasAttribute && t.hasAttribute('data-opzet-rij')) {
+      ev.stopPropagation();
+      klikRij(t.getAttribute('data-opzet-rij'));
+      return;
+    }
+    if (t.hasAttribute && t.hasAttribute('data-opzet-kolom')) {
+      ev.stopPropagation();
+      klikKolom(t.getAttribute('data-opzet-kolom'));
+      return;
+    }
+    if (t.hasAttribute && t.hasAttribute('data-opzet-naam')) {
+      ev.stopPropagation();
+      bevestigGekozenNaam(t.getAttribute('data-opzet-naam'), t.getAttribute('data-opzet-naam-id'));
+      return;
+    }
+    t = t.parentNode;
+  }
+}, true);
+
+function sluitOpzetModal() {
+  state.opzet_modal = null;
+  state.modal = null;
+  render();
+}
+
+function handleOpzetActie(a) {
+  var m = state.opzet_modal; if (!m) return;
+  if (a === 'sluit') { sluitOpzetModal(); return; }
+  if (a === 'terug') {
+    if (m.bevestig_naam_pending || m.rij_kolom_popup) {
+      m.bevestig_naam_pending = null;
+      m.rij_kolom_popup = null;
+      render();
+      return;
+    }
+    if (m.stap === 'tabel') { m.stap = 'ps'; m.data = null; render(); return; }
+    if (m.stap === 'ps') { m.stap = 'tijd'; render(); return; }
+    return;
+  }
+  if (a === 'naar-ps') { m.stap = 'ps'; render(); return; }
+  if (a === 'eigen-toepassen') {
+    var vEl = document.getElementById('opzet-eigen-van');
+    var tEl = document.getElementById('opzet-eigen-tot');
+    var van = vEl ? vEl.value : '';
+    var tot = tEl ? tEl.value : '';
+    if (!van || !tot) { alert('Kies een van- en tot-datum'); return; }
+    if (van > tot) { alert('Van-datum moet voor tot-datum zijn'); return; }
+    m.eigen_van = van; m.eigen_tot = tot;
+    m.datums = rangeIso(van, tot);
+    m.periode_label = van === tot ? fmtDatumKort(van) : (fmtDatumKort(van) + ' t/m ' + fmtDatumKort(tot));
+    laadOpzetOverzicht();
+    return;
+  }
+  if (a === 'naam-ja') {
+    m.last_actie_op = Date.now();
+    var cb = m.bevestig_naam_pending; m.bevestig_naam_pending = null;
+    if (typeof cb === 'function') cb();
+    render();
+    return;
+  }
+  if (a === 'rk-bevestig') {
+    var p2 = m.rij_kolom_popup; m.rij_kolom_popup = null;
+    if (p2) {
+      if (p2.modus === 'set') doAftekenenMeerdere(p2.cellen, p2.type === 'rij' ? 'rij_alle' : 'kolom_alle');
+      else doOntAftekenenMeerdere(p2.cellen);
+    }
+    return;
+  }
+  if (a === 'rk-annuleer') { m.rij_kolom_popup = null; render(); return; }
+}
+
+function kiesPeriode(k) {
+  var m = state.opzet_modal; if (!m) return;
+  m.periode_keuze = k;
+  if (k === 'vandaag') { m.datums = [todayIso()]; m.periode_label = 'Vandaag · ' + fmtDatumKort(todayIso()); laadOpzetOverzicht(); }
+  else if (k === 'morgen') { m.datums = [offsetIso(1)]; m.periode_label = 'Morgen · ' + fmtDatumKort(offsetIso(1)); laadOpzetOverzicht(); }
+  else if (k === 'overmorgen') { m.datums = [offsetIso(2)]; m.periode_label = 'Overmorgen · ' + fmtDatumKort(offsetIso(2)); laadOpzetOverzicht(); }
+  else if (k === 'deze_week') { m.datums = dezeWeekIso(); m.periode_label = 'Deze week (' + m.datums.length + ' dagen)'; laadOpzetOverzicht(); }
+  else if (k === 'volgende_week') { m.datums = volgendeWeekIso(); m.periode_label = 'Volgende week (' + m.datums.length + ' dagen)'; laadOpzetOverzicht(); }
+  else if (k === 'eigen') { render(); }
+}
+
+function bevestigGekozenNaam(naam, id) {
+  var m = state.opzet_modal; if (!m) return;
+  m.medewerker_naam = naam;
+  m.medewerker_id = id;
+  m.last_actie_op = Date.now();
+  var cb = m.bevestig_naam_pending; m.bevestig_naam_pending = null;
+  if (typeof cb === 'function') cb();
+  render();
+}
+
+function klikCel(boeking_id, gerecht_id, waarde) {
+  var aft = isAfgetekend(boeking_id, gerecht_id);
+  if (aft) doOntAftekenen(boeking_id, gerecht_id);
+  else doAftekenenCel(boeking_id, gerecht_id, waarde, 'cel');
+}
+
+function klikRij(gerecht_id) {
+  var m = state.opzet_modal; if (!m || !m.data) return;
+  var g = null;
+  for (var i = 0; i < m.data.gerechten.length; i++) {
+    if (m.data.gerechten[i].id === gerecht_id) { g = m.data.gerechten[i]; break; }
+  }
+  if (!g) return;
+  var cellen = [];
+  var alAft = 0, totMet = 0;
+  m.data.boekingen.forEach(function(b) {
+    var k = b.id + '::' + gerecht_id;
+    var v = m.data.cellen[k];
+    if (v != null && v > 0) {
+      totMet++;
+      cellen.push({ boeking_id: b.id, gerecht_id: gerecht_id, waarde: v, datum: b.datum });
+      if (isAfgetekend(b.id, gerecht_id)) alAft++;
+    }
+  });
+  if (!cellen.length) return;
+  var modus = (alAft === totMet) ? 'unset' : 'set';
+  m.rij_kolom_popup = { type: 'rij', modus: modus, gerecht_naam: g.naam, aantal: cellen.length, cellen: cellen };
+  render();
+}
+
+function klikKolom(boeking_id) {
+  var m = state.opzet_modal; if (!m || !m.data) return;
+  var b = null;
+  for (var i = 0; i < m.data.boekingen.length; i++) {
+    if (m.data.boekingen[i].id === boeking_id) { b = m.data.boekingen[i]; break; }
+  }
+  if (!b) return;
+  var cellen = [];
+  var alAft = 0, totMet = 0;
+  m.data.gerechten.forEach(function(g) {
+    var k = boeking_id + '::' + g.id;
+    var v = m.data.cellen[k];
+    if (v != null && v > 0) {
+      totMet++;
+      cellen.push({ boeking_id: boeking_id, gerecht_id: g.id, waarde: v, datum: b.datum });
+      if (isAfgetekend(boeking_id, g.id)) alAft++;
+    }
+  });
+  if (!cellen.length) return;
+  var modus = (alAft === totMet) ? 'unset' : 'set';
+  m.rij_kolom_popup = { type: 'kolom', modus: modus, boeking_naam: b.naam, aantal: cellen.length, cellen: cellen };
+  render();
+}
 
 </script>
 </body>
