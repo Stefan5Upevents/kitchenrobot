@@ -211,6 +211,22 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; back
 .onder-blok .label { font-size: 12px; font-weight: 600; }
 .onder-blok .stat { font-size: 11px; opacity: 0.6; margin-top: 2px; }
 .onder-blok.alarm { background: #FEF2F2; border-color: #FCA5A5; }
+.onder-blok.urgent { background: #DC2626; border-color: #B91C1C; color: white; box-shadow: 0 4px 12px rgba(220,38,38,0.35); animation: pulseRed 1.6s ease-in-out infinite; }
+.onder-blok.urgent .label, .onder-blok.urgent .stat { color: white; opacity: 1; }
+.onder-blok.urgent .stat { font-weight: 700; }
+@keyframes pulseRed { 0%, 100% { box-shadow: 0 4px 12px rgba(220,38,38,0.35); } 50% { box-shadow: 0 4px 20px rgba(220,38,38,0.65); } }
+.berichten-balk { background: linear-gradient(135deg, #1E40AF 0%, #3B82F6 100%); color: white; border-radius: 14px; padding: 14px 16px; margin: 10px 0; cursor: pointer; box-shadow: 0 2px 8px rgba(30,64,175,0.25); }
+.berichten-balk.kl-rood { background: linear-gradient(135deg, #B91C1C 0%, #EF4444 100%); box-shadow: 0 2px 10px rgba(185,28,28,0.35); }
+.berichten-balk.kl-oranje { background: linear-gradient(135deg, #C2410C 0%, #F97316 100%); }
+.berichten-balk.kl-groen { background: linear-gradient(135deg, #15803D 0%, #22C55E 100%); }
+.berichten-balk.kl-paars { background: linear-gradient(135deg, #6D28D9 0%, #A855F7 100%); }
+.berichten-balk .br-rij { display: flex; align-items: center; gap: 12px; }
+.berichten-balk .br-emoji { font-size: 26px; flex-shrink: 0; }
+.berichten-balk .br-info { flex: 1; min-width: 0; }
+.berichten-balk .br-titel { font-size: 14px; font-weight: 700; margin-bottom: 2px; }
+.berichten-balk .br-tekst { font-size: 12px; opacity: 0.92; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.berichten-balk .br-meta { font-size: 10px; opacity: 0.75; margin-top: 4px; }
+.berichten-balk .br-pijl { font-size: 18px; opacity: 0.7; flex-shrink: 0; }
 .meld-chef-knop { background: #E8202B; color: white; border: 0; padding: 14px; width: 100%; border-radius: 14px; font-size: 13px; font-weight: 600; margin-top: 10px; cursor: pointer; }
 .login-bg { min-height: 100vh; background: linear-gradient(180deg, #234756 0%, #3FB8C4 100%); display: flex; flex-direction: column; padding: 20px; }
 .login-titel { text-align: center; color: white; padding: 40px 0 30px; }
@@ -814,6 +830,7 @@ function renderHome() {
     '<button class="logout" id="btn-logout">Uit</button>' +
   '</div><div class="screen">' +
     renderTijdbalk(d.tijdschema, nu, boekingen) +
+    renderBerichtenChef(d) +
     '<div style="display:flex;gap:8px;margin-bottom:14px"><button id="btn-tijden-fs" data-onder="tijden-fs" style="flex:1;background:#001828;color:#fff;border:none;border-radius:10px;padding:14px 16px;font-weight:800;font-size:15px;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;letter-spacing:.3px">📋 Volledig tijden-overzicht</button></div>' +
     renderBoekingen(boekingen, voortgang, d.tijdschema, nu) + renderOnderBlokken(d) +
     '<button class="meld-chef-knop" id="btn-meld-chef">🛠 Meld chef: er moet iets besteld / is op / defect</button>' +
@@ -1604,6 +1621,61 @@ function renderPsBlok(bid, bnaam, ps, gerechten, status) {
     (allesKlaar ? 'Alles klaar ✓' : 'Alles klaar voor service') + '</button></div>' + items + '</div>';
 }
 
+function renderBerichtenChef(d) {
+  var lijst = (d && d.berichten_chef) || [];
+  if (lijst.length === 0) return '';
+  return '<div style="margin-bottom:10px">' + lijst.map(function(b, i){
+    var kl = 'kl-' + (b.kleur || 'blauw');
+    var em = b.emoji || '📌';
+    var datum = '';
+    if (b.datum_van && b.datum_tot && b.datum_van !== b.datum_tot) {
+      var dv = new Date(b.datum_van).toLocaleDateString('nl-NL', { day: '2-digit', month: 'short' });
+      var dt = new Date(b.datum_tot).toLocaleDateString('nl-NL', { day: '2-digit', month: 'short' });
+      datum = dv + ' t/m ' + dt;
+    }
+    return '<div class="berichten-balk ' + kl + '" data-bericht-open="' + esc(b.id) + '">' +
+      '<div class="br-rij">' +
+        '<div class="br-emoji">' + em + '</div>' +
+        '<div class="br-info">' +
+          '<div class="br-titel">' + esc(b.titel) + '</div>' +
+          '<div class="br-tekst">' + esc(b.tekst) + '</div>' +
+          (datum ? '<div class="br-meta">' + esc(datum) + (b.aangemaakt_door ? ' · ' + esc(b.aangemaakt_door) : '') + '</div>' : (b.aangemaakt_door ? '<div class="br-meta">door ' + esc(b.aangemaakt_door) + '</div>' : '')) +
+        '</div>' +
+        '<div class="br-pijl">›</div>' +
+      '</div>' +
+    '</div>';
+  }).join('') + '</div>';
+}
+
+function renderBerichtModal() {
+  if (!state.modal || state.modal.type !== 'bericht') return '';
+  var b = state.modal.bericht;
+  if (!b) return '';
+  var kl = 'kl-' + (b.kleur || 'blauw');
+  var em = b.emoji || '📌';
+  var datumTxt = '';
+  if (b.datum_van && b.datum_tot) {
+    var dv = new Date(b.datum_van).toLocaleDateString('nl-NL', { day: '2-digit', month: 'long', year: 'numeric' });
+    if (b.datum_van === b.datum_tot) datumTxt = dv;
+    else {
+      var dt = new Date(b.datum_tot).toLocaleDateString('nl-NL', { day: '2-digit', month: 'long', year: 'numeric' });
+      datumTxt = dv + ' t/m ' + dt;
+    }
+  }
+  return '<div class="alle-tijden-modal" style="max-width:520px">' +
+    '<div class="atm-header berichten-balk ' + kl + '" style="border-radius:14px 14px 0 0;margin:0">' +
+      '<div style="display:flex;align-items:center;gap:14px;flex:1">' +
+        '<div style="font-size:32px">' + em + '</div>' +
+        '<div><h3 style="color:#fff;margin:0">' + esc(b.titel) + '</h3>' +
+        (datumTxt ? '<div style="color:rgba(255,255,255,.85);font-size:11px;margin-top:3px">' + esc(datumTxt) + (b.aangemaakt_door ? ' · ' + esc(b.aangemaakt_door) : '') + '</div>' : '') +
+        '</div>' +
+      '</div>' +
+      '<button class="atm-close" data-close style="color:#fff;border-color:rgba(255,255,255,.3)">×</button>' +
+    '</div>' +
+    '<div style="padding:18px 20px;line-height:1.55;font-size:14px;white-space:pre-wrap">' + esc(b.tekst) + '</div>' +
+  '</div>';
+}
+
 function renderOnderBlokken(d) {
   var sm = d.schoonmaak || {};
   var alarm = sm.dwingend > 0;
@@ -1613,7 +1685,7 @@ function renderOnderBlokken(d) {
     '<div class="onder-blok ' + (alarm ? 'alarm' : '') + '" data-onder="schoonmaak"><div class="icoon">🧽</div><div class="label">Schoonmaak</div><div class="stat">' + (sm.dwingend || 0) + ' rood &middot; ' + (sm.waarschuwing || 0) + ' geel</div></div>' +
     '<div class="onder-blok" data-onder="haccp"><div class="icoon">🌡️</div><div class="label">HACCP</div><div class="stat">' + (hac.gedaan || 0) + '/' + (hac.totaal || 0) + ' gedaan</div></div>' +
     '<div class="onder-blok" data-onder="documenten"><div class="icoon">📄</div><div class="label">Documenten</div><div class="stat">Buffet &middot; BBQ-PDF</div></div>' +
-    '<div class="onder-blok ' + (d.meldingen_chef_open > 0 ? 'alarm' : '') + '" data-onder="meldingen"><div class="icoon">📨</div><div class="label">Meldingen</div><div class="stat">' + (d.meldingen_chef_open || 0) + ' open</div></div>' +
+    '<div class="onder-blok ' + (d.meldingen_chef_open > 0 ? 'urgent' : '') + '" data-onder="meldingen"><div class="icoon">📨</div><div class="label">Meldingen</div><div class="stat">' + (d.meldingen_chef_open || 0) + ' open</div></div>' +
     '<div class="onder-blok" data-onder="buffet"><div class="icoon">🔥</div><div class="label">BBQ / Buffet</div><div class="stat">Formulier per groep</div></div>' +
   '</div>';
 }
@@ -1631,6 +1703,7 @@ function renderModal() {
   if (state.modal && state.modal.type === 'meldingen') return renderMeldingenLijstModal();
   if (state.modal && state.modal.type === 'buffet') return renderBbqBuffetModalV2();
   if (state.modal && state.modal.type === 'opzet') return renderOpzetModal();
+  if (state.modal && state.modal.type === 'bericht') return renderBerichtModal();
   return '';
 }
 
@@ -2703,6 +2776,16 @@ document.addEventListener('click', function(e) {
         e.stopPropagation();
         state.atm_filter = t.getAttribute('data-atm-filter');
         render();
+        return;
+      }
+      // data-bericht-open: chef-bericht openen in modal
+      if (t.hasAttribute && t.hasAttribute('data-bericht-open')) {
+        e.stopPropagation();
+        var bid = t.getAttribute('data-bericht-open');
+        var lijst = (state.data && state.data.berichten_chef) || [];
+        var ber = null;
+        for (var bi = 0; bi < lijst.length; bi++) { if (lijst[bi].id === bid) { ber = lijst[bi]; break; } }
+        if (ber) { state.modal = { type: 'bericht', bericht: ber }; render(); }
         return;
       }
       // data-onder: nav-blok onder (morgen/week/schoonmaak/haccp/documenten/meldingen)
