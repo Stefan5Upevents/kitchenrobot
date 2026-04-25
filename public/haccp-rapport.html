@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>HACCP Rapport — KitchenRobot</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: 'Inter','Helvetica Neue',Helvetica,Arial,sans-serif; margin: 0; background: #EAF0F4; color: #234756; min-height: 100vh; }
+  .wrap { max-width: 600px; margin: 0 auto; padding: 28px 20px; }
+  h1 { font-size: 24px; color: #002D41; margin: 0 0 4px; letter-spacing: -0.3px; }
+  .sub { color: #6E8591; font-size: 13px; margin-bottom: 22px; }
+  .card { background: #fff; border-radius: 10px; padding: 22px; box-shadow: 0 1px 3px rgba(0,45,65,.06); margin-bottom: 16px; }
+  label { display: block; font-size: 12px; font-weight: 700; color: #234756; margin-bottom: 6px; text-transform: uppercase; letter-spacing: .4px; }
+  input, select { width: 100%; padding: 11px 14px; border: 1.5px solid #D8E8EF; border-radius: 6px; font-size: 14px; font-family: inherit; color: #234756; }
+  input:focus, select:focus { outline: none; border-color: #1976D2; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .field { margin-bottom: 14px; }
+  button.primair { width: 100%; background: #1976D2; color: #fff; border: none; padding: 14px; border-radius: 6px; font-weight: 800; font-size: 15px; cursor: pointer; font-family: inherit; margin-top: 8px; }
+  button.primair:hover { background: #155a9c; }
+  .quick { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .quick button { background: #F5F8FA; border: 1.5px solid #D8E8EF; color: #234756; padding: 8px 14px; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer; font-family: inherit; }
+  .quick button:hover { background: #E3F2FD; border-color: #1976D2; color: #1976D2; }
+  .info-box { background: #E3F2FD; border-left: 3px solid #1976D2; padding: 10px 14px; border-radius: 0 6px 6px 0; font-size: 12.5px; line-height: 1.5; margin-top: 12px; }
+  .info-box b { color: #002D41; }
+  .footer { text-align: center; color: #6E8591; font-size: 11px; margin-top: 30px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>📋 HACCP Rapport</h1>
+  <div class="sub">Genereer een NVWA-proof inspectierapport voor een outlet en periode</div>
+
+  <div class="card">
+    <div class="field">
+      <label>Outlet</label>
+      <select id="outlet">
+        <option value="weesp">Weesp</option>
+        <option value="west">Amsterdam West</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Snelkeuze periode</label>
+      <div class="quick">
+        <button data-period="vandaag">Vandaag</button>
+        <button data-period="week">Deze week</button>
+        <button data-period="7d">Laatste 7 dagen</button>
+        <button data-period="30d">Laatste 30 dagen</button>
+        <button data-period="maand">Deze maand</button>
+        <button data-period="vorige_maand">Vorige maand</button>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>Datum van</label>
+        <input type="date" id="van">
+      </div>
+      <div class="field">
+        <label>Datum tot</label>
+        <input type="date" id="tot">
+      </div>
+    </div>
+
+    <button class="primair" id="open">📄 Rapport openen</button>
+
+    <div class="info-box">
+      <b>Wat staat er in?</b><br>
+      • Bedrijfsgegevens (uit HACCP-instellingen in admin)<br>
+      • Sensor-statistieken per koeling/vriezer<br>
+      • Alle handmatige temperatuur-metingen<br>
+      • Alle taak-aftekeningen met sub-vraag-antwoorden<br>
+      • Afwijkingen + correctieve acties<br>
+      • Verklaring van getrouwheid + ondertekenruimte
+    </div>
+  </div>
+
+  <div class="footer">KitchenRobot · HACCP-data is technisch onveranderbaar (NVWA-vereiste)</div>
+</div>
+
+<script>
+const SUPA_URL = 'https://aezatnwsrhlwtykpixsq.supabase.co';
+
+function isoDatum(d) { return d.toISOString().slice(0, 10); }
+
+function setPeriod(key) {
+  const nu = new Date();
+  let van, tot;
+  if (key === 'vandaag') { van = tot = isoDatum(nu); }
+  else if (key === 'week') {
+    const dag = nu.getDay() || 7;
+    const ma = new Date(nu); ma.setDate(nu.getDate() - dag + 1);
+    van = isoDatum(ma); tot = isoDatum(nu);
+  } else if (key === '7d') {
+    const v = new Date(nu); v.setDate(nu.getDate() - 7);
+    van = isoDatum(v); tot = isoDatum(nu);
+  } else if (key === '30d') {
+    const v = new Date(nu); v.setDate(nu.getDate() - 30);
+    van = isoDatum(v); tot = isoDatum(nu);
+  } else if (key === 'maand') {
+    const eersteVdM = new Date(nu.getFullYear(), nu.getMonth(), 1);
+    van = isoDatum(eersteVdM); tot = isoDatum(nu);
+  } else if (key === 'vorige_maand') {
+    const eersteVdM = new Date(nu.getFullYear(), nu.getMonth() - 1, 1);
+    const laatsteVdM = new Date(nu.getFullYear(), nu.getMonth(), 0);
+    van = isoDatum(eersteVdM); tot = isoDatum(laatsteVdM);
+  }
+  document.getElementById('van').value = van;
+  document.getElementById('tot').value = tot;
+}
+
+document.querySelectorAll('[data-period]').forEach(b => {
+  b.onclick = () => setPeriod(b.getAttribute('data-period'));
+});
+
+document.getElementById('open').onclick = () => {
+  const outlet = document.getElementById('outlet').value;
+  const van = document.getElementById('van').value;
+  const tot = document.getElementById('tot').value;
+  if (!van || !tot) { alert('Vul beide datums in'); return; }
+  const url = SUPA_URL + '/functions/v1/kiosk-haccp-export?outlet_code=' + encodeURIComponent(outlet) + '&datum_van=' + van + '&datum_tot=' + tot;
+  window.open(url, '_blank');
+};
+
+// Default: laatste 7 dagen
+setPeriod('7d');
+</script>
+</body>
+</html>
