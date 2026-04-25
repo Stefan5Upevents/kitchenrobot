@@ -271,7 +271,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; back
 </head>
 <body>
 <div class="preview-banner">✨ Kiosk v2 PREVIEW — werkt met echte data</div>
-<div id="kiosk-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#43A047;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.85;pointer-events:none">v2026-04-25-21:00 ✓ tempfix+url</div>
+<div id="kiosk-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#43A047;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.85;pointer-events:none">v2026-04-25-21:15 ✓ tempfix2</div>
 <div id="app"><div class="loader">Laden...</div></div>
 <script>
 var SUPABASE_URL = 'https://aezatnwsrhlwtykpixsq.supabase.co';
@@ -2166,10 +2166,11 @@ function renderHaccpNumpad() {
   var opmerkingVeld = '';
   if (verplichteOpmerking || (!isNaN(tempNum) && !binnenNorm)) {
     opmerkingVeld = '<div style="margin-top:12px"><label style="font-size:11px;font-weight:700;color:#234756;display:block;margin-bottom:4px">Wat is er aan de hand + correctieve actie? ' + (verplichteOpmerking ? '<span style="color:#C62828">*verplicht</span>' : '') + '</label>' +
-      '<textarea id="haccp-opm" rows="3" style="width:100%;border:1.5px solid #D8E8EF;border-radius:6px;padding:8px;font-family:inherit;font-size:12px;resize:vertical" placeholder="Bijv: deur stond open, koeling aangezet">' + esc(state.haccp_meting_opmerking) + '</textarea></div>';
+      '<textarea id="haccp-opm" rows="3" oninput="window._updateHaccpOpm&&window._updateHaccpOpm(this.value)" style="width:100%;border:1.5px solid #D8E8EF;border-radius:6px;padding:8px;font-family:inherit;font-size:12px;resize:vertical" placeholder="Bijv: deur stond open, koeling aangezet">' + esc(state.haccp_meting_opmerking) + '</textarea></div>';
   }
 
-  var canSubmit = !isNaN(tempNum) && (!verplichteOpmerking || state.haccp_meting_opmerking.trim().length > 0);
+  // Knop alleen op temperatuur valideren - opmerking-check bij klik via alert (UX fix)
+  var canSubmit = !isNaN(tempNum);
 
   return '<div class="alle-tijden-modal">' +
     '<div class="atm-header"><div><h3>📏 ' + esc(p.naam) + '</h3><div class="atm-sub">Norm: ' + p.min + '° tot ' + p.max + '°</div></div>' +
@@ -3700,11 +3701,15 @@ function openHaccpNumpad(b64) {
   state.haccp_meting_opmerking = '';
   render();
 }
+// Helper voor textarea oninput zonder full render (pakt waarde live in state)
+window._updateHaccpOpm = function(val) {
+  state.haccp_meting_opmerking = val || '';
+};
+
 function handleHaccpNumpadActie(actie) {
   // Lees opmerking-textarea voor render zodat het niet verloren gaat
   var opmEl = document.getElementById('haccp-opm');
   if (opmEl) state.haccp_meting_opmerking = opmEl.value;
-
   if (actie === 'sluit') {
     state.haccp_meting_punt = null;
     state.haccp_meting_temp = '';
