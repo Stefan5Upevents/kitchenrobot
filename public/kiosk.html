@@ -2441,12 +2441,21 @@ function renderOpzetTabel() {
       var attr = clickable ? ('data-opzet-cel="' + esc(b.id) + '|' + esc(g.id) + '|' + (v || 0) + '"') : '';
       cellen += '<td ' + attr + ' style="background:' + bg + ';color:' + fg + ';padding:10px 10px;text-align:center;font-size:13px;cursor:' + (clickable ? 'pointer' : 'default') + ';border-bottom:1px solid #E8EEF2;user-select:none;vertical-align:top">' + content + '</td>';
     });
-    var totStr = tot > 0 ? (g.is_gn ? Math.round(tot) : tot.toFixed(1)) : '—';
+    var totObj = (d.totalen && d.totalen[g.id]) || null;
+    var totW = totObj ? totObj.w : 0;
+    var totVerp = totObj ? totObj.v : null;
+    var totStr = totW > 0 ? (g.is_gn ? Math.round(totW) : totW.toFixed(1)) : '—';
+    var totHtml = '<div style="font-weight:900;font-size:14px">' + totStr + '</div>';
+    if (totVerp && totVerp.length) {
+      totVerp.forEach(function(vp) {
+        totHtml += '<div style="font-size:9px;font-weight:700;color:#7B5EA7;margin-top:3px">' + vp.exact + ' verp. ' + esc(vp.naam) + '</div>';
+      });
+    }
     var gnLabel = g.is_gn ? '<span style="font-size:9px;background:#3FB8C4;color:#fff;padding:1px 4px;border-radius:3px;margin-right:4px;font-weight:900">GN</span>' : '';
     tbody += '<tr>' +
       '<td data-opzet-rij="' + esc(g.id) + '" style="position:sticky;left:0;z-index:1;background:' + rowBg + ';padding:10px 12px;font-weight:700;color:#234756;border-right:2px solid #E1E8EB;border-bottom:1px solid #E8EEF2;cursor:pointer;font-size:13px;user-select:none;vertical-align:top" title="Klik: hele rij aftekenen voor zichtbare boekingen">' + gnLabel + esc(g.naam) + '</td>' +
       cellen +
-      '<td style="background:#EEF3F7;padding:10px 12px;text-align:center;font-weight:900;color:#234756;font-size:13px;border-bottom:1px solid #E8EEF2;vertical-align:top">' + totStr + '</td>' +
+      '<td style="background:#EEF3F7;padding:10px 12px;text-align:center;color:#234756;font-size:13px;border-bottom:1px solid #E8EEF2;vertical-align:top">' + totHtml + '</td>' +
     '</tr>';
   });
   var tabel = '<div style="overflow:auto;border:1px solid #E1E8EB;border-radius:8px;background:#fff;flex:1">' +
