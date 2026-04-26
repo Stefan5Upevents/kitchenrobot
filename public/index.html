@@ -17196,4 +17196,101 @@ window._FBAnalyseScreen = function FBAnalyseScreen() {
   );
 };
 </script>
+
+<script>
+window._FBProductenTab = function FBProductenTab({ outlet }) {
+  const e = React.createElement;
+  const [prodData, setProdData] = React.useState([]);
+  const [loading, setProdLoading] = React.useState(true);
+  const [catFilter, setCatFilter] = React.useState('alle');
+  const [jaarProd, setJaarProd] = React.useState(2025);
+  const [vergelijkJaar, setVergelijkJaar] = React.useState(null);
+  const [zoek, setZoek] = React.useState('');
+  const [sorteer, setSorteer] = React.useState('omzet');
+  const [uitklap, setUitklap] = React.useState(null);
+  const JK={2023:'#9C27B0',2024:'#FF7043',2025:'#1E88E5',2026:'#43A047'};
+  const EC='#43A047',DC='#1E88E5',NC='#002D41',GC='#6E8591',LC='#F5F8FA',BC='#D8E8EF',BL='#1976D2',GR='#388E3C',RC='#C62828';
+  const MK=['','J','F','M','A','M','J','J','A','S','O','N','D'];
+  function fmt(n){if(!n||isNaN(n))return '€0';if(Math.abs(n)>=1000000)return '€'+(n/1000000).toFixed(1)+'M';if(Math.abs(n)>=1000)return '€'+(n/1000).toFixed(0)+'k';return '€'+Math.round(n);}
+  const card={background:'white',borderRadius:10,padding:'16px 20px',boxShadow:'0 1px 4px rgba(0,35,65,.08)',border:'1px solid '+BC,marginBottom:16};
+  const kc={...card,marginBottom:0,flex:1,minWidth:130};
+  const btn=(a,c)=>({padding:'5px 13px',borderRadius:20,border:'1px solid '+BC,background:a?(c||NC):'white',color:a?'white':NC,cursor:'pointer',fontSize:12,fontWeight:a?700:400});
+  const bdg=(c,bg)=>({display:'inline-block',padding:'2px 8px',borderRadius:10,fontSize:11,fontWeight:700,background:bg||c+'22',color:c});
+  React.useEffect(()=>{
+    setProdLoading(true);
+    const sp=window._supa;
+    if(!sp){setProdLoading(false);return;}
+    const jr=vergelijkJaar?[jaarProd,vergelijkJaar]:[jaarProd];
+    sp.from('v_fb_producten').select('menu_naam,productsoort_naam,categorie,jaar,maand_nr,omzet_bruto,recras_varianten').in('jaar',jr).limit(8000)
+      .then(({data})=>{setProdData(Array.isArray(data)?data:[]);setProdLoading(false);});
+  },[jaarProd,vergelijkJaar]);
+  function aggJ(j){const g={};for(const r of prodData){if(r.jaar!==j)continue;if(catFilter!=='alle'&&r.categorie!==catFilter)continue;const k=r.menu_naam;if(!g[k])g[k]={naam:r.menu_naam,soort:r.productsoort_naam,cat:r.categorie,omzet:0,mn:new Set(),var:[],md:{}};g[k].omzet+=Number(r.omzet_bruto||0);if(r.omzet_bruto>0)g[k].mn.add(r.maand_nr);g[k].md[r.maand_nr]=(g[k].md[r.maand_nr]||0)+Number(r.omzet_bruto||0);if(r.recras_varianten&&g[k].var.length===0)g[k].var=r.recras_varianten;}return g;}
+  const hG=aggJ(jaarProd),vG=vergelijkJaar?aggJ(vergelijkJaar):{};
+  let pr=Object.values(hG).filter(p=>p.omzet>0).filter(p=>!zoek||p.naam.toLowerCase().includes(zoek.toLowerCase()));
+  if(sorteer==='omzet')pr.sort((a,b)=>b.omzet-a.omzet);
+  else if(sorteer==='maanden')pr.sort((a,b)=>b.mn.size-a.mn.size);
+  else pr.sort((a,b)=>a.naam.localeCompare(b.naam));
+  const tE=pr.filter(p=>p.cat==='eten').reduce((s,p)=>s+p.omzet,0);
+  const tD=pr.filter(p=>p.cat==='drinken').reduce((s,p)=>s+p.omzet,0);
+  const tF=tE+tD;
+  if(loading)return e('div',{style:{textAlign:'center',color:GC,padding:40}},'Laden...');
+  return e('div',null,
+    e('div',{style:{display:'flex',gap:8,marginBottom:16,flexWrap:'wrap',alignItems:'center'}},
+      e('span',{style:{fontSize:12,color:GC,fontWeight:600}},'Jaar:'),
+      ...[2026,2025,2024].map(j=>e('button',{key:j,style:btn(jaarProd===j,JK[j]),onClick:()=>setJaarProd(j)},j)),
+      e('span',{style:{color:BC}},'|'),e('span',{style:{fontSize:12,color:GC,fontWeight:600}},'vs:'),
+      ...[null,2026,2025,2024].filter(j=>j!==jaarProd).map(j=>e('button',{key:String(j),style:btn(vergelijkJaar===j,j?JK[j]:GC),onClick:()=>setVergelijkJaar(j)},j||'—')),
+      e('span',{style:{color:BC}},'|'),
+      ...['alle','eten','drinken'].map(c=>e('button',{key:c,style:btn(catFilter===c,c==='eten'?EC:c==='drinken'?DC:NC),onClick:()=>setCatFilter(c)},c==='alle'?'Alles':c==='eten'?'🥖 Eten':'🍺 Drinken')),
+      e('span',{style:{color:BC}},'|'),
+      e('input',{placeholder:'🔍 Zoek...',value:zoek,onChange:ev=>setZoek(ev.target.value),style:{padding:'5px 12px',borderRadius:20,border:'1px solid '+BC,fontSize:13,width:150}})
+    ),
+    e('div',{style:{display:'flex',gap:12,marginBottom:16,flexWrap:'wrap'}},
+      e('div',{style:kc},e('div',{style:{fontSize:10,color:GC,fontWeight:700,letterSpacing:.5,textTransform:'uppercase'}},'🥖 Eten '+jaarProd),e('div',{style:{fontSize:22,fontWeight:800,color:EC,margin:'3px 0'}},fmt(tE)),e('div',{style:{fontSize:11,color:GC}},pr.filter(p=>p.cat==='eten').length+' menus')),
+      e('div',{style:kc},e('div',{style:{fontSize:10,color:GC,fontWeight:700,letterSpacing:.5,textTransform:'uppercase'}},'🍺 Drinken '+jaarProd),e('div',{style:{fontSize:22,fontWeight:800,color:DC,margin:'3px 0'}},fmt(tD)),e('div',{style:{fontSize:11,color:GC}},pr.filter(p=>p.cat==='drinken').length+' producten')),
+      e('div',{style:{...kc,flex:1.4}},
+        e('div',{style:{fontSize:10,color:GC,fontWeight:700,letterSpacing:.5,textTransform:'uppercase',marginBottom:6}},'Verdeling'),
+        e('div',{style:{display:'flex',height:12,borderRadius:6,overflow:'hidden',background:LC,border:'1px solid '+BC}},e('div',{style:{width:(tF>0?tE/tF*100:0)+'%',background:EC}}),e('div',{style:{width:(tF>0?tD/tF*100:0)+'%',background:DC}})),
+        e('div',{style:{display:'flex',justifyContent:'space-between',fontSize:11,marginTop:4}},e('span',{style:{color:EC,fontWeight:700}},tF>0?(tE/tF*100).toFixed(1)+'% eten':'—'),e('span',{style:{color:DC,fontWeight:700}},tF>0?(tD/tF*100).toFixed(1)+'% drinken':'—'))
+      ),
+      e('div',{style:{...card,flex:1,marginBottom:0}},e('div',{style:{fontSize:10,color:GC,fontWeight:700,letterSpacing:.5,textTransform:'uppercase',marginBottom:6}},'Sorteren'),e('div',{style:{display:'flex',gap:5}},...['omzet','maanden','naam'].map(s=>e('button',{key:s,style:btn(sorteer===s,BL),onClick:()=>setSorteer(s)},s==='omzet'?'€ Omzet':s==='maanden'?'# Mnd':'A-Z'))))
+    ),
+    e('div',{style:card},
+      e('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}},
+        e('div',{style:{fontWeight:700,fontSize:13}},pr.length+' menus · '+jaarProd,vergelijkJaar&&e('span',{style:{color:GC,fontSize:11,fontWeight:400,marginLeft:8}},'vs '+vergelijkJaar)),
+        e('div',{style:{fontSize:11,color:GC}},'Klik op rij voor detail')
+      ),
+      e('div',{style:{overflowX:'auto'}},
+        e('table',{style:{width:'100%',borderCollapse:'collapse',fontSize:12}},
+          e('thead',null,e('tr',{style:{background:NC,color:'white'}},...['#','Menu','Soort','€ Omzet',vergelijkJaar?'vs '+vergelijkJaar:'Aandeel','Seizoen','Per mnd','Var.'].map((h,i)=>e('th',{key:i,style:{padding:'7px 10px',fontSize:11,color:'white',textAlign:'left',whiteSpace:'nowrap'}},h)))),
+          e('tbody',null,...pr.slice(0,100).flatMap((p,i)=>{
+            const kl=p.cat==='eten'?EC:DC,pct=tF>0?(p.omzet/tF*100):0;
+            const vp=vG[p.naam],gr=vp&&vp.omzet>0?((p.omzet-vp.omzet)/vp.omzet*100):null;
+            const isO=uitklap===p.naam,mxV=isO?Math.max(...Object.values(p.md),1):1;
+            return [e('tr',{key:p.naam,onClick:()=>setUitklap(isO?null:p.naam),style:{background:isO?kl+'11':i%2?LC:'white',borderBottom:'1px solid '+BC,borderLeft:'3px solid '+kl,cursor:'pointer'}},
+              e('td',{style:{padding:'7px 10px',color:GC,fontWeight:700,fontSize:11}},i<3?['🥇','🥈','🥉'][i]:i+1),
+              e('td',{style:{padding:'7px 10px',fontWeight:i<5?700:400}},p.naam,' ',e('span',{style:{fontSize:9,color:GC}},'▼')),
+              e('td',null,e('span',{style:bdg(kl,kl+'22')},p.soort||p.cat)),
+              e('td',{style:{padding:'7px 10px',fontWeight:700,color:kl}},fmt(p.omzet)),
+              e('td',{style:{padding:'7px 10px'}},vergelijkJaar&&vp?e('span',{style:{fontWeight:700,color:gr>=0?GR:RC}},(gr>=0?'▲ +':'▼ ')+Math.abs(gr||0).toFixed(0)+'%'):!vergelijkJaar?e('div',{style:{display:'flex',alignItems:'center',gap:5}},e('div',{style:{width:50,height:5,background:LC,borderRadius:3,overflow:'hidden',border:'1px solid '+BC}},e('div',{style:{width:Math.min(pct,100)+'%',height:'100%',background:kl}})),e('span',{style:{fontSize:10,color:GC}},pct.toFixed(1)+'%')):e('span',{style:{color:GC,fontSize:11}},'—')),
+              e('td',{style:{padding:'7px 10px'}},e('div',{style:{display:'flex',gap:1}},...[1,2,3,4,5,6,7,8,9,10,11,12].map(m=>e('div',{key:m,title:MK[m],style:{width:9,height:12,borderRadius:2,background:p.mn.has(m)?kl:BC}})))),
+              e('td',{style:{padding:'7px 10px',fontSize:11,color:GC}},fmt(p.mn.size>0?p.omzet/p.mn.size:0)+'/mnd'),
+              e('td',{style:{padding:'7px 10px',fontSize:10,color:GC}},(p.var||[]).length>1?e('span',{style:bdg(GC,BC)},(p.var||[]).length+'x'):'—')
+            ),
+            isO&&e('tr',{key:p.naam+'_d'},e('td',{colSpan:8,style:{padding:'12px 16px',background:kl+'08',borderBottom:'2px solid '+kl}},
+              e('div',{style:{display:'flex',gap:24,flexWrap:'wrap'}},
+                e('div',null,e('div',{style:{fontSize:11,fontWeight:700,color:GC,marginBottom:6}},'Maandoverzicht '+jaarProd),e('div',{style:{display:'flex',gap:3,alignItems:'flex-end',height:60}},...[1,2,3,4,5,6,7,8,9,10,11,12].map(m=>{const v=p.md[m]||0,h=Math.max(v/mxV*60,v>0?4:0);return e('div',{key:m,style:{display:'flex',flexDirection:'column',alignItems:'center',gap:2}},e('div',{style:{width:18,height:h,background:kl,borderRadius:'2px 2px 0 0'}}),e('div',{style:{fontSize:8,color:GC}},MK[m]));}))),
+                (p.var||[]).length>1&&e('div',null,e('div',{style:{fontSize:11,fontWeight:700,color:GC,marginBottom:6}},'Recras varianten'),e('div',{style:{display:'flex',flexWrap:'wrap',gap:4}},...(p.var||[]).map(v=>e('span',{key:v,style:{...bdg(kl,kl+'15'),fontSize:10}},v)))),
+                vergelijkJaar&&vp&&e('div',null,e('div',{style:{fontSize:11,fontWeight:700,color:GC,marginBottom:6}},jaarProd+' vs '+vergelijkJaar),e('div',{style:{fontSize:13}},e('span',{style:{color:kl,fontWeight:700}},fmt(p.omzet)),e('span',{style:{color:GC,margin:'0 6px'}},'vs'),e('span',{style:{color:GC}},fmt(vp.omzet)),e('span',{style:{marginLeft:8,fontWeight:700,color:gr>=0?GR:RC}},(gr>=0?'▲ +':'▼ ')+Math.abs(gr||0).toFixed(1)+'%')))
+              )
+            ))
+            ];
+          }))
+        )
+      )
+    )
+  );
+};
+
+</script>
 </body></html>
