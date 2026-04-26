@@ -16272,34 +16272,43 @@ window._FBAnalyseScreen = function FBAnalyseScreen() {
   const [piekData, setPiekData] = React.useState([]);
   const [horizonDagen, setHorizonDagen] = React.useState(90);
 
-  const SB = window.SUPABASE_URL || '';
-  const KEY = window.ANON_KEY || window.SUPABASE_KEY || '';
-  const hdrs = { 'apikey': KEY, 'Authorization': 'Bearer ' + KEY };
-
   async function laad() {
     setLoading(true);
+    const supa = window._supa;
+    if (!supa) { setLoading(false); return; }
     try {
       // 1. F&B omzet statistieken
-      const r1 = await fetch(SB + '/rest/v1/recras_omzet_statistieken?order=periode_van.asc&select=periode_van,productgroep_naam,bedrag_exc_btw,bedrag_inc_btw&periode_van=gte.' + jaar + '-01-01&periode_van=lte.' + jaar + '-12-31', { headers: hdrs });
-      const raw = await r1.json();
+      let q1 = supa.from('recras_omzet_statistieken')
+        .select('periode_van,productgroep_naam,bedrag_exc_btw,bedrag_inc_btw')
+        .gte('periode_van', jaar + '-01-01')
+        .lte('periode_van', jaar + '-12-31')
+        .order('periode_van');
+      const { data: raw } = await q1;
       setMaandData(Array.isArray(raw) ? raw : []);
 
-      // 2. Optie trend (alle jaren voor vergelijking)
-      let ou = SB + '/rest/v1/v_optie_trend?order=maand.asc,outlet_code.asc&maand=gte.2024-01-01';
-      if (outlet !== 'alle') ou += '&outlet_code=eq.' + outlet;
-      const r2 = await fetch(ou, { headers: hdrs });
-      setOptieData(Array.isArray(await r2.json()) ? await fetch(ou, {headers:hdrs}).then(x=>x.json()) : []);
+      // 2. Optie trend
+      let q2 = supa.from('v_optie_trend')
+        .select('*')
+        .gte('maand', '2024-01-01')
+        .order('maand');
+      if (outlet !== 'alle') q2 = q2.eq('outlet_code', outlet);
+      const { data: optRaw } = await q2;
+      setOptieData(Array.isArray(optRaw) ? optRaw : []);
 
       // 3. Piekdagen
       const vandaag = new Date().toISOString().split('T')[0];
       const h = new Date(); h.setDate(h.getDate() + horizonDagen);
       const hStr = h.toISOString().split('T')[0];
-      let pu = SB + '/rest/v1/v_piekdagen?datum=gte.' + vandaag + '&datum=lte.' + hStr + '&order=datum.asc,outlet_code.asc&limit=300';
-      if (outlet !== 'alle') pu += '&outlet_code=eq.' + outlet;
-      const r3 = await fetch(pu, { headers: hdrs });
-      const piekRaw = await r3.json();
+      let q3 = supa.from('v_piekdagen')
+        .select('*')
+        .gte('datum', vandaag)
+        .lte('datum', hStr)
+        .order('datum')
+        .limit(300);
+      if (outlet !== 'alle') q3 = q3.eq('outlet_code', outlet);
+      const { data: piekRaw } = await q3;
       setPiekData(Array.isArray(piekRaw) ? piekRaw : []);
-    } catch(err) { console.error(err); }
+    } catch(err) { console.error('FB laad fout:', err); }
     setLoading(false);
   }
 
