@@ -16262,255 +16262,399 @@ window._BerichtenChefScreen = function BerichtenChefScreen() {
 <script>
 window._FBAnalyseScreen = function FBAnalyseScreen() {
   const e = React.createElement;
+  const [tab, setTab] = React.useState('overzicht');
   const [outlet, setOutlet] = React.useState('alle');
-  const [inclBtw, setInclBtw] = React.useState(false);
-  const [maandData, setMaandData] = React.useState([]);
-  const [boekingen, setBoekingen] = React.useState([]);
-  const [gekozenMaand, setGekozenMaand] = React.useState(null);
-  const [loading, setLoading] = React.useState(true);
-  const [loadingBoekingen, setLoadingBoekingen] = React.useState(false);
   const [jaar, setJaar] = React.useState(2026);
-  const [grafiekModus, setGrafiekModus] = React.useState('eten_dranken'); // 'eten_dranken' of 'status'
+  const [inclBtw, setInclBtw] = React.useState(false);
+  const [loading, setLoading] = React.useState(true);
+  const [maandData, setMaandData] = React.useState([]);
+  const [optieData, setOptieData] = React.useState([]);
+  const [piekData, setPiekData] = React.useState([]);
+  const [horizonDagen, setHorizonDagen] = React.useState(90);
 
   const SB = window.SUPABASE_URL || '';
-  const KEY = window.SUPABASE_KEY || window.ANON_KEY || '';
+  const KEY = window.ANON_KEY || window.SUPABASE_KEY || '';
   const hdrs = { 'apikey': KEY, 'Authorization': 'Bearer ' + KEY };
-  const BTW = 1.09;
 
-  function v(bedrag) {
-    const n = Number(bedrag || 0);
-    return inclBtw ? n * BTW : n;
-  }
-  function fmt(n) {
-    if (n >= 1000000) return '€' + (n/1000000).toFixed(1) + 'M';
-    if (n >= 1000) return '€' + (n/1000).toFixed(0) + 'k';
-    return '€' + Math.round(n);
-  }
-
-  async function laadMaanden(j, oc) {
+  async function laad() {
     setLoading(true);
-    let url = SB + '/rest/v1/v_fb_per_maand?jaar=eq.' + j + '&order=maand.asc,outlet_code.asc';
-    if (oc !== 'alle') url += '&outlet_code=eq.' + oc;
-    const r = await fetch(url, { headers: hdrs });
-    const data = await r.json();
-    setMaandData(Array.isArray(data) ? data : []);
+    try {
+      // 1. F&B omzet statistieken
+      const r1 = await fetch(SB + '/rest/v1/recras_omzet_statistieken?order=periode_van.asc&select=periode_van,productgroep_naam,bedrag_exc_btw,bedrag_inc_btw&periode_van=gte.' + jaar + '-01-01&periode_van=lte.' + jaar + '-12-31', { headers: hdrs });
+      const raw = await r1.json();
+      setMaandData(Array.isArray(raw) ? raw : []);
+
+      // 2. Optie trend (alle jaren voor vergelijking)
+      let ou = SB + '/rest/v1/v_optie_trend?order=maand.asc,outlet_code.asc&maand=gte.2024-01-01';
+      if (outlet !== 'alle') ou += '&outlet_code=eq.' + outlet;
+      const r2 = await fetch(ou, { headers: hdrs });
+      setOptieData(Array.isArray(await r2.json()) ? await fetch(ou, {headers:hdrs}).then(x=>x.json()) : []);
+
+      // 3. Piekdagen
+      const vandaag = new Date().toISOString().split('T')[0];
+      const h = new Date(); h.setDate(h.getDate() + horizonDagen);
+      const hStr = h.toISOString().split('T')[0];
+      let pu = SB + '/rest/v1/v_piekdagen?datum=gte.' + vandaag + '&datum=lte.' + hStr + '&order=datum.asc,outlet_code.asc&limit=300';
+      if (outlet !== 'alle') pu += '&outlet_code=eq.' + outlet;
+      const r3 = await fetch(pu, { headers: hdrs });
+      const piekRaw = await r3.json();
+      setPiekData(Array.isArray(piekRaw) ? piekRaw : []);
+    } catch(err) { console.error(err); }
     setLoading(false);
   }
 
-  async function laadBoekingen(maand, oc) {
-    setLoadingBoekingen(true);
-    const tot = new Date(maand); tot.setMonth(tot.getMonth() + 1);
-    const totDatum = tot.toISOString().split('T')[0];
-    let url = SB + '/rest/v1/v_fb_per_boeking?datum=gte.' + maand + '&datum=lt.' + totDatum + '&order=datum.asc';
-    if (oc !== 'alle') url += '&outlet_code=eq.' + oc;
-    const r = await fetch(url, { headers: hdrs });
-    const data = await r.json();
-    setBoekingen(Array.isArray(data) ? data : []);
-    setLoadingBoekingen(false);
-  }
+  React.useEffect(() => { laad(); }, [jaar, outlet, horizonDagen]);
 
-  React.useEffect(() => { laadMaanden(jaar, outlet); setGekozenMaand(null); setBoekingen([]); }, [jaar, outlet]);
-  React.useEffect(() => { if (gekozenMaand) laadBoekingen(gekozenMaand, outlet); }, [gekozenMaand, outlet, inclBtw]);
-
-  // Aggregeer per maand
+  const FB_GROEPEN = ['Eten','Drinken','Eten wp','Drinken wp'];
   const maandGrp = {};
   for (const r of maandData) {
-    const k = r.maand;
-    if (!maandGrp[k]) maandGrp[k] = { maand: k, maand_nr: r.maand_nr, def_eten: 0, def_dranken: 0, opt_eten: 0, opt_dranken: 0, personen: 0, boekingen: 0 };
-    const eten = v(r.eten_excl_btw || 0);
-    const drank = v(r.dranken_excl_btw || 0);
-    if (r.boeking_status === 'definitief') {
-      maandGrp[k].def_eten += eten;
-      maandGrp[k].def_dranken += drank;
-      maandGrp[k].personen += Number(r.totaal_personen || 0);
-      maandGrp[k].boekingen += Number(r.aantal_boekingen || 0);
-    } else {
-      maandGrp[k].opt_eten += eten;
-      maandGrp[k].opt_dranken += drank;
+    const k = r.periode_van;
+    if (!maandGrp[k]) maandGrp[k] = { maand: k, fb:0, eten:0, drinken:0, totaal:0 };
+    const v = inclBtw ? Number(r.bedrag_inc_btw||0) : Number(r.bedrag_exc_btw||0);
+    maandGrp[k].totaal += v;
+    if (FB_GROEPEN.includes(r.productgroep_naam)) {
+      maandGrp[k].fb += v;
+      if (r.productgroep_naam.startsWith('Eten')) maandGrp[k].eten += v;
+      else maandGrp[k].drinken += v;
     }
   }
-  const maanden = Object.values(maandGrp).sort((a, b) => a.maand.localeCompare(b.maand));
+  const maanden = Object.values(maandGrp).sort((a,b)=>a.maand.localeCompare(b.maand));
 
-  // KPIs
-  const totEten   = maanden.reduce((s, m) => s + m.def_eten, 0);
-  const totDrank  = maanden.reduce((s, m) => s + m.def_dranken, 0);
-  const totDef    = totEten + totDrank;
-  const totOptie  = maanden.reduce((s, m) => s + m.opt_eten + m.opt_dranken, 0);
-  const totPers   = maanden.reduce((s, m) => s + m.personen, 0);
+  const optieGrp = {};
+  for (const r of optieData) {
+    const k = r.maand;
+    if (!optieGrp[k]) optieGrp[k] = { maand:k, maand_nr:r.maand_nr, jaar:r.jaar, def:0, opt:0, def_prs:0, opt_prs:0 };
+    optieGrp[k].def += Number(r.definitief_count||0);
+    optieGrp[k].opt += Number(r.optie_count||0);
+    optieGrp[k].def_prs += Number(r.definitief_personen||0);
+    optieGrp[k].opt_prs += Number(r.optie_personen||0);
+  }
+  const optieMaanden = Object.values(optieGrp).sort((a,b)=>a.maand.localeCompare(b.maand));
 
-  // Grafiek
-  const maxVal = Math.max(...maanden.map(m => m.def_eten + m.def_dranken + m.opt_eten + m.opt_dranken), 1);
-  const GH = 200;
-  const BW = Math.min(44, Math.max(18, Math.floor(700 / Math.max(maanden.length, 1)) - 8));
-  const NAMEN = ['','Jan','Feb','Mrt','Apr','Mei','Jun','Jul','Aug','Sep','Okt','Nov','Dec'];
+  const piekGrp = {};
+  for (const r of piekData) {
+    const k = r.datum;
+    if (!piekGrp[k]) piekGrp[k] = { datum:k, dag_naam:r.dag_naam, is_weekend:r.is_weekend, west:null, weesp:null, totaal:0, def_totaal:0, opt_totaal:0 };
+    const entry = { personen:Number(r.totaal_personen||0), def:Number(r.definitief_personen||0), opt:Number(r.optie_personen||0), grootte:r.grootte_klasse, boekingen:Number(r.aantal_boekingen||0) };
+    if (r.outlet_code==='west') piekGrp[k].west = entry;
+    else if (r.outlet_code==='weesp') piekGrp[k].weesp = entry;
+    else if (r.outlet_code==='gemengd') { piekGrp[k].west = entry; }
+    piekGrp[k].totaal += entry.personen;
+    piekGrp[k].def_totaal += entry.def;
+    piekGrp[k].opt_totaal += entry.opt;
+  }
+  const piekDagen = Object.values(piekGrp).sort((a,b)=>a.datum.localeCompare(b.datum));
 
-  // Kleuren
-  const NIGHT = '#002D41'; const GRAY = '#6E8591'; const LIGHT = '#F5F8FA';
-  const C_ETEN   = '#1976D2'; // blauw = eten definitief
-  const C_DRANK  = '#3FB8C4'; // aqua = dranken definitief
-  const C_ETEN_O = '#90CAF9'; // lichtblauw = eten optie
-  const C_DRANK_O= '#B2EBF2'; // lichtaqua = dranken optie
-  const GREEN = '#2E7D32'; const ORANGE = '#E65100';
+  const totFB = maanden.reduce((s,m)=>s+m.fb,0);
+  const totEten = maanden.reduce((s,m)=>s+m.eten,0);
+  const totDrinken = maanden.reduce((s,m)=>s+m.drinken,0);
+  const totTotaal = maanden.reduce((s,m)=>s+m.totaal,0);
+  const fbPct = totTotaal>0?(totFB/totTotaal*100):0;
+  const eetPct = totFB>0?(totEten/totFB*100):0;
+  const huidigJaarOpties = optieMaanden.filter(m=>m.jaar===jaar);
+  const totOptPrs = huidigJaarOpties.reduce((s,m)=>s+m.opt_prs,0);
+  const totDefPrs = huidigJaarOpties.reduce((s,m)=>s+m.def_prs,0);
+  const grootDagen = piekDagen.filter(d=>d.totaal>=150).length;
+  const maxPiekDag = piekDagen.reduce((mx,d)=>d.totaal>mx.totaal?d:mx,{totaal:0});
+  const maxMaand = Math.max(...maanden.map(m=>m.totaal),1);
+  const maxOptie = Math.max(...optieMaanden.map(m=>m.def_prs+m.opt_prs),1);
+  const GRAFIEK_H = 180;
+  const MAAND_N = ['','Jan','Feb','Mrt','Apr','Mei','Jun','Jul','Aug','Sep','Okt','Nov','Dec'];
+  const NIGHT='#002D41',AQUA='#3FB8C4',BLUE='#1976D2',GREEN='#388E3C',RED='#C62828',ORANGE='#E65100';
+  const GRAY='#6E8591',LIGHT='#F5F8FA',BORDER='#D8E8EF',OPTIE_C='#F57C00',DEF_C='#1976D2';
+  const FB_C='#00897B',ETEN_C='#43A047',DRINKEN_C='#1E88E5';
+  function fmt(n){if(!n||isNaN(n))return '€0';if(n>=1000000)return '€'+(n/1000000).toFixed(1)+'M';if(n>=1000)return '€'+(n/1000).toFixed(0)+'k';return '€'+Math.round(n);}
+  function fmtN(n){return n>=1000?(n/1000).toFixed(1)+'k':String(Math.round(n||0));}
+  const card={background:'white',borderRadius:10,padding:'16px 20px',boxShadow:'0 1px 4px rgba(0,35,65,.08)',border:'1px solid '+BORDER};
+  const kpiCard={...card,flex:1,minWidth:140};
+  const btn=(active,color)=>({padding:'5px 14px',borderRadius:20,border:'1px solid '+BORDER,background:active?(color||NIGHT):'white',color:active?'white':NIGHT,cursor:'pointer',fontSize:13,fontWeight:active?700:400});
+  const bdg=(c,bg)=>({display:'inline-block',padding:'2px 8px',borderRadius:10,fontSize:11,fontWeight:700,background:bg||c+'22',color:c});
+  const gKleur={xxl:RED,xl:ORANGE,groot:'#F57C00',middel:BLUE,klein:GRAY};
+  const gLabel={xxl:'🔴 XXL 500+',xl:'🟠 XL 250+',groot:'🟡 Groot 150+',middel:'🔵 Middel 80+',klein:'⚪ Klein'};
+  function getKlasse(n){return n>=500?'xxl':n>=250?'xl':n>=150?'groot':n>=80?'middel':'klein';}
 
-  const card = { background:'white', borderRadius:10, padding:'20px 24px', boxShadow:'0 1px 4px rgba(0,35,65,.08)', border:'1px solid #D8E8EF' };
-  const btn = (active, clr) => ({ padding:'5px 14px', borderRadius:20, border:'1px solid ' + (clr||'#D8E8EF'), background: active ? (clr||NIGHT) : 'white', color: active ? 'white' : (clr||NIGHT), cursor:'pointer', fontSize:13, fontWeight: active ? 700 : 400, transition:'all .15s' });
-  const badge = (c) => ({ display:'inline-block', padding:'2px 10px', borderRadius:12, fontSize:11, fontWeight:700, background:c+'22', color:c });
+  if(loading) return e('div',{style:{padding:40,textAlign:'center',color:GRAY,fontFamily:'system-ui,sans-serif'}},'📊 Laden...');
 
-  if (loading) return e('div', { style:{ padding:40, textAlign:'center', color:GRAY } }, '📊 Laden…');
-
-  return e('div', { style:{ fontFamily:'system-ui,-apple-system,sans-serif', color:NIGHT } },
-
+  return e('div',{style:{fontFamily:'system-ui,-apple-system,sans-serif',color:NIGHT}},
     // Header
-    e('div', { style:{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:24, flexWrap:'wrap', gap:12 } },
-      e('div', null,
-        e('h2', { style:{ margin:0, fontSize:22, fontWeight:800 } }, '📊 F&B Analyse'),
-        e('div', { style:{ fontSize:13, color:GRAY, marginTop:3 } }, 'Eten & Dranken omzet op basis van Recras · excl. BTW indicatief')
+    e('div',{style:{display:'flex',alignItems:'flex-start',justifyContent:'space-between',marginBottom:20,flexWrap:'wrap',gap:12}},
+      e('div',null,
+        e('h2',{style:{margin:0,fontSize:20,fontWeight:800}},'📊 F&B & Bezetting Analyse'),
+        e('div',{style:{fontSize:12,color:GRAY,marginTop:2}},'Werkelijke Recras-omzet · '+(inclBtw?'Incl.':'Excl.')+' BTW')
       ),
-      e('div', { style:{ display:'flex', gap:6, flexWrap:'wrap', alignItems:'center' } },
-        ...[2026,2025,2024].map(j => e('button', { key:j, style:btn(jaar===j), onClick:()=>setJaar(j) }, j)),
-        e('div', { style:{ width:1, background:'#D8E8EF', margin:'0 2px' } }),
-        ...['alle','west','weesp'].map(o => e('button', { key:o, style:btn(outlet===o), onClick:()=>setOutlet(o) }, o==='alle'?'Beide':o.charAt(0).toUpperCase()+o.slice(1))),
-        e('div', { style:{ width:1, background:'#D8E8EF', margin:'0 2px' } }),
-        e('button', { style:btn(!inclBtw), onClick:()=>setInclBtw(false) }, 'Excl. BTW'),
-        e('button', { style:btn(inclBtw), onClick:()=>setInclBtw(true) }, 'Incl. BTW'),
+      e('div',{style:{display:'flex',gap:6,flexWrap:'wrap',alignItems:'center'}},
+        ...[2026,2025,2024].map(j=>e('button',{key:j,style:btn(jaar===j),onClick:()=>setJaar(j)},j)),
+        e('span',{style:{color:BORDER,alignSelf:'stretch'}},'|'),
+        ...['alle','west','weesp'].map(o=>e('button',{key:o,style:btn(outlet===o),onClick:()=>setOutlet(o)},o==='alle'?'Beide':o.charAt(0).toUpperCase()+o.slice(1))),
+        e('span',{style:{color:BORDER}},'|'),
+        e('button',{style:btn(!inclBtw),onClick:()=>setInclBtw(false)},'Excl.'),
+        e('button',{style:btn(inclBtw),onClick:()=>setInclBtw(true)},'Incl.')
+      )
+    ),
+    // Tabs
+    e('div',{style:{display:'flex',gap:0,marginBottom:20,borderBottom:'2px solid '+BORDER}},
+      ...[['overzicht','📈 F&B Overzicht'],['opties','🔄 Optie Trend'],['piekdagen','📅 Piekdagen']].map(([id,label])=>
+        e('button',{key:id,onClick:()=>setTab(id),style:{padding:'8px 18px',border:'none',background:'none',cursor:'pointer',fontSize:14,fontWeight:tab===id?700:400,color:tab===id?BLUE:GRAY,borderBottom:tab===id?'2px solid '+BLUE:'2px solid transparent',marginBottom:-2}},label)
       )
     ),
 
-    // KPI rij — 4 kaarten
-    e('div', { style:{ display:'flex', gap:16, marginBottom:24, flexWrap:'wrap' } },
-      // Eten definitief
-      e('div', { style:{ ...card, flex:1, borderTop:'3px solid '+C_ETEN } },
-        e('div', { style:{ fontSize:11, color:GRAY, fontWeight:700, letterSpacing:.6, textTransform:'uppercase', marginBottom:4 } }, '🍽 Eten definitief'),
-        e('div', { style:{ fontSize:26, fontWeight:800, color:C_ETEN } }, fmt(totEten)),
-        e('div', { style:{ fontSize:12, color:GRAY, marginTop:4 } }, totPers > 0 ? '€' + (totEten/totPers).toFixed(2) + ' p.p.' : '—')
-      ),
-      // Dranken definitief
-      e('div', { style:{ ...card, flex:1, borderTop:'3px solid '+C_DRANK } },
-        e('div', { style:{ fontSize:11, color:GRAY, fontWeight:700, letterSpacing:.6, textTransform:'uppercase', marginBottom:4 } }, '🥂 Dranken definitief'),
-        e('div', { style:{ fontSize:26, fontWeight:800, color:C_DRANK } }, fmt(totDrank)),
-        e('div', { style:{ fontSize:12, color:GRAY, marginTop:4 } }, totPers > 0 ? '€' + (totDrank/totPers).toFixed(2) + ' p.p.' : '—')
-      ),
-      // Totaal + opties
-      e('div', { style:{ ...card, flex:1, borderTop:'3px solid '+NIGHT } },
-        e('div', { style:{ fontSize:11, color:GRAY, fontWeight:700, letterSpacing:.6, textTransform:'uppercase', marginBottom:4 } }, '📦 Totaal F&B'),
-        e('div', { style:{ fontSize:26, fontWeight:800, color:NIGHT } }, fmt(totDef)),
-        e('div', { style:{ fontSize:12, color:GRAY, marginTop:4 } },
-          totPers > 0 ? '€' + (totDef/totPers).toFixed(2) + ' p.p. · ' : '',
-          e('span', { style:{ color:'#90CAF9' } }, '+' + fmt(totOptie) + ' opties')
+    // === OVERZICHT ===
+    tab==='overzicht'&&e('div',null,
+      e('div',{style:{display:'flex',gap:14,marginBottom:20,flexWrap:'wrap'}},
+        e('div',{style:kpiCard},
+          e('div',{style:{fontSize:11,color:GRAY,fontWeight:700,letterSpacing:.5,textTransform:'uppercase'}},'F&B Totaal '+jaar),
+          e('div',{style:{fontSize:26,fontWeight:800,color:FB_C,margin:'4px 0 2px'}},fmt(totFB)),
+          e('div',{style:{fontSize:12,color:GRAY}},fbPct.toFixed(1)+'% van totale omzet')
+        ),
+        e('div',{style:kpiCard},
+          e('div',{style:{fontSize:11,color:GRAY,fontWeight:700,letterSpacing:.5,textTransform:'uppercase'}},'Eten'),
+          e('div',{style:{fontSize:26,fontWeight:800,color:ETEN_C,margin:'4px 0 2px'}},fmt(totEten)),
+          e('div',{style:{fontSize:12,color:GRAY}},eetPct.toFixed(1)+'% van F&B')
+        ),
+        e('div',{style:kpiCard},
+          e('div',{style:{fontSize:11,color:GRAY,fontWeight:700,letterSpacing:.5,textTransform:'uppercase'}},'Drinken'),
+          e('div',{style:{fontSize:26,fontWeight:800,color:DRINKEN_C,margin:'4px 0 2px'}},fmt(totDrinken)),
+          e('div',{style:{fontSize:12,color:GRAY}},(100-eetPct).toFixed(1)+'% van F&B')
+        ),
+        e('div',{style:{...kpiCard,flex:1.5}},
+          e('div',{style:{fontSize:11,color:GRAY,fontWeight:700,letterSpacing:.5,textTransform:'uppercase',marginBottom:6}},'Totale bedrijfsomzet '+jaar),
+          e('div',{style:{fontSize:26,fontWeight:800,color:NIGHT,margin:'4px 0 4px'}},fmt(totTotaal)),
+          e('div',{style:{display:'flex',gap:2,height:10,borderRadius:6,overflow:'hidden',background:LIGHT,border:'1px solid '+BORDER}},
+            e('div',{style:{width:fbPct+'%',background:FB_C,transition:'width .5s'}}),
+          ),
+          e('div',{style:{fontSize:11,color:GRAY,marginTop:4}},'F&B '+fbPct.toFixed(1)+'% · Overig '+(100-fbPct).toFixed(1)+'%')
         )
       ),
-      // Drank/eten ratio
-      e('div', { style:{ ...card, flex:1, borderTop:'3px solid '+ORANGE } },
-        e('div', { style:{ fontSize:11, color:GRAY, fontWeight:700, letterSpacing:.6, textTransform:'uppercase', marginBottom:4 } }, '⚖️ Drank/eten verhouding'),
-        e('div', { style:{ fontSize:26, fontWeight:800, color:ORANGE } },
-          totEten > 0 ? Math.round(totDrank/totEten*100) + '%' : '—'
+      e('div',{style:{...card,marginBottom:20}},
+        e('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}},
+          e('div',{style:{fontWeight:700,fontSize:14}},'F&B per maand vs totale omzet — '+jaar),
+          e('div',{style:{display:'flex',gap:14,fontSize:11,color:GRAY}},
+            e('span',null,e('span',{style:{display:'inline-block',width:10,height:10,background:ETEN_C,borderRadius:2,marginRight:4}}),'Eten'),
+            e('span',null,e('span',{style:{display:'inline-block',width:10,height:10,background:DRINKEN_C+'99',borderRadius:2,marginRight:4}}),'Drinken'),
+            e('span',null,e('span',{style:{display:'inline-block',width:10,height:10,background:'#E0E0E0',borderRadius:2,marginRight:4}}),'Overig')
+          )
         ),
-        e('div', { style:{ fontSize:12, color:GRAY, marginTop:4 } }, 'dranken als % van eten')
-      )
-    ),
-
-    // Grafiek
-    e('div', { style:{ ...card, marginBottom:24 } },
-      e('div', { style:{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16, flexWrap:'wrap', gap:8 } },
-        e('div', { style:{ fontWeight:700, fontSize:15 } }, 'F&B per maand — ' + jaar),
-        e('div', { style:{ display:'flex', gap:6, alignItems:'center' } },
-          e('button', { style:btn(grafiekModus==='eten_dranken', C_ETEN), onClick:()=>setGrafiekModus('eten_dranken') }, '🍽 Eten / 🥂 Dranken'),
-          e('button', { style:btn(grafiekModus==='status', NIGHT), onClick:()=>setGrafiekModus('status') }, '✅ Def / Optie'),
-          e('div', { style:{ marginLeft:12, display:'flex', gap:12, fontSize:12, color:GRAY } },
-            grafiekModus === 'eten_dranken'
-              ? [
-                  e('span', { key:'e' }, e('span', { style:{ display:'inline-block', width:10, height:10, background:C_ETEN, borderRadius:2, marginRight:3 } }), 'Eten def.'),
-                  e('span', { key:'d' }, e('span', { style:{ display:'inline-block', width:10, height:10, background:C_DRANK, borderRadius:2, marginRight:3 } }), 'Dranken def.'),
-                  e('span', { key:'eo' }, e('span', { style:{ display:'inline-block', width:10, height:10, background:C_ETEN_O, borderRadius:2, marginRight:3 } }), 'Eten optie'),
-                ]
-              : [
-                  e('span', { key:'d' }, e('span', { style:{ display:'inline-block', width:10, height:10, background:C_ETEN, borderRadius:2, marginRight:3 } }), 'Definitief'),
-                  e('span', { key:'o' }, e('span', { style:{ display:'inline-block', width:10, height:10, background:C_ETEN_O, borderRadius:2, marginRight:3 } }), 'Optie'),
-                ]
+        maanden.length===0?e('div',{style:{textAlign:'center',color:GRAY,padding:30}},'Geen data'):
+        e('div',{style:{overflowX:'auto'}},
+          e('svg',{width:Math.max(maanden.length*56+60,400),height:GRAFIEK_H+60,style:{display:'block'}},
+            ...[0,.25,.5,.75,1].map(f=>e('g',{key:f},
+              e('line',{x1:50,y1:8+(1-f)*GRAFIEK_H,x2:maanden.length*56+50,y2:8+(1-f)*GRAFIEK_H,stroke:'#EEF3F6',strokeWidth:1}),
+              e('text',{x:44,y:12+(1-f)*GRAFIEK_H,fontSize:9,fill:GRAY,textAnchor:'end'},fmt(maxMaand*f))
+            )),
+            ...maanden.map((m,i)=>{
+              const x=54+i*56;
+              const totH=(m.totaal/maxMaand)*GRAFIEK_H;
+              const etenH=(m.eten/maxMaand)*GRAFIEK_H;
+              const drinkenH=(m.drinken/maxMaand)*GRAFIEK_H;
+              const mn=Number(m.maand.split('-')[1]);
+              return e('g',{key:m.maand},
+                e('rect',{x,y:8+(GRAFIEK_H-totH),width:44,height:totH,fill:'#EEF3F6',rx:2}),
+                e('rect',{x,y:8+(GRAFIEK_H-etenH-drinkenH),width:44,height:drinkenH,fill:DRINKEN_C+'99',rx:2}),
+                e('rect',{x,y:8+(GRAFIEK_H-etenH),width:44,height:etenH,fill:ETEN_C,rx:2}),
+                e('text',{x:x+22,y:GRAFIEK_H+22,fontSize:11,fill:NIGHT,textAnchor:'middle'},MAAND_N[mn]),
+                m.totaal>0&&e('text',{x:x+22,y:GRAFIEK_H+36,fontSize:9,fill:GRAY,textAnchor:'middle'},(m.fb/m.totaal*100).toFixed(0)+'%')
+              );
+            })
           )
         )
       ),
+      e('div',{style:card},
+        e('div',{style:{fontWeight:700,fontSize:14,marginBottom:12}},'Detail per maand'),
+        e('div',{style:{overflowX:'auto'}},
+          e('table',{style:{width:'100%',borderCollapse:'collapse',fontSize:13}},
+            e('thead',null,e('tr',{style:{background:NIGHT,color:'white'}},
+              ...['Maand','Eten','Drinken','F&B Totaal','Totale Omzet','F&B %'].map(h=>e('th',{key:h,style:{padding:'8px 12px',textAlign:'left',fontSize:11,fontWeight:600}},h))
+            )),
+            e('tbody',null,
+              ...maanden.map((m,i)=>{
+                const mn=Number(m.maand.split('-')[1]);
+                const pct=m.totaal>0?(m.fb/m.totaal*100):0;
+                return e('tr',{key:m.maand,style:{background:i%2?LIGHT:'white',borderBottom:'1px solid '+BORDER}},
+                  e('td',{style:{padding:'8px 12px',fontWeight:500}},MAAND_N[mn]+' '+jaar),
+                  e('td',{style:{padding:'8px 12px',color:ETEN_C,fontWeight:600}},fmt(m.eten)),
+                  e('td',{style:{padding:'8px 12px',color:DRINKEN_C,fontWeight:600}},fmt(m.drinken)),
+                  e('td',{style:{padding:'8px 12px',fontWeight:700,color:FB_C}},fmt(m.fb)),
+                  e('td',{style:{padding:'8px 12px',color:GRAY}},fmt(m.totaal)),
+                  e('td',{style:{padding:'8px 12px'}},
+                    e('div',{style:{display:'flex',alignItems:'center',gap:6}},
+                      e('div',{style:{width:40,height:6,background:'#EEF3F6',borderRadius:3,overflow:'hidden'}},
+                        e('div',{style:{width:pct+'%',height:'100%',background:FB_C,borderRadius:3}})
+                      ),
+                      e('span',{style:{fontSize:11,color:GRAY}},pct.toFixed(1)+'%')
+                    )
+                  )
+                );
+              }),
+              e('tr',{style:{background:NIGHT,color:'white',fontWeight:700}},
+                e('td',{style:{padding:'8px 12px'}},'Totaal '+jaar),
+                e('td',{style:{padding:'8px 12px',color:'#81C784'}},fmt(totEten)),
+                e('td',{style:{padding:'8px 12px',color:'#90CAF9'}},fmt(totDrinken)),
+                e('td',{style:{padding:'8px 12px'}},fmt(totFB)),
+                e('td',{style:{padding:'8px 12px'}},fmt(totTotaal)),
+                e('td',{style:{padding:'8px 12px'}},fbPct.toFixed(1)+'%')
+              )
+            )
+          )
+        )
+      )
+    ),
 
-      maanden.length === 0
-        ? e('div', { style:{ textAlign:'center', color:GRAY, padding:40 } }, 'Geen data voor dit jaar / deze outlet')
-        : e('div', { style:{ overflowX:'auto' } },
-            e('svg', { width: Math.max(maanden.length*(BW+12)+64, 400), height:GH+60, style:{ display:'block' } },
-              ...[0,.25,.5,.75,1].map(f =>
-                e('g', { key:f },
-                  e('line', { x1:54, y1:10+(1-f)*GH, x2:maanden.length*(BW+12)+54, y2:10+(1-f)*GH, stroke:'#E8F0F4', strokeWidth:1 }),
-                  e('text', { x:48, y:14+(1-f)*GH, fontSize:10, fill:GRAY, textAnchor:'end' }, fmt(maxVal*f))
+    // === OPTIE TREND ===
+    tab==='opties'&&e('div',null,
+      e('div',{style:{display:'flex',gap:14,marginBottom:20,flexWrap:'wrap'}},
+        e('div',{style:kpiCard},
+          e('div',{style:{fontSize:11,color:GRAY,fontWeight:700,letterSpacing:.5,textTransform:'uppercase'}},'Openstaande opties'),
+          e('div',{style:{fontSize:26,fontWeight:800,color:OPTIE_C,margin:'4px 0 2px'}},fmtN(totOptPrs)+' pers'),
+          e('div',{style:{fontSize:12,color:GRAY}},'Nog te bevestigen in '+jaar)
+        ),
+        e('div',{style:kpiCard},
+          e('div',{style:{fontSize:11,color:GRAY,fontWeight:700,letterSpacing:.5,textTransform:'uppercase'}},'Definitief gepland'),
+          e('div',{style:{fontSize:26,fontWeight:800,color:DEF_C,margin:'4px 0 2px'}},fmtN(totDefPrs)+' pers'),
+          e('div',{style:{fontSize:12,color:GRAY}},'Bevestigde bezetting '+jaar)
+        ),
+        e('div',{style:kpiCard},
+          e('div',{style:{fontSize:11,color:GRAY,fontWeight:700,letterSpacing:.5,textTransform:'uppercase'}},'Conversieratio'),
+          e('div',{style:{fontSize:26,fontWeight:800,color:GREEN,margin:'4px 0 2px'}},
+            (totOptPrs+totDefPrs)>0?Math.round(totDefPrs/(totOptPrs+totDefPrs)*100)+'%':'—'
+          ),
+          e('div',{style:{fontSize:12,color:GRAY}},'Def / (Def + Optie)')
+        ),
+        e('div',{style:{...kpiCard,background:OPTIE_C+'11',border:'1px solid '+OPTIE_C+'33'}},
+          e('div',{style:{fontSize:11,color:ORANGE,fontWeight:700,letterSpacing:.5,textTransform:'uppercase'}},'Potentieel te winnen'),
+          e('div',{style:{fontSize:26,fontWeight:800,color:ORANGE,margin:'4px 0 2px'}},fmt(totOptPrs*38)),
+          e('div',{style:{fontSize:12,color:GRAY}},'Schatting: '+fmtN(totOptPrs)+' pers × €38 gem. F&B pp')
+        )
+      ),
+      e('div',{style:{...card,marginBottom:20}},
+        e('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}},
+          e('div',{style:{fontWeight:700,fontSize:14}},'Bezetting per maand — definitief vs optie (personen)'),
+          e('div',{style:{display:'flex',gap:14,fontSize:11,color:GRAY}},
+            e('span',null,e('span',{style:{display:'inline-block',width:10,height:10,background:DEF_C,borderRadius:2,marginRight:4}}),'Definitief'),
+            e('span',null,e('span',{style:{display:'inline-block',width:10,height:10,background:OPTIE_C,borderRadius:2,marginRight:4}}),'Optie')
+          )
+        ),
+        e('div',{style:{overflowX:'auto'}},
+          e('svg',{width:Math.max(optieMaanden.length*48+60,400),height:GRAFIEK_H+60,style:{display:'block'}},
+            ...[0,.25,.5,.75,1].map(f=>e('g',{key:f},
+              e('line',{x1:50,y1:8+(1-f)*GRAFIEK_H,x2:optieMaanden.length*48+50,y2:8+(1-f)*GRAFIEK_H,stroke:'#EEF3F6',strokeWidth:1}),
+              e('text',{x:44,y:12+(1-f)*GRAFIEK_H,fontSize:9,fill:GRAY,textAnchor:'end'},Math.round(maxOptie*f))
+            )),
+            ...optieMaanden.map((m,i)=>{
+              const x=54+i*48;
+              const totH=((m.def_prs+m.opt_prs)/maxOptie)*GRAFIEK_H;
+              const defH=(m.def_prs/maxOptie)*GRAFIEK_H;
+              const optH=(m.opt_prs/maxOptie)*GRAFIEK_H;
+              const isHuidig=m.jaar===jaar;
+              return e('g',{key:m.maand},
+                !isHuidig&&e('rect',{x,y:8+(GRAFIEK_H-defH),width:36,height:defH,fill:DEF_C+'44',rx:2}),
+                isHuidig&&e('rect',{x,y:8+(GRAFIEK_H-defH),width:36,height:defH,fill:DEF_C,rx:2}),
+                isHuidig&&m.opt_prs>0&&e('rect',{x,y:8+(GRAFIEK_H-totH),width:36,height:optH,fill:OPTIE_C,rx:2,opacity:.9}),
+                e('text',{x:x+18,y:GRAFIEK_H+20,fontSize:10,fill:isHuidig?NIGHT:GRAY+'88',textAnchor:'middle'},MAAND_N[m.maand_nr]),
+                e('text',{x:x+18,y:GRAFIEK_H+34,fontSize:8,fill:GRAY,textAnchor:'middle'},m.jaar===jaar?'':(m.jaar+'')),
+              );
+            })
+          )
+        )
+      ),
+      e('div',{style:card},
+        e('div',{style:{fontWeight:700,fontSize:14,marginBottom:12}},'Optie detail per maand — '+jaar),
+        e('table',{style:{width:'100%',borderCollapse:'collapse',fontSize:13}},
+          e('thead',null,e('tr',{style:{background:NIGHT,color:'white'}},
+            ...['Maand','Definitief boekingen','Definitief personen','Optie boekingen','Optie personen','Optie %','Actie vereist'].map(h=>e('th',{key:h,style:{padding:'8px 12px',textAlign:'left',fontSize:11,fontWeight:600}},h))
+          )),
+          e('tbody',null,
+            ...optieMaanden.filter(m=>m.jaar===jaar).map((m,i)=>{
+              const totPrs=m.def_prs+m.opt_prs;
+              const optPct=totPrs>0?(m.opt_prs/totPrs*100):0;
+              const isVerlopen=m.maand_nr<new Date().getMonth()+1;
+              return e('tr',{key:m.maand,style:{background:i%2?LIGHT:'white',borderBottom:'1px solid '+BORDER,borderLeft:m.opt>0?'3px solid '+OPTIE_C:'3px solid transparent'}},
+                e('td',{style:{padding:'8px 12px',fontWeight:500}},MAAND_N[m.maand_nr]+' '+jaar),
+                e('td',{style:{padding:'8px 12px',color:DEF_C}},m.def+' bkn'),
+                e('td',{style:{padding:'8px 12px',color:DEF_C,fontWeight:600}},fmtN(m.def_prs)),
+                e('td',{style:{padding:'8px 12px',color:OPTIE_C}},m.opt>0?m.opt+' bkn':'—'),
+                e('td',{style:{padding:'8px 12px',color:OPTIE_C,fontWeight:m.opt>0?700:400}},m.opt>0?fmtN(m.opt_prs):'—'),
+                e('td',null,m.opt>0?e('span',{style:bdg(OPTIE_C)},optPct.toFixed(0)+'%'):e('span',{style:bdg(GREEN)},'0%')),
+                e('td',{style:{padding:'8px 12px',fontSize:12}},
+                  isVerlopen?e('span',{style:{color:GRAY}},'Verstreken'):
+                  m.opt>0?e('span',{style:{color:ORANGE,fontWeight:600}},'⚡ '+m.opt+' optie'+( m.opt>1?'s':'')+' nabellen'):
+                  e('span',{style:{color:GREEN}},'✅ Alles definitief')
                 )
-              ),
-              ...maanden.map((m, i) => {
-                const x = 58 + i*(BW+12);
-                const isActive = gekozenMaand === m.maand;
-                let bars;
-                if (grafiekModus === 'eten_dranken') {
-                  const totH = (m.def_eten + m.def_dranken + m.opt_eten)/maxVal*GH;
-                  const etenH = m.def_eten/maxVal*GH;
-                  const drankH = m.def_dranken/maxVal*GH;
-                  const optH = m.opt_eten/maxVal*GH;
-                  bars = [
-                    m.opt_eten > 0 && e('rect', { key:'oe', x, y:10+(GH-totH), width:BW, height:optH, fill:C_ETEN_O, rx:2 }),
-                    m.def_dranken > 0 && e('rect', { key:'dr', x, y:10+(GH-etenH-drankH), width:BW, height:drankH, fill:C_DRANK, rx:0 }),
-                    m.def_eten > 0 && e('rect', { key:'et', x, y:10+(GH-etenH), width:BW, height:etenH, fill:isActive?'#0D47A1':C_ETEN, rx:2 }),
-                  ];
-                } else {
-                  const defH = (m.def_eten+m.def_dranken)/maxVal*GH;
-                  const optH = (m.opt_eten+m.opt_dranken)/maxVal*GH;
-                  bars = [
-                    optH > 0 && e('rect', { key:'op', x, y:10+(GH-defH-optH), width:BW, height:optH, fill:C_ETEN_O, rx:2 }),
-                    defH > 0 && e('rect', { key:'df', x, y:10+(GH-defH), width:BW, height:defH, fill:isActive?'#0D47A1':C_ETEN, rx:2 }),
-                  ];
-                }
-                return e('g', { key:m.maand, style:{cursor:'pointer'}, onClick:()=>setGekozenMaand(gekozenMaand===m.maand?null:m.maand) },
-                  ...bars.filter(Boolean),
-                  isActive && e('rect', { x:x-2, y:8, width:BW+4, height:GH+4, fill:'none', stroke:C_ETEN, strokeWidth:2, rx:3 }),
-                  e('text', { x:x+BW/2, y:GH+28, fontSize:11, fill:isActive?C_ETEN:NIGHT, textAnchor:'middle', fontWeight:isActive?700:400 }, NAMEN[m.maand_nr])
+              );
+            })
+          )
+        )
+      )
+    ),
+
+    // === PIEKDAGEN ===
+    tab==='piekdagen'&&e('div',null,
+      e('div',{style:{display:'flex',gap:14,marginBottom:20,flexWrap:'wrap',alignItems:'flex-start'}},
+        e('div',{style:kpiCard},
+          e('div',{style:{fontSize:11,color:GRAY,fontWeight:700,letterSpacing:.5,textTransform:'uppercase'}},'Drukke dagen (150+ pers)'),
+          e('div',{style:{fontSize:26,fontWeight:800,color:ORANGE,margin:'4px 0 2px'}},grootDagen),
+          e('div',{style:{fontSize:12,color:GRAY}},'Komende '+horizonDagen+' dagen')
+        ),
+        e('div',{style:kpiCard},
+          e('div',{style:{fontSize:11,color:GRAY,fontWeight:700,letterSpacing:.5,textTransform:'uppercase'}},'Drukste dag'),
+          e('div',{style:{fontSize:18,fontWeight:800,color:RED,margin:'4px 0 2px'}},maxPiekDag.datum||'—'),
+          e('div',{style:{fontSize:12,color:GRAY}},maxPiekDag.totaal?fmtN(maxPiekDag.totaal)+' personen':'—')
+        ),
+        e('div',{style:{...card,flex:2}},
+          e('div',{style:{fontSize:11,color:GRAY,fontWeight:700,letterSpacing:.5,textTransform:'uppercase',marginBottom:8}},'Periode'),
+          e('div',{style:{display:'flex',gap:6,flexWrap:'wrap'}},
+            ...[30,60,90,120,180].map(d=>e('button',{key:d,style:btn(horizonDagen===d,BLUE),onClick:()=>setHorizonDagen(d)},d+' dgn'))
+          ),
+          e('div',{style:{fontSize:11,color:GRAY,marginTop:8}},
+            ...Object.entries(gLabel).map(([k,v])=>e('span',{key:k,style:{marginRight:10,color:gKleur[k],fontWeight:600}},v))
+          )
+        )
+      ),
+      e('div',{style:card},
+        e('div',{style:{fontWeight:700,fontSize:14,marginBottom:14}},'Bezettingskalender — komende '+horizonDagen+' dagen'),
+        piekDagen.length===0?e('div',{style:{textAlign:'center',color:GRAY,padding:30}},'Geen boekingen in deze periode'):
+        e('div',{style:{overflowX:'auto'}},
+          e('table',{style:{width:'100%',borderCollapse:'collapse',fontSize:13}},
+            e('thead',null,e('tr',{style:{background:NIGHT,color:'white'}},
+              ...['Datum','Dag','West','Weesp','Totaal pers.','Opties','Klasse'].map(h=>e('th',{key:h,style:{padding:'8px 10px',textAlign:'left',fontSize:11,fontWeight:600}},h))
+            )),
+            e('tbody',null,
+              ...piekDagen.map((d,i)=>{
+                const klasse=getKlasse(d.totaal);
+                const kleur=gKleur[klasse];
+                const isBig=d.totaal>=150;
+                return e('tr',{key:d.datum,style:{background:isBig?kleur+'11':i%2?LIGHT:'white',borderBottom:'1px solid '+BORDER,borderLeft:isBig?'4px solid '+kleur:'4px solid transparent'}},
+                  e('td',{style:{padding:'8px 10px',fontWeight:isBig?700:400}},d.datum),
+                  e('td',{style:{padding:'8px 10px',color:d.is_weekend?ORANGE:GRAY,fontSize:12}},(d.dag_naam||'').trim()+(d.is_weekend?' ☀️':'')),
+                  e('td',{style:{padding:'8px 10px'}},
+                    d.west?e('div',null,
+                      e('span',{style:{fontWeight:600,color:DEF_C}},fmtN(d.west.def||0)),
+                      d.west.opt>0&&e('span',{style:{color:OPTIE_C,fontSize:11}},' +'+fmtN(d.west.opt)+'?'),
+                      e('span',{style:{fontSize:11,color:GRAY}},' ('+d.west.boekingen+')')
+                    ):e('span',{style:{color:BORDER}},'—')
+                  ),
+                  e('td',{style:{padding:'8px 10px'}},
+                    d.weesp?e('div',null,
+                      e('span',{style:{fontWeight:600,color:AQUA}},fmtN(d.weesp.def||0)),
+                      d.weesp.opt>0&&e('span',{style:{color:OPTIE_C,fontSize:11}},' +'+fmtN(d.weesp.opt)+'?'),
+                      e('span',{style:{fontSize:11,color:GRAY}},' ('+d.weesp.boekingen+')')
+                    ):e('span',{style:{color:BORDER}},'—')
+                  ),
+                  e('td',{style:{padding:'8px 10px',fontWeight:700,color:isBig?kleur:NIGHT}},
+                    fmtN(d.totaal)
+                  ),
+                  e('td',{style:{padding:'8px 10px'}},
+                    d.opt_totaal>0?e('span',{style:bdg(OPTIE_C)},'⏳ +'+fmtN(d.opt_totaal)):
+                    e('span',{style:bdg(GREEN,GREEN+'22')},'✅')
+                  ),
+                  e('td',{style:{padding:'8px 10px'}},
+                    e('span',{style:bdg(kleur,kleur+'22')},gLabel[klasse])
+                  )
                 );
               })
             )
           )
-    ),
-
-    // Drilldown boekingen
-    gekozenMaand && e('div', { style:card },
-      e('div', { style:{ fontWeight:700, fontSize:15, marginBottom:14, display:'flex', alignItems:'center', gap:12 } },
-        'Boekingen ' + NAMEN[maandGrp[gekozenMaand]?.maand_nr] + ' ' + jaar,
-        e('button', { style:{ fontSize:12, color:GRAY, background:'none', border:'none', cursor:'pointer' }, onClick:()=>setGekozenMaand(null) }, '✕ sluiten')
-      ),
-      loadingBoekingen
-        ? e('div', { style:{ textAlign:'center', color:GRAY, padding:20 } }, 'Laden…')
-        : boekingen.length === 0
-          ? e('div', { style:{ color:GRAY } }, 'Geen F&B boekingen in deze maand.')
-          : e('div', { style:{ overflowX:'auto' } },
-              e('table', { style:{ width:'100%', borderCollapse:'collapse', fontSize:13 } },
-                e('thead', null,
-                  e('tr', { style:{ background:NIGHT, color:'white' } },
-                    ...['Datum','Boeking','Outlet','Pers.','🍽 Eten','🥂 Dranken','Totaal F&B','pp','Status'].map(h =>
-                      e('th', { key:h, style:{ padding:'8px 12px', textAlign: ['Pers.','🍽 Eten','🥂 Dranken','Totaal F&B','pp'].includes(h)?'right':'left', fontWeight:600, fontSize:12 } }, h)
-                    )
-                  )
-                ),
-                e('tbody', null,
-                  ...boekingen.map((b, i) =>
-                    e('tr', { key:b.boeking_id, style:{ background:i%2?LIGHT:'white', borderBottom:'1px solid #E8F0F4' } },
-                      e('td', { style:{ padding:'8px 12px', whiteSpace:'nowrap' } }, b.datum),
-                      e('td', { style:{ padding:'8px 12px', fontWeight:600 } }, b.boeking_naam),
-                      e('td', { style:{ padding:'8px 12px' } }, b.outlet_code),
-                      e('td', { style:{ padding:'8px 12px', textAlign:'right' } }, b.personen),
-                      e('td', { style:{ padding:'8px 12px', textAlign:'right', color:C_ETEN, fontWeight:600 } }, b.eten_excl_btw ? fmt(v(b.eten_excl_btw)) : '—'),
-                      e('td', { style:{ padding:'8px 12px', textAlign:'right', color:C_DRANK, fontWeight:600 } }, b.dranken_excl_btw ? fmt(v(b.dranken_excl_btw)) : '—'),
-                      e('td', { style:{ padding:'8px 12px', textAlign:'right', fontWeight:700 } }, fmt(v(b.fb_excl_btw||0))),
-                      e('td', { style:{ padding:'8px 12px', textAlign:'right', color:GREEN } }, b.fb_pp ? '€'+(v(b.fb_pp)).toFixed(2) : '—'),
-                      e('td', { style:{ padding:'8px 12px' } },
-                        e('span', { style:badge(b.boeking_status==='definitief'?GREEN:'#90CAF9') }, b.boeking_status)
-                      )
-                    )
-                  )
-                )
-              )
-            )
+        )
+      )
     )
   );
 };
