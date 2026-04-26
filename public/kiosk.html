@@ -271,7 +271,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; back
 </head>
 <body>
 <div class="preview-banner">✨ Kiosk v2 PREVIEW — werkt met echte data</div>
-<div id="kiosk-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#43A047;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.85;pointer-events:none">v2026-04-25-21:15 ✓ tempfix2</div>
+<div id="kiosk-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#43A047;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.85;pointer-events:none">v2026-04-26-22:30 ✓ kiosk-fixes</div>
 <div id="app"><div class="loader">Laden...</div></div>
 <script>
 var SUPABASE_URL = 'https://aezatnwsrhlwtykpixsq.supabase.co';
@@ -611,13 +611,17 @@ function laadData() {
       state.onboarding_stap = 1;
     }
   } catch(e){}
+  var _to=setTimeout(function(){var a=document.getElementById('app');if(a&&a.innerHTML.includes('Laden'))a.innerHTML='<div style="padding:40px;text-align:center"><div style="font-size:32px;margin-bottom:12px">⏱️</div><div style="font-weight:700;color:#E65100;margin-bottom:8px">Laden duurt lang...</div><div style="font-size:12px;color:#888;margin-bottom:20px">Server reageert traag. Probeer opnieuw.</div><button onclick="laadData()" style="background:#234756;color:#fff;border:none;border-radius:100px;padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">🔄 Opnieuw proberen</button></div>';},15000);
   state._laadDataBelofte = api('kiosk-vandaag', { outlet_code: state.outlet_code }).then(function(res) {
+    clearTimeout(_to);
     state.data = res;
     state._laadDataBezig = false;
     render();
   }).catch(function(e) {
     state._laadDataBezig = false;
     console.warn('laadData error:', e);
+    var app = document.getElementById('app');
+    if (app) app.innerHTML = '<div style="padding:40px;text-align:center"><div style="font-size:32px;margin-bottom:12px">⚠️</div><div style="font-weight:700;color:#C62828;margin-bottom:8px">Kan data niet laden</div><div style="font-size:12px;color:#888;margin-bottom:20px">' + (e && e.message ? e.message : 'Verbindingsfout') + '</div><button onclick="laadData()" style="background:#234756;color:#fff;border:none;border-radius:100px;padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">🔄 Opnieuw proberen</button></div>';
   });
   return state._laadDataBelofte;
 }
@@ -977,6 +981,7 @@ if (!window._wekkerInterval) {
 }
 
 function renderTijdbalk(tijdschema, nu, boekingen) {
+  boekingen = (boekingen || []).filter(function(b) { var n = (b.naam || '').toLowerCase(); return !n.includes('bezichtiging') && !n.includes('productiebezoek') && !n.includes('locatiebezoek'); });
   // Init state als nodig
   if (state.tijden_data === undefined) state.tijden_data = null;
   if (!state.tijden_filter) state.tijden_filter = 'alle';
@@ -1421,6 +1426,7 @@ function renderModeSwitch() {
 }
 
 function renderBoekingen(boekingen, voortgang, tijdschema, nu) {
+  boekingen = (boekingen || []).filter(function(b) { var n = (b.naam || '').toLowerCase(); return !n.includes('bezichtiging') && !n.includes('productiebezoek') && !n.includes('locatiebezoek'); });
   if (!boekingen || boekingen.length === 0) return '';
   var gesort = boekingen.slice().sort(function(a,b) {
     var ta = (a.deadlineTijd || '99:99').replace(':','');
