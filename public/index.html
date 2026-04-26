@@ -16422,11 +16422,13 @@ window._FBAnalyseScreen = function FBAnalyseScreen() {
     groei: 'Jaar-op-jaar groei per maand. Groen = groei vs vorig jaar, rood = daling. Handig om te zien welke maanden achterblijven bij verwachting.',
     optie_trend: 'Optieboekingen zijn nog niet bevestigd maar geven een indicatie van de pipeline. Hoe meer opties er vroeg in het jaar staan, hoe beter het jaar er uit gaat zien. Conversieratio (def/totaal) geeft aan hoeveel % uiteindelijk definitief wordt.',
     piekdagen: 'Dagen met 150+ personen vereisen extra personeel. Plan minimaal 3 weken van tevoren extra krachten. XXL dagen (500+) vereisen volledige bezetting + externe inhuur.',
-    producten_top: 'Toont alle F&B menus gegroepeerd op intern menunaam. BBQ Populair NL, ENG en WP zijn samengevoegd tot \u00e9\u00e9n rij. Klik op een rij voor het maand-seizoenspatroon en Recras-varianten.',
-    producten_seizoen: 'De 12 gekleurde blokjes tonen in welke maanden dit menu actief was. Handig om te zien of een product seizoensgebonden is (bijv. BBQ alleen zomer) of jaarrond loopt.',
-    producten_verdeling: 'Verhouding eten vs drinken over alle F&B omzet. Normaal circa 60-65% eten en 35-40% drinken. Een hoger drank-aandeel wijst op meer borrel-boekingen.',
-    forecast_methode: 'Forecast = gemiddelde van dezelfde maand in 2024 en 2025. Gerealiseerde maanden (groen) zijn werkelijke Recras-omzet. Toekomstige maanden (oranje) zijn schattingen. De grijze bandbreedte toont het min/max bereik.',
-    correcties: 'Herboek creditnota\'s naar de juiste periode. Recras plaatst credits op de event-datum, maar soms hoort een credit in een ander jaar. Met de herboekingsknop registreer je dit lokaal.',
+    kpi_fb: 'Totale F&B omzet (bruto, excl. credits) voor het geselecteerde jaar. Credits door annuleringen zijn apart zichtbaar in de tabel. De groei wordt vergeleken met hetzelfde jaar min 1.',
+    kpi_totaal: 'Totale bedrijfsomzet inclusief F&B, locaties, activiteiten en alle overige producten. De progressiebalk toont het F&B aandeel visueel. Normaalwaarde: 45-55% F&B.',
+    forecast_uitleg: 'Forecast voor de resterende maanden is gebaseerd op het gemiddelde van 2024 en 2025 per kalendermaand. Groen = gerealiseerd (werkelijke Recras-data). Oranje = schatting op basis van historisch patroon. De grijze bandbreedte toont min-max uit vorige jaren. Gebruik dit als richting, niet als garantie.',
+    forecast_tabel: 'Per maand: gerealiseerde omzet, de forecast, het historisch gemiddelde (gem. 2024-2025) en de bandbreedte (min-max). De laatste kolom toont de afwijking van forecast vs historisch gemiddelde. Positief = boven verwachting, negatief = onder verwachting.',
+    producten_lijst: 'Alle F&B menu\'s gegroepeerd op menunaam via de stamgegevens-koppeling. Varianten als BBQ Populair NL, ENG en WP zijn samengevoegd tot 1 rij. Klik op een rij voor maanddetail en seizoensgrafiek.',
+    producten_verdeling: 'Verhouding eten vs drinken binnen de totale F&B omzet. Normaalwaarde: 60-65% eten, 35-40% drinken. Een hoog drinkenaandeel wijst op meer borrel- en drankarrangement-boekingen.',
+    optie_kpi: 'Openstaande opties zijn boekingen die nog niet definitief zijn bevestigd. De potentiële F&B-schatting is gebaseerd op het gemiddeld F&B bedrag per persoon (€38). Bel opties actief na — veel opties verlopen zonder actie van de klant.',
   };
 
   async function slaCorrectieOp(modal, naarMaand, reden) {
@@ -16497,7 +16499,7 @@ window._FBAnalyseScreen = function FBAnalyseScreen() {
       // KPI rij
       e('div',{style:{display:'flex',gap:12,marginBottom:16,flexWrap:'wrap'}},
         e('div',{style:kpiCard},
-          e('div',{style:{fontSize:10,color:GRAY,fontWeight:700,letterSpacing:.5,textTransform:'uppercase'}},'F&B '+huidigJaar),
+          e('div',{style:{display:'flex',alignItems:'center',gap:4}},e('div',{style:{fontSize:10,color:GRAY,fontWeight:700,letterSpacing:.5,textTransform:'uppercase'}},'F&B '+huidigJaar),InfoBtn('kpi_fb')),
           e('div',{style:{fontSize:24,fontWeight:800,color:AQUA,margin:'3px 0'
           }},fmt(totFB)),
           groeiFB!==null&&e('div',{style:{fontSize:11,color:groeiFB>=0?GREEN:RED,fontWeight:700}},
@@ -16515,7 +16517,7 @@ window._FBAnalyseScreen = function FBAnalyseScreen() {
           e('div',{style:{fontSize:11,color:GRAY}},pct(totDrinken,totFB)+' van F&B')
         ),
         e('div',{style:{...kpiCard,flex:1.4}},
-          e('div',{style:{fontSize:10,color:GRAY,fontWeight:700,letterSpacing:.5,textTransform:'uppercase'}},'Totale omzet '+huidigJaar),
+          e('div',{style:{display:'flex',alignItems:'center',gap:4}},e('div',{style:{fontSize:10,color:GRAY,fontWeight:700,letterSpacing:.5,textTransform:'uppercase'}},'Totale omzet '+huidigJaar),InfoBtn('kpi_totaal')),
           e('div',{style:{fontSize:24,fontWeight:800,color:NIGHT,margin:'3px 0'}},fmt(totTotaal)),
           e('div',{style:{display:'flex',alignItems:'center',gap:6,marginTop:4}},
             e('div',{style:{flex:1,height:8,borderRadius:4,background:LIGHT,border:'1px solid '+BORDER,overflow:'hidden'}},
@@ -16868,7 +16870,7 @@ window._FBAnalyseScreen = function FBAnalyseScreen() {
               e('div',{style:{fontSize:11,color:GRAY}},'Def / (Def+Opt)')
             ),
             e('div',{key:'pot',style:{...kpiCard,background:OPTIE_C+'11',border:'1px solid '+OPTIE_C+'44'}},
-              e('div',{style:{fontSize:10,color:ORANGE,fontWeight:700,letterSpacing:.5,textTransform:'uppercase'}},'Potentiële F&B winst'),
+              e('div',{style:{display:'flex',alignItems:'center',gap:4}},e('div',{style:{fontSize:10,color:ORANGE,fontWeight:700,letterSpacing:.5,textTransform:'uppercase'}},'Potentiële F&B winst'),InfoBtn('optie_kpi')),
               e('div',{style:{fontSize:22,fontWeight:800,color:ORANGE,margin:'3px 0'}},fmt(totOpt*38)),
               e('div',{style:{fontSize:11,color:GRAY}},fmtN(totOpt)+' pers × €38 gem. pp')
             )
@@ -17027,7 +17029,7 @@ window._FBAnalyseScreen = function FBAnalyseScreen() {
             e('div',{style:{fontSize:11,color:GRAY}},producten.filter(p=>p.cat==='drinken').length+' producten')
           ),
           e('div',{style:{...kpiCard,flex:1.2}},
-            e('div',{style:{display:'flex',alignItems:'center',gap:4,marginBottom:6}},e('span',{style:{fontSize:10,color:GRAY,fontWeight:700,letterSpacing:.5,textTransform:'uppercase'}},'Verdeling eten / drinken'),InfoBtn('producten_verdeling')),
+            e('div',{style:{display:'flex',alignItems:'center',gap:4}},e('div',{style:{fontSize:10,color:GRAY,fontWeight:700,letterSpacing:.5,textTransform:'uppercase'}},'Verdeling eten / drinken'),InfoBtn('producten_verdeling')),
             e('div',{style:{display:'flex',height:14,borderRadius:7,overflow:'hidden',background:LIGHT,border:'1px solid '+BORDER}},
               e('div',{style:{width:(totFB>0?totEten/totFB*100:0)+'%',background:ETEN_C,transition:'width .4s'}}),
               e('div',{style:{width:(totFB>0?totDrinken/totFB*100:0)+'%',background:DRINKEN_C,transition:'width .4s'}}),
@@ -17055,7 +17057,10 @@ window._FBAnalyseScreen = function FBAnalyseScreen() {
               producten.length+' menu\'s · '+jaarProd,
               vergelijkJaar&&e('span',{style:{color:GRAY,fontSize:11,fontWeight:400,marginLeft:8}},'vs '+vergelijkJaar)
             ),
-            e('div',{style:{display:'flex',alignItems:'center',gap:6}},e('span',{style:{fontSize:11,color:GRAY}},'Klik op een rij voor seizoensdetail'),InfoBtn('producten_top'))
+            e('div',{style:{display:'flex',alignItems:'center',gap:6}},
+              e('div',{style:{fontSize:11,color:GRAY}},'Klik op een rij voor seizoensdetail'),
+              InfoBtn('producten_lijst')
+            )
           ),
           e('div',{style:{overflowX:'auto'}},
             e('table',{style:{width:'100%',borderCollapse:'collapse',fontSize:12}},
@@ -17218,7 +17223,7 @@ window._FBAnalyseScreen = function FBAnalyseScreen() {
           ),
           e('div',{style:{...card,marginBottom:16}},
             e('div',{style:{display:'flex',alignItems:'center',marginBottom:12}},
-              e('div',{style:{fontWeight:700,fontSize:13,flex:1}},e('span',null,'F&B forecast 2026'),InfoBtn('forecast_methode')),
+              e('div',{style:{fontWeight:700,fontSize:13,flex:1}},'F&B forecast 2026'),InfoBtn('forecast_uitleg'),
               e('div',{style:{display:'flex',gap:12,fontSize:11,color:GRAY}},
                 e('span',null,e('span',{style:{display:'inline-block',width:10,height:10,background:GREEN,borderRadius:2,marginRight:3}}),'Gerealiseerd'),
                 e('span',null,e('span',{style:{display:'inline-block',width:10,height:10,background:OPTIE_C,borderRadius:2,marginRight:3}}),'Forecast'),
@@ -17257,7 +17262,7 @@ window._FBAnalyseScreen = function FBAnalyseScreen() {
             )
           ),
           e('div',{style:card},
-            e('div',{style:{fontWeight:700,fontSize:13,marginBottom:12}},'Maanddetail forecast vs historisch'),
+            e('div',{style:{display:'flex',alignItems:'center',gap:6}},e('div',{style:{fontWeight:700,fontSize:13}},'Maanddetail forecast vs historisch'),InfoBtn('forecast_tabel')),
             e('table',{style:{width:'100%',borderCollapse:'collapse',fontSize:12}},
               e('thead',null,e('tr',{style:{background:NIGHT,color:'white'}},
                 ...['Maand','Gerealiseerd','Forecast','Hist. gem.','Min','Max','vs gem.','Status'].map(h=>
