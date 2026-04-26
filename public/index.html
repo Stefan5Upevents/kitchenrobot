@@ -16532,7 +16532,7 @@ window._FBAnalyseScreen = function FBAnalyseScreen() {
           e('table',{style:{width:'100%',borderCollapse:'collapse',fontSize:12}},
             e('thead',null,e('tr',{style:{background:NIGHT,color:'white'}},
               ...(['Maand',...jaarFilter.flatMap(j=>[j+' F&B',j+' Totaal',j+' %'])]).map(h=>
-                e('th',{key:h,style:{padding:'7px 10px',textAlign:'left',fontSize:11,fontWeight:600,whiteSpace:'nowrap'}},h)
+                e('th',{key:h,style:{padding:'7px 10px',textAlign:'left',fontSize:11,fontWeight:600,whiteSpace:'nowrap',color:'white'}},h)
               )
             )),
             e('tbody',null,
@@ -16668,8 +16668,8 @@ window._FBAnalyseScreen = function FBAnalyseScreen() {
         infoTip==='groei'&&InfoBox(tipTeksten.groei),
         e('table',{style:{width:'100%',borderCollapse:'collapse',fontSize:12}},
           e('thead',null,e('tr',{style:{background:NIGHT,color:'white'}},
-            e('th',{style:{padding:'7px 10px',fontSize:11}},  'Maand'),
-            ...jaren.filter(j=>j>2024).map(j=>e('th',{key:j,style:{padding:'7px 10px',fontSize:11,textAlign:'center'}},j+' vs '+(j-1)))
+            e('th',{style:{padding:'7px 10px',fontSize:11,color:'white'}},  'Maand'),
+            ...jaren.filter(j=>j>2024).map(j=>e('th',{key:j,style:{padding:'7px 10px',fontSize:11,textAlign:'center',color:'white'}},j+' vs '+(j-1)))
           )),
           e('tbody',null,
             ...maandNrs.map((mn,i)=>e('tr',{key:mn,style:{background:i%2?LIGHT:'white',borderBottom:'1px solid '+BORDER}},
@@ -16836,7 +16836,7 @@ window._FBAnalyseScreen = function FBAnalyseScreen() {
           return e('div',{style:{overflowX:'auto'}},
             e('table',{style:{width:'100%',borderCollapse:'collapse',fontSize:12}},
               e('thead',null,e('tr',{style:{background:NIGHT,color:'white'}},
-                ...['Maand','Definitief','Optie','Totaal','Optie %','Status'].map(h=>e('th',{key:h,style:{padding:'7px 10px',fontSize:11,textAlign:'left'}},h))
+                ...['Maand','Definitief','Optie','Totaal','Optie %','Status'].map(h=>e('th',{key:h,style:{padding:'7px 10px',fontSize:11,textAlign:'left',color:'white'}},h))
               )),
               e('tbody',null,
                 ...mnd.map((m,i)=>{
@@ -16914,7 +16914,7 @@ window._FBAnalyseScreen = function FBAnalyseScreen() {
           function gK(n){return n>=500?'xxl':n>=250?'xl':n>=150?'groot':n>=80?'middel':'klein';}
           return e('table',{style:{width:'100%',borderCollapse:'collapse',fontSize:12}},
             e('thead',null,e('tr',{style:{background:NIGHT,color:'white'}},
-              ...['Datum','Dag','West','Weesp','Totaal','Opties','Klasse'].map(h=>e('th',{key:h,style:{padding:'7px 10px',textAlign:'left',fontSize:11,fontWeight:600}},h))
+              ...['Datum','Dag','West','Weesp','Totaal','Opties','Klasse'].map(h=>e('th',{key:h,style:{padding:'7px 10px',textAlign:'left',fontSize:11,fontWeight:600,color:'white'}},h))
             )),
             e('tbody',null,
               ...dagen.map((d,i)=>{
