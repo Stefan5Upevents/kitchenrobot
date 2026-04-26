@@ -16304,7 +16304,7 @@ window._FBAnalyseScreen = function FBAnalyseScreen() {
       if (outlet !== 'alle') q3 = q3.eq('outlet_code', outlet);
       const { data: piekRaw } = await q3;
       setPiekData(Array.isArray(piekRaw) ? piekRaw : []);
-      const { data: fcRaw } = await supa.from('v_fb_forecast').select('*').order('maand_nr').limit(12);
+      const { data: fcRaw } = await supa.from('v_fb_forecast').select('maand_nr,maand_naam,hist_gem_fb,hist_min_fb,hist_max_fb,fb_gerealiseerd,fb_definitief,fb_optie,gepland_personen,forecast_fb,type').order('maand_nr').limit(12);
       setForecastData(Array.isArray(fcRaw) ? fcRaw : []);
       const { data: corrRaw } = await supa.from('omzet_correcties').select('*').eq('actief', true).order('aangemaakt_op', {ascending: false});
       setCorrecties(Array.isArray(corrRaw) ? corrRaw : []);
@@ -16940,7 +16940,7 @@ window._FBAnalyseScreen = function FBAnalyseScreen() {
         const totRest=totForecast-totGer;
         const histGem=forecastData.reduce((s,d)=>s+Number(d.hist_gem_fb||0),0);
         const groei=histGem>0?((totForecast-histGem)/histGem*100):0;
-        const maxV=Math.max(...forecastData.map(d=>Math.max(Number(d.forecast_fb||0),Number(d.hist_max_fb||0))),1);
+        const maxV=Math.max(...forecastData.map(d=>Math.max(Number(d.fb_definitief||0)+Number(d.fb_optie||0),Number(d.fb_gerealiseerd||0),Number(d.hist_max_fb||0))),1);
         const huidigeM=new Date().getMonth()+1;
 
         const peildatum = new Date().toLocaleDateString('nl-NL',{day:'numeric',month:'long',year:'numeric'});
@@ -16951,7 +16951,7 @@ window._FBAnalyseScreen = function FBAnalyseScreen() {
             e('span',{style:{color:'#388E3C',marginLeft:8}},'· Gerealiseerd t/m heden · Rest op basis van historisch gem. 2024-2025')
           ),
           e('div',{style:{...card,background:'#FFF8E1',border:'1px solid #FFD54F',marginBottom:16}},
-            e('div',{style:{fontWeight:700,fontSize:13,color:'#E65100',marginBottom:6}},'Noot: januari 2026 (slechts 17k F&B)'),
+            e('div',{style:{fontWeight:700,fontSize:13,color:'#E65100',marginBottom:6}},'Forecast op basis van werkelijke boekingen (def + optie)'),
             e('div',{style:{fontSize:12,color:'#5D4037',lineHeight:1.6}},
               'Januari 2026 toont slechts 17k F&B omzet. Oorzaak: creditnota\'s in Recras (BBQ Populair: -25k). Dit zijn annuleringen/correcties, geen echte omzetdaling. Historisch gemiddeld is januari ~214k. De forecast gaat uit van het historische gemiddelde.'
             )
@@ -16982,9 +16982,10 @@ window._FBAnalyseScreen = function FBAnalyseScreen() {
             e('div',{style:{display:'flex',alignItems:'center',marginBottom:12}},
               e('div',{style:{fontWeight:700,fontSize:13,flex:1}},'F&B forecast 2026'),InfoBtn('forecast_uitleg'),
               e('div',{style:{display:'flex',gap:12,fontSize:11,color:GRAY}},
-                e('span',null,e('span',{style:{display:'inline-block',width:10,height:10,background:GREEN,borderRadius:2,marginRight:3}}),'Gerealiseerd'),
-                e('span',null,e('span',{style:{display:'inline-block',width:10,height:10,background:OPTIE_C,borderRadius:2,marginRight:3}}),'Forecast'),
-                e('span',null,e('span',{style:{display:'inline-block',width:10,height:10,background:'#DDE',borderRadius:2,marginRight:3}}),'Bandbreedte 2024-25')
+                e('span',null,e('span',{style:{display:'inline-block',width:10,height:10,background:GREEN,borderRadius:2,marginRight:3}}),'Gerealiseerd (factuurbasis)'),
+                e('span',null,e('span',{style:{display:'inline-block',width:10,height:10,background:'#1976D2',borderRadius:2,marginRight:3}}),'Definitief (boekingen)'),
+                e('span',null,e('span',{style:{display:'inline-block',width:10,height:10,background:'#F57C00',borderRadius:2,marginRight:3}}),'Optie (boekingen)'),
+                e('span',null,e('span',{style:{display:'inline-block',width:10,height:10,background:'#DDE',borderRadius:2,marginRight:3}}),'Hist. gem. 2024-25')
               )
             ),
             e('div',{style:{overflowX:'auto'}},
@@ -17007,9 +17008,16 @@ window._FBAnalyseScreen = function FBAnalyseScreen() {
                 ...forecastData.map(d=>{
                   const x=55+((d.maand_nr-1)/11)*625-14;
                   const v=Number(d.forecast_fb||0);
-                  const h2=(v/maxV)*180;
-                  const isGer=d.type==='gerealiseerd',isLop=d.type==='lopend',isGep=d.type==='gepland';
-                  return e('rect',{key:d.maand_nr,x,y:20+180-h2,width:28,height:h2,fill:isGer?GREEN:isLop?AQUA:isGep?BLUE:OPTIE_C,rx:3,opacity:.85});
+                  const vGer=Number(d.fb_gerealiseerd||0);
+                  const vDef=Number(d.fb_definitief||0);
+                  const vOpt=Number(d.fb_optie||0);
+                  const isGer=d.type==='gerealiseerd';
+                  const hGer=(vGer/maxV)*180, hDef=(vDef/maxV)*180, hOpt=(vOpt/maxV)*180;
+                  return e('g',{key:d.maand_nr},
+                    isGer&&vGer>0&&e('rect',{x,y:20+180-hGer,width:28,height:hGer,fill:GREEN,rx:3,opacity:.9}),
+                    !isGer&&vDef>0&&e('rect',{x,y:20+180-hDef,width:28,height:hDef,fill:'#1976D2',rx:3,opacity:.85}),
+                    !isGer&&vOpt>0&&e('rect',{x,y:20+180-hDef-hOpt,width:28,height:hOpt,fill:'#F57C00',rx:3,opacity:.75})
+                  );
                 }),
                 ...forecastData.map(d=>e('g',{key:'l'+d.maand_nr},
                   e('text',{x:55+((d.maand_nr-1)/11)*625,y:214,fontSize:10,fill:NIGHT,textAnchor:'middle'},MAAND_N2[d.maand_nr]),
@@ -17022,7 +17030,7 @@ window._FBAnalyseScreen = function FBAnalyseScreen() {
             e('div',{style:{display:'flex',alignItems:'center',gap:6}},e('div',{style:{fontWeight:700,fontSize:13}},'Maanddetail forecast vs historisch'),InfoBtn('forecast_tabel')),
             e('table',{style:{width:'100%',borderCollapse:'collapse',fontSize:12}},
               e('thead',null,e('tr',{style:{background:NIGHT,color:'white'}},
-                ...['Maand','Gerealiseerd','Forecast','Hist. gem.','Min','Max','vs gem.','Status'].map(h=>
+                ...['Maand','Gerealiseerd','Def. (bkn)','Optie (bkn)','Hist. gem.','vs gem.','Status'].map(h=>
                   e('th',{key:h,style:{padding:'7px 10px',fontSize:11,textAlign:'left',color:'white'}},h)
                 )
               )),
