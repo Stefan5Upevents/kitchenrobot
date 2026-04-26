@@ -16944,8 +16944,8 @@ window._FBAnalyseScreen = function FBAnalyseScreen() {
                   const x=55+((d.maand_nr-1)/11)*625-14;
                   const v=Number(d.forecast_fb||0);
                   const h2=(v/maxV)*180;
-                  const isGer=d.type==='gerealiseerd';
-                  return e('rect',{key:d.maand_nr,x,y:20+180-h2,width:28,height:h2,fill:isGer?GREEN:OPTIE_C,rx:3,opacity:.85});
+                  const isGer=d.type==='gerealiseerd',isLop=d.type==='lopend',isGep=d.type==='gepland';
+                  return e('rect',{key:d.maand_nr,x,y:20+180-h2,width:28,height:h2,fill:isGer?GREEN:isLop?AQUA:isGep?BLUE:OPTIE_C,rx:3,opacity:.85});
                 }),
                 ...forecastData.map(d=>e('g',{key:'l'+d.maand_nr},
                   e('text',{x:55+((d.maand_nr-1)/11)*625,y:214,fontSize:10,fill:NIGHT,textAnchor:'middle'},MAAND_N2[d.maand_nr]),
@@ -16977,7 +16977,7 @@ window._FBAnalyseScreen = function FBAnalyseScreen() {
                     e('td',{style:{padding:'7px 10px',color:GRAY,fontSize:11}},fmt(Number(d.hist_min_fb||0))),
                     e('td',{style:{padding:'7px 10px',color:GRAY,fontSize:11}},fmt(Number(d.hist_max_fb||0))),
                     e('td',{style:{padding:'7px 10px',fontWeight:600,color:afw>=0?GREEN:RED}},(afw>=0?'+':'')+afw.toFixed(0)+'%'),
-                    e('td',null,isGer?e('span',{style:bdg(GREEN)},'Gerealiseerd'):e('span',{style:bdg(OPTIE_C)},'Forecast'))
+                    e('td',null,isGer?e('span',{style:bdg(GREEN)},'Gerealiseerd'):d.type==='lopend'?e('span',{style:bdg(AQUA)},'Lopend'):d.type==='gepland'?e('span',{style:bdg(BLUE)},'Gepland'):e('span',{style:bdg(OPTIE_C)},'Forecast'))
                   );
                 }),
                 e('tr',{style:{background:NIGHT,color:'white',fontWeight:700}},
