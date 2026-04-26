@@ -16284,7 +16284,7 @@ window._FBAnalyseScreen = function FBAnalyseScreen() {
     try {
       // Haal ALLE jaren op via v_omzet_per_maand (~276 rijen per jaar)
       const { data: raw } = await supa.from('v_omzet_per_maand')
-        .select('maand,jaar,maand_nr,productgroep_naam,omzet_exc_btw,omzet_inc_btw')
+        .select('maand,jaar,maand_nr,productgroep_naam,omzet_exc_btw,omzet_exc_btw_bruto,omzet_exc_btw_credit,omzet_inc_btw')
         .gte('jaar', 2024).order('maand').limit(5000);
       setAllData(Array.isArray(raw) ? raw : []);
 
