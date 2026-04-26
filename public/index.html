@@ -16261,13 +16261,6 @@ window._BerichtenChefScreen = function BerichtenChefScreen() {
 
 <script>
 window._FBAnalyseScreen = function FBAnalyseScreen() {
-  // Injecteer CSS override voor th kleur in dit scherm
-  if (!document.getElementById('fb-analyse-css')) {
-    var s = document.createElement('style');
-    s.id = 'fb-analyse-css';
-    s.textContent = '.fb-analyse-thead th { color: white !important; background: #002D41 !important; }';
-    document.head.appendChild(s);
-  }
   const e = React.createElement;
   const [tab, setTab] = React.useState('overzicht');
   const [outlet, setOutlet] = React.useState('alle');
@@ -16277,6 +16270,7 @@ window._FBAnalyseScreen = function FBAnalyseScreen() {
   const [optieData, setOptieData] = React.useState([]);
   const [piekData, setPiekData] = React.useState([]);
   const [horizonDagen, setHorizonDagen] = React.useState(90);
+  const [forecastData, setForecastData] = React.useState([]);
   const [infoTip, setInfoTip] = React.useState(null);
   const [jaarFilter, setJaarFilter] = React.useState([2026]);
 
@@ -16304,6 +16298,8 @@ window._FBAnalyseScreen = function FBAnalyseScreen() {
       if (outlet !== 'alle') q3 = q3.eq('outlet_code', outlet);
       const { data: piekRaw } = await q3;
       setPiekData(Array.isArray(piekRaw) ? piekRaw : []);
+      const { data: fcRaw } = await supa.from('v_fb_forecast').select('*').order('maand_nr').limit(12);
+      setForecastData(Array.isArray(fcRaw) ? fcRaw : []);
     } catch(err) { console.error('FB:', err); }
     setLoading(false);
   }
@@ -16441,7 +16437,7 @@ window._FBAnalyseScreen = function FBAnalyseScreen() {
 
     // Tabs
     e('div',{style:{display:'flex',gap:0,marginBottom:16,borderBottom:'2px solid '+BORDER}},
-      ...[['overzicht','📈 F&B Overzicht'],['trend','📉 Jaar Trend'],['split','🔀 West vs Weesp'],['opties','🔄 Opties Pipeline'],['piekdagen','📅 Piekdagen']].map(([id,label])=>
+      ...[['overzicht','📈 F&B Overzicht'],['trend','📉 Jaar Trend'],['split','🔀 West vs Weesp'],['forecast','🔮 Forecast'],['opties','🔄 Opties Pipeline'],['piekdagen','📅 Piekdagen']].map(([id,label])=>
         e('button',{key:id,onClick:()=>setTab(id),style:{padding:'8px 14px',border:'none',background:'none',cursor:'pointer',fontSize:13,fontWeight:tab===id?700:400,color:tab===id?BLUE:GRAY,borderBottom:tab===id?'2px solid '+BLUE:'2px solid transparent',marginBottom:-2}},label)
       )
     ),
@@ -16537,7 +16533,7 @@ window._FBAnalyseScreen = function FBAnalyseScreen() {
         e('div',{style:{fontWeight:700,fontSize:13,marginBottom:12}},'Detail per maand'),
         e('div',{style:{overflowX:'auto'}},
           e('table',{style:{width:'100%',borderCollapse:'collapse',fontSize:12}},
-            e('thead',{className:'fb-analyse-thead'},e('tr',{style:{background:NIGHT,color:'white'}},
+            e('thead',null,e('tr',{style:{background:NIGHT,color:'white'}},
               ...(['Maand',...jaarFilter.flatMap(j=>[j+' F&B',j+' Totaal',j+' %'])]).map(h=>
                 e('th',{key:h,style:{padding:'7px 10px',textAlign:'left',fontSize:11,fontWeight:600,whiteSpace:'nowrap',color:'white'}},h)
               )
@@ -16674,7 +16670,7 @@ window._FBAnalyseScreen = function FBAnalyseScreen() {
         ),
         infoTip==='groei'&&InfoBox(tipTeksten.groei),
         e('table',{style:{width:'100%',borderCollapse:'collapse',fontSize:12}},
-          e('thead',{className:'fb-analyse-thead'},e('tr',{style:{background:NIGHT,color:'white'}},
+          e('thead',null,e('tr',{style:{background:NIGHT,color:'white'}},
             e('th',{style:{padding:'7px 10px',fontSize:11,color:'white'}},  'Maand'),
             ...jaren.filter(j=>j>2024).map(j=>e('th',{key:j,style:{padding:'7px 10px',fontSize:11,textAlign:'center',color:'white'}},j+' vs '+(j-1)))
           )),
@@ -16842,7 +16838,7 @@ window._FBAnalyseScreen = function FBAnalyseScreen() {
           const maxV=Math.max(...mnd.map(m=>m.def_prs+m.opt_prs),1);
           return e('div',{style:{overflowX:'auto'}},
             e('table',{style:{width:'100%',borderCollapse:'collapse',fontSize:12}},
-              e('thead',{className:'fb-analyse-thead'},e('tr',{style:{background:NIGHT,color:'white'}},
+              e('thead',null,e('tr',{style:{background:NIGHT,color:'white'}},
                 ...['Maand','Definitief','Optie','Totaal','Optie %','Status'].map(h=>e('th',{key:h,style:{padding:'7px 10px',fontSize:11,textAlign:'left',color:'white'}},h))
               )),
               e('tbody',null,
@@ -16877,6 +16873,129 @@ window._FBAnalyseScreen = function FBAnalyseScreen() {
       )
     ),
 
+    // ======================== FORECAST ========================
+    tab==='forecast'&&e('div',null,
+      (()=>{
+        const MAAND_N2=['','Jan','Feb','Mrt','Apr','Mei','Jun','Jul','Aug','Sep','Okt','Nov','Dec'];
+        const totForecast=forecastData.reduce((s,d)=>s+Number(d.forecast_fb||0),0);
+        const totGer=forecastData.filter(d=>d.type==='gerealiseerd').reduce((s,d)=>s+Number(d.fb_gerealiseerd||0),0);
+        const totRest=totForecast-totGer;
+        const histGem=forecastData.reduce((s,d)=>s+Number(d.hist_gem_fb||0),0);
+        const groei=histGem>0?((totForecast-histGem)/histGem*100):0;
+        const maxV=Math.max(...forecastData.map(d=>Math.max(Number(d.forecast_fb||0),Number(d.hist_max_fb||0))),1);
+        const huidigeM=new Date().getMonth()+1;
+
+        return e('div',null,
+          e('div',{style:{...card,background:'#FFF8E1',border:'1px solid #FFD54F',marginBottom:16}},
+            e('div',{style:{fontWeight:700,fontSize:13,color:'#E65100',marginBottom:6}},'Noot: januari 2026 (slechts 17k F&B)'),
+            e('div',{style:{fontSize:12,color:'#5D4037',lineHeight:1.6}},
+              'Januari 2026 toont slechts 17k F&B omzet. Oorzaak: creditnota\'s in Recras (BBQ Populair: -25k). Dit zijn annuleringen/correcties, geen echte omzetdaling. Historisch gemiddeld is januari ~214k. De forecast gaat uit van het historische gemiddelde.'
+            )
+          ),
+          e('div',{style:{display:'flex',gap:12,marginBottom:16,flexWrap:'wrap'}},
+            e('div',{style:kpiCard},
+              e('div',{style:{fontSize:10,color:GRAY,fontWeight:700,letterSpacing:.5,textTransform:'uppercase'}},'Forecast F&B 2026'),
+              e('div',{style:{fontSize:22,fontWeight:800,color:AQUA,margin:'3px 0'}},fmt(totForecast)),
+              e('div',{style:{fontSize:11,color:groei>=0?GREEN:RED,fontWeight:700}},(groei>=0?'+ ':'- ')+Math.abs(groei).toFixed(1)+'% vs gem. 2024-25')
+            ),
+            e('div',{style:kpiCard},
+              e('div',{style:{fontSize:10,color:GRAY,fontWeight:700,letterSpacing:.5,textTransform:'uppercase'}},'Al gerealiseerd'),
+              e('div',{style:{fontSize:22,fontWeight:800,color:GREEN,margin:'3px 0'}},fmt(totGer)),
+              e('div',{style:{fontSize:11,color:GRAY}},forecastData.filter(d=>d.type==='gerealiseerd').length+' maanden')
+            ),
+            e('div',{style:kpiCard},
+              e('div',{style:{fontSize:10,color:GRAY,fontWeight:700,letterSpacing:.5,textTransform:'uppercase'}},'Nog te realiseren'),
+              e('div',{style:{fontSize:22,fontWeight:800,color:OPTIE_C,margin:'3px 0'}},fmt(totRest)),
+              e('div',{style:{fontSize:11,color:GRAY}},forecastData.filter(d=>d.type!=='gerealiseerd').length+' maanden')
+            ),
+            e('div',{style:kpiCard},
+              e('div',{style:{fontSize:10,color:GRAY,fontWeight:700,letterSpacing:.5,textTransform:'uppercase'}},'Hist. gemiddelde'),
+              e('div',{style:{fontSize:22,fontWeight:800,color:GRAY,margin:'3px 0'}},fmt(histGem)),
+              e('div',{style:{fontSize:11,color:GRAY}},'gem. 2024+2025')
+            )
+          ),
+          e('div',{style:{...card,marginBottom:16}},
+            e('div',{style:{display:'flex',alignItems:'center',marginBottom:12}},
+              e('div',{style:{fontWeight:700,fontSize:13,flex:1}},'F&B forecast 2026'),
+              e('div',{style:{display:'flex',gap:12,fontSize:11,color:GRAY}},
+                e('span',null,e('span',{style:{display:'inline-block',width:10,height:10,background:GREEN,borderRadius:2,marginRight:3}}),'Gerealiseerd'),
+                e('span',null,e('span',{style:{display:'inline-block',width:10,height:10,background:OPTIE_C,borderRadius:2,marginRight:3}}),'Forecast'),
+                e('span',null,e('span',{style:{display:'inline-block',width:10,height:10,background:'#DDE',borderRadius:2,marginRight:3}}),'Bandbreedte 2024-25')
+              )
+            ),
+            e('div',{style:{overflowX:'auto'}},
+              e('svg',{width:700,height:240,style:{display:'block'}},
+                ...[0,.25,.5,.75,1].map(f=>e('g',{key:f},
+                  e('line',{x1:55,y1:20+180*(1-f),x2:680,y2:20+180*(1-f),stroke:'#EEF3F6',strokeWidth:1}),
+                  e('text',{x:50,y:24+180*(1-f),fontSize:9,fill:GRAY,textAnchor:'end'},fmt(maxV*f))
+                )),
+                e('line',{x1:55+((huidigeM-1)/11)*625,y1:20,x2:55+((huidigeM-1)/11)*625,y2:200,stroke:BLUE,strokeWidth:1,strokeDasharray:'4,3'}),
+                e('text',{x:57+((huidigeM-1)/11)*625,y:30,fontSize:8,fill:BLUE},'nu'),
+                forecastData.length>1&&e('path',{
+                  d:forecastData.map((d,i)=>(i===0?'M':'L')+(55+((d.maand_nr-1)/11)*625)+','+(20+180-(Number(d.hist_max_fb||0)/maxV)*180)).join(' ')
+                    +' '+[...forecastData].reverse().map(d=>'L'+(55+((d.maand_nr-1)/11)*625)+','+(20+180-(Number(d.hist_min_fb||0)/maxV)*180)).join(' ')+' Z',
+                  fill:GRAY+'22',stroke:'none'
+                }),
+                forecastData.length>1&&e('path',{
+                  d:forecastData.map((d,i)=>(i===0?'M':'L')+(55+((d.maand_nr-1)/11)*625)+','+(20+180-(Number(d.hist_gem_fb||0)/maxV)*180)).join(' '),
+                  fill:'none',stroke:GRAY,strokeWidth:1.5,strokeDasharray:'6,4'
+                }),
+                ...forecastData.map(d=>{
+                  const x=55+((d.maand_nr-1)/11)*625-14;
+                  const v=Number(d.forecast_fb||0);
+                  const h2=(v/maxV)*180;
+                  const isGer=d.type==='gerealiseerd';
+                  return e('rect',{key:d.maand_nr,x,y:20+180-h2,width:28,height:h2,fill:isGer?GREEN:OPTIE_C,rx:3,opacity:.85});
+                }),
+                ...forecastData.map(d=>e('g',{key:'l'+d.maand_nr},
+                  e('text',{x:55+((d.maand_nr-1)/11)*625,y:214,fontSize:10,fill:NIGHT,textAnchor:'middle'},MAAND_N2[d.maand_nr]),
+                  e('text',{x:55+((d.maand_nr-1)/11)*625,y:228,fontSize:8,fill:d.type==='gerealiseerd'?GREEN:OPTIE_C,textAnchor:'middle'},fmt(Number(d.forecast_fb||0)))
+                ))
+              )
+            )
+          ),
+          e('div',{style:card},
+            e('div',{style:{fontWeight:700,fontSize:13,marginBottom:12}},'Maanddetail forecast vs historisch'),
+            e('table',{style:{width:'100%',borderCollapse:'collapse',fontSize:12}},
+              e('thead',null,e('tr',{style:{background:NIGHT,color:'white'}},
+                ...['Maand','Gerealiseerd','Forecast','Hist. gem.','Min','Max','vs gem.','Status'].map(h=>
+                  e('th',{key:h,style:{padding:'7px 10px',fontSize:11,textAlign:'left',color:'white'}},h)
+                )
+              )),
+              e('tbody',null,
+                ...forecastData.map((d,i)=>{
+                  const ger=Number(d.fb_gerealiseerd||0);
+                  const fc=Number(d.forecast_fb||0);
+                  const gem=Number(d.hist_gem_fb||0);
+                  const isGer=d.type==='gerealiseerd';
+                  const afw=gem>0?((fc-gem)/gem*100):0;
+                  return e('tr',{key:d.maand_nr,style:{background:i%2?LIGHT:'white',borderBottom:'1px solid '+BORDER,borderLeft:isGer?'3px solid '+GREEN:'3px solid '+OPTIE_C}},
+                    e('td',{style:{padding:'7px 10px',fontWeight:600}},MAAND_N2[d.maand_nr]),
+                    e('td',{style:{padding:'7px 10px',color:isGer?GREEN:GRAY,fontWeight:isGer?700:400}},isGer?fmt(ger):'—'),
+                    e('td',{style:{padding:'7px 10px',fontWeight:700,color:isGer?GREEN:OPTIE_C}},fmt(fc)),
+                    e('td',{style:{padding:'7px 10px',color:GRAY}},fmt(gem)),
+                    e('td',{style:{padding:'7px 10px',color:GRAY,fontSize:11}},fmt(Number(d.hist_min_fb||0))),
+                    e('td',{style:{padding:'7px 10px',color:GRAY,fontSize:11}},fmt(Number(d.hist_max_fb||0))),
+                    e('td',{style:{padding:'7px 10px',fontWeight:600,color:afw>=0?GREEN:RED}},(afw>=0?'+':'')+afw.toFixed(0)+'%'),
+                    e('td',null,isGer?e('span',{style:bdg(GREEN)},'Gerealiseerd'):e('span',{style:bdg(OPTIE_C)},'Forecast'))
+                  );
+                }),
+                e('tr',{style:{background:NIGHT,color:'white',fontWeight:700}},
+                  e('td',{style:{padding:'7px 10px',color:'white'}},'Totaal 2026'),
+                  e('td',{style:{padding:'7px 10px',color:'#81C784'}},fmt(totGer)),
+                  e('td',{style:{padding:'7px 10px',fontWeight:800}},fmt(totForecast)),
+                  e('td',{style:{padding:'7px 10px',color:'#B0BEC5'}},fmt(histGem)),
+                  e('td',{style:{padding:'7px 10px'}},''),
+                  e('td',{style:{padding:'7px 10px'}},''),
+                  e('td',{style:{padding:'7px 10px',color:groei>=0?'#81C784':RED}},(groei>=0?'+':'')+groei.toFixed(1)+'%'),
+                  e('td',null,'')
+                )
+              )
+            )
+          )
+        );
+      })()
+    ),
     // ======================== PIEKDAGEN ========================
     tab==='piekdagen'&&e('div',null,
       e('div',{style:{display:'flex',gap:12,marginBottom:16,alignItems:'flex-start',flexWrap:'wrap'}},
@@ -16920,7 +17039,7 @@ window._FBAnalyseScreen = function FBAnalyseScreen() {
           const gLb={xxl:'🔴 XXL 500+',xl:'🟠 XL 250+',groot:'🟡 150+',middel:'🔵 80+',klein:'⚪'};
           function gK(n){return n>=500?'xxl':n>=250?'xl':n>=150?'groot':n>=80?'middel':'klein';}
           return e('table',{style:{width:'100%',borderCollapse:'collapse',fontSize:12}},
-            e('thead',{className:'fb-analyse-thead'},e('tr',{style:{background:NIGHT,color:'white'}},
+            e('thead',null,e('tr',{style:{background:NIGHT,color:'white'}},
               ...['Datum','Dag','West','Weesp','Totaal','Opties','Klasse'].map(h=>e('th',{key:h,style:{padding:'7px 10px',textAlign:'left',fontSize:11,fontWeight:600,color:'white'}},h))
             )),
             e('tbody',null,
