@@ -16273,6 +16273,7 @@ window._FBAnalyseScreen = function FBAnalyseScreen() {
   const [forecastData, setForecastData] = React.useState([]);
   const [correctieModal, setCorrectieModal] = React.useState(null); // {product, groep, bedrag, vanMaand}
   const [correcties, setCorrecties] = React.useState([]);
+  const [gecanceldData, setGecanceldData] = React.useState([]);
   const [correctieSaving, setCorrectieOpslaan] = React.useState(false);
   const [infoTip, setInfoTip] = React.useState(null);
   const [jaarFilter, setJaarFilter] = React.useState([2026]);
@@ -16305,6 +16306,8 @@ window._FBAnalyseScreen = function FBAnalyseScreen() {
       setForecastData(Array.isArray(fcRaw) ? fcRaw : []);
       const { data: corrRaw } = await supa.from('omzet_correcties').select('*').eq('actief', true).order('aangemaakt_op', {ascending: false});
       setCorrecties(Array.isArray(corrRaw) ? corrRaw : []);
+      const{data:gelRaw}=await supa.from('v_fb_geleverd_per_maand').select('maand,jaar,maand_nr,gecanceld_totaal').gte('jaar',2024).order('maand').limit(200);
+      setGecanceldData(Array.isArray(gelRaw)?gelRaw:[]);
     } catch(err) { console.error('FB:', err); }
     setLoading(false);
   }
@@ -16380,6 +16383,7 @@ window._FBAnalyseScreen = function FBAnalyseScreen() {
   // KPIs huidig geselecteerd jaar
   const huidigJaar = Math.max(...jaarFilter);
   const hJaarData = fbData.filter(d=>d.jaar===huidigJaar);
+  const gecLookup={};for(const g of gecanceldData){gecLookup[g.jaar+'_'+g.maand_nr]=g;}
   const totFB = hJaarData.reduce((s,d)=>s+d.fb,0);
   const totEten = hJaarData.reduce((s,d)=>s+d.eten,0);
   const totDrinken = hJaarData.reduce((s,d)=>s+d.drinken,0);
@@ -16576,7 +16580,7 @@ window._FBAnalyseScreen = function FBAnalyseScreen() {
         e('div',{style:{overflowX:'auto'}},
           e('table',{style:{width:'100%',borderCollapse:'collapse',fontSize:12}},
             e('thead',null,e('tr',{style:{background:NIGHT,color:'white'}},
-              ...(['Maand',...jaarFilter.flatMap(j=>[j+' F&B bruto',j+' Credits',j+' Totaal',j+' %'])]).map(h=>
+              ...(['Maand',...jaarFilter.flatMap(j=>[j+' F&B geleverd',j+' Gecanceld bedrijf',j+' Totaal',j+' F&B %'])]).map(h=>
                 e('th',{key:h,style:{padding:'7px 10px',textAlign:'left',fontSize:11,fontWeight:600,whiteSpace:'nowrap',color:'white'}},h)
               )
             )),
@@ -16590,24 +16594,11 @@ window._FBAnalyseScreen = function FBAnalyseScreen() {
                     const fd=fbLookup[j+'_'+mn];
                     const td=totLookup[j+'_'+mn];
                     const fbV=fd?fd.fb:0, totV=td?td.totaal:0;
-                    const creditV=fd?(fd.credit||0):0;
+                    const gecV=(gecLookup[j+'_'+mn])?Number(gecLookup[j+'_'+mn].gecanceld_totaal||0):0;const creditV=0;
                     const p=totV>0?(fbV/totV*100):0;
                     return [
                       e('td',{key:j+'fb',style:{padding:'7px 10px',color:AQUA,fontWeight:600}},fbV>0?fmt(fbV):'—'),
-                      e('td',{key:j+'cr',style:{padding:'7px 10px',color:RED,fontSize:11}},
-  creditV<0?e('div',{style:{display:'flex',alignItems:'center',gap:4}},
-    e('span',null,fmt(creditV)),
-    e('button',{
-      title:'Herboek deze credit naar juiste periode',
-      onClick:()=>setCorrectieModal({
-        product:'Meerdere F&B producten', groep:'Eten',
-        bedrag: creditV, vanMaand: j+'-'+String(mn).padStart(2,'0'),
-        label: MAAND_N[mn]+' '+j
-      }),
-      style:{background:'none',border:'1px solid '+RED,borderRadius:4,color:RED,cursor:'pointer',fontSize:10,padding:'1px 5px',marginLeft:2,whiteSpace:'nowrap'}
-    },'✎ herboek')
-  ):'—'
-),
+                      e('td',{key:j+'cr',style:{padding:'7px 10px',color:RED,fontSize:11,fontWeight:gecV<0?700:400}},gecV<0?fmt(gecV):'—'),
                       e('td',{key:j+'tot',style:{padding:'7px 10px',color:GRAY}},totV>0?fmt(totV):'—'),
                       e('td',{key:j+'pct',style:{padding:'7px 10px'}},
                         fbV>0?e('div',{style:{display:'flex',alignItems:'center',gap:4}},
@@ -16625,12 +16616,12 @@ window._FBAnalyseScreen = function FBAnalyseScreen() {
                 e('td',{style:{padding:'7px 10px'}},'Totaal'),
                 ...jaarFilter.flatMap(j=>{
                   const jFB=fbData.filter(d=>d.jaar===j).reduce((s,d)=>s+d.fb,0);
-                  const jCr=fbData.filter(d=>d.jaar===j).reduce((s,d)=>s+(d.credit||0),0);
+                  const jGec=gecanceldData.filter(d=>d.jaar===j).reduce((s,d)=>s+Number(d.gecanceld_totaal||0),0);
                   const jTot=totData.filter(d=>d.jaar===j).reduce((s,d)=>s+d.totaal,0);
                   const p=jTot>0?(jFB/jTot*100):0;
                   return [
                     e('td',{key:j+'fb',style:{padding:'7px 10px',color:'#80DEEA'}},fmt(jFB)),
-                    e('td',{key:j+'cr',style:{padding:'7px 10px',color:'#EF9A9A',fontSize:11}},jCr<0?fmt(jCr):'—'),
+                    e('td',{key:j+'cr',style:{padding:'7px 10px',color:'#EF9A9A',fontSize:11,fontWeight:700}},jGec<0?fmt(jGec):'—'),
                     e('td',{key:j+'tot',style:{padding:'7px 10px'}},fmt(jTot)),
                     e('td',{key:j+'pct',style:{padding:'7px 10px'}},p.toFixed(1)+'%')
                   ];
