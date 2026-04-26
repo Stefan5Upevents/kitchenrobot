@@ -16274,6 +16274,7 @@ window._FBAnalyseScreen = function FBAnalyseScreen() {
   const [correctieModal, setCorrectieModal] = React.useState(null); // {product, groep, bedrag, vanMaand}
   const [correcties, setCorrecties] = React.useState([]);
   const [gecanceldData, setGecanceldData] = React.useState([]);
+  const [pipelineData, setPipelineData] = React.useState([]);
   const [correctieSaving, setCorrectieOpslaan] = React.useState(false);
   const [infoTip, setInfoTip] = React.useState(null);
   const [jaarFilter, setJaarFilter] = React.useState([2026]);
@@ -16308,6 +16309,8 @@ window._FBAnalyseScreen = function FBAnalyseScreen() {
       setCorrecties(Array.isArray(corrRaw) ? corrRaw : []);
       const{data:gelRaw}=await supa.from('v_fb_geleverd_per_maand').select('maand,jaar,maand_nr,gecanceld_totaal').gte('jaar',2024).order('maand').limit(200);
       setGecanceldData(Array.isArray(gelRaw)?gelRaw:[]);
+      const{data:pipRaw}=await supa.from('v_fb_pipeline').select('maand,jaar,maand_nr,def_pax,opt_pax,gepland_def_fb,gepland_opt_fb,gepland_totaal_fb').eq('jaar',2026).order('maand_nr').limit(12);
+      setPipelineData(Array.isArray(pipRaw)?pipRaw:[]);
     } catch(err) { console.error('FB:', err); }
     setLoading(false);
   }
@@ -16383,6 +16386,7 @@ window._FBAnalyseScreen = function FBAnalyseScreen() {
   // KPIs huidig geselecteerd jaar
   const huidigJaar = Math.max(...jaarFilter);
   const hJaarData = fbData.filter(d=>d.jaar===huidigJaar);
+  const pipLookup={};for(const p of pipelineData){pipLookup[p.maand_nr]=p;}
   const gecLookup={};for(const g of gecanceldData){gecLookup[g.jaar+'_'+g.maand_nr]=g;}
   const totFB = hJaarData.reduce((s,d)=>s+d.fb,0);
   const totEten = hJaarData.reduce((s,d)=>s+d.eten,0);
