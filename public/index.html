@@ -17385,120 +17385,154 @@ window._FBProductenTab = function FBProductenTab({ outlet }) {
 </script>
 
 
-<!-- KR UI HELPERS v1: toast, confirm, loading-state. Geinjecteerd door Claude 27 apr 2026 -->
+
+<!-- KR-UI-START v2: design-tokens + toast/confirm/loading/tooltip. 27 apr 2026 -->
 <style id="kr-ui-helpers-css">
+/* === DESIGN TOKENS (KitchenRobot) === */
+/* Centrale plek voor kleuren/spacing/radius. Nieuwe code gebruikt deze tokens. */
+:root {
+  /* Primaire kleuren (KitchenRobot identiteit) */
+  --kr-night:    #002D41;
+  --kr-aqua:     #3FB8C4;
+  --kr-primary:  #1976D2;
+  --kr-primary-hover: #1565C0;
+  
+  /* Status-kleuren */
+  --kr-success:  #2E7D32;
+  --kr-warn:     #E65100;
+  --kr-danger:   #C62828;
+  --kr-danger-hover: #B71C1C;
+  --kr-info:     #1976D2;
+  
+  /* Tekst */
+  --kr-text:        #234756;
+  --kr-text-muted:  #6E8591;
+  --kr-text-on-dark: #ffffff;
+  
+  /* Achtergronden */
+  --kr-bg-page:     #ffffff;
+  --kr-bg-soft:     #F5F8FA;
+  --kr-bg-softer:   #EEF3F6;
+  --kr-bg-hover:    #DCE6EC;
+  --kr-border:      #D8E8EF;
+  
+  /* Spacing (4px grid) */
+  --kr-space-1: 4px;
+  --kr-space-2: 8px;
+  --kr-space-3: 12px;
+  --kr-space-4: 16px;
+  --kr-space-5: 24px;
+  --kr-space-6: 32px;
+  
+  /* Hoekradius */
+  --kr-radius-sm: 6px;
+  --kr-radius-md: 10px;
+  --kr-radius-lg: 14px;
+  
+  /* Schaduwen */
+  --kr-shadow-sm: 0 1px 2px rgba(0,30,60,.08);
+  --kr-shadow-md: 0 4px 12px rgba(0,30,60,.12);
+  --kr-shadow-lg: 0 8px 24px rgba(0,30,60,.18), 0 2px 4px rgba(0,30,60,.08);
+  --kr-shadow-xl: 0 20px 60px rgba(0,30,60,.3);
+  
+  /* Font */
+  --kr-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --kr-font-mono: ui-monospace, "SF Mono", Consolas, monospace;
+}
+
 /* === TOAST === */
 #kr-toast-container {
   position: fixed;
-  top: var(--kr-space-4, 16px);
-  right: var(--kr-space-4, 16px);
+  top: var(--kr-space-4);
+  right: var(--kr-space-4);
   z-index: 999998;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--kr-space-2);
   pointer-events: none;
   max-width: 380px;
 }
 .kr-toast {
   pointer-events: auto;
-  background: var(--kr-bg, #fff);
-  border-radius: var(--kr-radius-md, 10px);
+  background: var(--kr-bg-page);
+  border-radius: var(--kr-radius-md);
   padding: 12px 16px 12px 14px;
-  box-shadow: var(--kr-shadow-lg, 0 8px 24px rgba(0,30,60,.18));
-  border-left: 4px solid var(--kr-info, #1976D2);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  box-shadow: var(--kr-shadow-lg);
+  border-left: 4px solid var(--kr-primary);
+  font-family: var(--kr-font);
   font-size: 14px;
   line-height: 1.4;
-  color: var(--kr-text, #234756);
+  color: var(--kr-text);
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: var(--kr-space-2);
   animation: kr-toast-in .25s cubic-bezier(.2,.8,.2,1);
   min-width: 240px;
-  cursor: default;
 }
 .kr-toast.kr-leaving { animation: kr-toast-out .2s ease-in forwards; }
-.kr-toast--success { border-left-color: var(--kr-success, #2E7D32); }
-.kr-toast--warn    { border-left-color: var(--kr-warn,    #E65100); }
-.kr-toast--error   { border-left-color: var(--kr-danger,  #C62828); }
-.kr-toast--info    { border-left-color: var(--kr-info,    #1976D2); }
+.kr-toast--success { border-left-color: var(--kr-success); }
+.kr-toast--warn    { border-left-color: var(--kr-warn); }
+.kr-toast--error   { border-left-color: var(--kr-danger); }
+.kr-toast--info    { border-left-color: var(--kr-info); }
 .kr-toast__icon { font-size: 18px; line-height: 1; flex-shrink: 0; margin-top: 1px; }
-.kr-toast__msg { flex: 1; word-wrap: break-word; }
+.kr-toast__msg  { flex: 1; word-wrap: break-word; }
 .kr-toast__close {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 18px;
-  color: var(--kr-text-muted, #6E8591);
-  padding: 0 4px;
-  line-height: 1;
-  margin-top: -2px;
-  font-weight: 300;
+  background: none; border: none; cursor: pointer;
+  font-size: 18px; color: var(--kr-text-muted);
+  padding: 0 4px; line-height: 1; margin-top: -2px; font-weight: 300;
 }
-.kr-toast__close:hover { color: var(--kr-text, #234756); }
-@keyframes kr-toast-in {
-  from { transform: translateX(20px); opacity: 0; }
-  to   { transform: translateX(0);    opacity: 1; }
-}
-@keyframes kr-toast-out {
-  from { transform: translateX(0);    opacity: 1; max-height: 200px; }
-  to   { transform: translateX(20px); opacity: 0; max-height: 0; padding-top: 0; padding-bottom: 0; margin: 0; }
-}
+.kr-toast__close:hover { color: var(--kr-text); }
+@keyframes kr-toast-in  { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes kr-toast-out { from { transform: translateX(0); opacity: 1; max-height: 200px; } to { transform: translateX(20px); opacity: 0; max-height: 0; padding-top: 0; padding-bottom: 0; margin: 0; } }
 
 /* === CONFIRM MODAL === */
 #kr-confirm-overlay {
-  position: fixed;
-  inset: 0;
+  position: fixed; inset: 0;
   background: rgba(0,30,60,.45);
   z-index: 999999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex; align-items: center; justify-content: center;
   animation: kr-fade-in .15s ease-out;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--kr-font);
 }
 #kr-confirm-card {
-  background: var(--kr-bg, #fff);
-  border-radius: var(--kr-radius-lg, 14px);
-  padding: 24px;
+  background: var(--kr-bg-page);
+  border-radius: var(--kr-radius-lg);
+  padding: var(--kr-space-5);
   max-width: 420px;
   width: calc(100% - 40px);
-  box-shadow: 0 20px 60px rgba(0,30,60,.3);
+  box-shadow: var(--kr-shadow-xl);
   animation: kr-pop-in .2s cubic-bezier(.2,.8,.2,1);
 }
 #kr-confirm-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--kr-text-strong, #002D41);
-  margin: 0 0 8px;
+  font-size: 16px; font-weight: 700;
+  color: var(--kr-night);
+  margin: 0 0 var(--kr-space-2);
 }
 #kr-confirm-msg {
   font-size: 14px;
-  color: var(--kr-text, #234756);
+  color: var(--kr-text);
   line-height: 1.5;
-  margin: 0 0 20px;
+  margin: 0 0 var(--kr-space-5);
 }
 #kr-confirm-buttons {
-  display: flex;
-  gap: 10px;
+  display: flex; gap: var(--kr-space-2);
   justify-content: flex-end;
 }
 .kr-btn {
   padding: 9px 18px;
-  border-radius: var(--kr-radius-md, 8px);
+  border-radius: var(--kr-radius-sm);
   border: none;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 14px; font-weight: 600;
   cursor: pointer;
   font-family: inherit;
-  transition: all var(--kr-trans-fast, .12s);
+  transition: background .12s;
 }
-.kr-btn--secondary { background: var(--kr-bg-soft, #EEF3F6); color: var(--kr-text, #234756); }
-.kr-btn--secondary:hover { background: var(--kr-border, #DCE6EC); }
-.kr-btn--primary   { background: var(--kr-primary, #1976D2); color: #fff; }
-.kr-btn--primary:hover   { background: var(--kr-primary-dark, #1565C0); }
-.kr-btn--danger    { background: var(--kr-danger, #C62828); color: #fff; }
-.kr-btn--danger:hover    { background: #B71C1C; }
+.kr-btn--secondary { background: var(--kr-bg-softer); color: var(--kr-text); }
+.kr-btn--secondary:hover { background: var(--kr-bg-hover); }
+.kr-btn--primary   { background: var(--kr-primary); color: var(--kr-text-on-dark); }
+.kr-btn--primary:hover { background: var(--kr-primary-hover); }
+.kr-btn--danger    { background: var(--kr-danger); color: var(--kr-text-on-dark); }
+.kr-btn--danger:hover { background: var(--kr-danger-hover); }
 @keyframes kr-fade-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes kr-pop-in  { from { transform: scale(.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
@@ -17511,43 +17545,73 @@ window._FBProductenTab = function FBProductenTab({ outlet }) {
 .kr-btn-loading::after {
   content: "";
   position: absolute;
-  width: 14px;
-  height: 14px;
-  top: calc(50% - 7px);
-  right: 10px;
+  width: 14px; height: 14px;
+  top: calc(50% - 7px); right: 10px;
   border: 2px solid currentColor;
   border-right-color: transparent;
   border-radius: 50%;
   animation: kr-spin .7s linear infinite;
 }
 @keyframes kr-spin { to { transform: rotate(360deg); } }
+
+/* === TOOLTIP === */
+#kr-tooltip {
+  position: fixed;
+  z-index: 999997;
+  background: var(--kr-night);
+  color: var(--kr-text-on-dark);
+  font-family: var(--kr-font);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 6px 10px;
+  border-radius: var(--kr-radius-sm);
+  box-shadow: var(--kr-shadow-md);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .12s ease-out;
+  max-width: 240px;
+  line-height: 1.35;
+  white-space: normal;
+}
+#kr-tooltip.kr-tooltip-visible { opacity: 1; }
+#kr-tooltip::after {
+  content: "";
+  position: absolute;
+  width: 0; height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+}
+#kr-tooltip[data-pos="top"]::after    { bottom: -5px; left: 50%; transform: translateX(-50%); border-top: 5px solid var(--kr-night); }
+#kr-tooltip[data-pos="bottom"]::after { top: -5px;    left: 50%; transform: translateX(-50%); border-bottom: 5px solid var(--kr-night); }
 </style>
 
 <script id="kr-ui-helpers-js">
 (function(){
-  if (window.kr && window.kr._loaded) return; // dubbel-load voorkomen
+  if (window.kr && window.kr._loaded === 'v2') return;
   
   var ICONS = { success: '✓', info: 'ℹ', warn: '⚠', error: '✕' };
   
   function ensureContainer(){
     var c = document.getElementById('kr-toast-container');
-    if (!c) {
-      c = document.createElement('div');
-      c.id = 'kr-toast-container';
-      document.body.appendChild(c);
-    }
+    if (!c) { c = document.createElement('div'); c.id = 'kr-toast-container'; document.body.appendChild(c); }
     return c;
   }
   
+  function ensureTooltip(){
+    var t = document.getElementById('kr-tooltip');
+    if (!t) { t = document.createElement('div'); t.id = 'kr-tooltip'; document.body.appendChild(t); }
+    return t;
+  }
+  
   window.kr = {
-    _loaded: true,
+    _loaded: 'v2',
     _version: '2026-04-27',
     
     /**
      * Toon een toast-melding rechtsboven.
-     * @param {string} msg - bericht
-     * @param {string} type - 'success'|'info'|'warn'|'error' (default 'info')
-     * @param {number} duration - ms voor auto-sluiten (default 3500, 0=niet auto)
+     * @param {string} msg
+     * @param {string} type - success|info|warn|error
+     * @param {number} duration - ms (0 = blijft staan)
      */
     toast: function(msg, type, duration){
       type = type || 'info';
@@ -17558,7 +17622,7 @@ window._FBProductenTab = function FBProductenTab({ outlet }) {
       t.innerHTML = '<span class="kr-toast__icon">' + (ICONS[type] || ICONS.info) + '</span>' +
                     '<span class="kr-toast__msg"></span>' +
                     '<button class="kr-toast__close" aria-label="Sluiten">×</button>';
-      t.querySelector('.kr-toast__msg').textContent = msg; // veilig: geen HTML injection
+      t.querySelector('.kr-toast__msg').textContent = msg;
       var close = function(){
         if (t.classList.contains('kr-leaving')) return;
         t.classList.add('kr-leaving');
@@ -17571,58 +17635,39 @@ window._FBProductenTab = function FBProductenTab({ outlet }) {
     },
     
     /**
-     * Vraag bevestiging via een modal.
-     * @param {string} msg - tekst
-     * @param {function} onYes - callback bij OK
+     * Bevestig-modal.
+     * @param {string} msg
+     * @param {function} onYes
      * @param {object} opts - { title, yesLabel, noLabel, danger, onNo }
      */
     confirm: function(msg, onYes, opts){
       opts = opts || {};
-      var ov = document.createElement('div');
-      ov.id = 'kr-confirm-overlay';
-      var card = document.createElement('div');
-      card.id = 'kr-confirm-card';
-      
-      var title = document.createElement('div');
-      title.id = 'kr-confirm-title';
+      var ov = document.createElement('div'); ov.id = 'kr-confirm-overlay';
+      var card = document.createElement('div'); card.id = 'kr-confirm-card';
+      var title = document.createElement('div'); title.id = 'kr-confirm-title';
       title.textContent = opts.title || 'Bevestigen';
-      
-      var body = document.createElement('div');
-      body.id = 'kr-confirm-msg';
+      var body = document.createElement('div'); body.id = 'kr-confirm-msg';
       body.textContent = msg;
-      
-      var btns = document.createElement('div');
-      btns.id = 'kr-confirm-buttons';
+      var btns = document.createElement('div'); btns.id = 'kr-confirm-buttons';
       var btnNo = document.createElement('button');
       btnNo.className = 'kr-btn kr-btn--secondary';
       btnNo.textContent = opts.noLabel || 'Annuleren';
       var btnYes = document.createElement('button');
       btnYes.className = 'kr-btn ' + (opts.danger ? 'kr-btn--danger' : 'kr-btn--primary');
       btnYes.textContent = opts.yesLabel || 'OK';
-      btns.appendChild(btnNo);
-      btns.appendChild(btnYes);
-      
-      card.appendChild(title);
-      card.appendChild(body);
-      card.appendChild(btns);
+      btns.appendChild(btnNo); btns.appendChild(btnYes);
+      card.appendChild(title); card.appendChild(body); card.appendChild(btns);
       ov.appendChild(card);
-      
       var dicht = function(){ ov.remove(); document.removeEventListener('keydown', escHandler); };
       var escHandler = function(e){ if (e.key === 'Escape') { dicht(); if (opts.onNo) opts.onNo(); } };
       document.addEventListener('keydown', escHandler);
-      
       btnNo.addEventListener('click', function(){ dicht(); if (opts.onNo) opts.onNo(); });
       btnYes.addEventListener('click', function(){ dicht(); if (onYes) onYes(); });
       ov.addEventListener('click', function(e){ if (e.target === ov) { dicht(); if (opts.onNo) opts.onNo(); } });
-      
       document.body.appendChild(ov);
       setTimeout(function(){ btnYes.focus(); }, 50);
     },
     
-    /**
-     * Zet een knop in loading-state (disable + spinner). 
-     * Onthoudt originele tekst.
-     */
     loading: function(btn, label){
       if (!btn) return;
       if (!btn._krOrig) btn._krOrig = { html: btn.innerHTML, disabled: btn.disabled };
@@ -17631,9 +17676,6 @@ window._FBProductenTab = function FBProductenTab({ outlet }) {
       btn.disabled = true;
     },
     
-    /**
-     * Herstel knop na loading.
-     */
     notLoading: function(btn){
       if (!btn) return;
       btn.classList.remove('kr-btn-loading');
@@ -17641,26 +17683,78 @@ window._FBProductenTab = function FBProductenTab({ outlet }) {
         btn.innerHTML = btn._krOrig.html;
         btn.disabled = btn._krOrig.disabled || false;
         delete btn._krOrig;
-      } else {
-        btn.disabled = false;
-      }
+      } else { btn.disabled = false; }
+    },
+    
+    /**
+     * Tooltip op een element (programmatisch toevoegen).
+     * Of gebruik gewoon data-kr-tip="tekst" attribute, dan werkt het automatisch.
+     */
+    tip: function(el, tekst){
+      if (!el) return;
+      el.setAttribute('data-kr-tip', tekst);
     }
   };
   
-  // Maak versie-tag klikbaar als demo
+  // === Tooltip auto-binding via data-kr-tip attribute ===
+  // Werkt ook voor elementen die later in DOM verschijnen (event delegation)
+  var hideTimeout = null;
+  function showTip(el){
+    var txt = el.getAttribute('data-kr-tip');
+    if (!txt) return;
+    var tip = ensureTooltip();
+    tip.textContent = txt;
+    tip.setAttribute('data-pos', 'top');
+    var r = el.getBoundingClientRect();
+    // Eerst onzichtbaar plaatsen om afmetingen te kunnen meten
+    tip.style.left = '0px'; tip.style.top = '0px';
+    tip.classList.add('kr-tooltip-visible');
+    var tipR = tip.getBoundingClientRect();
+    var x = r.left + r.width/2 - tipR.width/2;
+    var y = r.top - tipR.height - 8;
+    if (y < 8) { // niet genoeg ruimte boven, plaats onder
+      y = r.bottom + 8;
+      tip.setAttribute('data-pos', 'bottom');
+    }
+    x = Math.max(8, Math.min(x, window.innerWidth - tipR.width - 8));
+    tip.style.left = x + 'px';
+    tip.style.top = y + 'px';
+  }
+  function hideTip(){
+    var tip = document.getElementById('kr-tooltip');
+    if (tip) tip.classList.remove('kr-tooltip-visible');
+  }
+  
+  document.addEventListener('mouseover', function(e){
+    var target = e.target.closest && e.target.closest('[data-kr-tip]');
+    if (target) {
+      clearTimeout(hideTimeout);
+      hideTimeout = setTimeout(function(){ showTip(target); }, 250); // delay
+    }
+  });
+  document.addEventListener('mouseout', function(e){
+    var target = e.target.closest && e.target.closest('[data-kr-tip]');
+    if (target) { clearTimeout(hideTimeout); hideTip(); }
+  });
+  document.addEventListener('scroll', hideTip, true);
+  
+  // Versie-tag klikbaar als demo
   document.addEventListener('DOMContentLoaded', function(){
     var tag = document.getElementById('admin-versie-tag');
     if (tag) {
       tag.style.pointerEvents = 'auto';
       tag.style.cursor = 'pointer';
-      tag.title = 'Klik voor versie-info';
+      tag.setAttribute('data-kr-tip', 'Klik voor versie-info · KR UI v2 actief');
       tag.addEventListener('click', function(){
-        window.kr.toast('KitchenRobot ' + (tag.textContent.trim().split(' ')[0]) + ' is live ✓', 'success', 3000);
+        var versie = (tag.textContent.trim().split(' ')[0]) || 'onbekend';
+        window.kr.toast('KitchenRobot ' + versie + ' is live ✓ · Design-tokens & UI-helpers v2 geladen', 'success', 4000);
       });
     }
   });
 })();
 </script>
+<!-- KR-UI-END -->
 
-<div id="admin-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#1976D2;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.75;pointer-events:none">v2026-04-27-06:53 ✓ admin</div>
+
+<div id="admin-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#1976D2;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.75;pointer-events:none">v2026-04-27-06:57 ✓ admin</div>
 </body></html>
