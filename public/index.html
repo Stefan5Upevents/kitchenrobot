@@ -17843,7 +17843,209 @@ window._FBProductenTab = function FBProductenTab({ outlet }) {
 </script>
 <!-- KR-UI-END -->
 
+<!-- KR-EXTRAS-START v1: keyboard shortcuts + global error handler. 27 apr 2026 -->
+<style id="kr-extras-css">
+/* Help overlay (?) */
+#kr-help-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,30,60,.5);
+  z-index: 999999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--kr-font, -apple-system, sans-serif);
+  animation: kr-fade-in .15s ease-out;
+}
+#kr-help-card {
+  background: var(--kr-bg-page, #fff);
+  border-radius: var(--kr-radius-lg, 14px);
+  padding: var(--kr-space-5, 24px);
+  max-width: 480px;
+  width: calc(100% - 40px);
+  box-shadow: var(--kr-shadow-xl, 0 20px 60px rgba(0,30,60,.3));
+  animation: kr-pop-in .2s cubic-bezier(.2,.8,.2,1);
+}
+#kr-help-card h3 {
+  margin: 0 0 var(--kr-space-4, 16px);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--kr-night, #002D41);
+}
+.kr-help-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--kr-border, #D8E8EF);
+  font-size: 14px;
+  color: var(--kr-text, #234756);
+}
+.kr-help-row:last-child { border-bottom: none; }
+.kr-help-row__keys {
+  display: flex; gap: 4px;
+}
+.kr-key {
+  background: var(--kr-bg-softer, #EEF3F6);
+  border: 1px solid var(--kr-border, #D8E8EF);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-family: var(--kr-font-mono, monospace);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--kr-night, #002D41);
+  min-width: 18px;
+  text-align: center;
+}
+#kr-help-close-hint {
+  margin-top: var(--kr-space-4, 16px);
+  font-size: 12px;
+  color: var(--kr-text-muted, #6E8591);
+  text-align: center;
+}
+</style>
+
+<script id="kr-extras-js">
+(function(){
+  if (window.kr && window.kr._extras === 'v1') return;
+  
+  // Wacht tot kr is geladen (defensief)
+  if (!window.kr) {
+    console.warn('[kr-extras] window.kr niet geladen, keyboard shortcuts niet actief');
+    return;
+  }
+  window.kr._extras = 'v1';
+  
+  var SHORTCUTS = [
+    { keys: ['?'],         desc: 'Toon dit help-scherm' },
+    { keys: ['Esc'],       desc: 'Sluit modal/dialog' },
+    { keys: ['/'],         desc: 'Focus eerste zoekveld' },
+    { keys: ['Ctrl','K'],  desc: 'Globaal zoeken (komt nog)' }
+  ];
+  
+  // === Help-overlay ===
+  function toggleHelp(){
+    var bestaand = document.getElementById('kr-help-overlay');
+    if (bestaand) { bestaand.remove(); return; }
+    
+    var ov = document.createElement('div'); ov.id = 'kr-help-overlay';
+    var card = document.createElement('div'); card.id = 'kr-help-card';
+    
+    var titel = document.createElement('h3');
+    titel.textContent = '⌨️  Sneltoetsen';
+    card.appendChild(titel);
+    
+    SHORTCUTS.forEach(function(sc){
+      var rij = document.createElement('div'); rij.className = 'kr-help-row';
+      var desc = document.createElement('span'); desc.textContent = sc.desc;
+      var keys = document.createElement('span'); keys.className = 'kr-help-row__keys';
+      sc.keys.forEach(function(k, i){
+        if (i > 0) {
+          var plus = document.createElement('span');
+          plus.textContent = '+';
+          plus.style.color = 'var(--kr-text-muted, #6E8591)';
+          plus.style.padding = '0 4px';
+          plus.style.fontSize = '12px';
+          keys.appendChild(plus);
+        }
+        var kbd = document.createElement('span'); kbd.className = 'kr-key';
+        kbd.textContent = k;
+        keys.appendChild(kbd);
+      });
+      rij.appendChild(desc); rij.appendChild(keys);
+      card.appendChild(rij);
+    });
+    
+    var hint = document.createElement('div'); hint.id = 'kr-help-close-hint';
+    hint.textContent = 'Druk Esc of klik buiten om te sluiten';
+    card.appendChild(hint);
+    
+    ov.appendChild(card);
+    ov.addEventListener('click', function(e){ if (e.target === ov) toggleHelp(); });
+    document.body.appendChild(ov);
+  }
+  
+  // Publiceer in API
+  window.kr.help = toggleHelp;
+  
+  // === Keyboard listener ===
+  document.addEventListener('keydown', function(e){
+    // Skip als we in een input/textarea/contenteditable typen
+    var t = e.target;
+    var tag = t && t.tagName;
+    var typing = (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' ||
+                  (t && t.isContentEditable));
+    
+    // ESC werkt altijd: sluit help, eventuele modals
+    if (e.key === 'Escape') {
+      var help = document.getElementById('kr-help-overlay');
+      if (help) { help.remove(); e.preventDefault(); return; }
+      // confirm-modal heeft eigen handler — niet meer doen
+      return;
+    }
+    
+    // Modifier-shortcuts werken altijd (ook in inputs)
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+      e.preventDefault();
+      window.kr.toast('Globaal zoeken komt eraan ✨', 'info', 2500);
+      return;
+    }
+    
+    // Niet-modifier shortcuts alleen als NIET in een input
+    if (typing) return;
+    
+    if (e.key === '?' && e.shiftKey) {
+      e.preventDefault();
+      toggleHelp();
+      return;
+    }
+    
+    if (e.key === '/') {
+      // Zoek eerste zichtbare input met type=search of placeholder met "zoek"
+      var zoek = document.querySelector('input[type="search"]:not([disabled]), input[placeholder*="oek" i]:not([disabled])');
+      if (zoek && zoek.offsetParent !== null) {
+        e.preventDefault();
+        zoek.focus();
+        zoek.select && zoek.select();
+      }
+    }
+  });
+  
+  // === Globale error handler ===
+  // Vangt onverwachte JS-errors + unhandled promise rejections en toont een toast
+  // ipv stille console-error die niemand ziet
+  var errCount = 0;
+  var lastErrTs = 0;
+  function meldError(msg){
+    var nu = Date.now();
+    // Dempen: max 1 error-toast per 3 sec, max 5 totaal per page-load
+    if (nu - lastErrTs < 3000) return;
+    if (errCount >= 5) return;
+    errCount++;
+    lastErrTs = nu;
+    var korte = String(msg || 'Onbekende fout').slice(0, 100);
+    window.kr.toast('Er ging iets mis: ' + korte, 'error', 5000);
+  }
+  
+  window.addEventListener('error', function(e){
+    // Skip resource-load errors (afbeeldingen, scripts)
+    if (e.target && (e.target.tagName === 'IMG' || e.target.tagName === 'SCRIPT' || e.target.tagName === 'LINK')) return;
+    meldError(e.message);
+  }, true);
+  
+  window.addEventListener('unhandledrejection', function(e){
+    var msg = (e.reason && e.reason.message) || String(e.reason || '');
+    meldError(msg);
+  });
+  
+  // Kondig aan via console (geen toast bij start)
+  console.log('[kr-extras v1] Sneltoetsen actief: ? Esc / Ctrl+K · Druk ? voor help');
+})();
+</script>
+<!-- KR-EXTRAS-END -->
 
 
-<div id="admin-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#1976D2;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.75;pointer-events:none">v2026-04-27-09:59 ✓ admin</div>
+
+
+<div id="admin-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#1976D2;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.75;pointer-events:none">v2026-04-27-10:02 ✓ admin</div>
 </body></html>
