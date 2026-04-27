@@ -17,13 +17,16 @@
   input:focus, select:focus { outline: none; border-color: #1976D2; }
   .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .field { margin-bottom: 14px; }
-  button.primair { width: 100%; background: #1976D2; color: #fff; border: none; padding: 14px; border-radius: 6px; font-weight: 800; font-size: 15px; cursor: pointer; font-family: inherit; margin-top: 8px; }
+  button.primair { width: 100%; background: #1976D2; color: #fff; border: none; padding: 14px; border-radius: 6px; font-weight: 800; font-size: 15px; cursor: pointer; font-family: inherit; margin-top: 8px; transition: background .15s; }
   button.primair:hover { background: #155a9c; }
+  button.primair:disabled { background: #6E8591; cursor: wait; }
   .quick { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
   .quick button { background: #F5F8FA; border: 1.5px solid #D8E8EF; color: #234756; padding: 8px 14px; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer; font-family: inherit; }
   .quick button:hover { background: #E3F2FD; border-color: #1976D2; color: #1976D2; }
   .info-box { background: #E3F2FD; border-left: 3px solid #1976D2; padding: 10px 14px; border-radius: 0 6px 6px 0; font-size: 12.5px; line-height: 1.5; margin-top: 12px; }
   .info-box b { color: #002D41; }
+  .err-box { display: none; background: #FFEBEE; border-left: 3px solid #C62828; padding: 10px 14px; border-radius: 0 6px 6px 0; font-size: 12.5px; line-height: 1.5; margin-top: 12px; color: #C62828; }
+  .err-box b { display: block; margin-bottom: 3px; }
   .footer { text-align: center; color: #6E8591; font-size: 11px; margin-top: 30px; }
 </style>
 </head>
@@ -66,9 +69,11 @@
 
     <button class="primair" id="open">📄 Rapport openen</button>
 
+    <div class="err-box" id="err"></div>
+
     <div class="info-box">
       <b>Wat staat er in?</b><br>
-      • Bedrijfsgegevens (uit HACCP-instellingen in admin)<br>
+      • Bedrijfsgegevens (uit HACCP-instellingen)<br>
       • Sensor-statistieken per koeling/vriezer<br>
       • Alle handmatige temperatuur-metingen<br>
       • Alle taak-aftekeningen met sub-vraag-antwoorden<br>
@@ -82,6 +87,7 @@
 
 <script>
 const SUPA_URL = 'https://aezatnwsrhlwtykpixsq.supabase.co';
+const ANON_KEY = 'sb_publishable_qkQzUEM5fvJPSsfScEzNCg_Eug8-d4t';
 
 function isoDatum(d) { return d.toISOString().slice(0, 10); }
 
@@ -115,13 +121,67 @@ document.querySelectorAll('[data-period]').forEach(b => {
   b.onclick = () => setPeriod(b.getAttribute('data-period'));
 });
 
-document.getElementById('open').onclick = () => {
+function toonError(tekst) {
+  const e = document.getElementById('err');
+  e.innerHTML = '<b>Fout bij ophalen rapport</b>' + tekst;
+  e.style.display = 'block';
+}
+
+document.getElementById('open').onclick = async () => {
+  const btn = document.getElementById('open');
+  const errBox = document.getElementById('err');
+  errBox.style.display = 'none';
+
   const outlet = document.getElementById('outlet').value;
   const van = document.getElementById('van').value;
   const tot = document.getElementById('tot').value;
-  if (!van || !tot) { alert('Vul beide datums in'); return; }
-  const url = SUPA_URL + '/functions/v1/kiosk-haccp-export?outlet_code=' + encodeURIComponent(outlet) + '&datum_van=' + van + '&datum_tot=' + tot;
-  window.open(url, '_blank');
+  if (!van || !tot) { toonError('Vul beide datums in.'); return; }
+
+  // Open popup METEEN (anders blokkeert popup-blocker)
+  const popup = window.open('', '_blank');
+  if (!popup) {
+    toonError('Popup-blocker actief. Sta popups toe voor deze site en probeer opnieuw.');
+    return;
+  }
+  popup.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Rapport laden…</title>'
+    + '<style>body{font-family:Helvetica,Arial,sans-serif;background:#EAF0F4;color:#234756;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}'
+    + '.box{text-align:center}.spin{width:48px;height:48px;border:4px solid #D8E8EF;border-top-color:#1976D2;border-radius:50%;animation:s 1s linear infinite;margin:0 auto 16px}'
+    + '@keyframes s{to{transform:rotate(360deg)}}</style></head><body><div class="box"><div class="spin"></div>Rapport wordt opgehaald…</div></body></html>');
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Bezig…';
+
+  try {
+    const url = SUPA_URL + '/functions/v1/kiosk-haccp-export?outlet_code='
+      + encodeURIComponent(outlet) + '&datum_van=' + van + '&datum_tot=' + tot;
+
+    const resp = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'apikey': ANON_KEY,
+        'Authorization': 'Bearer ' + ANON_KEY
+      }
+    });
+
+    if (!resp.ok) {
+      const tekst = await resp.text();
+      popup.close();
+      toonError('Status ' + resp.status + ': ' + tekst.slice(0, 200));
+      return;
+    }
+
+    const html = await resp.text();
+    popup.document.open();
+    popup.document.write(html);
+    popup.document.close();
+    popup.document.title = 'HACCP rapport ' + outlet + ' — ' + van + ' t/m ' + tot;
+  } catch (err) {
+    popup.close();
+    toonError('Netwerkfout: ' + (err && err.message ? err.message : String(err)));
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '📄 Rapport openen';
+  }
 };
 
 // Default: laatste 7 dagen
@@ -129,6 +189,6 @@ setPeriod('7d');
 </script>
 
 <style>@media print { #haccp-versie-tag { display: none !important; } }</style>
-<div id="haccp-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#1976D2;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.75;pointer-events:none">v2026-04-27-06:28 ✓ haccp</div>
+<div id="haccp-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#1976D2;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.75;pointer-events:none">v2026-04-27-fetch ✓ haccp</div>
 </body>
 </html>
