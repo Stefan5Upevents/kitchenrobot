@@ -18317,26 +18317,23 @@ window._FBProductenTab = function FBProductenTab({ outlet }) {
 <!-- KR-PROFILE-START v1: profielindicatie rechtsboven (filter shortcut). 27 apr 2026 -->
 <style id="kr-profile-css">
 #kr-profile-badge {
-  position: fixed;
-  top: 8px;
-  right: 8px;
-  z-index: 99997;
-  background: var(--kr-night, #002D41);
+  /* in health-balk: pill-stijl, geen fixed positioning */
+  background: rgba(255,255,255,.08);
   color: var(--kr-text-on-dark, #fff);
   font-family: var(--kr-font, -apple-system, sans-serif);
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 600;
-  padding: 6px 12px;
-  border-radius: var(--kr-radius-md, 10px);
-  box-shadow: var(--kr-shadow-md, 0 4px 12px rgba(0,30,60,.12));
+  padding: 3px 9px;
+  border-radius: 11px;
   cursor: pointer;
   user-select: none;
   display: flex;
   align-items: center;
-  gap: 8px;
-  transition: background .12s, transform .12s;
+  gap: 6px;
+  transition: background .12s;
+  letter-spacing: .01em;
 }
-#kr-profile-badge:hover { background: #003a55; transform: translateY(-1px); }
+#kr-profile-badge:hover { background: rgba(255,255,255,.16); }
 #kr-profile-badge .kr-pf-dot {
   width: 8px; height: 8px;
   border-radius: 50%;
@@ -18351,7 +18348,7 @@ window._FBProductenTab = function FBProductenTab({ outlet }) {
 
 #kr-profile-menu {
   position: fixed;
-  top: 44px;
+  top: 38px;
   right: 8px;
   z-index: 99998;
   background: var(--kr-bg-page, #fff);
@@ -18563,6 +18560,12 @@ window._FBProductenTab = function FBProductenTab({ outlet }) {
   
   function init(){
     if (document.getElementById('kr-profile-badge')) return; // al gemaakt
+    // Wacht tot de health-balk is gerenderd zodat we hem in de extras-slot kunnen plaatsen
+    var slot = document.getElementById('kr-health-extras');
+    if (!slot) {
+      setTimeout(init, 60);
+      return;
+    }
     var b = document.createElement('div');
     b.id = 'kr-profile-badge';
     b.setAttribute('data-outlet', huidigOutlet());
@@ -18572,7 +18575,7 @@ window._FBProductenTab = function FBProductenTab({ outlet }) {
                   '<span class="kr-pf-arrow">▾</span>';
     b.querySelector('.kr-pf-label').textContent = outletKort(huidigOutlet());
     b.addEventListener('click', function(e){ e.stopPropagation(); toonMenu(); });
-    document.body.appendChild(b);
+    slot.appendChild(b);
   }
   
   // Publiceer in API
@@ -18654,11 +18657,11 @@ window._FBProductenTab = function FBProductenTab({ outlet }) {
   font-family: var(--kr-font, -apple-system, sans-serif);
   font-size: 11.5px;
   font-weight: 500;
-  height: 26px;
+  height: 32px;
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 0 14px;
+  gap: 12px;
+  padding: 0 12px;
   box-shadow: 0 1px 0 rgba(0,0,0,.15);
   user-select: none;
   letter-spacing: .01em;
@@ -18671,8 +18674,8 @@ window._FBProductenTab = function FBProductenTab({ outlet }) {
 #kr-health-bar.kr-collapsed > * { display: none; }
 
 body.kr-has-health-bar {
-  /* Reserveer 26px bovenaan zodat de health-balk geen content overlapt. */
-  padding-top: 26px !important;
+  /* Reserveer ruimte bovenaan voor health-balk (32px), zodat content niet overlapt. */
+  padding-top: 32px !important;
 }
 body.kr-has-health-bar.kr-health-collapsed-body {
   padding-top: 4px !important;
@@ -18708,6 +18711,9 @@ body.kr-has-health-bar.kr-health-collapsed-body {
 
 .kr-health-spacer { flex: 1; }
 
+#kr-health-extras { display: flex; align-items: center; gap: 6px; }
+#kr-health-extras > * { display: flex; align-items: center; }
+
 #kr-health-collapse {
   background: transparent;
   border: none;
@@ -18720,11 +18726,12 @@ body.kr-has-health-bar.kr-health-collapsed-body {
 #kr-health-collapse:hover { color: #fff; }
 
 @media (max-width: 760px) {
-  #kr-health-bar { font-size: 10.5px; gap: 8px; padding: 0 8px; height: 22px; }
+  #kr-health-bar { font-size: 10.5px; gap: 8px; padding: 0 8px; height: 28px; }
   .kr-health-pill { padding: 1px 6px; }
-  body.kr-has-health-bar { padding-top: 22px !important; }
+  body.kr-has-health-bar { padding-top: 28px !important; }
   body.kr-has-health-bar.kr-health-collapsed-body { padding-top: 4px !important; }
-}
+  /* Op mobile is er weinig ruimte: verberg profielnaam, toon alleen avatar */
+  #kr-health-bar }
 </style>
 
 <script id="kr-health-js">
@@ -18780,6 +18787,7 @@ body.kr-has-health-bar.kr-health-collapsed-body {
         '<span class="kr-health-text">HACCP…</span>' +
       '</div>' +
       '<span class="kr-health-spacer"></span>' +
+      '<div id="kr-health-extras"></div>' +
       '<button id="kr-health-collapse" title="Inklappen / uitklappen">▴</button>';
     return bar;
   }
@@ -18925,67 +18933,52 @@ body.kr-has-health-bar.kr-health-collapsed-body {
 <!-- KR-PROFIEL-START v1: profielindicator rechtsboven. 27 apr 2026 -->
 <style id="kr-profiel-css">
 #kr-profiel-badge {
-  position: fixed;
-  top: 12px;
-  right: 12px;
-  z-index: 9999;
-  background: var(--kr-bg-page, #fff);
-  border: 1px solid var(--kr-border, #D8E8EF);
-  border-radius: 999px;
-  padding: 6px 14px 6px 6px;
+  /* in health-balk: pill-stijl, geen fixed */
+  background: rgba(255,255,255,.08);
+  border-radius: 14px;
+  padding: 2px 8px 2px 2px;
   display: none; /* alleen tonen als ingelogd */
   align-items: center;
-  gap: 8px;
+  gap: 5px;
   font-family: var(--kr-font, -apple-system, sans-serif);
-  font-size: 13px;
+  font-size: 11.5px;
   font-weight: 600;
-  color: var(--kr-text, #234756);
-  box-shadow: var(--kr-shadow-sm, 0 1px 2px rgba(0,30,60,.08));
+  color: var(--kr-text-on-dark, #fff);
   cursor: pointer;
-  transition: all .15s;
+  transition: background .12s;
   user-select: none;
 }
-#kr-profiel-badge:hover {
-  box-shadow: var(--kr-shadow-md, 0 4px 12px rgba(0,30,60,.12));
-  transform: translateY(-1px);
-}
-#kr-profiel-badge.kr-profiel-open {
-  box-shadow: var(--kr-shadow-md, 0 4px 12px rgba(0,30,60,.12));
-}
+#kr-profiel-badge:hover { background: rgba(255,255,255,.16); }
+#kr-profiel-badge.kr-profiel-open { background: rgba(255,255,255,.18); }
 #kr-profiel-avatar {
-  width: 28px;
-  height: 28px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   background: var(--kr-primary, #1976D2);
   color: var(--kr-text-on-dark, #fff);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: 10.5px;
   font-weight: 700;
   flex-shrink: 0;
 }
 #kr-profiel-info {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  line-height: 1.15;
-  gap: 1px;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 5px;
+  line-height: 1;
 }
-#kr-profiel-naam { font-size: 13px; font-weight: 700; color: var(--kr-night, #002D41); }
+#kr-profiel-naam { font-weight: 700; font-size: 11.5px; color: inherit; }
 #kr-profiel-rol  { font-size: 10.5px; font-weight: 500; color: var(--kr-text-muted, #6E8591); }
-#kr-profiel-chevron {
-  color: var(--kr-text-muted, #6E8591);
-  font-size: 10px;
-  margin-left: 2px;
-  transition: transform .15s;
-}
+#kr-profiel-chevron { font-size: 9px; opacity: .7; margin-left: 2px; }
 #kr-profiel-badge.kr-profiel-open #kr-profiel-chevron { transform: rotate(180deg); }
 
 /* Dropdown menu */
 #kr-profiel-menu {
   position: fixed;
-  top: 50px;
+  top: 38px;
   right: 12px;
   z-index: 9999;
   background: var(--kr-bg-page, #fff);
@@ -19174,8 +19167,24 @@ body.kr-has-health-bar.kr-health-collapsed-body {
       }, { yesLabel: 'Uitloggen', danger: true });
     }, true));
     
-    document.body.appendChild(badge);
-    document.body.appendChild(menu);
+    // Plaats badge in health-balk extras-slot (met retry tot slot beschikbaar is)
+    function plaatsBadgeInBalk(){
+      var slot = document.getElementById('kr-health-extras');
+      if (slot) { slot.appendChild(badge); return true; }
+      return false;
+    }
+    if (!plaatsBadgeInBalk()) {
+      var pogingen = 0;
+      var iv = setInterval(function(){
+        pogingen++;
+        if (plaatsBadgeInBalk() || pogingen > 30) clearInterval(iv);
+        if (pogingen > 30 && !document.getElementById('kr-health-extras')) {
+          // fallback: oude positie als balk er echt niet komt
+          document.body.appendChild(badge);
+        }
+      }, 80);
+    }
+    document.body.appendChild(menu);  // menu blijft fixed-positioned via CSS
     
     // === Open/sluit logica ===
     function openMenu(){
@@ -19214,5 +19223,5 @@ body.kr-has-health-bar.kr-health-collapsed-body {
 
 
 
-<div id="admin-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#1976D2;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.75;pointer-events:none">v2026-04-27-21:29 ✓ admin</div>
+<div id="admin-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#1976D2;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.75;pointer-events:none">v2026-04-27-21:38 ✓ admin</div>
 </body></html>
