@@ -17298,5 +17298,283 @@ window._FBProductenTab = function FBProductenTab({ outlet }) {
 
 </script>
 
-<div id="admin-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#1976D2;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.75;pointer-events:none">v2026-04-27-06:26 ✓ admin</div>
+
+<!-- KR UI HELPERS v1: toast, confirm, loading-state. Geinjecteerd door Claude 27 apr 2026 -->
+<style id="kr-ui-helpers-css">
+/* === TOAST === */
+#kr-toast-container {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 999998;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+  max-width: 380px;
+}
+.kr-toast {
+  pointer-events: auto;
+  background: #fff;
+  border-radius: 10px;
+  padding: 12px 16px 12px 14px;
+  box-shadow: 0 8px 24px rgba(0,30,60,.18), 0 2px 4px rgba(0,30,60,.08);
+  border-left: 4px solid #1976D2;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.4;
+  color: #234756;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  animation: kr-toast-in .25s cubic-bezier(.2,.8,.2,1);
+  min-width: 240px;
+  cursor: default;
+}
+.kr-toast.kr-leaving { animation: kr-toast-out .2s ease-in forwards; }
+.kr-toast--success { border-left-color: #2E7D32; }
+.kr-toast--warn    { border-left-color: #E65100; }
+.kr-toast--error   { border-left-color: #C62828; }
+.kr-toast--info    { border-left-color: #1976D2; }
+.kr-toast__icon { font-size: 18px; line-height: 1; flex-shrink: 0; margin-top: 1px; }
+.kr-toast__msg { flex: 1; word-wrap: break-word; }
+.kr-toast__close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  color: #6E8591;
+  padding: 0 4px;
+  line-height: 1;
+  margin-top: -2px;
+  font-weight: 300;
+}
+.kr-toast__close:hover { color: #234756; }
+@keyframes kr-toast-in {
+  from { transform: translateX(20px); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+@keyframes kr-toast-out {
+  from { transform: translateX(0);    opacity: 1; max-height: 200px; }
+  to   { transform: translateX(20px); opacity: 0; max-height: 0; padding-top: 0; padding-bottom: 0; margin: 0; }
+}
+
+/* === CONFIRM MODAL === */
+#kr-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,30,60,.45);
+  z-index: 999999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: kr-fade-in .15s ease-out;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+#kr-confirm-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 24px;
+  max-width: 420px;
+  width: calc(100% - 40px);
+  box-shadow: 0 20px 60px rgba(0,30,60,.3);
+  animation: kr-pop-in .2s cubic-bezier(.2,.8,.2,1);
+}
+#kr-confirm-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #002D41;
+  margin: 0 0 8px;
+}
+#kr-confirm-msg {
+  font-size: 14px;
+  color: #234756;
+  line-height: 1.5;
+  margin: 0 0 20px;
+}
+#kr-confirm-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+.kr-btn {
+  padding: 9px 18px;
+  border-radius: 8px;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all .12s;
+}
+.kr-btn--secondary { background: #EEF3F6; color: #234756; }
+.kr-btn--secondary:hover { background: #DCE6EC; }
+.kr-btn--primary   { background: #1976D2; color: #fff; }
+.kr-btn--primary:hover   { background: #1565C0; }
+.kr-btn--danger    { background: #C62828; color: #fff; }
+.kr-btn--danger:hover    { background: #B71C1C; }
+@keyframes kr-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes kr-pop-in  { from { transform: scale(.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+/* === LOADING-STATE op knop === */
+.kr-btn-loading {
+  position: relative;
+  pointer-events: none;
+  opacity: .7;
+}
+.kr-btn-loading::after {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  top: calc(50% - 7px);
+  right: 10px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: kr-spin .7s linear infinite;
+}
+@keyframes kr-spin { to { transform: rotate(360deg); } }
+</style>
+
+<script id="kr-ui-helpers-js">
+(function(){
+  if (window.kr && window.kr._loaded) return; // dubbel-load voorkomen
+  
+  var ICONS = { success: '✓', info: 'ℹ', warn: '⚠', error: '✕' };
+  
+  function ensureContainer(){
+    var c = document.getElementById('kr-toast-container');
+    if (!c) {
+      c = document.createElement('div');
+      c.id = 'kr-toast-container';
+      document.body.appendChild(c);
+    }
+    return c;
+  }
+  
+  window.kr = {
+    _loaded: true,
+    _version: '2026-04-27',
+    
+    /**
+     * Toon een toast-melding rechtsboven.
+     * @param {string} msg - bericht
+     * @param {string} type - 'success'|'info'|'warn'|'error' (default 'info')
+     * @param {number} duration - ms voor auto-sluiten (default 3500, 0=niet auto)
+     */
+    toast: function(msg, type, duration){
+      type = type || 'info';
+      duration = (duration === undefined) ? 3500 : duration;
+      var c = ensureContainer();
+      var t = document.createElement('div');
+      t.className = 'kr-toast kr-toast--' + type;
+      t.innerHTML = '<span class="kr-toast__icon">' + (ICONS[type] || ICONS.info) + '</span>' +
+                    '<span class="kr-toast__msg"></span>' +
+                    '<button class="kr-toast__close" aria-label="Sluiten">×</button>';
+      t.querySelector('.kr-toast__msg').textContent = msg; // veilig: geen HTML injection
+      var close = function(){
+        if (t.classList.contains('kr-leaving')) return;
+        t.classList.add('kr-leaving');
+        setTimeout(function(){ t.remove(); }, 220);
+      };
+      t.querySelector('.kr-toast__close').addEventListener('click', close);
+      c.appendChild(t);
+      if (duration > 0) setTimeout(close, duration);
+      return { close: close };
+    },
+    
+    /**
+     * Vraag bevestiging via een modal.
+     * @param {string} msg - tekst
+     * @param {function} onYes - callback bij OK
+     * @param {object} opts - { title, yesLabel, noLabel, danger, onNo }
+     */
+    confirm: function(msg, onYes, opts){
+      opts = opts || {};
+      var ov = document.createElement('div');
+      ov.id = 'kr-confirm-overlay';
+      var card = document.createElement('div');
+      card.id = 'kr-confirm-card';
+      
+      var title = document.createElement('div');
+      title.id = 'kr-confirm-title';
+      title.textContent = opts.title || 'Bevestigen';
+      
+      var body = document.createElement('div');
+      body.id = 'kr-confirm-msg';
+      body.textContent = msg;
+      
+      var btns = document.createElement('div');
+      btns.id = 'kr-confirm-buttons';
+      var btnNo = document.createElement('button');
+      btnNo.className = 'kr-btn kr-btn--secondary';
+      btnNo.textContent = opts.noLabel || 'Annuleren';
+      var btnYes = document.createElement('button');
+      btnYes.className = 'kr-btn ' + (opts.danger ? 'kr-btn--danger' : 'kr-btn--primary');
+      btnYes.textContent = opts.yesLabel || 'OK';
+      btns.appendChild(btnNo);
+      btns.appendChild(btnYes);
+      
+      card.appendChild(title);
+      card.appendChild(body);
+      card.appendChild(btns);
+      ov.appendChild(card);
+      
+      var dicht = function(){ ov.remove(); document.removeEventListener('keydown', escHandler); };
+      var escHandler = function(e){ if (e.key === 'Escape') { dicht(); if (opts.onNo) opts.onNo(); } };
+      document.addEventListener('keydown', escHandler);
+      
+      btnNo.addEventListener('click', function(){ dicht(); if (opts.onNo) opts.onNo(); });
+      btnYes.addEventListener('click', function(){ dicht(); if (onYes) onYes(); });
+      ov.addEventListener('click', function(e){ if (e.target === ov) { dicht(); if (opts.onNo) opts.onNo(); } });
+      
+      document.body.appendChild(ov);
+      setTimeout(function(){ btnYes.focus(); }, 50);
+    },
+    
+    /**
+     * Zet een knop in loading-state (disable + spinner). 
+     * Onthoudt originele tekst.
+     */
+    loading: function(btn, label){
+      if (!btn) return;
+      if (!btn._krOrig) btn._krOrig = { html: btn.innerHTML, disabled: btn.disabled };
+      if (label) btn.textContent = label;
+      btn.classList.add('kr-btn-loading');
+      btn.disabled = true;
+    },
+    
+    /**
+     * Herstel knop na loading.
+     */
+    notLoading: function(btn){
+      if (!btn) return;
+      btn.classList.remove('kr-btn-loading');
+      if (btn._krOrig) {
+        btn.innerHTML = btn._krOrig.html;
+        btn.disabled = btn._krOrig.disabled || false;
+        delete btn._krOrig;
+      } else {
+        btn.disabled = false;
+      }
+    }
+  };
+  
+  // Maak versie-tag klikbaar als demo
+  document.addEventListener('DOMContentLoaded', function(){
+    var tag = document.getElementById('admin-versie-tag');
+    if (tag) {
+      tag.style.pointerEvents = 'auto';
+      tag.style.cursor = 'pointer';
+      tag.title = 'Klik voor versie-info';
+      tag.addEventListener('click', function(){
+        window.kr.toast('KitchenRobot ' + (tag.textContent.trim().split(' ')[0]) + ' is live ✓', 'success', 3000);
+      });
+    }
+  });
+})();
+</script>
+
+<div id="admin-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#1976D2;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.75;pointer-events:none">v2026-04-27-06:38 ✓ admin</div>
 </body></html>
