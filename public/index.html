@@ -719,6 +719,7 @@ function Header({ sc, setSc, user, logout }) {
       ["stam:al", "🏷", "Allergenen Stam"],
       ["stam:ki", "📱", "Kiosk Instellingen"],
       ["stam:dr", "📖", "Draaiboek-links"],
+      ["staffel", "📊", "Opzet-staffel"],
       ["fin_inst", "💸", "Financiële instellingen"],
       ["haccp_inst", "🏥", "HACCP Bedrijfsgegevens"],
       ["sensoren", "🌡️", "Sensoren"],
@@ -12809,7 +12810,7 @@ function SensorenScreen() {
   if (!user) {
     return /* @__PURE__ */ React.createElement(LoginScreen, { onLogin: handleLogin });
   }
-  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", minHeight: "100vh", background: "#F0F4F7" } }, /* @__PURE__ */ React.createElement(Header, { sc, setSc, user, logout: handleLogout }), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto", overflowX: "hidden" }, className: "mobile-padding" }, /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 1200, margin: "0 auto", padding: "28px 20px 60px" } }, sc === "home" && /* @__PURE__ */ React.createElement(HomeScreen, { setSc }), sc === "boekingen" && /* @__PURE__ */ React.createElement(BoekingenScreen, { setSc, setActieve }), sc === "financieel" && /* @__PURE__ */ React.createElement(FinancieelScreen, { setSc }), sc === "chef" && /* @__PURE__ */ React.createElement(ChefScreen, { setSc, setActieve }), sc === "buffet" && /* @__PURE__ */ React.createElement(BuffetScreen, { actieve, setActieve, setSc }), sc === "opzet" && /* @__PURE__ */ React.createElement(OpzetScreen, null), sc === "tijden" && /* @__PURE__ */ React.createElement(TijdenScreen, null), sc.startsWith("stam:") && /* @__PURE__ */ React.createElement(StamScreen, { initTab: sc.split(":")[1] || "pg" }), sc === "fin" && /* @__PURE__ */ React.createElement(FinancieelScreen, null), sc === "adviezen" && /* @__PURE__ */ React.createElement(AdviezenScreen, null), sc === "fin_inst" && /* @__PURE__ */ React.createElement(FinInstellingenScreen, null), sc === "sensoren" && /* @__PURE__ */ React.createElement(SensorenScreen, null), sc === "apikeys" && /* @__PURE__ */ React.createElement(ApiKoppelingenScreen, null), sc === "stam:fi" && /* @__PURE__ */ React.createElement(FinInstellingenScreen, null), sc === "allergenen" && /* @__PURE__ */ React.createElement(AllergenenScreen, null), sc === "inspiratie" && /* @__PURE__ */ React.createElement(InspiratieScreen, null), sc === "opzetlog" && /* @__PURE__ */ React.createElement(OpzetLogboekScreen, null), sc === "haccp" && /* @__PURE__ */ React.createElement(HACCPScreen, null), sc === "nvwa" && window._NVWAInspectieScreen && /* @__PURE__ */ React.createElement(window._NVWAInspectieScreen, null), sc === "fb" && window._FBAnalyseScreen && /* @__PURE__ */ React.createElement(window._FBAnalyseScreen, null), sc === "berichten" && window._BerichtenChefScreen && /* @__PURE__ */ React.createElement(window._BerichtenChefScreen, null), sc === "haccp_inst" && window._HACCPInstellingenScreen && /* @__PURE__ */ React.createElement(window._HACCPInstellingenScreen, null), sc === "bestelling" && /* @__PURE__ */ React.createElement(SligroBestellingScreen, null))));
+  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", minHeight: "100vh", background: "#F0F4F7" } }, /* @__PURE__ */ React.createElement(Header, { sc, setSc, user, logout: handleLogout }), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto", overflowX: "hidden" }, className: "mobile-padding" }, /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 1200, margin: "0 auto", padding: "28px 20px 60px" } }, sc === "home" && /* @__PURE__ */ React.createElement(HomeScreen, { setSc }), sc === "boekingen" && /* @__PURE__ */ React.createElement(BoekingenScreen, { setSc, setActieve }), sc === "financieel" && /* @__PURE__ */ React.createElement(FinancieelScreen, { setSc }), sc === "chef" && /* @__PURE__ */ React.createElement(ChefScreen, { setSc, setActieve }), sc === "buffet" && /* @__PURE__ */ React.createElement(BuffetScreen, { actieve, setActieve, setSc }), sc === "opzet" && /* @__PURE__ */ React.createElement(OpzetScreen, null), sc === "tijden" && /* @__PURE__ */ React.createElement(TijdenScreen, null), sc.startsWith("stam:") && /* @__PURE__ */ React.createElement(StamScreen, { initTab: sc.split(":")[1] || "pg" }), sc === "fin" && /* @__PURE__ */ React.createElement(FinancieelScreen, null), sc === "adviezen" && /* @__PURE__ */ React.createElement(AdviezenScreen, null), sc === "fin_inst" && /* @__PURE__ */ React.createElement(FinInstellingenScreen, null), sc === "sensoren" && /* @__PURE__ */ React.createElement(SensorenScreen, null), sc === "apikeys" && /* @__PURE__ */ React.createElement(ApiKoppelingenScreen, null), sc === "staffel" && window._OpzetStaffelScreen && /* @__PURE__ */ React.createElement(window._OpzetStaffelScreen, null), sc === "stam:fi" && /* @__PURE__ */ React.createElement(FinInstellingenScreen, null), sc === "allergenen" && /* @__PURE__ */ React.createElement(AllergenenScreen, null), sc === "inspiratie" && /* @__PURE__ */ React.createElement(InspiratieScreen, null), sc === "opzetlog" && /* @__PURE__ */ React.createElement(OpzetLogboekScreen, null), sc === "haccp" && /* @__PURE__ */ React.createElement(HACCPScreen, null), sc === "nvwa" && window._NVWAInspectieScreen && /* @__PURE__ */ React.createElement(window._NVWAInspectieScreen, null), sc === "fb" && window._FBAnalyseScreen && /* @__PURE__ */ React.createElement(window._FBAnalyseScreen, null), sc === "berichten" && window._BerichtenChefScreen && /* @__PURE__ */ React.createElement(window._BerichtenChefScreen, null), sc === "haccp_inst" && window._HACCPInstellingenScreen && /* @__PURE__ */ React.createElement(window._HACCPInstellingenScreen, null), sc === "bestelling" && /* @__PURE__ */ React.createElement(SligroBestellingScreen, null))));
 }
 function InspiratieScreen() {
   var _a, _b;
@@ -18945,6 +18946,208 @@ body.kr-has-health-bar.kr-health-collapsed-body {
 })();
 </script>
 <!-- KR-HEALTH-END -->
+<!-- KR-OPZET-STAFFEL-START v1: opzet-staffel beheer. 27 apr 2026 -->
+<script id="kr-opzet-staffel-js">
+(function() {
+  function init() {
+    if (!window.React || !window._supa) { setTimeout(init, 100); return; }
+    var R = window.React.createElement;
+    var useState = window.React.useState;
+    var useEffect = window.React.useEffect;
+
+    window._OpzetStaffelScreen = function() {
+      var C = window._C || { night:'#234756', aqua:'#3FB8C4', red:'#E8202B', green:'#2E7D32', muted:'#78909C', orange:'#FF9800' };
+
+      var s_laden = useState(true); var laden = s_laden[0], setLaden = s_laden[1];
+      var s_items = useState([]); var items = s_items[0], setItems = s_items[1];
+      var s_chg = useState(false); var hasChg = s_chg[0], setHasChg = s_chg[1];
+      var s_bezig = useState(false); var bezig = s_bezig[0], setBezig = s_bezig[1];
+      var s_meld = useState(''); var meld = s_meld[0], setMeld = s_meld[1];
+
+      useEffect(function() {
+        Promise.all([
+          window._supa.from('productgroepen').select('id, naam, volgorde'),
+          window._supa.from('productsoorten').select('id, naam, productgroep_id, volgorde'),
+          window._supa.from('opzet_instellingen').select('id, productsoort_id, instellingen_json')
+        ]).then(function(res) {
+          var pg = res[0].data || []; var ps = res[1].data || []; var oi = res[2].data || [];
+          var pgMap = {}; pg.forEach(function(g){ pgMap[g.id] = g; });
+          var oiMap = {}; oi.forEach(function(r){ oiMap[r.productsoort_id] = r; });
+          var merged = ps.map(function(p) {
+            var oiRow = oiMap[p.id];
+            var json = {};
+            if (oiRow && oiRow.instellingen_json) {
+              try { json = typeof oiRow.instellingen_json === 'string' ? JSON.parse(oiRow.instellingen_json) : oiRow.instellingen_json; } catch(e) { json = {}; }
+            }
+            var groep = pgMap[p.productgroep_id] || {naam:'?', volgorde:99};
+            return {
+              ps_id: p.id, ps_naam: p.naam,
+              pg_naam: groep.naam, pg_volgorde: groep.volgorde || 0,
+              oi_id: oiRow ? oiRow.id : null,
+              marges: Array.isArray(json.marges) ? json.marges.slice() : [],
+              rest_json: Object.assign({}, json)
+            };
+          });
+          merged.forEach(function(it){ delete it.rest_json.marges; });
+          merged.sort(function(a,b){ return (a.pg_volgorde - b.pg_volgorde) || a.ps_naam.localeCompare(b.ps_naam); });
+          setItems(merged); setLaden(false);
+        }).catch(function(e) {
+          console.error('Staffel laden mislukt:', e);
+          setLaden(false);
+        });
+      }, []);
+
+      function update(idx, key, val, mIdx) {
+        setItems(function(prev) {
+          var next = prev.slice();
+          var item = Object.assign({}, next[idx]);
+          item.marges = item.marges.map(function(m,i) { return i===mIdx ? Object.assign({}, m, {[key]: val}) : m; });
+          next[idx] = item;
+          return next;
+        });
+        setHasChg(true);
+      }
+      function addRow(idx) {
+        setItems(function(prev) {
+          var next = prev.slice();
+          var item = Object.assign({}, next[idx]);
+          var lastTot = item.marges.length > 0 ? parseInt(item.marges[item.marges.length-1].tot) || 0 : 0;
+          var nieuw = lastTot >= 9000 ? '9999' : String(lastTot + 25);
+          item.marges = item.marges.concat([{tot: nieuw, pct: '90'}]);
+          next[idx] = item;
+          return next;
+        });
+        setHasChg(true);
+      }
+      function removeRow(idx, mIdx) {
+        setItems(function(prev) {
+          var next = prev.slice();
+          var item = Object.assign({}, next[idx]);
+          item.marges = item.marges.filter(function(_, i) { return i !== mIdx; });
+          next[idx] = item;
+          return next;
+        });
+        setHasChg(true);
+      }
+
+      function opslaan() {
+        setBezig(true); setMeld('');
+        var promises = items.filter(function(it){ return it.oi_id; }).map(function(it) {
+          var cleaned = it.marges.map(function(m) {
+            return { tot: String(m.tot||'').trim(), pct: String(m.pct||'').trim() };
+          }).filter(function(m){ return m.tot !== '' && m.pct !== ''; });
+          var nieuwJson = Object.assign({}, it.rest_json, { marges: cleaned });
+          return window._supa.from('opzet_instellingen').update({
+            instellingen_json: JSON.stringify(nieuwJson)
+          }).eq('id', it.oi_id);
+        });
+        Promise.all(promises).then(function(results) {
+          var errors = results.filter(function(r){ return r.error; }).map(function(r){ return r.error.message; });
+          setBezig(false);
+          if (errors.length > 0) {
+            window.alert('Fout: ' + errors.join('; '));
+          } else {
+            setMeld('✓ ' + results.length + ' productsoorten opgeslagen');
+            setHasChg(false);
+            setTimeout(function(){ setMeld(''); }, 3000);
+          }
+        }).catch(function(e) {
+          setBezig(false);
+          window.alert('Opslaan mislukt: ' + (e && e.message ? e.message : e));
+        });
+      }
+
+      if (laden) {
+        return R('div', { style: { padding:40, textAlign:'center', color:C.muted } }, 'Staffel laden...');
+      }
+
+      // groeperen op productgroep
+      var groepen = []; var groepIdx = {};
+      items.forEach(function(it) {
+        if (!(it.pg_naam in groepIdx)) {
+          groepIdx[it.pg_naam] = groepen.length;
+          groepen.push({ naam: it.pg_naam, volgorde: it.pg_volgorde, items: [] });
+        }
+        groepen[groepIdx[it.pg_naam]].items.push(it);
+      });
+
+      return R('div', null,
+        // header
+        R('div', { style:{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:16, flexWrap:'wrap', gap:12 } },
+          R('div', null,
+            R('div', { style:{ fontWeight:900, fontSize:22, color:C.night } }, 'Opzet-staffel'),
+            R('div', { style:{ fontSize:12, color:C.muted, marginTop:4, maxWidth:680 } },
+              'Per productsoort: hoeveel % van het ingrediënt per persoon wordt aangehouden bij verschillende groepsgroottes. Laatste \u201Ctot\u201D = 9999 voor \u201Calles vanaf hier\u201D.'
+            )
+          ),
+          R('div', { style:{ display:'flex', alignItems:'center', gap:10 } },
+            hasChg && R('span', { style:{ background:'#FFF3E0', color:'#E65100', padding:'4px 10px', borderRadius:8, fontSize:11, fontWeight:700 } }, 'Niet-opgeslagen wijzigingen'),
+            meld && R('span', { style:{ background:'#E8F5E9', color:C.green, padding:'4px 10px', borderRadius:8, fontSize:11, fontWeight:700 } }, meld),
+            R('button', {
+              onClick: opslaan,
+              disabled: !hasChg || bezig,
+              style:{ background: hasChg ? C.red : '#ccc', color:'#fff', border:'none', borderRadius:8, padding:'8px 20px', fontSize:13, fontWeight:700, cursor: (hasChg && !bezig) ? 'pointer':'not-allowed', opacity: bezig ? 0.5 : 1 }
+            }, bezig ? 'Opslaan...' : 'Opslaan')
+          )
+        ),
+        // groepen
+        groepen.map(function(g) {
+          return R('div', { key:g.naam, style:{ marginBottom:24 } },
+            R('div', { style:{ fontSize:11, fontWeight:800, letterSpacing:2, color:C.aqua, textTransform:'uppercase', marginBottom:10 } }, g.naam),
+            R('div', { style:{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(290px, 1fr))', gap:12 } },
+              g.items.map(function(it) {
+                var idx = items.indexOf(it);
+                return R('div', { key:it.ps_id, style:{ background:'#fff', border:'1px solid #E0E7EB', borderRadius:10, padding:14 } },
+                  R('div', { style:{ fontWeight:700, fontSize:14, color:C.night, marginBottom:10 } }, it.ps_naam),
+                  it.marges.length === 0 && R('div', { style:{ fontSize:11, color:C.muted, fontStyle:'italic', marginBottom:8 } }, 'Geen staffel \u2014 alles 100%'),
+                  it.marges.map(function(m, mIdx) {
+                    return R('div', { key:mIdx, style:{ display:'flex', gap:6, alignItems:'center', marginBottom:6 } },
+                      R('span', { style:{ fontSize:11, color:C.muted, minWidth:22 } }, 'tot'),
+                      R('input', {
+                        type:'number', value: m.tot || '',
+                        onChange: function(e){ update(idx, 'tot', e.target.value, mIdx); },
+                        style:{ width:64, padding:'4px 6px', border:'1px solid #CFD8DC', borderRadius:5, fontSize:12 }
+                      }),
+                      R('span', { style:{ fontSize:11, color:C.muted } }, 'pers \u2192'),
+                      R('input', {
+                        type:'number', value: m.pct || '',
+                        onChange: function(e){ update(idx, 'pct', e.target.value, mIdx); },
+                        style:{ width:54, padding:'4px 6px', border:'1px solid #CFD8DC', borderRadius:5, fontSize:12 }
+                      }),
+                      R('span', { style:{ fontSize:11, color:C.muted } }, '%'),
+                      R('button', {
+                        onClick: function(){ removeRow(idx, mIdx); },
+                        title: 'Treede verwijderen',
+                        style:{ background:'transparent', border:'none', color:'#B71C1C', cursor:'pointer', fontSize:13, padding:'2px 6px', marginLeft:'auto' }
+                      }, '\u2715')
+                    );
+                  }),
+                  R('button', {
+                    onClick: function(){ addRow(idx); },
+                    style:{ background:'transparent', border:'1px dashed #B0BEC5', color:C.muted, borderRadius:5, padding:'5px 10px', fontSize:11, cursor:'pointer', width:'100%', marginTop:4 }
+                  }, '+ Treede toevoegen')
+                );
+              })
+            )
+          );
+        }),
+        // uitleg
+        R('div', { style:{ marginTop:20, padding:'12px 16px', background:'#F5F7F8', borderRadius:8, fontSize:11, color:C.muted, lineHeight:1.5 } },
+          R('strong', null, 'Hoe werkt de staffel:'),
+          ' Voor een groep van X personen wordt de eerste treede gekozen waarvan tot \u2265 X. Voorbeeld bij 30 personen en staffel \u201Ctot 25 \u2192 100%, tot 50 \u2192 95%, tot 100 \u2192 90%\u201D \u2192 30 valt in de 50-treede \u2192 95%. Het percentage bepaalt hoeveel ingrediënt per persoon wordt aangehouden (zo houden grote groepen rekening met restjes en piekverbruik).'
+        )
+      );
+    };
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>
+<!-- KR-OPZET-STAFFEL-END -->
+
 
 
 
@@ -19241,5 +19444,5 @@ body.kr-has-health-bar.kr-health-collapsed-body {
 
 
 
-<div id="admin-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#1976D2;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.75;pointer-events:none">v2026-04-27-22:16 ✓ admin</div>
+<div id="admin-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#1976D2;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.75;pointer-events:none">v2026-04-27-22:41 ✓ admin</div>
 </body></html>
