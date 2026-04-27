@@ -18044,6 +18044,291 @@ window._FBProductenTab = function FBProductenTab({ outlet }) {
 </script>
 <!-- KR-EXTRAS-END -->
 
+<!-- KR-PROFILE-START v1: profielindicatie rechtsboven (filter shortcut). 27 apr 2026 -->
+<style id="kr-profile-css">
+#kr-profile-badge {
+  position: fixed;
+  top: 8px;
+  right: 8px;
+  z-index: 99997;
+  background: var(--kr-night, #002D41);
+  color: var(--kr-text-on-dark, #fff);
+  font-family: var(--kr-font, -apple-system, sans-serif);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: var(--kr-radius-md, 10px);
+  box-shadow: var(--kr-shadow-md, 0 4px 12px rgba(0,30,60,.12));
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background .12s, transform .12s;
+}
+#kr-profile-badge:hover { background: #003a55; transform: translateY(-1px); }
+#kr-profile-badge .kr-pf-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--kr-success, #2E7D32);
+}
+#kr-profile-badge[data-outlet="weesp"] .kr-pf-dot { background: #FFB300; }
+#kr-profile-badge[data-outlet="alle"]  .kr-pf-dot { background: var(--kr-aqua, #3FB8C4); }
+#kr-profile-badge .kr-pf-arrow {
+  font-size: 9px;
+  opacity: .7;
+}
+
+#kr-profile-menu {
+  position: fixed;
+  top: 44px;
+  right: 8px;
+  z-index: 99998;
+  background: var(--kr-bg-page, #fff);
+  border-radius: var(--kr-radius-md, 10px);
+  box-shadow: var(--kr-shadow-lg, 0 8px 24px rgba(0,30,60,.18));
+  font-family: var(--kr-font, -apple-system, sans-serif);
+  font-size: 13px;
+  color: var(--kr-text, #234756);
+  min-width: 200px;
+  overflow: hidden;
+  animation: kr-pf-in .14s ease-out;
+}
+@keyframes kr-pf-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.kr-pf-section-title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--kr-text-muted, #6E8591);
+  padding: 10px 14px 4px;
+  font-weight: 700;
+}
+.kr-pf-item {
+  padding: 9px 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+.kr-pf-item:hover { background: var(--kr-bg-soft, #F5F8FA); }
+.kr-pf-item__icon { width: 16px; text-align: center; }
+.kr-pf-item__check { margin-left: auto; color: var(--kr-success, #2E7D32); font-weight: 700; }
+.kr-pf-item--info {
+  cursor: default;
+  font-size: 11px;
+  color: var(--kr-text-muted, #6E8591);
+  padding: 8px 14px;
+  background: var(--kr-bg-soft, #F5F8FA);
+  border-top: 1px solid var(--kr-border, #D8E8EF);
+}
+.kr-pf-item--info:hover { background: var(--kr-bg-soft, #F5F8FA); }
+.kr-pf-divider {
+  height: 1px;
+  background: var(--kr-border, #D8E8EF);
+  margin: 4px 0;
+}
+</style>
+
+<script id="kr-profile-js">
+(function(){
+  if (window.kr && window.kr._profile === 'v1') return;
+  window.kr = window.kr || {};
+  window.kr._profile = 'v1';
+  
+  function huidigOutlet(){
+    try {
+      // 1. URL ?outlet= 
+      var url = new URLSearchParams(window.location.search);
+      var u = url.get('outlet');
+      if (u && ['west','weesp','alle'].indexOf(u) >= 0) return u;
+      // 2. localStorage filter
+      var ls = localStorage.getItem('kr_f_outlet');
+      if (ls && ['west','weesp','alle'].indexOf(ls) >= 0) return ls;
+    } catch(e){}
+    return 'alle';
+  }
+  
+  function outletLabel(o){
+    return o === 'west' ? 'Amsterdam West' :
+           o === 'weesp' ? 'Weesp' :
+           o === 'alle' ? 'Beide outlets' : o;
+  }
+  function outletKort(o){
+    return o === 'west' ? 'West' :
+           o === 'weesp' ? 'Weesp' :
+           o === 'alle' ? 'Alle' : o;
+  }
+  
+  function setOutlet(nieuw){
+    if (['west','weesp','alle'].indexOf(nieuw) < 0) return;
+    var oud = huidigOutlet();
+    if (oud === nieuw) return;
+    
+    try {
+      localStorage.setItem('kr_f_outlet', nieuw);
+      // Sync naar globale state als die bestaat
+      if (typeof window._filterOutlet !== 'undefined') {
+        window._filterOutlet = nieuw;
+      }
+      // Sync URL
+      var url = new URL(window.location.href);
+      if (nieuw === 'alle') {
+        url.searchParams.delete('outlet');
+      } else {
+        url.searchParams.set('outlet', nieuw);
+      }
+      window.history.replaceState({}, '', url.toString());
+    } catch(e){
+      console.warn('[kr-profile] setOutlet error:', e);
+    }
+    
+    if (window.kr.toast) {
+      window.kr.toast('Outlet: ' + outletLabel(nieuw), 'success', 2000);
+    }
+    
+    // Trigger custom event zodat schermen erop kunnen reageren
+    window.dispatchEvent(new CustomEvent('kr:outlet-changed', { detail: { outlet: nieuw, vorige: oud } }));
+    
+    updateBadge();
+    sluitMenu();
+    
+    // Geef de UI even tijd, herlaad dan met nette state
+    setTimeout(function(){
+      if (typeof window.refreshFilterBar === 'function') {
+        try { window.refreshFilterBar(); } catch(e){}
+      }
+    }, 100);
+  }
+  
+  function updateBadge(){
+    var badge = document.getElementById('kr-profile-badge');
+    if (!badge) return;
+    var o = huidigOutlet();
+    badge.setAttribute('data-outlet', o);
+    var label = badge.querySelector('.kr-pf-label');
+    if (label) label.textContent = outletKort(o);
+  }
+  
+  function sluitMenu(){
+    var m = document.getElementById('kr-profile-menu');
+    if (m) m.remove();
+    document.removeEventListener('click', buitenKlik, true);
+    document.removeEventListener('keydown', escMenu);
+  }
+  
+  function buitenKlik(e){
+    var m = document.getElementById('kr-profile-menu');
+    var b = document.getElementById('kr-profile-badge');
+    if (!m) return;
+    if (m.contains(e.target) || (b && b.contains(e.target))) return;
+    sluitMenu();
+  }
+  
+  function escMenu(e){ if (e.key === 'Escape') sluitMenu(); }
+  
+  function toonMenu(){
+    if (document.getElementById('kr-profile-menu')) { sluitMenu(); return; }
+    
+    var huidig = huidigOutlet();
+    var menu = document.createElement('div');
+    menu.id = 'kr-profile-menu';
+    
+    // Outlet sectie
+    var titel = document.createElement('div');
+    titel.className = 'kr-pf-section-title';
+    titel.textContent = 'Outlet weergave';
+    menu.appendChild(titel);
+    
+    [
+      { code:'alle',  label:'Beide outlets', icon:'⊞' },
+      { code:'west',  label:'Amsterdam West', icon:'🍴' },
+      { code:'weesp', label:'Weesp',          icon:'🏠' }
+    ].forEach(function(opt){
+      var it = document.createElement('button');
+      it.className = 'kr-pf-item';
+      it.innerHTML = '<span class="kr-pf-item__icon">' + opt.icon + '</span>' +
+                     '<span></span>' +
+                     (opt.code === huidig ? '<span class="kr-pf-item__check">✓</span>' : '');
+      it.querySelector('span:nth-child(2)').textContent = opt.label;
+      it.addEventListener('click', function(){ setOutlet(opt.code); });
+      menu.appendChild(it);
+    });
+    
+    var div = document.createElement('div'); div.className = 'kr-pf-divider';
+    menu.appendChild(div);
+    
+    // Sneltoetsen-helper
+    var btnHelp = document.createElement('button');
+    btnHelp.className = 'kr-pf-item';
+    btnHelp.innerHTML = '<span class="kr-pf-item__icon">⌨</span><span>Sneltoetsen (?)</span>';
+    btnHelp.addEventListener('click', function(){
+      sluitMenu();
+      if (window.kr.help) window.kr.help();
+    });
+    menu.appendChild(btnHelp);
+    
+    // Versie info
+    var versieEl = document.getElementById('admin-versie-tag');
+    var versieText = versieEl ? versieEl.textContent.trim() : 'KitchenRobot';
+    var info = document.createElement('div');
+    info.className = 'kr-pf-item kr-pf-item--info';
+    info.textContent = versieText;
+    menu.appendChild(info);
+    
+    document.body.appendChild(menu);
+    setTimeout(function(){
+      document.addEventListener('click', buitenKlik, true);
+      document.addEventListener('keydown', escMenu);
+    }, 10);
+  }
+  
+  function init(){
+    if (document.getElementById('kr-profile-badge')) return; // al gemaakt
+    var b = document.createElement('div');
+    b.id = 'kr-profile-badge';
+    b.setAttribute('data-outlet', huidigOutlet());
+    b.setAttribute('data-kr-tip', 'Outlet & instellingen');
+    b.innerHTML = '<span class="kr-pf-dot"></span>' +
+                  '<span class="kr-pf-label"></span>' +
+                  '<span class="kr-pf-arrow">▾</span>';
+    b.querySelector('.kr-pf-label').textContent = outletKort(huidigOutlet());
+    b.addEventListener('click', function(e){ e.stopPropagation(); toonMenu(); });
+    document.body.appendChild(b);
+  }
+  
+  // Publiceer in API
+  window.kr.outlet = {
+    get: huidigOutlet,
+    set: setOutlet,
+    label: outletLabel
+  };
+  
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+  
+  // Externe wijzigingen synchroniseren naar de badge (bv. filter-bar wijzigt outlet)
+  window.addEventListener('storage', function(e){
+    if (e.key === 'kr_f_outlet') updateBadge();
+  });
+  // Polling fallback voor in-tab wijzigingen
+  setInterval(updateBadge, 2000);
+})();
+</script>
+<!-- KR-PROFILE-END -->
+
+
 <!-- KR-PROFIEL-START v1: profielindicator rechtsboven. 27 apr 2026 -->
 <style id="kr-profiel-css">
 #kr-profiel-badge {
@@ -18336,5 +18621,5 @@ window._FBProductenTab = function FBProductenTab({ outlet }) {
 
 
 
-<div id="admin-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#1976D2;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.75;pointer-events:none">v2026-04-27-10:25 ✓ admin</div>
+<div id="admin-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#1976D2;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.75;pointer-events:none">v2026-04-27-10:28 ✓ admin</div>
 </body></html>
