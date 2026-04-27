@@ -708,7 +708,6 @@ function Header({ sc, setSc, user, logout }) {
     ] },
     { label: "Analyse", items: [
       ["allergenen", "🏷", "Allergenen"],
-      ["fin", "💰", "Financieel"],
       ["haccp", "🌡", "HACCP"],
       ["nvwa", "📋", "NVWA Inspectie"],
       ["fb", "📊", "F&B Analyse"],
@@ -15181,11 +15180,11 @@ function ChefScreen({ setSc, setActieve }) {
       } else if (!cas.pgId) {
         stapEl = R('div', { style: stepWrap }, R('div', { style: stepLbl }, '3. Kies een productgroep op ' + cas.dag), R('div', { style: pillsWrap },
           pgs.length === 0 ? R('div', { style: { fontSize:12, color:C.muted } }, 'Geen productgroepen op deze dag') :
-          pgs.map(function(p){ return R('button', { key:p.id, type:'button', style: pill(false), onClick: function(){ update({ pgId: p.id }); } }, p.naam + ' · ' + p.n); })
+          pgs.map(function(p){ return R('button', { key:p.id, type:'button', style: pill(false), onClick: function(){ update({ pgId: p.id }); } }, p.naam); })
         ));
       } else if (!cas.psId) {
         stapEl = R('div', { style: stepWrap }, R('div', { style: stepLbl }, '4. Kies een productsoort in ' + pgLabel), R('div', { style: pillsWrap },
-          pss.map(function(p){ return R('button', { key:p.id, type:'button', style: pill(false), onClick: function(){ update({ psId: p.id }); } }, p.naam + ' · ' + p.n); })
+          pss.map(function(p){ return R('button', { key:p.id, type:'button', style: pill(false), onClick: function(){ update({ psId: p.id }); } }, p.naam); })
         ));
       } else if (!cas.boekingId) {
         stapEl = R('div', { style: stepWrap }, R('div', { style: stepLbl }, '5. Kies een boeking in ' + psLabel + ' (' + boekLijst.length + ')'), R('div', { style: pillsWrap },
@@ -15372,7 +15371,7 @@ function ChefScreen({ setSc, setActieve }) {
         stapEl = R('div', { style: stepWrap },
           R('div', { style: stepLbl }, '1. Kies een productgroep'),
           R('div', { style: pillsWrap },
-            pgs.map(function(p){ return R('button', { key:p.id, type:'button', style: pill(false), onClick: function(){ kiesPg(p.id); } }, p.naam + ' · ' + p.n); })
+            pgs.map(function(p){ return R('button', { key:p.id, type:'button', style: pill(false), onClick: function(){ kiesPg(p.id); } }, p.naam); })
           )
         );
       } else if (!cas.psId) {
@@ -15380,7 +15379,7 @@ function ChefScreen({ setSc, setActieve }) {
           R('div', { style: stepLbl }, '2. Kies een productsoort in ' + pgLabel),
           R('div', { style: pillsWrap },
             pssInPg.length === 0 ? R('div', { style: { fontSize:12, color:C.muted } }, 'Geen productsoorten in deze productgroep') :
-            pssInPg.map(function(p){ return R('button', { key:p.id, type:'button', style: pill(false), onClick: (function(pId, pgId){ return function(){ kiesPs(pId, pgId); }; })(p.id, p.pgId) }, p.naam + ' · ' + p.n); })
+            pssInPg.map(function(p){ return R('button', { key:p.id, type:'button', style: pill(false), onClick: (function(pId, pgId){ return function(){ kiesPs(pId, pgId); }; })(p.id, p.pgId) }, p.naam); })
           )
         );
       } else {
@@ -15391,7 +15390,7 @@ function ChefScreen({ setSc, setActieve }) {
             andereInPg.length > 0 ? R('span', { style:{ fontSize:11, color:C.muted } }, '— wissel:') : null,
             andereInPg.map(function(p){
               return R('button', { key:p.id, type:'button', style:{ background:C.white, color:C.night, border:'1.5px solid '+C.border, borderRadius:6, padding:'4px 10px', fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }, onClick: (function(pId, pgId){ return function(){ kiesPs(pId, pgId); }; })(p.id, p.pgId) },
-                p.naam + ' · ' + p.n
+                p.naam
               );
             })
           )
@@ -15730,7 +15729,7 @@ table[id^="opzet-tabel-"] tbody tr:last-child td {
         stapEl = R('div', { style: stepWrap },
           R('div', { style: stepLbl }, '1. Kies een maand — of zoek hierboven op naam'),
           R('div', { style: pillsWrap },
-            maanden.map(function(m){ return R('button', { key:m.key, type:'button', style: pill(false), onClick: function(){ kiesMaand(m.key); } }, m.label + ' · ' + m.n); })
+            maanden.map(function(m){ return R('button', { key:m.key, type:'button', style: pill(false), onClick: function(){ kiesMaand(m.key); } }, m.label); })
           )
         );
       } else if (!cas.dag) {
@@ -18714,6 +18713,29 @@ body.kr-has-health-bar.kr-health-collapsed-body {
 #kr-health-extras { display: flex; align-items: center; gap: 6px; }
 #kr-health-extras > * { display: flex; align-items: center; }
 
+.kr-health-link {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 11px;
+  background: rgba(255,255,255,.08);
+  color: var(--kr-text-on-dark, #fff);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: .01em;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background .12s;
+  user-select: none;
+}
+.kr-health-link:hover { background: rgba(255,255,255,.16); color: #fff; }
+.kr-health-link-icon { font-size: 12px; line-height: 1; }
+@media (max-width: 760px) {
+  .kr-health-link-label { display: none; }
+  .kr-health-link { padding: 3px 6px; }
+}
+
 #kr-health-collapse {
   background: transparent;
   border: none;
@@ -18787,6 +18809,14 @@ body.kr-has-health-bar.kr-health-collapsed-body {
         '<span class="kr-health-text">HACCP…</span>' +
       '</div>' +
       '<span class="kr-health-spacer"></span>' +
+      '<a class="kr-health-link" href="/haccp-rapport.html" target="_blank" rel="noopener" title="NVWA-rapport openen in nieuw tabblad">' +
+        '<span class="kr-health-link-icon">📋</span>' +
+        '<span class="kr-health-link-label">NVWA</span>' +
+      '</a>' +
+      '<a class="kr-health-link" href="/sales-bbq.html" target="_blank" rel="noopener" title="Sales BBQ checker openen in nieuw tabblad">' +
+        '<span class="kr-health-link-icon">🥩</span>' +
+        '<span class="kr-health-link-label">Sales BBQ</span>' +
+      '</a>' +
       '<div id="kr-health-extras"></div>' +
       '<button id="kr-health-collapse" title="Inklappen / uitklappen">▴</button>';
     return bar;
@@ -19223,5 +19253,5 @@ body.kr-has-health-bar.kr-health-collapsed-body {
 
 
 
-<div id="admin-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#1976D2;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.75;pointer-events:none">v2026-04-27-21:38 ✓ admin</div>
+<div id="admin-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#1976D2;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.75;pointer-events:none">v2026-04-27-21:51 ✓ admin</div>
 </body></html>
