@@ -18598,6 +18598,51 @@ window._FBProductenTab = function FBProductenTab({ outlet }) {
 </script>
 <!-- KR-PROFILE-END -->
 
+<!-- KR-ALERT-SHIM v1: alert() -> kr.toast met slimme type-detectie. 27 apr 2026 -->
+<script id="kr-alert-shim-js">
+(function(){
+  if (window.__krAlertShimGeladen) return;
+  window.__krAlertShimGeladen = true;
+
+  var nativeAlert = window.alert ? window.alert.bind(window) : null;
+
+  function detectType(s){
+    var lower = (s || '').toLowerCase();
+    // error: meest specifiek eerst
+    if (/(fout|error|mislukt|niet ingelogd|niet beschikbaar|kan niet|geen verbinding)/.test(lower)) return 'error';
+    // success: ✓ aan begin OF positieve werkwoorden
+    if (/^\s*[\u2713\u2705]/.test(s) || /(opgeslagen|gepubliceerd|gelukt|verstuurd|aangemaakt|verwijderd|bijgewerkt)/.test(lower)) return 'success';
+    // warn: ⚠ aan begin OF validatie-patronen
+    if (/^\s*[\u26A0\u26D4\u274C]/.test(s) || /(kies eerst|kies een|verplicht|geen .* gekozen|wordt geladen)/.test(lower)) return 'warn';
+    return 'info';
+  }
+
+  function getDuur(type){
+    if (type === 'error') return 6000;
+    if (type === 'success') return 3500;
+    if (type === 'warn') return 4500;
+    return 4000;
+  }
+
+  window.alert = function(msg){
+    try {
+      if (window.kr && typeof window.kr.toast === 'function') {
+        var s = (msg == null) ? '' : String(msg);
+        var type = detectType(s);
+        window.kr.toast(s, type, getDuur(type));
+        return;
+      }
+    } catch(e) { /* fall through */ }
+    if (nativeAlert) nativeAlert(msg);
+  };
+
+  // Diagnostic: tel hoe vaak de shim is aangeroepen (via console)
+  if (window.console && console.info) {
+    console.info('[kr-alert-shim] alert() rerouted naar kr.toast');
+  }
+})();
+</script>
+
 <!-- KR-HEALTH-START v1: systeem-health balk bovenaan. 27 apr 2026 -->
 <style id="kr-health-css">
 #kr-health-bar {
@@ -19161,5 +19206,5 @@ body.kr-has-health-bar {
 
 
 
-<div id="admin-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#1976D2;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.75;pointer-events:none">v2026-04-27-21:09 ✓ admin</div>
+<div id="admin-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#1976D2;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.75;pointer-events:none">v2026-04-27-21:16 ✓ admin</div>
 </body></html>
