@@ -15958,6 +15958,18 @@ table[id^="formulier-tabel-"] tbody td {
     var iS=useState({}); var inst=iS[0]; var setInst=iS[1];
     var lS=useState(true); var laadt=lS[0]; var setLaadt=lS[1];
     var fS=useState(null); var fout=fS[0]; var setFout=fS[1];
+    var caS=useState([]); var corrActies=caS[0]; var setCorrActies=caS[1];
+    var cfS=useState({omschrijving:'',datum:new Date().toISOString().slice(0,10),uitgevoerd_door:''}); var corrForm=cfS[0]; var setCorrForm=cfS[1];
+    var snS=useState([]); var sensoren=snS[0]; var setSensoren=snS[1];
+    var nvS=useState({sensor_id:'',steek_temp:'',sensor_temp:'',gemeten_door:'',opmerking:''}); var nieuweVerif=nvS[0]; var setNieuweVerif=nvS[1];
+    var verifBezigS=useState(false); var verifBezig=verifBezigS[0]; var setVerifBezig=verifBezigS[1];
+    var rapBezigS=useState(false); var rapBezig=rapBezigS[0]; var setRapBezig=rapBezigS[1];
+    useEffect(function(){
+      if(!window._supa||!outlet) return;
+      window._supa.from('kiosk_sensoren').select('id,naam,min_norm,max_norm').eq('outlet_code',outlet).eq('actief',true).order('naam')
+        .then(function(r){ if(!r.error) setSensoren(r.data||[]); });
+      setCorrActies([]);
+    },[outlet]);
     useEffect(function(){
       if(!window._supa||!van||!tot||!outlet) return;
       setLaadt(true); setFout(null);
@@ -16004,7 +16016,39 @@ table[id^="formulier-tabel-"] tbody td {
           R('option',{value:15},'15 min'),R('option',{value:30},'30 min'),R('option',{value:60},'1 uur'))),
         R('label',{style:FLD},'Vestiging',R('select',{value:outlet,onChange:function(e){setOutlet(e.target.value);},style:INP},
           R('option',{value:'west'},'Amsterdam West'),R('option',{value:'weesp'},'Weesp'))),
-        R('button',{onClick:function(){window.print();},style:{marginLeft:'auto',padding:'9px 18px',background:'#002D41',color:'white',border:'none',borderRadius:4,cursor:'pointer',fontSize:13,fontWeight:600}},'Printen / PDF')
+        R('button',{disabled:rapBezig,onClick:function(){
+          if(!window._supa) return;
+          setRapBezig(true);
+          var totaalMet = overzicht.reduce(function(a,s){return a+(s.mt||0);},0);
+          var rapportPayload = {
+            outlet_code: outlet,
+            periode_van: van,
+            periode_tot: tot,
+            gegenereerd_door: (window.kr&&window.kr.outlet&&document.getElementById('admin-versie-tag'))?document.getElementById('admin-versie-tag').textContent.trim():null,
+            totaal_metingen: totaalMet,
+            afwijkingen: episodes.length,
+            correctieve_acties: corrActies,
+            rapport_json: {
+              overzicht: overzicht,
+              episodes: episodes,
+              verif: verif,
+              inst: inst,
+              drempel: drempel,
+              gegenereerd_op: new Date().toISOString()
+            }
+          };
+          window._supa.from('haccp_inspecties').insert(rapportPayload).select().maybeSingle()
+            .then(function(r){
+              setRapBezig(false);
+              if(r.error){
+                if(window.kr&&window.kr.toast) window.kr.toast('Fout bij opslaan: '+r.error.message,'error');
+              } else {
+                if(window.kr&&window.kr.toast) window.kr.toast('Rapport opgeslagen ('+totaalMet+' metingen, '+episodes.length+' afwijkingen)','success',5000);
+                setCorrActies([]);
+              }
+            });
+        },style:{marginLeft:'auto',padding:'9px 18px',background:rapBezig?'#6E8591':'#2E7D32',color:'white',border:'none',borderRadius:4,cursor:rapBezig?'wait':'pointer',fontSize:13,fontWeight:600}}, rapBezig?'Bezig...':'\u{1F4BE} Rapport opslaan'),
+        R('button',{onClick:function(){window.print();},style:{padding:'9px 18px',background:'#002D41',color:'white',border:'none',borderRadius:4,cursor:'pointer',fontSize:13,fontWeight:600}},'Printen / PDF')
       ),
       fout && R('div',{style:{padding:16,background:'#FFEBEE',color:'#C62828',borderRadius:4,marginBottom:16}},'Fout: '+fout),
       laadt && R('div',{style:{padding:40,textAlign:'center',color:'#6E8591'}},'Laden...'),
@@ -16079,7 +16123,7 @@ table[id^="formulier-tabel-"] tbody td {
         ),
         R('section',{style:{marginTop:36}},
           R('h2',{style:{fontSize:18,fontWeight:600,color:'#002D41',margin:'0 0 4px 0'}},'3. Significante afwijkingen ('+drempel+' min of langer)'),
-          R('div',{style:{fontSize:12,color:'#6E8591',fontStyle:'italic',marginBottom:12}},'Correctieve-actie invoer volgt in patch 2.'),
+          R('div',{style:{fontSize:12,color:'#6E8591',marginBottom:12}},'Per afwijking kunt u onder de tabel correctieve acties registreren. Deze worden meegenomen bij \'Opslaan als rapport\'.'),
           episodes.length===0
             ? R('div',{style:{padding:20,background:'#E8F5E9',borderRadius:4,color:'#2E7D32'}},'Geen significante afwijkingen van '+drempel+' min of langer in deze periode.')
             : R('table',{style:{width:'100%',borderCollapse:'collapse',fontSize:12}},
@@ -16097,11 +16141,44 @@ table[id^="formulier-tabel-"] tbody td {
                     R('td',{style:Object.assign({},TDR,{color:'#C62828',fontWeight:600})}, fmt(e.max_temp,1)+'C')
                   );
                 }))
-              )
+              ),
+          R('div',{className:'nvwa-noprint',style:{marginTop:18,padding:16,background:'#F5F8FA',borderRadius:6,border:'1px solid #D8E8EF'}},
+            R('div',{style:{fontSize:13,fontWeight:700,color:'#002D41',marginBottom:10}},'Correctieve acties registreren'),
+            corrActies.length > 0 && R('div',{style:{marginBottom:12}},
+              corrActies.map(function(a,i){
+                return R('div',{key:i,style:{padding:'8px 10px',background:'white',borderRadius:4,marginBottom:6,fontSize:12,display:'flex',gap:10,alignItems:'flex-start',border:'1px solid #E0E8EE'}},
+                  R('div',{style:{flex:1}},
+                    R('div',{style:{fontWeight:600,color:'#002D41'}}, a.omschrijving),
+                    R('div',{style:{fontSize:11,color:'#6E8591',marginTop:2}}, a.datum + (a.uitgevoerd_door? ' · door '+a.uitgevoerd_door:''))
+                  ),
+                  R('button',{onClick:function(){setCorrActies(corrActies.filter(function(_,j){return j!==i;}));},style:{background:'transparent',border:'none',color:'#C62828',cursor:'pointer',fontSize:13,padding:'2px 8px'}},'✕')
+                );
+              })
+            ),
+            R('div',{style:{display:'grid',gridTemplateColumns:'2fr 1fr 1fr auto',gap:8,alignItems:'end'}},
+              R('label',{style:FLD},'Omschrijving correctieve actie',
+                R('input',{type:'text',value:corrForm.omschrijving,onChange:function(e){setCorrForm(Object.assign({},corrForm,{omschrijving:e.target.value}));},style:INP,placeholder:'Bv. Vriescel deur dichtgedaan, sensor herstart, koeler gerepareerd...'})
+              ),
+              R('label',{style:FLD},'Datum',
+                R('input',{type:'date',value:corrForm.datum,onChange:function(e){setCorrForm(Object.assign({},corrForm,{datum:e.target.value}));},style:INP})
+              ),
+              R('label',{style:FLD},'Door',
+                R('input',{type:'text',value:corrForm.uitgevoerd_door,onChange:function(e){setCorrForm(Object.assign({},corrForm,{uitgevoerd_door:e.target.value}));},style:INP,placeholder:'Naam'})
+              ),
+              R('button',{onClick:function(){
+                if(!corrForm.omschrijving.trim()){
+                  if(window.kr&&window.kr.toast) window.kr.toast('Vul een omschrijving in','warn');
+                  return;
+                }
+                setCorrActies(corrActies.concat([{omschrijving:corrForm.omschrijving.trim(),datum:corrForm.datum,uitgevoerd_door:corrForm.uitgevoerd_door.trim()}]));
+                setCorrForm({omschrijving:'',datum:new Date().toISOString().slice(0,10),uitgevoerd_door:corrForm.uitgevoerd_door});
+              },style:{padding:'8px 16px',background:'#1976D2',color:'white',border:'none',borderRadius:4,cursor:'pointer',fontSize:12.5,fontWeight:600,whiteSpace:'nowrap'}},'+ Toevoegen')
+            )
+          )
         ),
         R('section',{style:{marginTop:36}},
           R('h2',{style:{fontSize:18,fontWeight:600,color:'#002D41',margin:'0 0 4px 0'}},'4. Apparatuurverificatie (steekthermometer)'),
-          R('div',{style:{fontSize:12,color:'#6E8591',fontStyle:'italic',marginBottom:12}},'Invoerformulier volgt in patch 3. Tolerantie: 2 graden.'),
+          R('div',{style:{fontSize:12,color:'#6E8591',marginBottom:12}},'Wekelijkse vergelijking sensor vs steekthermometer. Tolerantie: 2 graden. Voeg onderaan een nieuwe meting toe.'),
           verif.length===0
             ? R('div',{style:{padding:20,background:'#FFF3E0',borderRadius:4,color:'#E65100'}},'Nog geen verificatie-metingen in deze periode vastgelegd.')
             : R('table',{style:{width:'100%',borderCollapse:'collapse',fontSize:12}},
@@ -16121,7 +16198,60 @@ table[id^="formulier-tabel-"] tbody td {
                     R('td',{style:TD}, v.opmerking||'-')
                   );
                 }))
+              ),
+          R('div',{className:'nvwa-noprint',style:{marginTop:18,padding:16,background:'#F5F8FA',borderRadius:6,border:'1px solid #D8E8EF'}},
+            R('div',{style:{fontSize:13,fontWeight:700,color:'#002D41',marginBottom:10}},'Nieuwe verificatie-meting toevoegen'),
+            R('div',{style:{display:'grid',gridTemplateColumns:'2fr 1fr 1fr 1fr',gap:8,alignItems:'end',marginBottom:10}},
+              R('label',{style:FLD},'Koeling',
+                R('select',{value:nieuweVerif.sensor_id,onChange:function(e){setNieuweVerif(Object.assign({},nieuweVerif,{sensor_id:e.target.value}));},style:INP},
+                  R('option',{value:''},'-- kies sensor --'),
+                  sensoren.map(function(s){
+                    return R('option',{key:s.id,value:s.id}, s.naam+' ('+(s.min_norm==null?'?':s.min_norm)+'/'+(s.max_norm==null?'?':s.max_norm)+'C)');
+                  })
+                )
+              ),
+              R('label',{style:FLD},'Steek-temp (C)',
+                R('input',{type:'number',step:'0.1',value:nieuweVerif.steek_temp,onChange:function(e){setNieuweVerif(Object.assign({},nieuweVerif,{steek_temp:e.target.value}));},style:INP,placeholder:'verplicht'})
+              ),
+              R('label',{style:FLD},'Sensor-temp (C)',
+                R('input',{type:'number',step:'0.1',value:nieuweVerif.sensor_temp,onChange:function(e){setNieuweVerif(Object.assign({},nieuweVerif,{sensor_temp:e.target.value}));},style:INP,placeholder:'optioneel'})
+              ),
+              R('label',{style:FLD},'Gemeten door',
+                R('input',{type:'text',value:nieuweVerif.gemeten_door,onChange:function(e){setNieuweVerif(Object.assign({},nieuweVerif,{gemeten_door:e.target.value}));},style:INP,placeholder:'Naam'})
               )
+            ),
+            R('div',{style:{display:'grid',gridTemplateColumns:'1fr auto',gap:8,alignItems:'end'}},
+              R('label',{style:FLD},'Opmerking (optioneel)',
+                R('input',{type:'text',value:nieuweVerif.opmerking,onChange:function(e){setNieuweVerif(Object.assign({},nieuweVerif,{opmerking:e.target.value}));},style:INP})
+              ),
+              R('button',{disabled:verifBezig,onClick:function(){
+                if(!nieuweVerif.sensor_id || nieuweVerif.steek_temp===''){
+                  if(window.kr&&window.kr.toast) window.kr.toast('Kies een sensor en vul steek-temp in','warn');
+                  return;
+                }
+                setVerifBezig(true);
+                var payload = {
+                  outlet_code: outlet,
+                  sensor_id: nieuweVerif.sensor_id,
+                  steek_temp: parseFloat(nieuweVerif.steek_temp),
+                  sensor_temp: nieuweVerif.sensor_temp===''?null:parseFloat(nieuweVerif.sensor_temp),
+                  gemeten_door: nieuweVerif.gemeten_door.trim()||null,
+                  opmerking: nieuweVerif.opmerking.trim()||null
+                };
+                window._supa.from('haccp_verificatie_metingen').insert(payload).select('*, kiosk_sensoren(naam)').maybeSingle()
+                  .then(function(r){
+                    setVerifBezig(false);
+                    if(r.error){
+                      if(window.kr&&window.kr.toast) window.kr.toast('Fout: '+r.error.message,'error');
+                    } else {
+                      setVerif([r.data].concat(verif));
+                      setNieuweVerif({sensor_id:'',steek_temp:'',sensor_temp:'',gemeten_door:nieuweVerif.gemeten_door,opmerking:''});
+                      if(window.kr&&window.kr.toast) window.kr.toast('Verificatie-meting opgeslagen','success');
+                    }
+                  });
+              },style:{padding:'9px 18px',background:verifBezig?'#6E8591':'#1976D2',color:'white',border:'none',borderRadius:4,cursor:verifBezig?'wait':'pointer',fontSize:13,fontWeight:600,whiteSpace:'nowrap'}}, verifBezig?'Bezig...':'Meting opslaan')
+            )
+          )
         ),
         R('div',{style:{marginTop:50,paddingTop:24,borderTop:'2px solid #002D41',display:'grid',gridTemplateColumns:'1fr 1fr',gap:40}},
           R('div',null, R('b',{style:{fontSize:11,color:'#6E8591',textTransform:'uppercase',letterSpacing:'.04em'}},'Opgesteld door'), R('div',{style:{borderBottom:'1px solid #234756',minHeight:42,marginTop:6}})),
@@ -19031,5 +19161,5 @@ body.kr-has-health-bar {
 
 
 
-<div id="admin-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#1976D2;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.75;pointer-events:none">v2026-04-27-21:03 ✓ admin</div>
+<div id="admin-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#1976D2;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.75;pointer-events:none">v2026-04-27-21:09 ✓ admin</div>
 </body></html>
