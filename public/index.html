@@ -18671,7 +18671,11 @@ window._FBProductenTab = function FBProductenTab({ outlet }) {
 #kr-health-bar.kr-collapsed > * { display: none; }
 
 body.kr-has-health-bar {
-  /* Pas niet automatisch padding-top aan: admin heeft al eigen layout */
+  /* Reserveer 26px bovenaan zodat de health-balk geen content overlapt. */
+  padding-top: 26px !important;
+}
+body.kr-has-health-bar.kr-health-collapsed-body {
+  padding-top: 4px !important;
 }
 
 .kr-health-pill {
@@ -18718,6 +18722,8 @@ body.kr-has-health-bar {
 @media (max-width: 760px) {
   #kr-health-bar { font-size: 10.5px; gap: 8px; padding: 0 8px; height: 22px; }
   .kr-health-pill { padding: 1px 6px; }
+  body.kr-has-health-bar { padding-top: 22px !important; }
+  body.kr-has-health-bar.kr-health-collapsed-body { padding-top: 4px !important; }
 }
 </style>
 
@@ -18868,6 +18874,7 @@ body.kr-has-health-bar {
     if (!bar) return;
     collapsed = !collapsed;
     bar.classList.toggle('kr-collapsed', collapsed);
+    document.body.classList.toggle('kr-health-collapsed-body', collapsed);
     try { localStorage.setItem('kr_health_collapsed', collapsed ? '1' : '0'); } catch(e){}
   }
   
@@ -18882,6 +18889,7 @@ body.kr-has-health-bar {
       document.body.appendChild(bar);
     }
     document.body.classList.add('kr-has-health-bar');
+    if (collapsed) document.body.classList.add('kr-health-collapsed-body');
     
     // Klik op pill = detail
     bar.addEventListener('click', function(e){
@@ -19206,5 +19214,5 @@ body.kr-has-health-bar {
 
 
 
-<div id="admin-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#1976D2;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.75;pointer-events:none">v2026-04-27-21:16 ✓ admin</div>
+<div id="admin-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#1976D2;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.75;pointer-events:none">v2026-04-27-21:29 ✓ admin</div>
 </body></html>
