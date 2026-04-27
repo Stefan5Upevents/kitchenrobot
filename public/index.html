@@ -691,6 +691,13 @@ function LoginScreen({ onLogin }) {
 function Header({ sc, setSc, user, logout }) {
   var [menuOpen, setMenuOpen] = useState(false);
   var [grpOpen, setGrpOpen] = useState({ Dagelijks: true, Analyse: true, Beheer: true });
+  // Re-render wanneer profiel later geladen wordt
+  var [profielVer, setProfielVer] = useState(0);
+  useEffect(function() {
+    function onProf() { setProfielVer(function(v){ return v + 1; }); }
+    window.addEventListener('kr-profiel-geladen', onProf);
+    return function() { window.removeEventListener('kr-profiel-geladen', onProf); };
+  }, []);
   var navGroups = [
     { label: "Dagelijks", items: [
       ["adviezen", "📥", "Adviezen-inbox"],
@@ -727,6 +734,10 @@ function Header({ sc, setSc, user, logout }) {
     ] }
   ];
   var huidigLabel = "KitchenRobot";
+  // Rol-filter: voor sous/financieel verberg bepaalde groepen
+  if (typeof window._krFilterNavGroup === 'function') {
+    navGroups = navGroups.filter(window._krFilterNavGroup);
+  }
   navGroups.forEach(function(g) {
     g.items.forEach(function(it) {
       if (it[0] === sc) {
@@ -12810,7 +12821,7 @@ function SensorenScreen() {
   if (!user) {
     return /* @__PURE__ */ React.createElement(LoginScreen, { onLogin: handleLogin });
   }
-  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", minHeight: "100vh", background: "#F0F4F7" } }, /* @__PURE__ */ React.createElement(Header, { sc, setSc, user, logout: handleLogout }), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto", overflowX: "hidden" }, className: "mobile-padding" }, /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 1200, margin: "0 auto", padding: "28px 20px 60px" } }, sc === "home" && /* @__PURE__ */ React.createElement(HomeScreen, { setSc }), sc === "boekingen" && /* @__PURE__ */ React.createElement(BoekingenScreen, { setSc, setActieve }), sc === "financieel" && /* @__PURE__ */ React.createElement(FinancieelScreen, { setSc }), sc === "chef" && /* @__PURE__ */ React.createElement(ChefScreen, { setSc, setActieve }), sc === "buffet" && /* @__PURE__ */ React.createElement(BuffetScreen, { actieve, setActieve, setSc }), sc === "opzet" && /* @__PURE__ */ React.createElement(OpzetScreen, null), sc === "tijden" && /* @__PURE__ */ React.createElement(TijdenScreen, null), sc.startsWith("stam:") && /* @__PURE__ */ React.createElement(StamScreen, { initTab: sc.split(":")[1] || "pg" }), sc === "fin" && /* @__PURE__ */ React.createElement(FinancieelScreen, null), sc === "adviezen" && /* @__PURE__ */ React.createElement(AdviezenScreen, null), sc === "fin_inst" && /* @__PURE__ */ React.createElement(FinInstellingenScreen, null), sc === "sensoren" && /* @__PURE__ */ React.createElement(SensorenScreen, null), sc === "apikeys" && /* @__PURE__ */ React.createElement(ApiKoppelingenScreen, null), sc === "staffel" && window._OpzetStaffelScreen && /* @__PURE__ */ React.createElement(window._OpzetStaffelScreen, null), sc === "stam:fi" && /* @__PURE__ */ React.createElement(FinInstellingenScreen, null), sc === "allergenen" && /* @__PURE__ */ React.createElement(AllergenenScreen, null), sc === "inspiratie" && /* @__PURE__ */ React.createElement(InspiratieScreen, null), sc === "opzetlog" && /* @__PURE__ */ React.createElement(OpzetLogboekScreen, null), sc === "haccp" && /* @__PURE__ */ React.createElement(HACCPScreen, null), sc === "nvwa" && window._NVWAInspectieScreen && /* @__PURE__ */ React.createElement(window._NVWAInspectieScreen, null), sc === "fb" && window._FBAnalyseScreen && /* @__PURE__ */ React.createElement(window._FBAnalyseScreen, null), sc === "berichten" && window._BerichtenChefScreen && /* @__PURE__ */ React.createElement(window._BerichtenChefScreen, null), sc === "haccp_inst" && window._HACCPInstellingenScreen && /* @__PURE__ */ React.createElement(window._HACCPInstellingenScreen, null), sc === "bestelling" && /* @__PURE__ */ React.createElement(SligroBestellingScreen, null))));
+  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", minHeight: "100vh", background: "#F0F4F7" } }, /* @__PURE__ */ React.createElement(Header, { sc, setSc, user, logout: handleLogout }), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto", overflowX: "hidden" }, className: "mobile-padding" }, /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 1200, margin: "0 auto", padding: "28px 20px 60px" } }, sc === "home" && /* @__PURE__ */ React.createElement(HomeScreen, { setSc }), sc === "boekingen" && /* @__PURE__ */ React.createElement(BoekingenScreen, { setSc, setActieve }), sc === "financieel" && /* @__PURE__ */ React.createElement(FinancieelScreen, { setSc }), sc === "chef" && /* @__PURE__ */ React.createElement(ChefScreen, { setSc, setActieve }), sc === "buffet" && /* @__PURE__ */ React.createElement(BuffetScreen, { actieve, setActieve, setSc }), sc === "opzet" && /* @__PURE__ */ React.createElement(OpzetScreen, null), sc === "tijden" && /* @__PURE__ */ React.createElement(TijdenScreen, null), sc.startsWith("stam:") && (typeof window._krMagScherm !== "function" || window._krMagScherm(sc)) && /* @__PURE__ */ React.createElement(StamScreen, { initTab: sc.split(":")[1] || "pg" }), sc === "fin" && /* @__PURE__ */ React.createElement(FinancieelScreen, null), sc === "adviezen" && /* @__PURE__ */ React.createElement(AdviezenScreen, null), sc === "fin_inst" && /* @__PURE__ */ React.createElement(FinInstellingenScreen, null), sc === "sensoren" && /* @__PURE__ */ React.createElement(SensorenScreen, null), sc === "apikeys" && /* @__PURE__ */ React.createElement(ApiKoppelingenScreen, null), sc === "staffel" && window._OpzetStaffelScreen && /* @__PURE__ */ React.createElement(window._OpzetStaffelScreen, null), sc === "stam:fi" && /* @__PURE__ */ React.createElement(FinInstellingenScreen, null), sc === "allergenen" && /* @__PURE__ */ React.createElement(AllergenenScreen, null), sc === "inspiratie" && /* @__PURE__ */ React.createElement(InspiratieScreen, null), sc === "opzetlog" && /* @__PURE__ */ React.createElement(OpzetLogboekScreen, null), sc === "haccp" && /* @__PURE__ */ React.createElement(HACCPScreen, null), sc === "nvwa" && window._NVWAInspectieScreen && /* @__PURE__ */ React.createElement(window._NVWAInspectieScreen, null), sc === "fb" && window._FBAnalyseScreen && /* @__PURE__ */ React.createElement(window._FBAnalyseScreen, null), sc === "berichten" && window._BerichtenChefScreen && /* @__PURE__ */ React.createElement(window._BerichtenChefScreen, null), sc === "haccp_inst" && window._HACCPInstellingenScreen && /* @__PURE__ */ React.createElement(window._HACCPInstellingenScreen, null), sc === "bestelling" && /* @__PURE__ */ React.createElement(SligroBestellingScreen, null))));
 }
 function InspiratieScreen() {
   var _a, _b;
@@ -19147,6 +19158,110 @@ body.kr-has-health-bar.kr-health-collapsed-body {
 })();
 </script>
 <!-- KR-OPZET-STAFFEL-END -->
+<!-- KR-ROL-START v1: rol-systeem helpers + body-class + outlet pin. 27 apr 2026 -->
+<style id="kr-rol-css">
+/* Sous-chef: outlet-switcher pillen voor andere outlets visueel "vast" */
+body.kr-rol-sous_chef .kr-outlet-readonly {
+  pointer-events: none;
+  opacity: 0.55;
+}
+body.kr-rol-sous_chef .kr-outlet-pinned-badge {
+  display: inline-flex !important;
+}
+.kr-outlet-pinned-badge { display: none; }
+</style>
+<script id="kr-rol-js">
+(function() {
+  function init() {
+    if (!window.kr) window.kr = {};
+
+    // Helpers — altijd defined zodat callers veilig zijn
+    window.kr.profiel = {
+      get: function() { return window._profiel || null; },
+      naam: function() { return (window._profiel && window._profiel.naam) || null; },
+      rol: function() { return (window._profiel && window._profiel.rol) || null; },
+      outlet: function() { return (window._profiel && window._profiel.outlet_code) || null; },
+      isBeheerder: function() { return (window._profiel && window._profiel.rol) === 'beheerder'; },
+      isSous: function() { return (window._profiel && window._profiel.rol) === 'sous_chef'; },
+      isFinancieel: function() { return (window._profiel && window._profiel.rol) === 'financieel'; },
+      magBeheer: function() { return window.kr.profiel.isBeheerder(); },
+      magOutletKiezen: function() {
+        var rol = window.kr.profiel.rol();
+        return !rol || rol === 'beheerder';
+      },
+      vasteOutlet: function() {
+        // null = geen vaste outlet (mag kiezen). String = vast op deze outlet.
+        var rol = window.kr.profiel.rol();
+        var ol  = window.kr.profiel.outlet();
+        if (rol === 'sous_chef' && ol && ol !== 'beide') return ol;
+        return null;
+      }
+    };
+
+    function applyRolClasses() {
+      var rol = window.kr.profiel.rol();
+      // Verwijder oude rol/outlet-vast classes
+      var b = document.body;
+      b.className = b.className
+        .split(/\s+/)
+        .filter(function(c){ return c && c.indexOf('kr-rol-') !== 0 && c.indexOf('kr-outlet-vast-') !== 0; })
+        .join(' ');
+      if (rol) b.classList.add('kr-rol-' + rol);
+
+      // Sous: pin outlet
+      var vast = window.kr.profiel.vasteOutlet();
+      if (vast) {
+        b.classList.add('kr-outlet-vast-' + vast);
+        if (window.kr.outlet && window.kr.outlet.set && window.kr.outlet.get) {
+          if (window.kr.outlet.get() !== vast) {
+            try { window.kr.outlet.set(vast); } catch(e) {}
+          }
+        }
+      }
+    }
+
+    // Filter voor nav-groepen op basis van rol
+    window._krFilterNavGroup = function(grp) {
+      if (!window._profiel) return true; // geen profiel → toon alles (veilig)
+      var rol = window._profiel.rol;
+      if (!rol || rol === 'beheerder') return true;
+      if (rol === 'sous_chef')   return grp.label !== 'Beheer';
+      if (rol === 'financieel')  return grp.label === 'Analyse' || grp.label === 'Dagelijks';
+      return true;
+    };
+
+    // Mag-deze-screen-bekijken check (voor routing-bescherming)
+    window._krMagScherm = function(sc) {
+      if (!sc) return true;
+      var rol = window._profiel && window._profiel.rol;
+      if (!rol || rol === 'beheerder') return true;
+      if (rol === 'sous_chef') {
+        // Geen stam:* en geen beheer-screens
+        if (sc.indexOf('stam:') === 0) return false;
+        if (sc === 'fin_inst' || sc === 'haccp_inst' || sc === 'sensoren'
+            || sc === 'apikeys' || sc === 'staffel') return false;
+        return true;
+      }
+      if (rol === 'financieel') {
+        // Alleen analyse-screens + dagelijks
+        var toegestaan = ['boekingen','adviezen','allergenen','fb','bestelling','nvwa','haccp','opzetlog'];
+        return toegestaan.indexOf(sc) >= 0;
+      }
+      return true;
+    };
+
+    if (window._profiel) applyRolClasses();
+    window.addEventListener('kr-profiel-geladen', applyRolClasses);
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>
+<!-- KR-ROL-END -->
+
 
 
 
@@ -19281,9 +19396,13 @@ body.kr-has-health-bar.kr-health-collapsed-body {
       var email = user.email || 'onbekend';
       
       // Probeer profiel uit gebruikers_profielen op te halen voor naam
-      window._supa.from('gebruikers_profielen').select('naam, rol').eq('id', user.id).maybeSingle()
+      window._supa.from('gebruikers_profielen').select('*').eq('id', user.id).maybeSingle()
         .then(function(profRes){
           var profiel = profRes && profRes.data;
+          // Sla volledig profiel globaal op
+          window._profiel = profiel ? Object.assign({email: email}, profiel) : { email: email };
+          // Vuur event zodat React-componenten kunnen re-renderen
+          try { window.dispatchEvent(new CustomEvent('kr-profiel-geladen', { detail: window._profiel })); } catch(e) {}
           var naam = (profiel && profiel.naam) || email.split('@')[0];
           var rol = (profiel && profiel.rol) || 'Admin';
           // Capitalize naam
@@ -19292,6 +19411,8 @@ body.kr-has-health-bar.kr-health-collapsed-body {
           renderBadge(naam, rol, email);
         })
         .catch(function(){
+          window._profiel = { email: email };
+          try { window.dispatchEvent(new CustomEvent('kr-profiel-geladen', { detail: window._profiel })); } catch(e) {}
           var naam = email.split('@')[0];
           naam = naam.charAt(0).toUpperCase() + naam.slice(1);
           renderBadge(naam, 'Admin', email);
@@ -19444,5 +19565,5 @@ body.kr-has-health-bar.kr-health-collapsed-body {
 
 
 
-<div id="admin-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#1976D2;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.75;pointer-events:none">v2026-04-27-22:41 ✓ admin</div>
+<div id="admin-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#1976D2;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.75;pointer-events:none">v2026-04-27-22:54 ✓ admin</div>
 </body></html>
