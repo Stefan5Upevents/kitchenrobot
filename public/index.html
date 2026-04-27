@@ -18328,6 +18328,276 @@ window._FBProductenTab = function FBProductenTab({ outlet }) {
 </script>
 <!-- KR-PROFILE-END -->
 
+<!-- KR-HEALTH-START v1: systeem-health balk bovenaan. 27 apr 2026 -->
+<style id="kr-health-css">
+#kr-health-bar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 99996;
+  background: linear-gradient(180deg, var(--kr-night, #002D41), #003a55);
+  color: var(--kr-text-on-dark, #fff);
+  font-family: var(--kr-font, -apple-system, sans-serif);
+  font-size: 11.5px;
+  font-weight: 500;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 14px;
+  box-shadow: 0 1px 0 rgba(0,0,0,.15);
+  user-select: none;
+  letter-spacing: .01em;
+}
+#kr-health-bar.kr-collapsed {
+  height: 4px;
+  cursor: pointer;
+  padding: 0;
+}
+#kr-health-bar.kr-collapsed > * { display: none; }
+
+body.kr-has-health-bar {
+  /* Pas niet automatisch padding-top aan: admin heeft al eigen layout */
+}
+
+.kr-health-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  padding: 2px 8px;
+  border-radius: 10px;
+  transition: background .12s;
+}
+.kr-health-pill:hover {
+  background: rgba(255,255,255,.08);
+}
+.kr-health-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--kr-success, #2E7D32);
+  flex-shrink: 0;
+  box-shadow: 0 0 0 2px rgba(46,125,50,.25);
+}
+.kr-health-dot[data-status="warn"]   { background: var(--kr-warn, #E65100);   box-shadow: 0 0 0 2px rgba(230,81,0,.25); }
+.kr-health-dot[data-status="error"]  { background: var(--kr-danger, #C62828); box-shadow: 0 0 0 2px rgba(198,40,40,.3); animation: kr-h-pulse 1.6s ease-in-out infinite; }
+.kr-health-dot[data-status="loading"]{ background: #888; box-shadow: none; animation: kr-h-pulse 1.2s ease-in-out infinite; }
+@keyframes kr-h-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: .55; transform: scale(.85); }
+}
+
+.kr-health-spacer { flex: 1; }
+
+#kr-health-collapse {
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,.7);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 2px 6px;
+  line-height: 1;
+}
+#kr-health-collapse:hover { color: #fff; }
+
+@media (max-width: 760px) {
+  #kr-health-bar { font-size: 10.5px; gap: 8px; padding: 0 8px; height: 22px; }
+  .kr-health-pill { padding: 1px 6px; }
+}
+</style>
+
+<script id="kr-health-js">
+(function(){
+  if (window.kr && window.kr._health === 'v1') return;
+  window.kr = window.kr || {};
+  window.kr._health = 'v1';
+  
+  // Configuratie - thresholds
+  var THRESHOLDS = {
+    recras_warn_min: 60,    // 60 min = warn (cron is */30)
+    recras_err_min: 120,    // 2 uur = error
+    sensor_warn_min: 15,    // 15 min = warn
+    sensor_err_min: 30      // 30 min = error
+  };
+  
+  function fmtTijd(secGeleden){
+    if (secGeleden === null || secGeleden === undefined) return 'onbekend';
+    if (secGeleden < 60) return secGeleden + ' sec';
+    if (secGeleden < 3600) return Math.floor(secGeleden/60) + ' min';
+    if (secGeleden < 86400) return Math.floor(secGeleden/3600) + ' uur';
+    return Math.floor(secGeleden/86400) + ' dagen';
+  }
+  
+  function bepaalStatus(secGeleden, warnMin, errMin){
+    if (secGeleden === null || secGeleden === undefined) return 'error';
+    var min = secGeleden / 60;
+    if (min >= errMin) return 'error';
+    if (min >= warnMin) return 'warn';
+    return 'ok';
+  }
+  
+  var laatsteData = null;
+  var collapsed = false;
+  
+  try { collapsed = localStorage.getItem('kr_health_collapsed') === '1'; } catch(e){}
+  
+  function buildBar(){
+    var bar = document.createElement('div');
+    bar.id = 'kr-health-bar';
+    if (collapsed) bar.classList.add('kr-collapsed');
+    bar.innerHTML =
+      '<div class="kr-health-pill" data-pill="recras">' +
+        '<span class="kr-health-dot" data-status="loading"></span>' +
+        '<span class="kr-health-text">Recras…</span>' +
+      '</div>' +
+      '<div class="kr-health-pill" data-pill="sensoren">' +
+        '<span class="kr-health-dot" data-status="loading"></span>' +
+        '<span class="kr-health-text">Sensoren…</span>' +
+      '</div>' +
+      '<div class="kr-health-pill" data-pill="alarmen">' +
+        '<span class="kr-health-dot" data-status="loading"></span>' +
+        '<span class="kr-health-text">HACCP…</span>' +
+      '</div>' +
+      '<span class="kr-health-spacer"></span>' +
+      '<button id="kr-health-collapse" title="Inklappen / uitklappen">▴</button>';
+    return bar;
+  }
+  
+  function update(data){
+    laatsteData = data;
+    var bar = document.getElementById('kr-health-bar');
+    if (!bar) return;
+    
+    function setPill(naam, status, tekst){
+      var pill = bar.querySelector('[data-pill="' + naam + '"]');
+      if (!pill) return;
+      pill.querySelector('.kr-health-dot').setAttribute('data-status', status);
+      pill.querySelector('.kr-health-text').textContent = tekst;
+    }
+    
+    if (!data) {
+      setPill('recras', 'error', 'Recras: geen data');
+      setPill('sensoren', 'error', 'Sensoren: geen data');
+      setPill('alarmen', 'error', 'HACCP: geen data');
+      return;
+    }
+    
+    // Recras
+    var rs = bepaalStatus(data.recras_sec_geleden, THRESHOLDS.recras_warn_min, THRESHOLDS.recras_err_min);
+    var aantal = data.recras_aantal_boekingen != null ? data.recras_aantal_boekingen : '?';
+    setPill('recras', rs, 'Recras · ' + aantal + ' boekingen · ' + fmtTijd(data.recras_sec_geleden) + ' geleden');
+    
+    // Sensoren
+    var ss = 'ok';
+    if (data.sensoren_totaal === 0) ss = 'warn';
+    else if (data.sensoren_recent < data.sensoren_totaal) ss = 'warn';
+    else ss = bepaalStatus(data.sensoren_sec_sinds_sync, THRESHOLDS.sensor_warn_min, THRESHOLDS.sensor_err_min);
+    var sensorTekst = 'Sensoren · ' + data.sensoren_recent + '/' + data.sensoren_totaal + ' actief';
+    setPill('sensoren', ss, sensorTekst);
+    
+    // HACCP alarmen
+    var haccpStatus = data.haccp_alarmen_open === 0 ? 'ok' : 
+                       data.haccp_alarmen_open <= 5 ? 'warn' : 'error';
+    var haccpTekst = data.haccp_alarmen_open === 0 ? 
+                       'HACCP · alles binnen norm' :
+                       'HACCP · ' + data.haccp_alarmen_open + ' open alarm' + (data.haccp_alarmen_open === 1 ? '' : 'en');
+    setPill('alarmen', haccpStatus, haccpTekst);
+  }
+  
+  async function ophalen(){
+    try {
+      var supabaseUrl = 'https://aezatnwsrhlwtykpixsq.supabase.co';
+      var anonKey = 'sb_publishable_qkQzUEM5fvJPSsfScEzNCg_Eug8-d4t';
+      var r = await fetch(supabaseUrl + '/rest/v1/v_systeem_health?select=*', {
+        headers: { 'apikey': anonKey, 'Authorization': 'Bearer ' + anonKey, 'Accept': 'application/json' }
+      });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      var data = await r.json();
+      update(data && data[0] ? data[0] : null);
+    } catch(e) {
+      console.warn('[kr-health] ophalen mislukt:', e.message);
+      update(null);
+    }
+  }
+  
+  function pillKlik(e){
+    var pill = e.target.closest('.kr-health-pill');
+    if (!pill || !laatsteData) return;
+    var d = laatsteData;
+    var msg = '';
+    var type = 'info';
+    
+    if (pill.dataset.pill === 'recras') {
+      msg = 'Recras-sync: laatste run ' + fmtTijd(d.recras_sec_geleden) + ' geleden, ' + 
+            (d.recras_aantal_boekingen || '?') + ' boekingen verwerkt. Cron draait elke 30 minuten.';
+      type = 'info';
+    } else if (pill.dataset.pill === 'sensoren') {
+      msg = d.sensoren_recent + ' van ' + d.sensoren_totaal + ' sensoren actief. ' +
+            'Laatste data ' + fmtTijd(d.sensoren_sec_sinds_sync) + ' geleden.';
+      type = d.sensoren_recent === d.sensoren_totaal ? 'success' : 'warn';
+    } else if (pill.dataset.pill === 'alarmen') {
+      if (d.haccp_alarmen_open === 0) {
+        msg = 'Geen open HACCP-alarmen — alle metingen binnen norm.';
+        type = 'success';
+      } else {
+        msg = d.haccp_alarmen_open + ' HACCP-alarm(en) wachten op afhandeling. Bekijk Meldingen onder Dagelijks.';
+        type = 'warn';
+      }
+    }
+    
+    if (window.kr && window.kr.toast) window.kr.toast(msg, type, 5000);
+  }
+  
+  function toggleCollapse(){
+    var bar = document.getElementById('kr-health-bar');
+    if (!bar) return;
+    collapsed = !collapsed;
+    bar.classList.toggle('kr-collapsed', collapsed);
+    try { localStorage.setItem('kr_health_collapsed', collapsed ? '1' : '0'); } catch(e){}
+  }
+  
+  function init(){
+    if (document.getElementById('kr-health-bar')) return;
+    var bar = buildBar();
+    
+    // Voeg helemaal aan begin van body
+    if (document.body.firstChild) {
+      document.body.insertBefore(bar, document.body.firstChild);
+    } else {
+      document.body.appendChild(bar);
+    }
+    document.body.classList.add('kr-has-health-bar');
+    
+    // Klik op pill = detail
+    bar.addEventListener('click', function(e){
+      // Klik op collapsed bar = uitklappen
+      if (collapsed) { toggleCollapse(); return; }
+      // Collapse-knop?
+      if (e.target.id === 'kr-health-collapse') { toggleCollapse(); return; }
+      pillKlik(e);
+    });
+    
+    ophalen();
+    setInterval(ophalen, 60000); // elke 60 sec
+  }
+  
+  // Publiceer in API
+  window.kr.health = {
+    refresh: ophalen,
+    toggle: toggleCollapse,
+    data: function(){ return laatsteData; }
+  };
+  
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>
+<!-- KR-HEALTH-END -->
+
+
 
 <!-- KR-PROFIEL-START v1: profielindicator rechtsboven. 27 apr 2026 -->
 <style id="kr-profiel-css">
@@ -18621,5 +18891,5 @@ window._FBProductenTab = function FBProductenTab({ outlet }) {
 
 
 
-<div id="admin-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#1976D2;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.75;pointer-events:none">v2026-04-27-10:28 ✓ admin</div>
+<div id="admin-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#1976D2;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.75;pointer-events:none">v2026-04-27-12:06 ✓ admin</div>
 </body></html>
