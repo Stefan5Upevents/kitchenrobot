@@ -2764,7 +2764,7 @@ function BuffetScreen({ actieve, setActieve, setSc }) {
     });
   }, [formKey]);
   if ((window._recrasBoekingen || []).length > 0 && formulieren.length === 0 && (window._stamMenus || []).length === 0) {
-    return /* @__PURE__ */ React.createElement("div", { style: SS.card }, /* @__PURE__ */ React.createElement("div", { style: alertI }, "Stamgegevens laden..."));
+    return /* @__PURE__ */ React.createElement("div", null, window._FilterBar ? /* @__PURE__ */ React.createElement(window._FilterBar, { key: "krfb" }) : null, /* @__PURE__ */ React.createElement("div", { style: SS.card }, /* @__PURE__ */ React.createElement("div", { style: alertI }, "Stamgegevens laden...")));
   }
   var pg = (window._stamProductgroepen || []).find(function(g) {
     return g.id === pgId;
@@ -12405,6 +12405,23 @@ function ApiKoppelingenScreen() {
   var C = window._C || { night:'#234756', aqua:'#3FB8C4', hot:'#E8202B', green:'#2E7D32', muted:'#78909C', white:'#fff', orange:'#FF9800' };
   var SS = window._SS || { pT: { fontSize:22, fontWeight:900, color:'#234756', marginBottom:4 }, pD: { fontSize:12, color:'#78909C', marginBottom:16 } };
   var FN_URL = 'https://aezatnwsrhlwtykpixsq.supabase.co/functions/v1/api-koppelingen';
+  // Helper: bouw fetch options met auth-headers (vereist door v2)
+  async function authHeaders() {
+    var s = await window._supa.auth.getSession();
+    var jwt = s && s.data && s.data.session && s.data.session.access_token;
+    return {
+      'Authorization': 'Bearer ' + jwt,
+      'apikey': window._supa.supabaseKey,
+      'Content-Type': 'application/json'
+    };
+  }
+  function fetchAuth(url, opts) {
+    return authHeaders().then(function(h) {
+      var o = opts || {};
+      o.headers = Object.assign({}, h, o.headers || {});
+      return fetch(url, o);
+    });
+  }
 
   // Voorgedefinieerde koppelingen met hun velden-schema
   var VOORGEDEFINIEERD = [
@@ -12445,8 +12462,8 @@ function ApiKoppelingenScreen() {
   function laad() {
     setLaden(true);
     Promise.all([
-      fetch(FN_URL + '?actie=lijst').then(function(r){ return r.json(); }),
-      fetch(FN_URL + '?actie=log').then(function(r){ return r.json(); })
+      fetchAuth(FN_URL + '?actie=lijst').then(function(r){ return r.json(); }),
+      fetchAuth(FN_URL + '?actie=log').then(function(r){ return r.json(); })
     ]).then(function(res) {
       setKoppelingen((res[0] && res[0].koppelingen) || []);
       setLog((res[1] && res[1].log) || []);
@@ -12474,7 +12491,7 @@ function ApiKoppelingenScreen() {
       credentials: modalWaarden,
       velden_schema: v.velden
     };
-    fetch(FN_URL + '?actie=opslaan', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) })
+    fetchAuth(FN_URL + '?actie=opslaan', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) })
       .then(function(r){ return r.json(); })
       .then(function(d) {
         setModalBezig(false);
@@ -12486,7 +12503,7 @@ function ApiKoppelingenScreen() {
   function testKoppeling(naam) {
     setTestBezig(function(p){ var n={}; Object.keys(p).forEach(function(k){n[k]=p[k];}); n[naam]=true; return n; });
     setTestResult(function(p){ var n={}; Object.keys(p).forEach(function(k){n[k]=p[k];}); n[naam]=null; return n; });
-    fetch(FN_URL + '?actie=test', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ koppeling_naam: naam }) })
+    fetchAuth(FN_URL + '?actie=test', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ koppeling_naam: naam }) })
       .then(function(r){ return r.json(); })
       .then(function(d) {
         setTestBezig(function(p){ var n={}; Object.keys(p).forEach(function(k){n[k]=p[k];}); n[naam]=false; return n; });
@@ -12499,13 +12516,13 @@ function ApiKoppelingenScreen() {
   }
 
   function zetActief(naam, actief) {
-    fetch(FN_URL + '?actie=zet_actief', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ koppeling_naam: naam, actief: actief }) })
+    fetchAuth(FN_URL + '?actie=zet_actief', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ koppeling_naam: naam, actief: actief }) })
       .then(function(r){ return r.json(); }).then(function(d){ if (d.ok) { toon(actief ? '▶ Geactiveerd' : '⏸ Gepauzeerd'); laad(); } else toon('Fout: ' + (d.error || ''), false); });
   }
 
   function verwijderKopp(naam) {
     if (!confirm('Weet je zeker dat je koppeling "' + naam + '" wilt verwijderen?\nDe API-key wordt uit de versleutelde opslag verwijderd. Dit kan niet ongedaan.')) return;
-    fetch(FN_URL + '?actie=verwijder', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ koppeling_naam: naam }) })
+    fetchAuth(FN_URL + '?actie=verwijder', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ koppeling_naam: naam }) })
       .then(function(r){ return r.json(); }).then(function(d){ if (d.ok) { toon('🗑 Verwijderd'); laad(); } else toon('Fout: ' + (d.error || ''), false); });
   }
 
@@ -20823,5 +20840,5 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
 
 
 
-<div id="admin-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#1976D2;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.75;pointer-events:none">v2026-04-28-08:58 ✓ admin</div>
+<div id="admin-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#1976D2;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.75;pointer-events:none">v2026-04-28-09:05 ✓ admin</div>
 </body></html>
