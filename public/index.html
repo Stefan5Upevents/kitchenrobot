@@ -812,6 +812,7 @@ function Header({ sc, setSc, user, logout }) {
       ["staffel", "📊", "Opzet-staffel"],
       ["gebruikers", "👤", "Gebruikers"],
       ["systeem", "🩺", "Systeem-gezondheid"],
+      ["schermdoc", "📚", "Schermdocumentatie"],
       ["fin_inst", "💸", "Financiële instellingen"],
       ["haccp_inst", "🏥", "HACCP Bedrijfsgegevens"],
       ["sensoren", "🌡️", "Sensoren"],
@@ -12933,7 +12934,7 @@ function SensorenScreen() {
   if (!user) {
     return /* @__PURE__ */ React.createElement(LoginScreen, { onLogin: handleLogin });
   }
-  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", minHeight: "100vh", background: "#F0F4F7" } }, /* @__PURE__ */ React.createElement(Header, { sc, setSc, user, logout: handleLogout }), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto", overflowX: "hidden" }, className: "mobile-padding" }, /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 1200, margin: "0 auto", padding: "28px 20px 60px" } }, sc === "home" && /* @__PURE__ */ React.createElement(HomeScreen, { setSc }), sc === "boekingen" && /* @__PURE__ */ React.createElement(BoekingenScreen, { setSc, setActieve }), sc === "financieel" && /* @__PURE__ */ React.createElement(FinancieelScreen, { setSc }), sc === "chef" && /* @__PURE__ */ React.createElement(ChefScreen, { setSc, setActieve }), sc === "buffet" && /* @__PURE__ */ React.createElement(BuffetScreen, { actieve, setActieve, setSc }), sc === "opzet" && /* @__PURE__ */ React.createElement(OpzetScreen, null), sc === "tijden" && /* @__PURE__ */ React.createElement(TijdenScreen, null), sc.startsWith("stam:") && (typeof window._krMagScherm !== "function" || window._krMagScherm(sc)) && /* @__PURE__ */ React.createElement(StamScreen, { initTab: sc.split(":")[1] || "pg" }), sc === "fin" && /* @__PURE__ */ React.createElement(FinancieelScreen, null), sc === "adviezen" && /* @__PURE__ */ React.createElement(AdviezenScreen, null), sc === "fin_inst" && /* @__PURE__ */ React.createElement(FinInstellingenScreen, null), sc === "sensoren" && /* @__PURE__ */ React.createElement(SensorenScreen, null), sc === "apikeys" && /* @__PURE__ */ React.createElement(ApiKoppelingenScreen, null), sc === "staffel" && window._OpzetStaffelScreen && /* @__PURE__ */ React.createElement(window._OpzetStaffelScreen, null), sc === "gebruikers" && window._GebruikersScreen && /* @__PURE__ */ React.createElement(window._GebruikersScreen, null), sc === "systeem" && window._SysteemScreen && /* @__PURE__ */ React.createElement(window._SysteemScreen, null), sc === "stam:fi" && /* @__PURE__ */ React.createElement(FinInstellingenScreen, null), sc === "allergenen" && /* @__PURE__ */ React.createElement(AllergenenScreen, null), sc === "inspiratie" && /* @__PURE__ */ React.createElement(InspiratieScreen, null), sc === "opzetlog" && /* @__PURE__ */ React.createElement(OpzetLogboekScreen, null), sc === "haccp" && /* @__PURE__ */ React.createElement(HACCPScreen, null), sc === "nvwa" && window._NVWAInspectieScreen && /* @__PURE__ */ React.createElement(window._NVWAInspectieScreen, null), sc === "fb" && window._FBAnalyseScreen && /* @__PURE__ */ React.createElement(window._FBAnalyseScreen, null), sc === "berichten" && window._BerichtenChefScreen && /* @__PURE__ */ React.createElement(window._BerichtenChefScreen, null), sc === "haccp_inst" && window._HACCPInstellingenScreen && /* @__PURE__ */ React.createElement(window._HACCPInstellingenScreen, null), sc === "bestelling" && /* @__PURE__ */ React.createElement(SligroBestellingScreen, null))));
+  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", minHeight: "100vh", background: "#F0F4F7" } }, /* @__PURE__ */ React.createElement(Header, { sc, setSc, user, logout: handleLogout }), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto", overflowX: "hidden" }, className: "mobile-padding" }, /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 1200, margin: "0 auto", padding: "28px 20px 60px" } }, sc === "home" && /* @__PURE__ */ React.createElement(HomeScreen, { setSc }), sc === "boekingen" && /* @__PURE__ */ React.createElement(BoekingenScreen, { setSc, setActieve }), sc === "financieel" && /* @__PURE__ */ React.createElement(FinancieelScreen, { setSc }), sc === "chef" && /* @__PURE__ */ React.createElement(ChefScreen, { setSc, setActieve }), sc === "buffet" && /* @__PURE__ */ React.createElement(BuffetScreen, { actieve, setActieve, setSc }), sc === "opzet" && /* @__PURE__ */ React.createElement(OpzetScreen, null), sc === "tijden" && /* @__PURE__ */ React.createElement(TijdenScreen, null), sc.startsWith("stam:") && (typeof window._krMagScherm !== "function" || window._krMagScherm(sc)) && /* @__PURE__ */ React.createElement(StamScreen, { initTab: sc.split(":")[1] || "pg" }), sc === "fin" && /* @__PURE__ */ React.createElement(FinancieelScreen, null), sc === "adviezen" && /* @__PURE__ */ React.createElement(AdviezenScreen, null), sc === "fin_inst" && /* @__PURE__ */ React.createElement(FinInstellingenScreen, null), sc === "sensoren" && /* @__PURE__ */ React.createElement(SensorenScreen, null), sc === "apikeys" && /* @__PURE__ */ React.createElement(ApiKoppelingenScreen, null), sc === "staffel" && window._OpzetStaffelScreen && /* @__PURE__ */ React.createElement(window._OpzetStaffelScreen, null), sc === "gebruikers" && window._GebruikersScreen && /* @__PURE__ */ React.createElement(window._GebruikersScreen, null), sc === "systeem" && window._SysteemScreen && /* @__PURE__ */ React.createElement(window._SysteemScreen, null), sc === "schermdoc" && window._SchermDocScreen && /* @__PURE__ */ React.createElement(window._SchermDocScreen, null), sc === "stam:fi" && /* @__PURE__ */ React.createElement(FinInstellingenScreen, null), sc === "allergenen" && /* @__PURE__ */ React.createElement(AllergenenScreen, null), sc === "inspiratie" && /* @__PURE__ */ React.createElement(InspiratieScreen, null), sc === "opzetlog" && /* @__PURE__ */ React.createElement(OpzetLogboekScreen, null), sc === "haccp" && /* @__PURE__ */ React.createElement(HACCPScreen, null), sc === "nvwa" && window._NVWAInspectieScreen && /* @__PURE__ */ React.createElement(window._NVWAInspectieScreen, null), sc === "fb" && window._FBAnalyseScreen && /* @__PURE__ */ React.createElement(window._FBAnalyseScreen, null), sc === "berichten" && window._BerichtenChefScreen && /* @__PURE__ */ React.createElement(window._BerichtenChefScreen, null), sc === "haccp_inst" && window._HACCPInstellingenScreen && /* @__PURE__ */ React.createElement(window._HACCPInstellingenScreen, null), sc === "bestelling" && /* @__PURE__ */ React.createElement(SligroBestellingScreen, null))));
 }
 function InspiratieScreen() {
   var _a, _b;
@@ -19477,7 +19478,7 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
         ['stam:ki','📱 Kiosk Instellingen'],['stam:dr','📖 Draaiboek-links'],
         ['staffel','📊 Opzet-staffel'],['fin_inst','💸 Financiële inst.'],
         ['haccp_inst','🏥 HACCP Bedrijfsgegevens'],['sensoren','🌡️ Sensoren'],
-        ['apikeys','🔐 API-koppelingen'],
+        ['apikeys','🔐 API-koppelingen'],['schermdoc','📚 Schermdocumentatie'],
       ]},
     ];
 
@@ -20841,4 +20842,334 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
 
 
 <div id="admin-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#1976D2;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.75;pointer-events:none">v2026-04-28-09:05 ✓ admin</div>
+
+<!-- KR-SCHERMDOC-START v1: schermdocumentatie beheer (28 apr 2026) -->
+<script id="kr-schermdoc-js">
+(function() {
+  function init() {
+    if (!window.React || !window._supa) { setTimeout(init, 100); return; }
+    var R = window.React.createElement;
+    var useState = window.React.useState;
+    var useEffect = window.React.useEffect;
+
+    var APP_LABELS = {
+      admin: '🖥️ Admin website',
+      kiosk: '📱 Kiosk',
+      chef_portaal: '👨‍🍳 Chef-portaal',
+      sales_bbq: '🔥 Sales BBQ',
+      overig: '📄 Overige pagina\'s'
+    };
+    var APP_VOLGORDE = ['admin', 'kiosk', 'chef_portaal', 'sales_bbq', 'overig'];
+
+    window._SchermDocScreen = function() {
+      var C = window._C || { night:'#234756', aqua:'#3FB8C4', red:'#E8202B', green:'#2E7D32', muted:'#78909C', orange:'#FF9800', light:'#F5F8FA', border:'#D8E8EF' };
+
+      var s_laden = useState(true); var laden = s_laden[0], setLaden = s_laden[1];
+      var s_docs = useState([]); var docs = s_docs[0], setDocs = s_docs[1];
+      var s_zoek = useState(''); var zoek = s_zoek[0], setZoek = s_zoek[1];
+      var s_filterApp = useState('alle'); var filterApp = s_filterApp[0], setFilterApp = s_filterApp[1];
+      var s_modal = useState(null); var modal = s_modal[0], setModal = s_modal[1];
+      var s_form = useState(null); var form = s_form[0], setForm = s_form[1];
+      var s_bezig = useState(false); var bezig = s_bezig[0], setBezig = s_bezig[1];
+      var s_meld = useState(''); var meld = s_meld[0], setMeld = s_meld[1];
+      var s_fout = useState(''); var fout = s_fout[0], setFout = s_fout[1];
+
+      function laadLijst() {
+        setLaden(true); setFout('');
+        window._supa.from('scherm_documentatie')
+          .select('*')
+          .order('app', { ascending: true })
+          .order('volgorde', { ascending: true })
+          .then(function(res) {
+            setLaden(false);
+            if (res.error) { setFout(res.error.message); return; }
+            setDocs(res.data || []);
+          });
+      }
+
+      useEffect(function() { laadLijst(); }, []);
+
+      function openModal(d) {
+        setForm({
+          scherm_key: d.scherm_key,
+          app: d.app,
+          groep: d.groep || '',
+          volgorde: d.volgorde || 100,
+          weergave_naam: d.weergave_naam || '',
+          doel_zin: d.doel_zin || '',
+          wie_opent: d.wie_opent || '',
+          wanneer: d.wanneer || '',
+          uitgebreide_uitleg: d.uitgebreide_uitleg || ''
+        });
+        setModal(d.scherm_key);
+        setMeld(''); setFout('');
+      }
+
+      function sluitModal() {
+        setModal(null); setForm(null); setMeld(''); setFout('');
+      }
+
+      function opslaan() {
+        if (!form.weergave_naam.trim() || !form.doel_zin.trim()) {
+          setFout('Weergave-naam en doel-zin zijn verplicht.');
+          return;
+        }
+        setBezig(true); setFout(''); setMeld('');
+        window._supa.from('scherm_documentatie').update({
+          weergave_naam: form.weergave_naam.trim(),
+          doel_zin: form.doel_zin.trim(),
+          wie_opent: form.wie_opent.trim() || null,
+          wanneer: form.wanneer.trim() || null,
+          uitgebreide_uitleg: form.uitgebreide_uitleg.trim() || null,
+          groep: form.groep.trim() || null,
+          volgorde: parseInt(form.volgorde, 10) || 100
+        }).eq('scherm_key', form.scherm_key).then(function(res) {
+          setBezig(false);
+          if (res.error) {
+            setFout('Niet opgeslagen: ' + res.error.message);
+            return;
+          }
+          setMeld('Opgeslagen ✓');
+          if (window.kr && window.kr.toast) window.kr.toast('Schermdocumentatie bijgewerkt', 'success');
+          laadLijst();
+          setTimeout(sluitModal, 700);
+        });
+      }
+
+      // Filter logica
+      var zoekTerm = zoek.toLowerCase().trim();
+      var gefilterd = docs.filter(function(d) {
+        if (filterApp !== 'alle' && d.app !== filterApp) return false;
+        if (zoekTerm) {
+          var blob = [d.weergave_naam, d.scherm_key, d.doel_zin, d.wie_opent, d.wanneer, d.groep].filter(Boolean).join(' ').toLowerCase();
+          if (blob.indexOf(zoekTerm) === -1) return false;
+        }
+        return true;
+      });
+
+      // Groepeer per app → groep
+      var perApp = {};
+      gefilterd.forEach(function(d) {
+        if (!perApp[d.app]) perApp[d.app] = {};
+        var g = d.groep || '—';
+        if (!perApp[d.app][g]) perApp[d.app][g] = [];
+        perApp[d.app][g].push(d);
+      });
+
+      // Telling per app voor filter-chips
+      var aantalPerApp = {};
+      docs.forEach(function(d) {
+        aantalPerApp[d.app] = (aantalPerApp[d.app] || 0) + 1;
+      });
+
+      var SS = window._SS || {};
+      var styles = {
+        wrapper: { padding: '0 0 24px' },
+        kop: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 },
+        titel: { fontSize: 22, fontWeight: 900, color: C.night, margin: 0 },
+        sub: { fontSize: 12, color: C.muted, marginTop: 4 },
+        toolbar: { background: '#fff', border: '1px solid ' + C.border, borderRadius: 10, padding: 14, marginBottom: 16, display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' },
+        zoekInput: { flex: '1 1 220px', minWidth: 200, padding: '8px 12px', border: '1px solid ' + C.border, borderRadius: 6, fontSize: 14, outline: 'none' },
+        chip: function(actief) { return { padding: '6px 14px', borderRadius: 99, fontSize: 13, fontWeight: 600, cursor: 'pointer', border: '1px solid ' + (actief ? C.aqua : C.border), background: actief ? C.aqua : '#fff', color: actief ? '#fff' : C.night, transition: 'all .15s' }; },
+        appSection: { marginBottom: 28 },
+        appHeader: { fontSize: 16, fontWeight: 800, color: C.night, marginBottom: 12, paddingBottom: 8, borderBottom: '2px solid ' + C.aqua },
+        groepHeader: { fontSize: 12, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: 0.5, margin: '14px 0 8px' },
+        rij: { background: '#fff', border: '1px solid ' + C.border, borderRadius: 8, padding: '12px 14px', marginBottom: 8, cursor: 'pointer', transition: 'all .12s', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
+        rijTekst: { flex: 1, minWidth: 0 },
+        rijTitel: { fontSize: 14, fontWeight: 700, color: C.night, marginBottom: 3, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+        rijDoel: { fontSize: 13, color: C.muted, lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis' },
+        rijMeta: { fontSize: 11, color: C.muted, marginTop: 4, display: 'flex', gap: 12, flexWrap: 'wrap' },
+        rijKey: { fontSize: 10, fontFamily: 'Menlo,Consolas,monospace', background: C.light, padding: '1px 6px', borderRadius: 3, color: C.muted, fontWeight: 400 },
+        editKnop: { padding: '6px 14px', background: C.aqua, color: '#fff', border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer', flexShrink: 0 },
+        empty: { background: '#fff', borderRadius: 10, padding: 40, textAlign: 'center', color: C.muted, border: '1px dashed ' + C.border },
+        // Modal
+        modalBg: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', zIndex: 9000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 },
+        modalBox: { background: '#fff', borderRadius: 12, maxWidth: 640, width: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,.3)' },
+        modalKop: { padding: '18px 24px', borderBottom: '1px solid ' + C.border, display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+        modalTitel: { fontSize: 18, fontWeight: 800, color: C.night, margin: 0 },
+        modalKey: { fontSize: 11, color: C.muted, fontFamily: 'Menlo,Consolas,monospace', marginTop: 4 },
+        modalSluit: { background: 'none', border: 'none', fontSize: 24, cursor: 'pointer', color: C.muted, padding: 0, width: 32, height: 32, lineHeight: 1 },
+        modalBody: { padding: 24 },
+        veld: { marginBottom: 16 },
+        label: { display: 'block', fontSize: 12, fontWeight: 700, color: C.night, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.3 },
+        labelHint: { fontSize: 11, fontWeight: 400, color: C.muted, textTransform: 'none', marginLeft: 6 },
+        input: { width: '100%', padding: '10px 12px', border: '1px solid ' + C.border, borderRadius: 6, fontSize: 14, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' },
+        textarea: { width: '100%', padding: '10px 12px', border: '1px solid ' + C.border, borderRadius: 6, fontSize: 14, outline: 'none', fontFamily: 'inherit', resize: 'vertical', minHeight: 80, boxSizing: 'border-box' },
+        modalFoot: { padding: '16px 24px', borderTop: '1px solid ' + C.border, display: 'flex', justifyContent: 'flex-end', gap: 10, alignItems: 'center' },
+        knop: { padding: '10px 22px', borderRadius: 6, fontSize: 14, fontWeight: 700, cursor: 'pointer', border: 'none' },
+        knopAnnuleer: { background: C.light, color: C.night, border: '1px solid ' + C.border },
+        knopOpslaan: { background: C.aqua, color: '#fff' },
+        meldOk: { color: C.green, fontSize: 13, fontWeight: 600, flex: 1 },
+        meldFout: { color: C.red, fontSize: 13, fontWeight: 600, flex: 1 }
+      };
+
+      // Filter-chips
+      var chips = [R('button', { key: 'alle', style: styles.chip(filterApp === 'alle'), onClick: function() { setFilterApp('alle'); } }, 'Alles (' + docs.length + ')')];
+      APP_VOLGORDE.forEach(function(app) {
+        if (!aantalPerApp[app]) return;
+        chips.push(R('button', {
+          key: app,
+          style: styles.chip(filterApp === app),
+          onClick: function() { setFilterApp(app); }
+        }, APP_LABELS[app] + ' (' + aantalPerApp[app] + ')'));
+      });
+
+      // Inhoud renderen per app
+      var inhoud;
+      if (laden) {
+        inhoud = R('div', { style: styles.empty }, 'Documentatie laden…');
+      } else if (gefilterd.length === 0) {
+        inhoud = R('div', { style: styles.empty }, 'Geen schermen gevonden — pas filter of zoekterm aan.');
+      } else {
+        inhoud = APP_VOLGORDE.filter(function(a) { return perApp[a]; }).map(function(app) {
+          var groepen = perApp[app];
+          var groepKeys = Object.keys(groepen);
+          // Sorteer groepen op volgorde van eerste item
+          groepKeys.sort(function(a, b) {
+            var va = (groepen[a][0] && groepen[a][0].volgorde) || 9999;
+            var vb = (groepen[b][0] && groepen[b][0].volgorde) || 9999;
+            return va - vb;
+          });
+          return R('section', { key: app, style: styles.appSection },
+            R('h3', { style: styles.appHeader }, APP_LABELS[app]),
+            groepKeys.map(function(g) {
+              return R('div', { key: g },
+                groepKeys.length > 1 || g !== '—'
+                  ? R('div', { style: styles.groepHeader }, g === '—' ? '(geen groep)' : g)
+                  : null,
+                groepen[g].map(function(d) {
+                  return R('div', {
+                    key: d.scherm_key,
+                    style: styles.rij,
+                    onClick: function() { openModal(d); },
+                    onMouseEnter: function(e) { e.currentTarget.style.borderColor = C.aqua; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,.06)'; },
+                    onMouseLeave: function(e) { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.boxShadow = 'none'; }
+                  },
+                    R('div', { style: styles.rijTekst },
+                      R('div', { style: styles.rijTitel },
+                        d.weergave_naam,
+                        R('span', { style: styles.rijKey }, d.scherm_key)
+                      ),
+                      R('div', { style: styles.rijDoel }, d.doel_zin || R('em', null, '— geen doel-zin —')),
+                      (d.wie_opent || d.wanneer)
+                        ? R('div', { style: styles.rijMeta },
+                            d.wie_opent ? R('span', null, '👤 ' + d.wie_opent) : null,
+                            d.wanneer ? R('span', null, '⏰ ' + d.wanneer) : null
+                          )
+                        : null
+                    ),
+                    R('button', {
+                      style: styles.editKnop,
+                      onClick: function(e) { e.stopPropagation(); openModal(d); }
+                    }, 'Bewerken')
+                  );
+                })
+              );
+            })
+          );
+        });
+      }
+
+      // Modal
+      var modalEl = null;
+      if (modal && form) {
+        modalEl = R('div', { style: styles.modalBg, onClick: sluitModal },
+          R('div', { style: styles.modalBox, onClick: function(e) { e.stopPropagation(); } },
+            R('div', { style: styles.modalKop },
+              R('div', null,
+                R('h3', { style: styles.modalTitel }, 'Bewerken: ' + form.weergave_naam),
+                R('div', { style: styles.modalKey }, form.scherm_key + ' · ' + form.app)
+              ),
+              R('button', { style: styles.modalSluit, onClick: sluitModal, title: 'Sluiten' }, '×')
+            ),
+            R('div', { style: styles.modalBody },
+              R('div', { style: styles.veld },
+                R('label', { style: styles.label }, 'Weergave-naam ', R('span', { style: styles.labelHint }, '(verplicht)')),
+                R('input', { type: 'text', style: styles.input, value: form.weergave_naam,
+                  onChange: function(e) { setForm(Object.assign({}, form, { weergave_naam: e.target.value })); } })
+              ),
+              R('div', { style: styles.veld },
+                R('label', { style: styles.label }, 'Doel-zin ', R('span', { style: styles.labelHint }, '(verplicht — 1 zin: wat doet dit scherm?)')),
+                R('textarea', { style: styles.textarea, value: form.doel_zin, rows: 2,
+                  onChange: function(e) { setForm(Object.assign({}, form, { doel_zin: e.target.value })); } })
+              ),
+              R('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 } },
+                R('div', { style: styles.veld },
+                  R('label', { style: styles.label }, 'Wie opent dit'),
+                  R('input', { type: 'text', style: styles.input, value: form.wie_opent, placeholder: 'beheerder, sous_chef',
+                    onChange: function(e) { setForm(Object.assign({}, form, { wie_opent: e.target.value })); } })
+                ),
+                R('div', { style: styles.veld },
+                  R('label', { style: styles.label }, 'Wanneer'),
+                  R('input', { type: 'text', style: styles.input, value: form.wanneer, placeholder: 'dagelijks ochtend',
+                    onChange: function(e) { setForm(Object.assign({}, form, { wanneer: e.target.value })); } })
+                )
+              ),
+              R('div', { style: styles.veld },
+                R('label', { style: styles.label }, 'Uitgebreide uitleg ', R('span', { style: styles.labelHint }, '(optioneel — meer detail voor handboek)')),
+                R('textarea', { style: styles.textarea, value: form.uitgebreide_uitleg, rows: 4,
+                  onChange: function(e) { setForm(Object.assign({}, form, { uitgebreide_uitleg: e.target.value })); } })
+              ),
+              R('div', { style: { display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 } },
+                R('div', { style: styles.veld },
+                  R('label', { style: styles.label }, 'Groep ', R('span', { style: styles.labelHint }, '(bijv. Dagelijks, Beheer)')),
+                  R('input', { type: 'text', style: styles.input, value: form.groep,
+                    onChange: function(e) { setForm(Object.assign({}, form, { groep: e.target.value })); } })
+                ),
+                R('div', { style: styles.veld },
+                  R('label', { style: styles.label }, 'Volgorde'),
+                  R('input', { type: 'number', style: styles.input, value: form.volgorde,
+                    onChange: function(e) { setForm(Object.assign({}, form, { volgorde: e.target.value })); } })
+                )
+              )
+            ),
+            R('div', { style: styles.modalFoot },
+              fout ? R('div', { style: styles.meldFout }, fout) : null,
+              meld ? R('div', { style: styles.meldOk }, meld) : null,
+              R('button', { style: Object.assign({}, styles.knop, styles.knopAnnuleer), onClick: sluitModal, disabled: bezig }, 'Annuleren'),
+              R('button', { style: Object.assign({}, styles.knop, styles.knopOpslaan, bezig ? { opacity: 0.6 } : {}), onClick: opslaan, disabled: bezig },
+                bezig ? 'Bezig…' : 'Opslaan')
+            )
+          )
+        );
+      }
+
+      return R('div', { style: styles.wrapper },
+        R('div', { style: styles.kop },
+          R('div', null,
+            R('h2', { style: styles.titel }, '📚 Schermdocumentatie'),
+            R('div', { style: styles.sub }, 'Korte uitleg per scherm. Bron voor /handboek.html — bij elke wijziging direct zichtbaar daar.')
+          ),
+          R('a', {
+            href: '/handboek.html',
+            target: '_blank',
+            rel: 'noopener',
+            style: { padding: '8px 16px', background: '#fff', border: '1px solid ' + C.border, borderRadius: 6, fontSize: 13, fontWeight: 600, color: C.aqua, textDecoration: 'none' }
+          }, '↗ Open handboek')
+        ),
+        fout && !modal ? R('div', { style: { background: '#FFEBEE', border: '1px solid ' + C.red, color: C.red, padding: 12, borderRadius: 6, marginBottom: 12, fontSize: 13 } }, fout) : null,
+        R('div', { style: styles.toolbar },
+          R('input', {
+            type: 'search',
+            placeholder: '🔍 Zoek scherm, doel of rol…',
+            style: styles.zoekInput,
+            value: zoek,
+            onChange: function(e) { setZoek(e.target.value); }
+          }),
+          chips
+        ),
+        inhoud,
+        modalEl
+      );
+    };
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>
+<!-- KR-SCHERMDOC-END -->
+
 </body></html>
