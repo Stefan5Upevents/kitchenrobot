@@ -696,7 +696,11 @@ function Header({ sc, setSc, user, logout }) {
   useEffect(function() {
     function onProf() { setProfielVer(function(v){ return v + 1; }); }
     window.addEventListener('kr-profiel-geladen', onProf);
-    return function() { window.removeEventListener('kr-profiel-geladen', onProf); };
+    window.addEventListener('kr-tab-overrides-geladen', onProf);
+    return function() {
+      window.removeEventListener('kr-profiel-geladen', onProf);
+      window.removeEventListener('kr-tab-overrides-geladen', onProf);
+    };
   }, []);
   var navGroups = [
     { label: "Dagelijks", items: [
@@ -19260,8 +19264,9 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
           window.dispatchEvent(new CustomEvent('kr-filter-veranderd'));
         } catch(e) {}
       }
-      // Laad tab-overrides voor deze gebruiker
-      if (window._supa && window._profiel && window._profiel.id) {
+      // Laad tab-overrides EENMALIG voor deze gebruiker (vermijdt event-loop)
+      if (window._supa && window._profiel && window._profiel.id && !window._krTabOverridesGeladen) {
+        window._krTabOverridesGeladen = true;
         window._supa.from('gebruiker_tab_overrides')
           .select('zichtbare_tabs')
           .eq('user_id', window._profiel.id)
@@ -19269,7 +19274,8 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
           .then(function(res){
             window._krTabOverrides = (res && res.data && Array.isArray(res.data.zichtbare_tabs))
               ? res.data.zichtbare_tabs : null;
-            try { window.dispatchEvent(new CustomEvent('kr-profiel-geladen', { detail: window._profiel })); } catch(e) {}
+            // Apart event zodat Header opnieuw rendert ZONDER applyRolClasses opnieuw te triggeren
+            try { window.dispatchEvent(new CustomEvent('kr-tab-overrides-geladen')); } catch(e) {}
           })
           .catch(function(){ window._krTabOverrides = null; });
       }
@@ -20261,9 +20267,10 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
       if (s) {
         var http_id = 'http:server_fouten';
         var was_http = snap[http_id] || 0;
-        if (s.http_problemen_24u >= 5 && was_http < 5 && !isGesnoozed(http_id)) {
+        // Drempel 15 ipv 5: Storage-CDN-glitches tellen niet als alarm
+        if (s.http_problemen_24u >= 15 && was_http < 15 && !isGesnoozed(http_id)) {
           nieuweIssues.push({ id: http_id, type: 'http', label: 'Edge functions', status: s.http_problemen_24u + ' fouten in 24u' });
-        } else if (s.http_problemen_24u < 5 && was_http >= 5) {
+        } else if (s.http_problemen_24u < 15 && was_http >= 15) {
           opgelost.push({ label: 'Edge functions' });
         }
         nieuw[http_id] = s.http_problemen_24u;
@@ -20290,13 +20297,25 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
     if (!window.React || !window._supa) { setTimeout(init, 200); return; }
     function start() {
       if (!window._profiel || window._profiel.rol !== 'beheerder') return;
+      // GUARD: voorkom dubbel-starten van setInterval
+      if (window._krAlertMonitorActief) return;
+      window._krAlertMonitorActief = true;
       setTimeout(check, 8000);
       setInterval(check, POLL_INTERVAL_MS);
       window._krAlertMonitor = { check: check, snooze: snooze, getSnap: getSnap, getSnooze: getSnooze };
-      console.log('[kr-alert-monitor] geactiveerd voor beheerder');
+      console.log('[kr-alert-monitor] geactiveerd voor beheerder (1x)');
     }
     if (window._profiel && window._profiel.rol) start();
-    else window.addEventListener('kr-profiel-geladen', start);
+    else {
+      // Listener — slechts 1x, met self-removal na succes
+      function onProf() {
+        if (window._profiel && window._profiel.rol) {
+          window.removeEventListener('kr-profiel-geladen', onProf);
+          start();
+        }
+      }
+      window.addEventListener('kr-profiel-geladen', onProf);
+    }
   }
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
@@ -20306,6 +20325,41 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
 })();
 </script>
 <!-- KR-ALERT-MONITOR-END -->
+<!-- KR-EMERGENCY-CLEAR v1: bij iedere pageload, ruim oude toast-spam op -->
+<script id="kr-emergency-clear">
+(function() {
+  // Verwijder bestaande toast-elementen (van vorige sessie die misschien hingen)
+  function clearOudeToasts() {
+    var toasts = document.querySelectorAll('.kr-toast');
+    toasts.forEach(function(t) { t.remove(); });
+    var container = document.getElementById('kr-toast-container');
+    if (container) container.innerHTML = '';
+  }
+  // Reset alert-snapshot zodat hij niet meer verkeerd matcht
+  try {
+    var snap = JSON.parse(localStorage.getItem('kr_alert_snapshot') || '{}');
+    if (snap['http:server_fouten'] !== undefined) {
+      delete snap['http:server_fouten'];
+      localStorage.setItem('kr_alert_snapshot', JSON.stringify(snap));
+    }
+  } catch(e) {}
+  // Snooze HTTP-issue 24u zodat hij sowieso niet meer popt
+  try {
+    var snz = JSON.parse(localStorage.getItem('kr_alert_snooze') || '{}');
+    snz['http:server_fouten'] = Date.now() + 24*3600*1000;
+    localStorage.setItem('kr_alert_snooze', JSON.stringify(snz));
+  } catch(e) {}
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', clearOudeToasts);
+  } else {
+    clearOudeToasts();
+  }
+  // Ook na 1 sec nog eens (voor late toasts)
+  setTimeout(clearOudeToasts, 1500);
+})();
+</script>
+<!-- KR-EMERGENCY-CLEAR-END -->
+
 
 
 
@@ -20613,5 +20667,5 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
 
 
 
-<div id="admin-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#1976D2;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.75;pointer-events:none">v2026-04-28-08:25 ✓ admin</div>
+<div id="admin-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#1976D2;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.75;pointer-events:none">v2026-04-28-08:33 ✓ admin</div>
 </body></html>
