@@ -11625,6 +11625,10 @@ function App({ supabaseInloggen, supabaseUitloggen, supabaseSessie, supabaseProf
   var mnRef = appMenus;
   var [user, setUser] = useState(null);
   var [sc, setSc] = useState("boekingen");
+  React.useEffect(function() {
+    window._krGaNaarScherm = function(scherm) { setSc(scherm); };
+    return function() { window._krGaNaarScherm = null; };
+  }, []);
   var [stamTab, setStamTab] = useState("pg");
   var [actieve, setActieve] = useState(null);
   var useSupabase = typeof supabaseInloggen === "function";
@@ -18919,7 +18923,23 @@ body.kr-has-health-bar.kr-health-collapsed-body {
       }
     }
     
-    if (window.kr && window.kr.toast) window.kr.toast(msg, type, 5000);
+    if (window.kr && window.kr.toast) {
+      window.kr.toast(msg, type, 5000);
+      if (type === 'warn' || type === 'error') {
+        setTimeout(function() {
+          var ts = document.querySelectorAll('.kr-toast');
+          var last = ts[ts.length - 1];
+          if (last && typeof window._krGaNaarScherm === 'function') {
+            last.style.cursor = 'pointer';
+            last.title = 'Klik om Systeem-gezondheid te openen';
+            last.addEventListener('click', function() {
+              window._krGaNaarScherm('systeem');
+              last.remove();
+            });
+          }
+        }, 50);
+      }
+    }
   }
   
   function toggleCollapse(){
@@ -19934,6 +19954,148 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
 })();
 </script>
 <!-- KR-SYSTEEM-END -->
+<!-- KR-ALERT-MONITOR-START v1: pollt v_health_* en toast bij nieuwe issues. 28 apr 2026 -->
+<script id="kr-alert-monitor-js">
+(function() {
+  var POLL_INTERVAL_MS = 60000;
+  var SNOOZE_KEY = 'kr_alert_snooze';
+  var SNAP_KEY   = 'kr_alert_snapshot';
+
+  function getJSON(key) { try { return JSON.parse(localStorage.getItem(key) || '{}'); } catch(e) { return {}; } }
+  function setJSON(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) {} }
+  function getSnap()   { return getJSON(SNAP_KEY); }
+  function setSnap(s)  { setJSON(SNAP_KEY, s); }
+  function getSnooze() { return getJSON(SNOOZE_KEY); }
+  function isGesnoozed(id) {
+    var s = getSnooze();
+    return !!(s[id] && s[id] > Date.now());
+  }
+  function snooze(id, uren) {
+    var s = getSnooze();
+    s[id] = Date.now() + (uren * 3600 * 1000);
+    setJSON(SNOOZE_KEY, s);
+  }
+
+  function maakKlikbareToast(tekst, type, issueId) {
+    if (!window.kr || !window.kr.toast) return;
+    window.kr.toast(tekst, type, 8000);
+    setTimeout(function() {
+      var ts = document.querySelectorAll('.kr-toast');
+      var last = ts[ts.length - 1];
+      if (!last) return;
+      last.style.cursor = 'pointer';
+      last.title = 'Klik voor details';
+      last.addEventListener('click', function(e) {
+        if (e.target.tagName === 'BUTTON') return;
+        if (typeof window._krGaNaarScherm === 'function') window._krGaNaarScherm('systeem');
+        last.remove();
+      });
+      var snoozeBtn = document.createElement('button');
+      snoozeBtn.textContent = '😴 1u';
+      snoozeBtn.style.cssText = 'background:rgba(255,255,255,.25);border:none;color:inherit;padding:3px 9px;margin-left:10px;border-radius:5px;font-size:10px;cursor:pointer;font-weight:700';
+      snoozeBtn.title = 'Negeer dit alarm 1 uur';
+      snoozeBtn.onclick = function(ev) {
+        ev.stopPropagation();
+        snooze(issueId, 1);
+        if (window.kr && window.kr.toast) window.kr.toast('Stil voor 1 uur', 'info', 2500);
+        last.remove();
+      };
+      last.appendChild(snoozeBtn);
+    }, 50);
+  }
+
+  async function check() {
+    if (!window._supa) return;
+    if (!window._profiel || window._profiel.rol !== 'beheerder') return;
+
+    try {
+      var res = await Promise.all([
+        window._supa.from('v_health_samenvatting').select('*').single(),
+        window._supa.from('v_health_cron').select('jobname, gezondheid'),
+        window._supa.from('v_health_api').select('koppeling_naam, gezondheid'),
+      ]);
+
+      var snap = getSnap();
+      var nieuw = {};
+      var nieuweIssues = [];
+      var opgelost = [];
+
+      var slechtCron = ['gefaald','verlaat','instabiel'];
+      var slechtApi  = ['fout','verlaat'];
+
+      (res[1].data || []).forEach(function(c) {
+        var id = 'cron:' + c.jobname;
+        var slecht = slechtCron.indexOf(c.gezondheid) >= 0;
+        nieuw[id] = c.gezondheid;
+        var was = snap[id];
+        if (slecht && was !== c.gezondheid && !isGesnoozed(id)) {
+          nieuweIssues.push({ id: id, type: 'cron', label: c.jobname, status: c.gezondheid });
+        } else if (!slecht && was && slechtCron.indexOf(was) >= 0) {
+          opgelost.push({ label: c.jobname });
+        }
+      });
+      (res[2].data || []).forEach(function(a) {
+        var id = 'api:' + a.koppeling_naam;
+        var slecht = slechtApi.indexOf(a.gezondheid) >= 0;
+        nieuw[id] = a.gezondheid;
+        var was = snap[id];
+        if (slecht && was !== a.gezondheid && !isGesnoozed(id)) {
+          nieuweIssues.push({ id: id, type: 'api', label: a.koppeling_naam, status: a.gezondheid });
+        } else if (!slecht && was && slechtApi.indexOf(was) >= 0) {
+          opgelost.push({ label: a.koppeling_naam });
+        }
+      });
+
+      var s = res[0].data;
+      if (s) {
+        var http_id = 'http:server_fouten';
+        var was_http = snap[http_id] || 0;
+        if (s.http_problemen_24u >= 5 && was_http < 5 && !isGesnoozed(http_id)) {
+          nieuweIssues.push({ id: http_id, type: 'http', label: 'Edge functions', status: s.http_problemen_24u + ' fouten in 24u' });
+        } else if (s.http_problemen_24u < 5 && was_http >= 5) {
+          opgelost.push({ label: 'Edge functions' });
+        }
+        nieuw[http_id] = s.http_problemen_24u;
+      }
+
+      nieuweIssues.slice(0, 3).forEach(function(iss) {
+        var emoji = iss.type === 'cron' ? '⏱' : iss.type === 'api' ? '🔌' : '⚠';
+        maakKlikbareToast(emoji + ' ' + iss.label + ': ' + iss.status, 'error', iss.id);
+      });
+      if (nieuweIssues.length > 3) {
+        if (window.kr && window.kr.toast) window.kr.toast('+ ' + (nieuweIssues.length - 3) + ' meer problemen', 'warn', 6000);
+      }
+      opgelost.forEach(function(o) {
+        if (window.kr && window.kr.toast) window.kr.toast('✓ Hersteld: ' + o.label, 'success', 4000);
+      });
+
+      setSnap(nieuw);
+    } catch (e) {
+      console.warn('[kr-alert-monitor] check mislukt:', e);
+    }
+  }
+
+  function init() {
+    if (!window.React || !window._supa) { setTimeout(init, 200); return; }
+    function start() {
+      if (!window._profiel || window._profiel.rol !== 'beheerder') return;
+      setTimeout(check, 8000);
+      setInterval(check, POLL_INTERVAL_MS);
+      window._krAlertMonitor = { check: check, snooze: snooze, getSnap: getSnap, getSnooze: getSnooze };
+      console.log('[kr-alert-monitor] geactiveerd voor beheerder');
+    }
+    if (window._profiel && window._profiel.rol) start();
+    else window.addEventListener('kr-profiel-geladen', start);
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>
+<!-- KR-ALERT-MONITOR-END -->
+
 
 
 
@@ -20240,5 +20402,5 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
 
 
 
-<div id="admin-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#1976D2;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.75;pointer-events:none">v2026-04-28-07:03 ✓ admin</div>
+<div id="admin-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#1976D2;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.75;pointer-events:none">v2026-04-28-07:11 ✓ admin</div>
 </body></html>
