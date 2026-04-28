@@ -21323,4 +21323,500 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
 </script>
 <!-- KR-SCHERMDOC-END -->
 
+<!-- KR-SJEF-START v1: Sjef AI keuken-assistent (28 apr 2026) -->
+<style id="kr-sjef-css">
+/* Floating Action Button */
+#kr-sjef-fab {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1976D2, #002D41);
+  color: white;
+  border: none;
+  font-size: 26px;
+  cursor: pointer;
+  z-index: 99998;
+  box-shadow: 0 4px 16px rgba(0,45,65,0.35);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#kr-sjef-fab:hover { transform: scale(1.06); box-shadow: 0 6px 20px rgba(0,45,65,0.45); }
+#kr-sjef-fab:active { transform: scale(0.96); }
+#kr-sjef-fab.kr-sjef-busy::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  border-top-color: #3FB8C4;
+  animation: kr-sjef-spin 0.8s linear infinite;
+}
+@keyframes kr-sjef-spin { to { transform: rotate(360deg); } }
+
+/* Panel */
+#kr-sjef-panel {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,30,60,0.5);
+  z-index: 99999;
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+  animation: kr-sjef-fade .15s ease-out;
+}
+#kr-sjef-panel.kr-sjef-open { display: flex; }
+@keyframes kr-sjef-fade { from { opacity: 0; } to { opacity: 1; } }
+
+#kr-sjef-card {
+  background: #fff;
+  width: 100%;
+  max-width: 560px;
+  height: 100vh;
+  max-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+@media (min-width: 768px) {
+  #kr-sjef-panel { align-items: center; }
+  #kr-sjef-card {
+    height: 80vh;
+    max-height: 720px;
+    border-radius: 14px;
+    margin: 20px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  }
+}
+
+#kr-sjef-header {
+  background: linear-gradient(135deg, #1976D2, #002D41);
+  color: white;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+#kr-sjef-header-left { display: flex; align-items: center; gap: 10px; }
+#kr-sjef-header-icon {
+  width: 36px; height: 36px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+}
+#kr-sjef-header-titel { font-weight: 600; font-size: 16px; line-height: 1.2; }
+#kr-sjef-header-sub { font-size: 11px; opacity: 0.85; line-height: 1.2; margin-top: 2px; }
+#kr-sjef-close {
+  background: rgba(255,255,255,0.15);
+  border: none;
+  color: white;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+#kr-sjef-close:hover { background: rgba(255,255,255,0.3); }
+
+#kr-sjef-berichten {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  background: #F5F8FA;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.kr-sjef-bericht {
+  max-width: 85%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-size: 14.5px;
+  line-height: 1.45;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+.kr-sjef-bericht-gebruiker {
+  background: #1976D2;
+  color: white;
+  align-self: flex-end;
+  border-bottom-right-radius: 4px;
+}
+.kr-sjef-bericht-sjef {
+  background: white;
+  color: #234756;
+  align-self: flex-start;
+  border-bottom-left-radius: 4px;
+  border: 1px solid #D8E8EF;
+}
+.kr-sjef-bericht-systeem {
+  align-self: center;
+  background: #FFF3E0;
+  color: #E65100;
+  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: 12px;
+}
+.kr-sjef-typing {
+  align-self: flex-start;
+  background: white;
+  border: 1px solid #D8E8EF;
+  border-radius: 14px;
+  padding: 12px 16px;
+  display: flex;
+  gap: 4px;
+}
+.kr-sjef-typing span {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #6E8591;
+  animation: kr-sjef-bounce 1.4s infinite ease-in-out both;
+}
+.kr-sjef-typing span:nth-child(2) { animation-delay: 0.16s; }
+.kr-sjef-typing span:nth-child(3) { animation-delay: 0.32s; }
+@keyframes kr-sjef-bounce {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; }
+  40% { transform: scale(1); opacity: 1; }
+}
+.kr-sjef-tools-info {
+  font-size: 11px;
+  color: #6E8591;
+  margin-top: 4px;
+  font-style: italic;
+}
+
+#kr-sjef-input-area {
+  background: white;
+  border-top: 1px solid #D8E8EF;
+  padding: 10px 12px;
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+#kr-sjef-input {
+  flex: 1;
+  border: 1px solid #D8E8EF;
+  border-radius: 20px;
+  padding: 10px 14px;
+  font-size: 15px;
+  font-family: inherit;
+  resize: none;
+  max-height: 120px;
+  min-height: 42px;
+  outline: none;
+}
+#kr-sjef-input:focus { border-color: #1976D2; }
+.kr-sjef-actie-knop {
+  width: 42px; height: 42px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+#kr-sjef-mic {
+  background: #F5F8FA;
+  color: #234756;
+}
+#kr-sjef-mic:hover { background: #E0EBF1; }
+#kr-sjef-mic.kr-sjef-recording {
+  background: #C62828;
+  color: white;
+  animation: kr-sjef-pulse 1.2s infinite;
+}
+@keyframes kr-sjef-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+#kr-sjef-send {
+  background: #1976D2;
+  color: white;
+}
+#kr-sjef-send:hover { background: #1565C0; }
+#kr-sjef-send:disabled { background: #B0BEC5; cursor: not-allowed; }
+
+#kr-sjef-suggestion {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 16px 0;
+  background: #F5F8FA;
+}
+.kr-sjef-sug-knop {
+  background: white;
+  border: 1px solid #D8E8EF;
+  color: #234756;
+  padding: 6px 12px;
+  border-radius: 14px;
+  font-size: 12.5px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.kr-sjef-sug-knop:hover { background: #E3F2FD; border-color: #1976D2; }
+</style>
+
+<script id="kr-sjef-js">
+(function(){
+  if (window._krSjefInit) return;
+  window._krSjefInit = true;
+
+  var SUPABASE_URL = 'https://aezatnwsrhlwtykpixsq.supabase.co';
+  var ANON_KEY = 'sb_publishable_qkQzUEM5fvJPSsfScEzNCg_Eug8-d4t';
+  var SESSIE_KEY = 'kr_sjef_sessie';
+  var SESSIE_DAG_KEY = 'kr_sjef_sessie_dag';
+
+  // === Sessie-id beheer (vernieuwt elke dag) ===
+  function getSessieId(){
+    var vandaag = new Date().toISOString().split('T')[0];
+    var bestaande = sessionStorage.getItem(SESSIE_KEY);
+    var dag = sessionStorage.getItem(SESSIE_DAG_KEY);
+    if (bestaande && dag === vandaag) return bestaande;
+    var nieuw = (crypto.randomUUID ? crypto.randomUUID() : 'sjef-'+Date.now()+'-'+Math.random().toString(36).slice(2));
+    sessionStorage.setItem(SESSIE_KEY, nieuw);
+    sessionStorage.setItem(SESSIE_DAG_KEY, vandaag);
+    return nieuw;
+  }
+
+  // === DOM bouwen ===
+  function bouwDom(){
+    if (document.getElementById('kr-sjef-fab')) return;
+
+    var fab = document.createElement('button');
+    fab.id = 'kr-sjef-fab';
+    fab.title = 'Vraag Sjef';
+    fab.setAttribute('aria-label', 'Open Sjef AI assistent');
+    fab.innerHTML = '👨‍🍳';
+    fab.addEventListener('click', openPanel);
+    document.body.appendChild(fab);
+
+    var panel = document.createElement('div');
+    panel.id = 'kr-sjef-panel';
+    panel.innerHTML = ''
+      + '<div id="kr-sjef-card">'
+      +   '<div id="kr-sjef-header">'
+      +     '<div id="kr-sjef-header-left">'
+      +       '<div id="kr-sjef-header-icon">👨‍🍳</div>'
+      +       '<div>'
+      +         '<div id="kr-sjef-header-titel">Sjef</div>'
+      +         '<div id="kr-sjef-header-sub">AI keuken-assistent</div>'
+      +       '</div>'
+      +     '</div>'
+      +     '<button id="kr-sjef-close" aria-label="Sluiten">×</button>'
+      +   '</div>'
+      +   '<div id="kr-sjef-berichten"></div>'
+      +   '<div id="kr-sjef-suggestion"></div>'
+      +   '<div id="kr-sjef-input-area">'
+      +     '<textarea id="kr-sjef-input" rows="1" placeholder="Vraag iets aan Sjef..."></textarea>'
+      +     '<button class="kr-sjef-actie-knop" id="kr-sjef-mic" title="Spraak (NL/EN)" aria-label="Spraak invoer">🎤</button>'
+      +     '<button class="kr-sjef-actie-knop" id="kr-sjef-send" title="Verstuur" aria-label="Verstuur">➤</button>'
+      +   '</div>'
+      + '</div>';
+    document.body.appendChild(panel);
+
+    // Listeners
+    panel.addEventListener('click', function(e){
+      if (e.target === panel) sluitPanel();
+    });
+    document.getElementById('kr-sjef-close').addEventListener('click', sluitPanel);
+    var input = document.getElementById('kr-sjef-input');
+    input.addEventListener('input', function(){
+      input.style.height = 'auto';
+      input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+    });
+    input.addEventListener('keydown', function(e){
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); verstuur(); }
+    });
+    document.getElementById('kr-sjef-send').addEventListener('click', verstuur);
+    document.getElementById('kr-sjef-mic').addEventListener('click', toggleSpraak);
+
+    // Suggesties
+    var sugs = ['Wat is er vandaag?', 'Open HACCP-alarmen?', 'Welke menu\'s zijn er?'];
+    var sugDiv = document.getElementById('kr-sjef-suggestion');
+    sugs.forEach(function(s){
+      var b = document.createElement('button');
+      b.className = 'kr-sjef-sug-knop';
+      b.textContent = s;
+      b.addEventListener('click', function(){
+        input.value = s;
+        verstuur();
+      });
+      sugDiv.appendChild(b);
+    });
+  }
+
+  function openPanel(){
+    document.getElementById('kr-sjef-panel').classList.add('kr-sjef-open');
+    var berichten = document.getElementById('kr-sjef-berichten');
+    if (berichten.children.length === 0) toonWelkom();
+    setTimeout(function(){ document.getElementById('kr-sjef-input').focus(); }, 100);
+  }
+  function sluitPanel(){
+    document.getElementById('kr-sjef-panel').classList.remove('kr-sjef-open');
+    stopSpraak();
+  }
+
+  function toonWelkom(){
+    var profiel = window._krProfiel || {};
+    var naam = profiel.naam || 'collega';
+    var teksten = [
+      'Hoi ' + naam + ', ik ben Sjef. Vraag maar.',
+      'Yo ' + naam + '. Wat moet er gebeuren?',
+      'Hé ' + naam + ', wat kan ik voor je doen?',
+    ];
+    voegBerichtToe('sjef', teksten[Math.floor(Math.random() * teksten.length)]);
+  }
+
+  function voegBerichtToe(van, inhoud, toolsNamen){
+    var berichten = document.getElementById('kr-sjef-berichten');
+    var div = document.createElement('div');
+    div.className = 'kr-sjef-bericht kr-sjef-bericht-' + van;
+    div.textContent = inhoud;
+    if (toolsNamen && toolsNamen.length) {
+      var info = document.createElement('div');
+      info.className = 'kr-sjef-tools-info';
+      info.textContent = '↳ ' + toolsNamen.join(', ');
+      div.appendChild(info);
+    }
+    berichten.appendChild(div);
+    berichten.scrollTop = berichten.scrollHeight;
+    return div;
+  }
+  function toonTyping(){
+    var berichten = document.getElementById('kr-sjef-berichten');
+    var div = document.createElement('div');
+    div.className = 'kr-sjef-typing';
+    div.id = 'kr-sjef-typing-indicator';
+    div.innerHTML = '<span></span><span></span><span></span>';
+    berichten.appendChild(div);
+    berichten.scrollTop = berichten.scrollHeight;
+  }
+  function verwijderTyping(){
+    var t = document.getElementById('kr-sjef-typing-indicator');
+    if (t) t.remove();
+  }
+
+  // === Verstuur naar edge function ===
+  async function verstuur(){
+    var input = document.getElementById('kr-sjef-input');
+    var bericht = (input.value || '').trim();
+    if (!bericht) return;
+    input.value = '';
+    input.style.height = 'auto';
+
+    voegBerichtToe('gebruiker', bericht);
+
+    var sendBtn = document.getElementById('kr-sjef-send');
+    var fab = document.getElementById('kr-sjef-fab');
+    sendBtn.disabled = true;
+    fab.classList.add('kr-sjef-busy');
+    toonTyping();
+
+    try {
+      var sb = window.supabase || window._krSupabase;
+      var session = null;
+      if (sb && sb.auth) {
+        var s = await sb.auth.getSession();
+        session = s.data.session;
+      }
+      var token = session ? session.access_token : ANON_KEY;
+
+      var resp = await fetch(SUPABASE_URL + '/functions/v1/sjef-chat', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + token,
+          'apikey': ANON_KEY,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          sessie_id: getSessieId(),
+          bericht: bericht,
+          bron: 'admin'
+        })
+      });
+      var data = await resp.json();
+      verwijderTyping();
+      if (resp.ok && data.antwoord) {
+        voegBerichtToe('sjef', data.antwoord, data.tools);
+      } else {
+        voegBerichtToe('systeem', '⚠ ' + (data.error || 'Onbekende fout'));
+      }
+    } catch (e) {
+      verwijderTyping();
+      voegBerichtToe('systeem', '⚠ Netwerkfout: ' + (e.message || e));
+    } finally {
+      sendBtn.disabled = false;
+      fab.classList.remove('kr-sjef-busy');
+    }
+  }
+
+  // === Web Speech API ===
+  var herkenner = null;
+  function toggleSpraak(){
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+      alert('Spraak niet ondersteund op deze browser. Gebruik Chrome of Safari.');
+      return;
+    }
+    if (herkenner) { stopSpraak(); return; }
+    herkenner = new SR();
+    herkenner.lang = 'nl-NL';  // start NL, fallback via interim
+    herkenner.continuous = false;
+    herkenner.interimResults = true;
+    herkenner.maxAlternatives = 1;
+
+    var mic = document.getElementById('kr-sjef-mic');
+    var input = document.getElementById('kr-sjef-input');
+    mic.classList.add('kr-sjef-recording');
+
+    var origineel = input.value;
+    herkenner.onresult = function(e){
+      var transcript = '';
+      for (var i = e.resultIndex; i < e.results.length; i++) {
+        transcript += e.results[i][0].transcript;
+      }
+      input.value = (origineel ? origineel + ' ' : '') + transcript;
+      input.style.height = 'auto';
+      input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+    };
+    herkenner.onerror = function(e){
+      console.warn('Spraak fout:', e.error);
+      stopSpraak();
+    };
+    herkenner.onend = function(){
+      stopSpraak();
+    };
+    try { herkenner.start(); } catch(e){ stopSpraak(); }
+  }
+  function stopSpraak(){
+    var mic = document.getElementById('kr-sjef-mic');
+    if (mic) mic.classList.remove('kr-sjef-recording');
+    if (herkenner) {
+      try { herkenner.stop(); } catch(e){}
+      herkenner = null;
+    }
+  }
+
+  // === Wachten op profiel + dom ===
+  function init(){
+    bouwDom();
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>
+<!-- KR-SJEF-END -->
+
+
+
 </body></html>
