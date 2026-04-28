@@ -21423,6 +21423,19 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
   display: flex; align-items: center; justify-content: center;
 }
 #kr-sjef-close:hover { background: rgba(255,255,255,0.3); }
+#kr-sjef-nieuw {
+  background: rgba(255,255,255,0.15);
+  border: none;
+  color: white;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  font-size: 15px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  margin-right: 6px;
+}
+#kr-sjef-nieuw:hover { background: rgba(255,255,255,0.3); }
+#kr-sjef-header-acties { display: flex; align-items: center; }
 
 #kr-sjef-berichten {
   flex: 1;
@@ -21609,7 +21622,10 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
       +         '<div id="kr-sjef-header-sub">AI keuken-assistent</div>'
       +       '</div>'
       +     '</div>'
-      +     '<button id="kr-sjef-close" aria-label="Sluiten">×</button>'
+      +     '<div id="kr-sjef-header-acties">'
+      +   '<button id="kr-sjef-nieuw" aria-label="Nieuw gesprek" title="Nieuw gesprek (wist context)">🔄</button>'
+      +   '<button id="kr-sjef-close" aria-label="Sluiten">×</button>'
+      + '</div>'
       +   '</div>'
       +   '<div id="kr-sjef-berichten"></div>'
       +   '<div id="kr-sjef-suggestion"></div>'
@@ -21626,6 +21642,32 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
       if (e.target === panel) sluitPanel();
     });
     document.getElementById('kr-sjef-close').addEventListener('click', sluitPanel);
+    document.getElementById('kr-sjef-nieuw').addEventListener('click', function(){
+      var doorgaan = false;
+      try {
+        if (window.kr && window.kr.confirm) {
+          window.kr.confirm('Nieuw gesprek starten? Sjef vergeet de huidige context.', function(){
+            startNieuweSessie();
+          });
+          return;
+        }
+      } catch(e){}
+      doorgaan = window.confirm('Nieuw gesprek starten? Sjef vergeet de huidige context.');
+      if (doorgaan) startNieuweSessie();
+    });
+    function startNieuweSessie(){
+      try {
+        sessionStorage.removeItem(SESSIE_KEY);
+        sessionStorage.removeItem(SESSIE_DAG_KEY);
+      } catch(e){}
+      getSessieId();
+      var bx = document.getElementById('kr-sjef-berichten');
+      if (bx) bx.innerHTML = '';
+      try { toonWelkom(); } catch(e){}
+      try { window.kr && window.kr.toast && window.kr.toast('Nieuw gesprek gestart','success'); } catch(e){}
+      var input = document.getElementById('kr-sjef-input');
+      if (input) { input.value=''; input.focus(); }
+    }
     var input = document.getElementById('kr-sjef-input');
     input.addEventListener('input', function(){
       input.style.height = 'auto';
