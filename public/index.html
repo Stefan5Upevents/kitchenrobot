@@ -19706,7 +19706,7 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
 })();
 </script>
 <!-- KR-GEBRUIKERS-END -->
-<!-- KR-SYSTEEM-START v1: systeem-gezondheid scherm. 28 apr 2026 -->
+<!-- KR-SYSTEEM-START v2: systeem-gezondheid + acties (force-run/sensor/rollback/api-key). 28 apr 2026 -->
 <script id="kr-systeem-js">
 (function() {
   function init() {
@@ -19714,7 +19714,6 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
     var R = window.React.createElement;
     var useState = window.React.useState;
     var useEffect = window.React.useEffect;
-    var useRef = window.React.useRef;
 
     function fmtDur(ms) {
       if (ms === null || ms === undefined) return '-';
@@ -19725,19 +19724,40 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
     function fmtTijd(d) {
       if (!d) return '-';
       var dt = new Date(d);
-      var nu = new Date();
-      var verschil = (nu - dt) / 1000;
+      var verschil = (new Date() - dt) / 1000;
+      if (verschil < 0) return 'in toekomst';
       if (verschil < 60) return 'net';
       if (verschil < 3600) return Math.floor(verschil/60) + ' min geleden';
       if (verschil < 86400) return Math.floor(verschil/3600) + ' u geleden';
-      var d2 = Math.floor(verschil/86400);
-      return d2 + (d2===1 ? ' dag' : ' dagen') + ' geleden';
+      var dn = Math.floor(verschil/86400);
+      return dn + (dn===1 ? ' dag' : ' dagen') + ' geleden';
+    }
+    function fmtDatumTijd(d) {
+      if (!d) return '-';
+      try { return new Date(d).toLocaleString('nl-NL', { dateStyle: 'short', timeStyle: 'short' }); }
+      catch(e) { return String(d); }
     }
 
     var KLEUREN = {
-      ok: '#2E7D32', inactief: '#757575', geen_runs: '#90A4AE',
-      gefaald: '#C62828', verlaat: '#E65100', instabiel: '#F57C00', fout: '#C62828', onbekend: '#90A4AE'
+      ok:'#2E7D32', actief:'#2E7D32', inactief:'#757575', geen_runs:'#90A4AE',
+      gefaald:'#C62828', verlaat:'#E65100', instabiel:'#F57C00', fout:'#C62828',
+      onbekend:'#90A4AE', genegeerd:'#7B1FA2', offline:'#E65100'
     };
+
+    function callActie(actie, body) {
+      return window._supa.auth.getSession().then(function(s) {
+        var jwt = s && s.data && s.data.session && s.data.session.access_token;
+        return fetch(window._supa.functionsUrl + '/systeem-actie', {
+          method:'POST',
+          headers:{
+            'Content-Type':'application/json',
+            'Authorization':'Bearer ' + jwt,
+            'apikey':window._supa.supabaseKey,
+          },
+          body: JSON.stringify(Object.assign({actie:actie}, body)),
+        }).then(function(r){ return r.json(); });
+      });
+    }
 
     window._SysteemScreen = function() {
       var C = window._C || { night:'#234756', aqua:'#3FB8C4', red:'#E8202B', green:'#2E7D32', muted:'#78909C', orange:'#FF9800', light:'#F5F8FA' };
@@ -19746,6 +19766,9 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
       var s_laden = useState(true); var laden = s_laden[0], setLaden = s_laden[1];
       var s_fout = useState(''); var fout = s_fout[0], setFout = s_fout[1];
       var s_t = useState(new Date()); var laatstGeladen = s_t[0], setLaatstGeladen = s_t[1];
+      var s_modal = useState(null); var modal = s_modal[0], setModal = s_modal[1];
+      var s_modalData = useState(null); var modalData = s_modalData[0], setModalData = s_modalData[1];
+      var s_actieBezig = useState(null); var actieBezig = s_actieBezig[0], setActieBezig = s_actieBezig[1];
 
       function laad() {
         var supa = window._supa;
@@ -19756,6 +19779,8 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
           supa.from('v_health_http_24u').select('*').order('categorie'),
           supa.from('v_health_email').select('*').order('status'),
           supa.from('v_health_recente_fouten').select('*').limit(15),
+          supa.from('v_sensor_status').select('*').order('outlet_code,naam'),
+          supa.from('systeem_actie_log').select('*').order('uitgevoerd_op',{ascending:false}).limit(15),
         ]).then(function(res) {
           var errors = res.filter(function(r){ return r.error; });
           if (errors.length > 0) {
@@ -19767,23 +19792,107 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
               api: res[2].data || [],
               http: res[3].data || [],
               email: res[4].data || [],
-              fouten: res[5].data || []
+              fouten: res[5].data || [],
+              sensoren: res[6].data || [],
+              audit: res[7].data || [],
             });
             setFout('');
           }
           setLaden(false);
           setLaatstGeladen(new Date());
-        }).catch(function(e) {
-          setFout(String(e));
-          setLaden(false);
-        });
+        }).catch(function(e) { setFout(String(e)); setLaden(false); });
       }
 
       useEffect(function() {
         laad();
-        var iv = setInterval(laad, 60000); // 1 min auto-refresh
+        var iv = setInterval(laad, 60000);
         return function(){ clearInterval(iv); };
       }, []);
+
+      function forceRun(jobname) {
+        if (!confirm('Force-run "' + jobname + '" nu uitvoeren?')) return;
+        setActieBezig('cron:'+jobname);
+        callActie('force_run_cron', { jobname: jobname }).then(function(res){
+          setActieBezig(null);
+          if (res && res.error) {
+            if (window.kr && window.kr.toast) window.kr.toast('Fout: ' + res.error, 'error');
+          } else {
+            if (window.kr && window.kr.toast) window.kr.toast('✓ ' + jobname + ' gestart', 'success');
+            setTimeout(laad, 2000);
+          }
+        });
+      }
+
+      function sensorNegeren(sensor, uren) {
+        var reden = prompt('Reden voor negeren ' + uren + 'u (optioneel):', '');
+        if (reden === null) return;
+        setActieBezig('sensor:'+sensor.id);
+        callActie('sensor_negeren', { sensor_id: sensor.id, uren: uren, reden: reden }).then(function(res){
+          setActieBezig(null);
+          if (res && res.error) {
+            if (window.kr && window.kr.toast) window.kr.toast('Fout: ' + res.error, 'error');
+          } else {
+            if (window.kr && window.kr.toast) window.kr.toast('✓ Sensor genegeerd voor ' + uren + 'u', 'success');
+            laad();
+          }
+        });
+      }
+      function sensorAlarmAan(sensor) {
+        setActieBezig('sensor:'+sensor.id);
+        callActie('sensor_alarm_aan', { sensor_id: sensor.id }).then(function(res){
+          setActieBezig(null);
+          if (res && res.error) {
+            if (window.kr && window.kr.toast) window.kr.toast('Fout: ' + res.error, 'error');
+          } else {
+            if (window.kr && window.kr.toast) window.kr.toast('✓ Alarm weer actief', 'success');
+            laad();
+          }
+        });
+      }
+
+      function openRollback() {
+        setModal('rollback');
+        setModalData({ laden: true, backups: [] });
+        callActie('rollback_lijst', {}).then(function(res){
+          if (res.error) setModalData({ fout: res.error, backups: [] });
+          else setModalData({ backups: res.backups || [], laden: false });
+        });
+      }
+      function rollbackUitvoeren(naam) {
+        if (!confirm('Index.html vervangen met "' + naam + '"?\n\nEr wordt automatisch een veiligheids-backup gemaakt van de huidige versie. Vervolgens wordt de backup naar GitHub gepusht en deployed door Vercel (~1-2 min).\n\nDoorgaan?')) return;
+        setActieBezig('rollback');
+        callActie('rollback_uitvoeren', { backup_naam: naam }).then(function(res){
+          setActieBezig(null);
+          if (res && res.error) {
+            if (window.kr && window.kr.toast) window.kr.toast('Rollback mislukt: ' + res.error, 'error');
+          } else {
+            if (window.kr && window.kr.toast) window.kr.toast('✓ Rollback gepushed — Vercel deployt over 1-2 min', 'success');
+            setModal(null);
+          }
+        });
+      }
+
+      function openApiKey() {
+        setModal('apikey');
+        setModalData({ vault_naam: 'api_koppeling_recras', nieuwe_waarde: '' });
+      }
+      function apiKeyOpslaan() {
+        if (!modalData || !modalData.nieuwe_waarde || modalData.nieuwe_waarde.length < 10) {
+          alert('Vul een geldige nieuwe waarde in (minstens 10 tekens)');
+          return;
+        }
+        if (!confirm('API-key voor ' + modalData.vault_naam + ' vervangen?\n\nDe nieuwe key wordt direct actief. Test daarna met de force-run knop bij betreffende cron.')) return;
+        setActieBezig('apikey');
+        callActie('api_key_vervangen', { vault_naam: modalData.vault_naam, nieuwe_waarde: modalData.nieuwe_waarde }).then(function(res){
+          setActieBezig(null);
+          if (res && res.error) {
+            if (window.kr && window.kr.toast) window.kr.toast('Fout: ' + res.error, 'error');
+          } else {
+            if (window.kr && window.kr.toast) window.kr.toast('✓ API-key vervangen', 'success');
+            setModal(null);
+          }
+        });
+      }
 
       if (laden && !data) {
         return R('div', { style:{ padding:30, textAlign:'center', color:C.muted } }, 'Status laden...');
@@ -19802,6 +19911,12 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
       function pill(tekst, kleur) {
         return R('span', { style:{ display:'inline-block', background: kleur+'22', color: kleur, padding:'2px 8px', borderRadius:8, fontSize:11, fontWeight:700 } }, tekst);
       }
+      function knop(label, kleur, onClick, disabled) {
+        return R('button', {
+          onClick: onClick, disabled: disabled,
+          style:{ background:kleur||'#1976D2', color:'#fff', border:'none', borderRadius:5, padding:'4px 9px', fontSize:11, fontWeight:600, cursor: disabled?'not-allowed':'pointer', opacity: disabled?0.6:1, marginRight:4 }
+        }, label);
+      }
 
       return R('div', null,
         // Header
@@ -19809,15 +19924,17 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
           R('div', null,
             R('div', { style:{ fontWeight:900, fontSize:22, color:C.night } }, 'Systeem-gezondheid'),
             R('div', { style:{ fontSize:12, color:C.muted, marginTop:4 } },
-              'Status van cron-jobs, externe koppelingen, edge functions en e-mails. Auto-refresh elke minuut.'
+              'Status + bediening van cron-jobs, sensoren, deploys en API-keys.'
             )
           ),
-          R('div', { style:{ display:'flex', alignItems:'center', gap:10 } },
+          R('div', { style:{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' } },
             allesOk
               ? R('span', { style:{ background:'#E8F5E9', color:C.green, padding:'6px 14px', borderRadius:20, fontSize:12, fontWeight:700 } }, '✓ Alles operationeel')
               : R('span', { style:{ background:'#FFF3E0', color:C.orange, padding:'6px 14px', borderRadius:20, fontSize:12, fontWeight:700 } }, '⚠ Aandachtspunten'),
-            R('button', { onClick: laad, style:{ background:'transparent', border:'1px solid #CFD8DC', borderRadius:6, padding:'5px 12px', fontSize:11, fontWeight:600, color:C.muted, cursor:'pointer' } }, '↻ Ververs nu'),
-            R('span', { style:{ fontSize:10, color:C.muted } }, 'Bijgewerkt: ' + laatstGeladen.toLocaleTimeString('nl-NL'))
+            knop('🔄 Rollback', '#7B1FA2', openRollback),
+            knop('🔐 API-key', '#1976D2', openApiKey),
+            R('button', { onClick: laad, style:{ background:'transparent', border:'1px solid #CFD8DC', borderRadius:6, padding:'5px 12px', fontSize:11, fontWeight:600, color:C.muted, cursor:'pointer' } }, '↻ Ververs'),
+            R('span', { style:{ fontSize:10, color:C.muted } }, laatstGeladen.toLocaleTimeString('nl-NL'))
           )
         ),
         fout && R('div', { style:{ background:'#FFEBEE', color:'#B71C1C', padding:'8px 12px', borderRadius:6, marginBottom:12, fontSize:12 } }, fout),
@@ -19828,13 +19945,13 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
           tegel('HTTP-fouten 24u', s.http_problemen_24u, null, s.http_problemen_24u===0 ? C.green : (s.http_problemen_24u<5 ? C.orange : C.red), '⚠'),
           tegel('Mail-fouten 7d', s.mail_problemen_7d, null, s.mail_problemen_7d===0 ? C.green : C.red, '📧')
         ),
-        // CRON tabel
+        // CRON tabel met force-run
         R('div', { style:{ background:'#fff', borderRadius:10, border:'1px solid #E0E7EB', overflow:'hidden', marginBottom:16 } },
           R('div', { style:{ padding:'10px 14px', background:C.light, fontWeight:700, color:C.night, fontSize:13 } }, '⏱ Cron-jobs (' + (data.cron.length) + ')'),
           R('table', { style:{ width:'100%', borderCollapse:'collapse', fontSize:12 } },
             R('thead', null,
               R('tr', { style:{ background:'#FAFCFD' } },
-                ['Naam','Schedule','Laatste run','Duur','Runs 24u','Status'].map(function(h, i){
+                ['Naam','Schedule','Laatste run','Status','Actie'].map(function(h, i){
                   return R('th', { key:i, style:{ padding:'8px 10px', textAlign:'left', fontWeight:700, color:C.muted, fontSize:10, textTransform:'uppercase', letterSpacing:1 } }, h);
                 })
               )
@@ -19842,15 +19959,53 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
             R('tbody', null,
               data.cron.map(function(c) {
                 var kl = KLEUREN[c.gezondheid] || C.muted;
+                var bezig = actieBezig === 'cron:'+c.jobname;
                 return R('tr', { key:c.jobid, style:{ borderTop:'1px solid #ECEFF1' } },
                   R('td', { style:{ padding:'8px 10px', fontWeight:600, color:C.night, fontFamily:'monospace', fontSize:11 } }, c.jobname),
                   R('td', { style:{ padding:'8px 10px', color:C.muted, fontFamily:'monospace', fontSize:11 } }, c.schedule),
                   R('td', { style:{ padding:'8px 10px', color:C.muted } }, fmtTijd(c.laatste_run)),
-                  R('td', { style:{ padding:'8px 10px', color:C.muted } }, fmtDur(c.laatste_duurtijd_ms)),
-                  R('td', { style:{ padding:'8px 10px', color:C.muted } },
-                    c.aantal_runs_24u + (c.aantal_fouten_24u > 0 ? R('span', { style:{ color:C.red, marginLeft:6 } }, '(' + c.aantal_fouten_24u + ' fout)') : null)
+                  R('td', { style:{ padding:'8px 10px' } }, pill(c.gezondheid, kl)),
+                  R('td', { style:{ padding:'6px 10px' } },
+                    knop(bezig ? '...' : '▶ Run nu', C.aqua, function(){ forceRun(c.jobname); }, bezig || !c.active)
+                  )
+                );
+              })
+            )
+          )
+        ),
+        // SENSOR tabel met negeer-acties
+        data.sensoren.length > 0 && R('div', { style:{ background:'#fff', borderRadius:10, border:'1px solid #E0E7EB', overflow:'hidden', marginBottom:16 } },
+          R('div', { style:{ padding:'10px 14px', background:C.light, fontWeight:700, color:C.night, fontSize:13 } }, '🌡️ Sensoren (' + (data.sensoren.length) + ')'),
+          R('table', { style:{ width:'100%', borderCollapse:'collapse', fontSize:12 } },
+            R('thead', null,
+              R('tr', { style:{ background:'#FAFCFD' } },
+                ['Naam','Outlet','Status','Genegeerd tot','Actie'].map(function(h, i){
+                  return R('th', { key:i, style:{ padding:'8px 10px', textAlign:'left', fontWeight:700, color:C.muted, fontSize:10, textTransform:'uppercase', letterSpacing:1 } }, h);
+                })
+              )
+            ),
+            R('tbody', null,
+              data.sensoren.map(function(sn) {
+                var kl = KLEUREN[sn.status] || C.muted;
+                var bezig = actieBezig === 'sensor:'+sn.id;
+                var genegeerd = sn.genegeerd_tot && new Date(sn.genegeerd_tot) > new Date();
+                return R('tr', { key:sn.id, style:{ borderTop:'1px solid #ECEFF1' } },
+                  R('td', { style:{ padding:'8px 10px', fontWeight:600, color:C.night } }, sn.naam),
+                  R('td', { style:{ padding:'8px 10px', color:C.muted } }, sn.outlet_code || '-'),
+                  R('td', { style:{ padding:'8px 10px' } }, pill(sn.status, kl)),
+                  R('td', { style:{ padding:'8px 10px', color:C.muted, fontSize:11 } },
+                    genegeerd
+                      ? fmtDatumTijd(sn.genegeerd_tot) + (sn.genegeerd_reden ? ' · ' + sn.genegeerd_reden : '')
+                      : '-'
                   ),
-                  R('td', { style:{ padding:'8px 10px' } }, pill(c.gezondheid, kl))
+                  R('td', { style:{ padding:'6px 10px', whiteSpace:'nowrap' } },
+                    genegeerd
+                      ? knop(bezig ? '...' : '🔔 Alarm aan', C.green, function(){ sensorAlarmAan(sn); }, bezig)
+                      : R('span', null,
+                          knop(bezig ? '...' : '😴 4u', C.orange, function(){ sensorNegeren(sn, 4); }, bezig),
+                          knop('😴 24u', C.red, function(){ sensorNegeren(sn, 24); }, bezig)
+                        )
+                  )
                 );
               })
             )
@@ -19858,11 +20013,11 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
         ),
         // API tabel
         R('div', { style:{ background:'#fff', borderRadius:10, border:'1px solid #E0E7EB', overflow:'hidden', marginBottom:16 } },
-          R('div', { style:{ padding:'10px 14px', background:C.light, fontWeight:700, color:C.night, fontSize:13 } }, '🔌 Externe koppelingen (' + (data.api.length) + ')'),
+          R('div', { style:{ padding:'10px 14px', background:C.light, fontWeight:700, color:C.night, fontSize:13 } }, '🔌 Externe koppelingen'),
           R('table', { style:{ width:'100%', borderCollapse:'collapse', fontSize:12 } },
             R('thead', null,
               R('tr', { style:{ background:'#FAFCFD' } },
-                ['Naam','Laatste sync','Sync-status','Laatste test','Status'].map(function(h, i){
+                ['Naam','Laatste sync','Status'].map(function(h, i){
                   return R('th', { key:i, style:{ padding:'8px 10px', textAlign:'left', fontWeight:700, color:C.muted, fontSize:10, textTransform:'uppercase', letterSpacing:1 } }, h);
                 })
               )
@@ -19873,53 +20028,46 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
                 return R('tr', { key:a.koppeling_naam, style:{ borderTop:'1px solid #ECEFF1' } },
                   R('td', { style:{ padding:'8px 10px', fontWeight:600, color:C.night } }, a.titel || a.koppeling_naam),
                   R('td', { style:{ padding:'8px 10px', color:C.muted } }, fmtTijd(a.laatste_sync_op)),
-                  R('td', { style:{ padding:'8px 10px', color:C.muted, fontFamily:'monospace', fontSize:11 } }, a.laatste_sync_status || '-'),
-                  R('td', { style:{ padding:'8px 10px', color:C.muted } }, fmtTijd(a.laatste_test_op)),
                   R('td', { style:{ padding:'8px 10px' } }, pill(a.gezondheid, kl))
                 );
               })
             )
           )
         ),
-        // HTTP + Mail naast elkaar
-        R('div', { style:{ display:'flex', gap:16, marginBottom:16, flexWrap:'wrap' } },
-          R('div', { style:{ flex:1, minWidth:280, background:'#fff', borderRadius:10, border:'1px solid #E0E7EB', overflow:'hidden' } },
-            R('div', { style:{ padding:'10px 14px', background:C.light, fontWeight:700, color:C.night, fontSize:13 } }, '⚠ HTTP-resultaten 24u'),
-            data.http.length === 0
-              ? R('div', { style:{ padding:'14px', color:C.muted, fontSize:12 } }, 'Geen HTTP-calls in laatste 24u')
-              : R('div', { style:{ padding:'10px 14px' } },
-                  data.http.map(function(h, i) {
-                    var kl = h.categorie === 'ok' ? C.green : (h.categorie === 'client_fout' ? C.orange : C.red);
-                    return R('div', { key:i, style:{ display:'flex', justifyContent:'space-between', padding:'4px 0', fontSize:12 } },
-                      R('span', null, pill(h.categorie, kl)),
-                      R('span', { style:{ color:C.muted } }, h.aantal + 'x · laatste ' + fmtTijd(h.laatste))
-                    );
-                  })
-                )
-          ),
-          R('div', { style:{ flex:1, minWidth:280, background:'#fff', borderRadius:10, border:'1px solid #E0E7EB', overflow:'hidden' } },
-            R('div', { style:{ padding:'10px 14px', background:C.light, fontWeight:700, color:C.night, fontSize:13 } }, '📧 E-mails 7 dagen'),
-            data.email.length === 0
-              ? R('div', { style:{ padding:'14px', color:C.muted, fontSize:12 } }, 'Geen e-mails verstuurd in laatste 7 dagen')
-              : R('div', { style:{ padding:'10px 14px' } },
-                  data.email.map(function(e, i) {
-                    var ok = ['ok','sent','succes','succeeded','success','verstuurd','verzonden'].indexOf((e.status||'').toLowerCase()) >= 0;
-                    var kl = ok ? C.green : C.red;
-                    return R('div', { key:i, style:{ display:'flex', justifyContent:'space-between', padding:'4px 0', fontSize:12 } },
-                      R('span', null, pill(e.status, kl)),
-                      R('span', { style:{ color:C.muted } }, e.aantal + 'x · laatste ' + fmtTijd(e.laatste))
-                    );
-                  })
-                )
+        // Audit log
+        data.audit.length > 0 && R('div', { style:{ background:'#fff', borderRadius:10, border:'1px solid #E0E7EB', overflow:'hidden', marginBottom:16 } },
+          R('div', { style:{ padding:'10px 14px', background:C.light, fontWeight:700, color:C.night, fontSize:13 } }, '📜 Recente acties (' + data.audit.length + ')'),
+          R('table', { style:{ width:'100%', borderCollapse:'collapse', fontSize:11 } },
+            R('thead', null,
+              R('tr', { style:{ background:'#FAFCFD' } },
+                ['Tijd','Actie','Doel','Resultaat'].map(function(h, i){
+                  return R('th', { key:i, style:{ padding:'6px 10px', textAlign:'left', fontWeight:700, color:C.muted, fontSize:10, textTransform:'uppercase', letterSpacing:1 } }, h);
+                })
+              )
+            ),
+            R('tbody', null,
+              data.audit.map(function(a) {
+                return R('tr', { key:a.id, style:{ borderTop:'1px solid #ECEFF1' } },
+                  R('td', { style:{ padding:'6px 10px', color:C.muted, whiteSpace:'nowrap' } }, fmtTijd(a.uitgevoerd_op)),
+                  R('td', { style:{ padding:'6px 10px', color:C.night, fontFamily:'monospace', fontSize:10 } }, a.actie),
+                  R('td', { style:{ padding:'6px 10px', color:C.muted, fontSize:10 } }, a.doel || '-'),
+                  R('td', { style:{ padding:'6px 10px' } },
+                    a.resultaat === 'ok'
+                      ? pill('ok', C.green)
+                      : a.resultaat === 'fout' ? pill('fout', C.red) : pill(a.resultaat || '-', C.muted)
+                  )
+                );
+              })
+            )
           )
         ),
         // Recente fouten
         data.fouten.length > 0 && R('div', { style:{ background:'#fff', borderRadius:10, border:'1px solid #E0E7EB', overflow:'hidden' } },
-          R('div', { style:{ padding:'10px 14px', background:C.light, fontWeight:700, color:C.night, fontSize:13 } }, '📋 Recente fouten (' + data.fouten.length + ')'),
+          R('div', { style:{ padding:'10px 14px', background:C.light, fontWeight:700, color:C.night, fontSize:13 } }, '📋 Recente HTTP-fouten (' + data.fouten.length + ')'),
           R('table', { style:{ width:'100%', borderCollapse:'collapse', fontSize:11 } },
             R('thead', null,
               R('tr', { style:{ background:'#FAFCFD' } },
-                ['Tijdstip','Status','Bericht'].map(function(h, i){
+                ['Tijd','Status','Bericht'].map(function(h, i){
                   return R('th', { key:i, style:{ padding:'6px 10px', textAlign:'left', fontWeight:700, color:C.muted, fontSize:10, textTransform:'uppercase', letterSpacing:1 } }, h);
                 })
               )
@@ -19937,11 +20085,74 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
             )
           )
         ),
+        // Modal: rollback
+        modal === 'rollback' && R('div', { style:{ position:'fixed', inset:0, background:'rgba(0,30,50,.55)', zIndex:9999, display:'flex', alignItems:'flex-start', justifyContent:'center', overflowY:'auto', padding:'24px 12px' } },
+          R('div', { style:{ background:'#fff', borderRadius:12, padding:20, width:'min(720px, 100%)', boxShadow:'0 10px 40px rgba(0,0,0,.3)' } },
+            R('div', { style:{ fontWeight:800, fontSize:18, color:C.night, marginBottom:6 } }, '🔄 Rollback index.html'),
+            R('div', { style:{ fontSize:12, color:C.muted, marginBottom:14 } }, 'Kies een eerdere versie om naar terug te zetten. De huidige versie wordt automatisch als veiligheids-backup bewaard.'),
+            modalData && modalData.laden && R('div', { style:{ padding:20, textAlign:'center', color:C.muted } }, 'Backups laden...'),
+            modalData && modalData.fout && R('div', { style:{ background:'#FFEBEE', color:'#B71C1C', padding:8, borderRadius:6, marginBottom:10 } }, modalData.fout),
+            modalData && modalData.backups && modalData.backups.length === 0 && !modalData.laden && R('div', { style:{ padding:20, textAlign:'center', color:C.muted } }, 'Geen backups gevonden'),
+            modalData && modalData.backups && modalData.backups.length > 0 && R('div', { style:{ maxHeight:'50vh', overflowY:'auto', border:'1px solid #E0E7EB', borderRadius:8 } },
+              modalData.backups.map(function(b) {
+                return R('div', { key:b.name, style:{ padding:'10px 12px', borderBottom:'1px solid #ECEFF1', display:'flex', alignItems:'center', justifyContent:'space-between', gap:10 } },
+                  R('div', null,
+                    R('div', { style:{ fontWeight:600, fontSize:12, color:C.night, fontFamily:'monospace' } }, b.name),
+                    R('div', { style:{ fontSize:11, color:C.muted, marginTop:2 } },
+                      fmtDatumTijd(b.created_at) + ' · ' + (b.size ? Math.round(b.size/1024) + ' KB' : 'onbekend')
+                    )
+                  ),
+                  knop(actieBezig==='rollback' ? '...' : '↩ Herstel', C.red, function(){ rollbackUitvoeren(b.name); }, actieBezig==='rollback')
+                );
+              })
+            ),
+            R('div', { style:{ display:'flex', justifyContent:'flex-end', marginTop:14 } },
+              R('button', { onClick: function(){ setModal(null); }, style:{ background:'transparent', border:'1px solid #CFD8DC', color:C.muted, borderRadius:6, padding:'8px 16px', fontSize:13, fontWeight:600, cursor:'pointer' } }, 'Sluiten')
+            )
+          )
+        ),
+        // Modal: API-key
+        modal === 'apikey' && modalData && R('div', { style:{ position:'fixed', inset:0, background:'rgba(0,30,50,.55)', zIndex:9999, display:'flex', alignItems:'flex-start', justifyContent:'center', overflowY:'auto', padding:'24px 12px' } },
+          R('div', { style:{ background:'#fff', borderRadius:12, padding:20, width:'min(540px, 100%)', boxShadow:'0 10px 40px rgba(0,0,0,.3)' } },
+            R('div', { style:{ fontWeight:800, fontSize:18, color:C.night, marginBottom:6 } }, '🔐 API-key vervangen'),
+            R('div', { style:{ fontSize:12, color:C.muted, marginBottom:14 } }, 'Vervang een externe API-sleutel zonder via Supabase dashboard te gaan. Wijziging is direct actief.'),
+            R('label', { style:{ display:'block', fontSize:12, fontWeight:600, color:C.night, marginBottom:10 } },
+              'Welke koppeling',
+              R('select', {
+                value: modalData.vault_naam,
+                onChange: function(e){ setModalData(Object.assign({}, modalData, {vault_naam: e.target.value})); },
+                style:{ display:'block', width:'100%', padding:'8px 10px', border:'1px solid #CFD8DC', borderRadius:6, fontSize:13, marginTop:3 }
+              },
+                R('option', { value:'api_koppeling_recras' }, 'Recras (api_koppeling_recras)'),
+                R('option', { value:'api_koppeling_switchbot' }, 'SwitchBot (api_koppeling_switchbot)')
+              )
+            ),
+            R('label', { style:{ display:'block', fontSize:12, fontWeight:600, color:C.night, marginBottom:14 } },
+              'Nieuwe waarde (volledige token)',
+              R('textarea', {
+                value: modalData.nieuwe_waarde,
+                onChange: function(e){ setModalData(Object.assign({}, modalData, {nieuwe_waarde: e.target.value})); },
+                rows: 4,
+                placeholder: 'Plak hier de nieuwe API-key...',
+                style:{ display:'block', width:'100%', padding:'8px 10px', border:'1px solid #CFD8DC', borderRadius:6, fontSize:12, marginTop:3, fontFamily:'monospace' }
+              })
+            ),
+            R('div', { style:{ background:'#FFF8E1', color:'#E65100', padding:'8px 10px', borderRadius:6, fontSize:11, marginBottom:14 } },
+              '⚠ De oude key wordt direct vervangen. Test daarna door de bijbehorende cron met "▶ Run nu" te triggeren.'
+            ),
+            R('div', { style:{ display:'flex', justifyContent:'flex-end', gap:8 } },
+              R('button', { onClick: function(){ setModal(null); }, disabled: actieBezig==='apikey', style:{ background:'transparent', border:'1px solid #CFD8DC', color:C.muted, borderRadius:6, padding:'8px 16px', fontSize:13, fontWeight:600, cursor:'pointer' } }, 'Annuleer'),
+              R('button', { onClick: apiKeyOpslaan, disabled: actieBezig==='apikey', style:{ background:C.red, color:'#fff', border:'none', borderRadius:6, padding:'8px 20px', fontSize:13, fontWeight:700, cursor:'pointer', opacity: actieBezig==='apikey'?0.6:1 } }, actieBezig==='apikey' ? 'Bezig...' : 'Vervangen')
+            )
+          )
+        ),
+        // Uitleg
         R('div', { style:{ marginTop:14, padding:'10px 14px', background:'#F5F7F8', borderRadius:8, fontSize:11, color:C.muted, lineHeight:1.5 } },
-          R('strong', null, 'Wat zie ik hier? '), 'Cron-jobs zijn de geplande taken die automatisch boekingen ophalen, snapshots genereren en sensor-data ophalen. Een job die "verlaat" of "gefaald" is heeft aandacht nodig. ',
-          R('strong', null, 'Externe koppelingen'), ' = Recras + SwitchBot. ',
-          R('strong', null, 'HTTP-fouten'), ' tellen alle edge function-aanroepen die niet 200-OK retourneerden in 24u. ',
-          R('strong', null, 'E-mails'), ' geeft het aantal verstuurde mails per status van afgelopen 7 dagen.'
+          R('strong', null, 'Acties: '),
+          R('span', null, '"▶ Run nu" voert een cron-job direct uit (handig na fix). '),
+          R('span', null, '"😴 4u/24u" onderdrukt sensor-alarmen tijdelijk (bv. tijdens onderhoud). '),
+          R('span', null, '"🔄 Rollback" zet een eerdere index.html terug live (incl. veiligheids-backup). '),
+          R('span', null, '"🔐 API-key" vervangt externe sleutels. ')
         )
       );
     };
@@ -20402,5 +20613,5 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
 
 
 
-<div id="admin-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#1976D2;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.75;pointer-events:none">v2026-04-28-07:11 ✓ admin</div>
+<div id="admin-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#1976D2;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.75;pointer-events:none">v2026-04-28-08:25 ✓ admin</div>
 </body></html>
