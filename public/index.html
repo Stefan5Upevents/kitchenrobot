@@ -727,6 +727,7 @@ function Header({ sc, setSc, user, logout }) {
       ["stam:ki", "📱", "Kiosk Instellingen"],
       ["stam:dr", "📖", "Draaiboek-links"],
       ["staffel", "📊", "Opzet-staffel"],
+      ["gebruikers", "👤", "Gebruikers"],
       ["fin_inst", "💸", "Financiële instellingen"],
       ["haccp_inst", "🏥", "HACCP Bedrijfsgegevens"],
       ["sensoren", "🌡️", "Sensoren"],
@@ -737,6 +738,12 @@ function Header({ sc, setSc, user, logout }) {
   // Rol-filter: voor sous/financieel verberg bepaalde groepen
   if (typeof window._krFilterNavGroup === 'function') {
     navGroups = navGroups.filter(window._krFilterNavGroup);
+  }
+  // Filter ook individuele items (per-user tab-overrides)
+  if (typeof window._krFilterNavItem === 'function') {
+    navGroups = navGroups.map(function(g){
+      return Object.assign({}, g, { items: g.items.filter(window._krFilterNavItem) });
+    }).filter(function(g){ return g.items.length > 0; });
   }
   navGroups.forEach(function(g) {
     g.items.forEach(function(it) {
@@ -12821,7 +12828,7 @@ function SensorenScreen() {
   if (!user) {
     return /* @__PURE__ */ React.createElement(LoginScreen, { onLogin: handleLogin });
   }
-  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", minHeight: "100vh", background: "#F0F4F7" } }, /* @__PURE__ */ React.createElement(Header, { sc, setSc, user, logout: handleLogout }), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto", overflowX: "hidden" }, className: "mobile-padding" }, /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 1200, margin: "0 auto", padding: "28px 20px 60px" } }, sc === "home" && /* @__PURE__ */ React.createElement(HomeScreen, { setSc }), sc === "boekingen" && /* @__PURE__ */ React.createElement(BoekingenScreen, { setSc, setActieve }), sc === "financieel" && /* @__PURE__ */ React.createElement(FinancieelScreen, { setSc }), sc === "chef" && /* @__PURE__ */ React.createElement(ChefScreen, { setSc, setActieve }), sc === "buffet" && /* @__PURE__ */ React.createElement(BuffetScreen, { actieve, setActieve, setSc }), sc === "opzet" && /* @__PURE__ */ React.createElement(OpzetScreen, null), sc === "tijden" && /* @__PURE__ */ React.createElement(TijdenScreen, null), sc.startsWith("stam:") && (typeof window._krMagScherm !== "function" || window._krMagScherm(sc)) && /* @__PURE__ */ React.createElement(StamScreen, { initTab: sc.split(":")[1] || "pg" }), sc === "fin" && /* @__PURE__ */ React.createElement(FinancieelScreen, null), sc === "adviezen" && /* @__PURE__ */ React.createElement(AdviezenScreen, null), sc === "fin_inst" && /* @__PURE__ */ React.createElement(FinInstellingenScreen, null), sc === "sensoren" && /* @__PURE__ */ React.createElement(SensorenScreen, null), sc === "apikeys" && /* @__PURE__ */ React.createElement(ApiKoppelingenScreen, null), sc === "staffel" && window._OpzetStaffelScreen && /* @__PURE__ */ React.createElement(window._OpzetStaffelScreen, null), sc === "stam:fi" && /* @__PURE__ */ React.createElement(FinInstellingenScreen, null), sc === "allergenen" && /* @__PURE__ */ React.createElement(AllergenenScreen, null), sc === "inspiratie" && /* @__PURE__ */ React.createElement(InspiratieScreen, null), sc === "opzetlog" && /* @__PURE__ */ React.createElement(OpzetLogboekScreen, null), sc === "haccp" && /* @__PURE__ */ React.createElement(HACCPScreen, null), sc === "nvwa" && window._NVWAInspectieScreen && /* @__PURE__ */ React.createElement(window._NVWAInspectieScreen, null), sc === "fb" && window._FBAnalyseScreen && /* @__PURE__ */ React.createElement(window._FBAnalyseScreen, null), sc === "berichten" && window._BerichtenChefScreen && /* @__PURE__ */ React.createElement(window._BerichtenChefScreen, null), sc === "haccp_inst" && window._HACCPInstellingenScreen && /* @__PURE__ */ React.createElement(window._HACCPInstellingenScreen, null), sc === "bestelling" && /* @__PURE__ */ React.createElement(SligroBestellingScreen, null))));
+  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", minHeight: "100vh", background: "#F0F4F7" } }, /* @__PURE__ */ React.createElement(Header, { sc, setSc, user, logout: handleLogout }), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto", overflowX: "hidden" }, className: "mobile-padding" }, /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 1200, margin: "0 auto", padding: "28px 20px 60px" } }, sc === "home" && /* @__PURE__ */ React.createElement(HomeScreen, { setSc }), sc === "boekingen" && /* @__PURE__ */ React.createElement(BoekingenScreen, { setSc, setActieve }), sc === "financieel" && /* @__PURE__ */ React.createElement(FinancieelScreen, { setSc }), sc === "chef" && /* @__PURE__ */ React.createElement(ChefScreen, { setSc, setActieve }), sc === "buffet" && /* @__PURE__ */ React.createElement(BuffetScreen, { actieve, setActieve, setSc }), sc === "opzet" && /* @__PURE__ */ React.createElement(OpzetScreen, null), sc === "tijden" && /* @__PURE__ */ React.createElement(TijdenScreen, null), sc.startsWith("stam:") && (typeof window._krMagScherm !== "function" || window._krMagScherm(sc)) && /* @__PURE__ */ React.createElement(StamScreen, { initTab: sc.split(":")[1] || "pg" }), sc === "fin" && /* @__PURE__ */ React.createElement(FinancieelScreen, null), sc === "adviezen" && /* @__PURE__ */ React.createElement(AdviezenScreen, null), sc === "fin_inst" && /* @__PURE__ */ React.createElement(FinInstellingenScreen, null), sc === "sensoren" && /* @__PURE__ */ React.createElement(SensorenScreen, null), sc === "apikeys" && /* @__PURE__ */ React.createElement(ApiKoppelingenScreen, null), sc === "staffel" && window._OpzetStaffelScreen && /* @__PURE__ */ React.createElement(window._OpzetStaffelScreen, null), sc === "gebruikers" && window._GebruikersScreen && /* @__PURE__ */ React.createElement(window._GebruikersScreen, null), sc === "stam:fi" && /* @__PURE__ */ React.createElement(FinInstellingenScreen, null), sc === "allergenen" && /* @__PURE__ */ React.createElement(AllergenenScreen, null), sc === "inspiratie" && /* @__PURE__ */ React.createElement(InspiratieScreen, null), sc === "opzetlog" && /* @__PURE__ */ React.createElement(OpzetLogboekScreen, null), sc === "haccp" && /* @__PURE__ */ React.createElement(HACCPScreen, null), sc === "nvwa" && window._NVWAInspectieScreen && /* @__PURE__ */ React.createElement(window._NVWAInspectieScreen, null), sc === "fb" && window._FBAnalyseScreen && /* @__PURE__ */ React.createElement(window._FBAnalyseScreen, null), sc === "berichten" && window._BerichtenChefScreen && /* @__PURE__ */ React.createElement(window._BerichtenChefScreen, null), sc === "haccp_inst" && window._HACCPInstellingenScreen && /* @__PURE__ */ React.createElement(window._HACCPInstellingenScreen, null), sc === "bestelling" && /* @__PURE__ */ React.createElement(SligroBestellingScreen, null))));
 }
 function InspiratieScreen() {
   var _a, _b;
@@ -14252,6 +14259,13 @@ function ChefScreen({ setSc, setActieve }) {
   // Filter functie
   window._filterBoekingen = function(lijst){
     var o = window._filterOutlet || 'alle';
+    // Defensief: als gebruiker een vaste outlet heeft (sous_chef met west/weesp), forceer die
+    try {
+      if (window.kr && window.kr.profiel && window.kr.profiel.vasteOutlet) {
+        var vast = window.kr.profiel.vasteOutlet();
+        if (vast) o = vast;
+      }
+    } catch(e) {}
     var sd = parseIso(window._filterStartdatum);
     var ed = parseIso(window._filterEinddatum);
     if (ed) ed = new Date(ed.getTime() + 86399999);
@@ -19208,7 +19222,7 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
         .join(' ');
       if (rol) b.classList.add('kr-rol-' + rol);
 
-      // Sous: pin outlet
+      // Sous: pin outlet — alle drie de plekken: kr.outlet, _filterOutlet, localStorage
       var vast = window.kr.profiel.vasteOutlet();
       if (vast) {
         b.classList.add('kr-outlet-vast-' + vast);
@@ -19217,12 +19231,38 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
             try { window.kr.outlet.set(vast); } catch(e) {}
           }
         }
+        // BoekingenScreen + andere screens lezen uit window._filterOutlet en localStorage
+        try {
+          window._filterOutlet = vast;
+          localStorage.setItem('kr_f_outlet', vast);
+          // Trigger re-render
+          window.dispatchEvent(new CustomEvent('kr-filter-veranderd'));
+        } catch(e) {}
+      }
+      // Laad tab-overrides voor deze gebruiker
+      if (window._supa && window._profiel && window._profiel.id) {
+        window._supa.from('gebruiker_tab_overrides')
+          .select('zichtbare_tabs')
+          .eq('user_id', window._profiel.id)
+          .maybeSingle()
+          .then(function(res){
+            window._krTabOverrides = (res && res.data && Array.isArray(res.data.zichtbare_tabs))
+              ? res.data.zichtbare_tabs : null;
+            try { window.dispatchEvent(new CustomEvent('kr-profiel-geladen', { detail: window._profiel })); } catch(e) {}
+          })
+          .catch(function(){ window._krTabOverrides = null; });
       }
     }
 
-    // Filter voor nav-groepen op basis van rol
+    // Filter voor nav-groepen op basis van rol + tab-overrides
     window._krFilterNavGroup = function(grp) {
       if (!window._profiel) return true; // geen profiel → toon alles (veilig)
+      // Als per-user override gezet is, gebruik die voor de bepaling
+      if (Array.isArray(window._krTabOverrides) && window._krTabOverrides.length > 0) {
+        // Toon groep als minstens 1 item zichtbaar is volgens override
+        return grp.items.some(function(it){ return window._krTabOverrides.indexOf(it[0]) >= 0; });
+      }
+      // Anders: rol-default
       var rol = window._profiel.rol;
       if (!rol || rol === 'beheerder') return true;
       if (rol === 'sous_chef')   return grp.label !== 'Beheer';
@@ -19230,9 +19270,33 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
       return true;
     };
 
+    // Filter voor individuele items (gebruikt door Header bij item-rendering)
+    window._krFilterNavItem = function(it) {
+      if (!it) return true;
+      if (!window._profiel) return true;
+      // Override actief? Alleen items in de lijst tonen.
+      if (Array.isArray(window._krTabOverrides) && window._krTabOverrides.length > 0) {
+        return window._krTabOverrides.indexOf(it[0]) >= 0;
+      }
+      // Geen override: vaders-filter (groep) + rol-default volstaan
+      var rol = window._profiel.rol;
+      if (!rol || rol === 'beheerder') return true;
+      // Sous mag standaard alle items in Dagelijks + Analyse zien
+      // Financieel mag een subset zien (lijst hieronder)
+      if (rol === 'financieel') {
+        var fin_ok = ['boekingen','adviezen','allergenen','fb','bestelling','nvwa','haccp','opzetlog'];
+        return fin_ok.indexOf(it[0]) >= 0;
+      }
+      return true;
+    };
+
     // Mag-deze-screen-bekijken check (voor routing-bescherming)
     window._krMagScherm = function(sc) {
       if (!sc) return true;
+      // Override actief? Alleen toegestaan in lijst
+      if (Array.isArray(window._krTabOverrides) && window._krTabOverrides.length > 0) {
+        return window._krTabOverrides.indexOf(sc) >= 0;
+      }
       var rol = window._profiel && window._profiel.rol;
       if (!rol || rol === 'beheerder') return true;
       if (rol === 'sous_chef') {
@@ -19261,6 +19325,367 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
 })();
 </script>
 <!-- KR-ROL-END -->
+<!-- KR-GEBRUIKERS-START v1: gebruikersbeheer scherm. 27 apr 2026 -->
+<script id="kr-gebruikers-js">
+(function() {
+  function init() {
+    if (!window.React || !window._supa) { setTimeout(init, 100); return; }
+    var R = window.React.createElement;
+    var useState = window.React.useState;
+    var useEffect = window.React.useEffect;
+
+    // Alle nav-tab IDs en labels — gespiegeld aan Header navGroups
+    var TAB_DEFS = [
+      { groep: 'Dagelijks', tabs: [
+        ['adviezen','📥 Adviezen-inbox'],['boekingen','📋 Boekingen'],
+        ['buffet','🍽 Buffetformulieren'],['opzet','📊 Opzetoverzicht'],
+        ['tijden','⏱ Tijden'],['chef','👨‍🍳 Chef Review'],
+        ['inspiratie','✨ Inspiratie'],['berichten','📨 Kiosk berichten'],
+      ]},
+      { groep: 'Analyse', tabs: [
+        ['allergenen','🏷 Allergenen'],['haccp','🌡 HACCP'],
+        ['nvwa','📋 NVWA Inspectie'],['fb','📈 F&B Analyse'],
+        ['bestelling','🛒 Sligro Bestelling'],['opzetlog','📜 Opzet Logboek'],
+      ]},
+      { groep: 'Beheer', tabs: [
+        ['stam:pg','🏗 Productgroepen'],['stam:gr','🍴 Gerechten'],
+        ['stam:mn','📑 Menus'],['stam:sl','🛒 Sligro Import'],
+        ['stam:ti','⏱ Buffet/Tijden'],['stam:al','🏷 Allergenen (stam)'],
+        ['stam:ki','📱 Kiosk Instellingen'],['stam:dr','📖 Draaiboek-links'],
+        ['staffel','📊 Opzet-staffel'],['fin_inst','💸 Financiële inst.'],
+        ['haccp_inst','🏥 HACCP Bedrijfsgegevens'],['sensoren','🌡️ Sensoren'],
+        ['apikeys','🔐 API-koppelingen'],
+      ]},
+    ];
+
+    function defaultTabsVoorRol(rol) {
+      var alle = [];
+      TAB_DEFS.forEach(function(g){ g.tabs.forEach(function(t){ alle.push(t[0]); }); });
+      if (!rol || rol === 'beheerder') return alle;
+      if (rol === 'sous_chef') {
+        return alle.filter(function(id){
+          return id.indexOf('stam:') !== 0 && id !== 'staffel' && id !== 'fin_inst'
+            && id !== 'haccp_inst' && id !== 'sensoren' && id !== 'apikeys';
+        });
+      }
+      if (rol === 'financieel') {
+        return ['boekingen','adviezen','allergenen','fb','bestelling','nvwa','haccp','opzetlog'];
+      }
+      return alle;
+    }
+
+    window._GebruikersScreen = function() {
+      var C = window._C || { night:'#234756', aqua:'#3FB8C4', red:'#E8202B', green:'#2E7D32', muted:'#78909C', orange:'#FF9800', light:'#F5F8FA' };
+
+      var s_laden = useState(true); var laden = s_laden[0], setLaden = s_laden[1];
+      var s_users = useState([]); var users = s_users[0], setUsers = s_users[1];
+      var s_modal = useState(null); var modal = s_modal[0], setModal = s_modal[1];
+      var s_form = useState(null); var form = s_form[0], setForm = s_form[1];
+      var s_bezig = useState(false); var bezig = s_bezig[0], setBezig = s_bezig[1];
+      var s_meld = useState(''); var meld = s_meld[0], setMeld = s_meld[1];
+      var s_fout = useState(''); var fout = s_fout[0], setFout = s_fout[1];
+
+      function laadLijst() {
+        setLaden(true);
+        window._supa.auth.getSession().then(function(sess){
+          var jwt = sess && sess.data && sess.data.session && sess.data.session.access_token;
+          fetch(window._supa.functionsUrl + '/beheer-gebruiker', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + jwt,
+              'apikey': window._supa.supabaseKey,
+            },
+            body: JSON.stringify({ actie: 'lijst' }),
+          }).then(function(r){ return r.json(); }).then(function(res){
+            setLaden(false);
+            if (res && res.error) { setFout(res.error); return; }
+            setUsers(res.gebruikers || []);
+          }).catch(function(e){ setLaden(false); setFout(String(e)); });
+        });
+      }
+
+      useEffect(laadLijst, []);
+
+      function doActie(actie, body, klaarBoodschap) {
+        setBezig(true); setFout('');
+        return window._supa.auth.getSession().then(function(sess){
+          var jwt = sess && sess.data && sess.data.session && sess.data.session.access_token;
+          return fetch(window._supa.functionsUrl + '/beheer-gebruiker', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + jwt,
+              'apikey': window._supa.supabaseKey,
+            },
+            body: JSON.stringify(Object.assign({ actie: actie }, body)),
+          }).then(function(r){ return r.json(); }).then(function(res){
+            setBezig(false);
+            if (res && res.error) { setFout(res.error); return null; }
+            setMeld(klaarBoodschap || '✓ Klaar');
+            setTimeout(function(){ setMeld(''); }, 3000);
+            return res;
+          });
+        }).catch(function(e){ setBezig(false); setFout(String(e)); });
+      }
+
+      function openNieuw() {
+        var def = defaultTabsVoorRol('sous_chef');
+        setForm({
+          id: null,
+          email: '', wachtwoord: '', naam: '',
+          rol: 'sous_chef', outlet_code: 'weesp',
+          actief: true,
+          zichtbare_tabs: def.slice(),
+          gebruik_default: true,
+        });
+        setModal('nieuw');
+      }
+
+      function openBewerk(u) {
+        var heeftOverride = Array.isArray(u.zichtbare_tabs) && u.zichtbare_tabs.length > 0;
+        setForm({
+          id: u.id,
+          email: u.email || '',
+          nieuw_email: '',
+          wachtwoord: '',
+          naam: u.naam || '',
+          rol: u.rol || 'sous_chef',
+          outlet_code: u.outlet_code || null,
+          actief: u.actief !== false,
+          zichtbare_tabs: heeftOverride ? u.zichtbare_tabs.slice() : defaultTabsVoorRol(u.rol),
+          gebruik_default: !heeftOverride,
+        });
+        setModal('bewerk');
+      }
+
+      function toggleTab(tabId) {
+        setForm(function(f){
+          var lijst = f.zichtbare_tabs.slice();
+          var idx = lijst.indexOf(tabId);
+          if (idx >= 0) lijst.splice(idx, 1); else lijst.push(tabId);
+          return Object.assign({}, f, { zichtbare_tabs: lijst, gebruik_default: false });
+        });
+      }
+
+      function resetTabsNaarRol() {
+        setForm(function(f){
+          return Object.assign({}, f, { zichtbare_tabs: defaultTabsVoorRol(f.rol), gebruik_default: true });
+        });
+      }
+
+      function opslaan() {
+        if (!form) return;
+        var tabs = form.gebruik_default ? [] : form.zichtbare_tabs; // [] = geen override = volg rol
+        if (modal === 'nieuw') {
+          if (!form.email || !form.wachtwoord || !form.naam) {
+            setFout('Email, wachtwoord en naam zijn verplicht'); return;
+          }
+          doActie('maak', {
+            email: form.email, wachtwoord: form.wachtwoord, naam: form.naam,
+            rol: form.rol, outlet_code: form.outlet_code,
+            actief: form.actief, zichtbare_tabs: tabs,
+          }, '✓ Gebruiker aangemaakt').then(function(res){
+            if (res && res.ok) { setModal(null); laadLijst(); }
+          });
+        } else if (modal === 'bewerk') {
+          var body = {
+            id: form.id, naam: form.naam, rol: form.rol,
+            outlet_code: form.outlet_code, actief: form.actief,
+            zichtbare_tabs: tabs,
+          };
+          if (form.wachtwoord) body.nieuw_wachtwoord = form.wachtwoord;
+          if (form.nieuw_email && form.nieuw_email !== form.email) body.nieuw_email = form.nieuw_email;
+          doActie('bewerk', body, '✓ Gebruiker bijgewerkt').then(function(res){
+            if (res && res.ok) { setModal(null); laadLijst(); }
+          });
+        }
+      }
+
+      function verwijder(u) {
+        if (!confirm('Verwijder gebruiker "' + u.naam + '" (' + u.email + ')? Dit kan niet ongedaan gemaakt worden.')) return;
+        doActie('verwijder', { id: u.id }, '✓ Gebruiker verwijderd').then(function(res){
+          if (res && res.ok) laadLijst();
+        });
+      }
+
+      var rolKleur = { beheerder: C.red, sous_chef: C.aqua, financieel: C.orange };
+      var outletKleur = { west: '#1976D2', weesp: '#43A047', beide: '#7B1FA2' };
+
+      return R('div', null,
+        // Header
+        R('div', { style:{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:16, flexWrap:'wrap', gap:12 } },
+          R('div', null,
+            R('div', { style:{ fontWeight:900, fontSize:22, color:C.night } }, 'Gebruikers'),
+            R('div', { style:{ fontSize:12, color:C.muted, marginTop:4 } },
+              'Beheer wie toegang heeft tot KitchenRobot, welke locatie en welke tabs zichtbaar zijn.'
+            )
+          ),
+          R('div', { style:{ display:'flex', alignItems:'center', gap:10 } },
+            meld && R('span', { style:{ background:'#E8F5E9', color:C.green, padding:'4px 10px', borderRadius:8, fontSize:11, fontWeight:700 } }, meld),
+            R('button', {
+              onClick: openNieuw,
+              style:{ background:C.red, color:'#fff', border:'none', borderRadius:8, padding:'8px 16px', fontSize:13, fontWeight:700, cursor:'pointer' }
+            }, '+ Nieuwe gebruiker')
+          )
+        ),
+        fout && R('div', { style:{ background:'#FFEBEE', color:'#B71C1C', padding:'8px 12px', borderRadius:6, marginBottom:12, fontSize:12 } }, fout),
+        laden && R('div', { style:{ padding:30, textAlign:'center', color:C.muted } }, 'Laden...'),
+        !laden && users.length === 0 && R('div', { style:{ padding:30, textAlign:'center', color:C.muted } }, 'Geen gebruikers gevonden'),
+        !laden && users.length > 0 && R('div', { style:{ background:'#fff', borderRadius:10, overflow:'hidden', border:'1px solid #E0E7EB' } },
+          R('table', { style:{ width:'100%', borderCollapse:'collapse', fontSize:13 } },
+            R('thead', null,
+              R('tr', { style:{ background:C.light } },
+                R('th', { style:{ padding:'10px 12px', textAlign:'left', fontWeight:700, color:C.night, fontSize:11, textTransform:'uppercase', letterSpacing:1 } }, 'Naam'),
+                R('th', { style:{ padding:'10px 12px', textAlign:'left', fontWeight:700, color:C.night, fontSize:11, textTransform:'uppercase', letterSpacing:1 } }, 'E-mail'),
+                R('th', { style:{ padding:'10px 12px', textAlign:'left', fontWeight:700, color:C.night, fontSize:11, textTransform:'uppercase', letterSpacing:1 } }, 'Rol'),
+                R('th', { style:{ padding:'10px 12px', textAlign:'left', fontWeight:700, color:C.night, fontSize:11, textTransform:'uppercase', letterSpacing:1 } }, 'Locatie'),
+                R('th', { style:{ padding:'10px 12px', textAlign:'left', fontWeight:700, color:C.night, fontSize:11, textTransform:'uppercase', letterSpacing:1 } }, 'Tabs'),
+                R('th', { style:{ padding:'10px 12px', textAlign:'left', fontWeight:700, color:C.night, fontSize:11, textTransform:'uppercase', letterSpacing:1 } }, 'Status'),
+                R('th', { style:{ padding:'10px 12px' } })
+              )
+            ),
+            R('tbody', null,
+              users.map(function(u) {
+                return R('tr', { key:u.id, style:{ borderTop:'1px solid #E0E7EB', opacity: u.actief ? 1 : 0.55 } },
+                  R('td', { style:{ padding:'10px 12px', fontWeight:600, color:C.night } }, u.naam || '—'),
+                  R('td', { style:{ padding:'10px 12px', color:C.muted } }, u.email || '—'),
+                  R('td', { style:{ padding:'10px 12px' } },
+                    R('span', { style:{ background: (rolKleur[u.rol]||C.muted)+'22', color: rolKleur[u.rol]||C.muted, padding:'2px 8px', borderRadius:8, fontSize:11, fontWeight:700 } }, u.rol)
+                  ),
+                  R('td', { style:{ padding:'10px 12px' } },
+                    u.outlet_code ? R('span', { style:{ background: (outletKleur[u.outlet_code]||C.muted)+'22', color: outletKleur[u.outlet_code]||C.muted, padding:'2px 8px', borderRadius:8, fontSize:11, fontWeight:700 } }, u.outlet_code) : R('span', { style:{ color:C.muted } }, '—')
+                  ),
+                  R('td', { style:{ padding:'10px 12px', fontSize:11, color:C.muted } },
+                    (u.zichtbare_tabs && u.zichtbare_tabs.length > 0)
+                      ? R('span', { title: u.zichtbare_tabs.join(', ') }, u.zichtbare_tabs.length + ' aangepast')
+                      : R('span', { style:{ fontStyle:'italic' } }, 'standaard rol')
+                  ),
+                  R('td', { style:{ padding:'10px 12px' } },
+                    R('span', { style:{ background: u.actief ? '#E8F5E9' : '#FFEBEE', color: u.actief ? C.green : '#B71C1C', padding:'2px 8px', borderRadius:8, fontSize:11, fontWeight:700 } }, u.actief ? 'actief' : 'inactief')
+                  ),
+                  R('td', { style:{ padding:'10px 12px', textAlign:'right', whiteSpace:'nowrap' } },
+                    R('button', { onClick:function(){ openBewerk(u); }, style:{ background:C.aqua, color:'#fff', border:'none', borderRadius:6, padding:'5px 10px', fontSize:11, fontWeight:700, cursor:'pointer', marginRight:6 } }, 'Bewerken'),
+                    R('button', { onClick:function(){ verwijder(u); }, style:{ background:'transparent', color:'#B71C1C', border:'1px solid #B71C1C', borderRadius:6, padding:'4px 10px', fontSize:11, fontWeight:700, cursor:'pointer' } }, 'Verwijder')
+                  )
+                );
+              })
+            )
+          )
+        ),
+        // Modal
+        modal && form && R('div', { style:{ position:'fixed', inset:0, background:'rgba(0,30,50,.55)', zIndex:9999, display:'flex', alignItems:'flex-start', justifyContent:'center', overflowY:'auto', padding:'24px 12px' } },
+          R('div', { style:{ background:'#fff', borderRadius:12, padding:20, width:'min(640px, 100%)', boxShadow:'0 10px 40px rgba(0,0,0,.3)' } },
+            R('div', { style:{ fontWeight:800, fontSize:18, color:C.night, marginBottom:14 } }, modal === 'nieuw' ? 'Nieuwe gebruiker' : 'Gebruiker bewerken'),
+            R('div', { style:{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:12 } },
+              R('label', { style:{ fontSize:12, color:C.night, fontWeight:600 } },
+                'Naam',
+                R('input', { type:'text', value: form.naam, onChange: function(e){ setForm(Object.assign({}, form, { naam: e.target.value })); }, style:{ display:'block', width:'100%', padding:'8px 10px', border:'1px solid #CFD8DC', borderRadius:6, fontSize:13, marginTop:3 } })
+              ),
+              R('label', { style:{ fontSize:12, color:C.night, fontWeight:600 } },
+                modal === 'nieuw' ? 'E-mail' : 'Huidig e-mail',
+                R('input', { type:'email', value: form.email, disabled: modal === 'bewerk', onChange: function(e){ setForm(Object.assign({}, form, { email: e.target.value })); }, style:{ display:'block', width:'100%', padding:'8px 10px', border:'1px solid #CFD8DC', borderRadius:6, fontSize:13, marginTop:3, background: modal==='bewerk'?'#F5F5F5':'#fff' } })
+              )
+            ),
+            modal === 'bewerk' && R('div', { style:{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:12 } },
+              R('label', { style:{ fontSize:12, color:C.night, fontWeight:600 } },
+                'Nieuw e-mail (optioneel)',
+                R('input', { type:'email', value: form.nieuw_email || '', placeholder:'leeg = niet wijzigen', onChange: function(e){ setForm(Object.assign({}, form, { nieuw_email: e.target.value })); }, style:{ display:'block', width:'100%', padding:'8px 10px', border:'1px solid #CFD8DC', borderRadius:6, fontSize:13, marginTop:3 } })
+              ),
+              R('label', { style:{ fontSize:12, color:C.night, fontWeight:600 } },
+                'Nieuw wachtwoord (optioneel)',
+                R('input', { type:'text', value: form.wachtwoord, placeholder:'leeg = niet wijzigen', onChange: function(e){ setForm(Object.assign({}, form, { wachtwoord: e.target.value })); }, style:{ display:'block', width:'100%', padding:'8px 10px', border:'1px solid #CFD8DC', borderRadius:6, fontSize:13, marginTop:3 } })
+              )
+            ),
+            modal === 'nieuw' && R('label', { style:{ display:'block', fontSize:12, color:C.night, fontWeight:600, marginBottom:12 } },
+              'Wachtwoord',
+              R('input', { type:'text', value: form.wachtwoord, onChange: function(e){ setForm(Object.assign({}, form, { wachtwoord: e.target.value })); }, style:{ display:'block', width:'100%', padding:'8px 10px', border:'1px solid #CFD8DC', borderRadius:6, fontSize:13, marginTop:3 } })
+            ),
+            R('div', { style:{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:12, marginBottom:14 } },
+              R('label', { style:{ fontSize:12, color:C.night, fontWeight:600 } },
+                'Rol',
+                R('select', {
+                  value: form.rol,
+                  onChange: function(e){
+                    var nieuweRol = e.target.value;
+                    setForm(function(f){
+                      var nieuw = Object.assign({}, f, { rol: nieuweRol });
+                      if (f.gebruik_default) nieuw.zichtbare_tabs = defaultTabsVoorRol(nieuweRol);
+                      return nieuw;
+                    });
+                  },
+                  style:{ display:'block', width:'100%', padding:'8px 10px', border:'1px solid #CFD8DC', borderRadius:6, fontSize:13, marginTop:3 }
+                },
+                  R('option', { value:'beheerder' }, 'Beheerder'),
+                  R('option', { value:'sous_chef' }, 'Sous chef'),
+                  R('option', { value:'financieel' }, 'Financieel')
+                )
+              ),
+              R('label', { style:{ fontSize:12, color:C.night, fontWeight:600 } },
+                'Locatie',
+                R('select', {
+                  value: form.outlet_code || '',
+                  onChange: function(e){ setForm(Object.assign({}, form, { outlet_code: e.target.value || null })); },
+                  style:{ display:'block', width:'100%', padding:'8px 10px', border:'1px solid #CFD8DC', borderRadius:6, fontSize:13, marginTop:3 }
+                },
+                  R('option', { value:'beide' }, 'Beide locaties'),
+                  R('option', { value:'west' }, 'Alleen West'),
+                  R('option', { value:'weesp' }, 'Alleen Weesp')
+                )
+              ),
+              R('label', { style:{ fontSize:12, color:C.night, fontWeight:600 } },
+                'Status',
+                R('select', {
+                  value: form.actief ? 'actief' : 'inactief',
+                  onChange: function(e){ setForm(Object.assign({}, form, { actief: e.target.value === 'actief' })); },
+                  style:{ display:'block', width:'100%', padding:'8px 10px', border:'1px solid #CFD8DC', borderRadius:6, fontSize:13, marginTop:3 }
+                },
+                  R('option', { value:'actief' }, 'Actief'),
+                  R('option', { value:'inactief' }, 'Inactief')
+                )
+              )
+            ),
+            // Tabs sectie
+            R('div', { style:{ borderTop:'1px solid #E0E7EB', paddingTop:14, marginBottom:14 } },
+              R('div', { style:{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 } },
+                R('div', { style:{ fontSize:13, fontWeight:700, color:C.night } }, 'Zichtbare tabs'),
+                R('button', { onClick: resetTabsNaarRol, style:{ background:'transparent', border:'1px solid #CFD8DC', borderRadius:6, padding:'4px 10px', fontSize:11, color:C.muted, cursor:'pointer', fontWeight:600 } }, '↻ Standaard voor rol')
+              ),
+              form.gebruik_default && R('div', { style:{ fontSize:11, color:C.green, fontWeight:600, marginBottom:8 } }, '✓ Standaard tabs voor rol "' + form.rol + '"'),
+              !form.gebruik_default && R('div', { style:{ fontSize:11, color:C.orange, fontWeight:600, marginBottom:8 } }, '⚙ Aangepaste selectie (' + form.zichtbare_tabs.length + ' tabs)'),
+              TAB_DEFS.map(function(grp) {
+                return R('div', { key:grp.groep, style:{ marginBottom:10 } },
+                  R('div', { style:{ fontSize:10, fontWeight:800, color:C.aqua, textTransform:'uppercase', letterSpacing:1.5, marginBottom:4 } }, grp.groep),
+                  R('div', { style:{ display:'grid', gridTemplateColumns:'repeat(2, 1fr)', gap:4 } },
+                    grp.tabs.map(function(t) {
+                      var aan = form.zichtbare_tabs.indexOf(t[0]) >= 0;
+                      return R('label', { key:t[0], style:{ display:'flex', alignItems:'center', gap:6, padding:'4px 8px', borderRadius:5, background: aan ? '#E8F5E9' : '#F5F5F5', fontSize:11, color:C.night, cursor:'pointer' } },
+                        R('input', { type:'checkbox', checked: aan, onChange: function(){ toggleTab(t[0]); } }),
+                        t[1]
+                      );
+                    })
+                  )
+                );
+              })
+            ),
+            R('div', { style:{ display:'flex', justifyContent:'flex-end', gap:8 } },
+              R('button', { onClick: function(){ setModal(null); setFout(''); }, disabled: bezig, style:{ background:'transparent', border:'1px solid #CFD8DC', color:C.muted, borderRadius:6, padding:'8px 16px', fontSize:13, fontWeight:600, cursor: bezig ? 'not-allowed':'pointer' } }, 'Annuleer'),
+              R('button', { onClick: opslaan, disabled: bezig, style:{ background:C.red, color:'#fff', border:'none', borderRadius:6, padding:'8px 20px', fontSize:13, fontWeight:700, cursor: bezig ? 'not-allowed':'pointer', opacity: bezig ? 0.6 : 1 } }, bezig ? 'Bezig...' : 'Opslaan')
+            )
+          )
+        )
+      );
+    };
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>
+<!-- KR-GEBRUIKERS-END -->
+
 
 
 
@@ -19565,5 +19990,5 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
 
 
 
-<div id="admin-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#1976D2;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.75;pointer-events:none">v2026-04-27-22:54 ✓ admin</div>
+<div id="admin-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#1976D2;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.75;pointer-events:none">v2026-04-28-06:48 ✓ admin</div>
 </body></html>
