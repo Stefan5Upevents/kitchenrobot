@@ -691,6 +691,38 @@ function LoginScreen({ onLogin }) {
   var [p, setP] = useState("");
   var [err, setErr] = useState("");
   var [splash, setSplash] = useState(false);
+  var [resetModal, setResetModal] = useState(false);
+  var [resetEmail, setResetEmail] = useState("");
+  var [resetMeld, setResetMeld] = useState("");
+  var [resetBezig, setResetBezig] = useState(false);
+  function vraagReset() {
+    if (!resetEmail || resetEmail.indexOf("@") < 0) {
+      setResetMeld("Vul een geldig e-mailadres in");
+      return;
+    }
+    setResetBezig(true);
+    setResetMeld("");
+    var redirectTo = window.location.origin + "/wachtwoord-reset.html";
+    if (window._supa && window._supa.auth && window._supa.auth.resetPasswordForEmail) {
+      window._supa.auth.resetPasswordForEmail(resetEmail, { redirectTo: redirectTo })
+        .then(function(res) {
+          setResetBezig(false);
+          if (res && res.error) {
+            setResetMeld("Fout: " + res.error.message);
+          } else {
+            setResetMeld("✓ Check je inbox voor de reset-link");
+            setTimeout(function(){ setResetModal(false); setResetMeld(""); setResetEmail(""); }, 3500);
+          }
+        })
+        .catch(function(e) {
+          setResetBezig(false);
+          setResetMeld("Fout: " + (e && e.message ? e.message : String(e)));
+        });
+    } else {
+      setResetBezig(false);
+      setResetMeld("Reset-functie niet beschikbaar (Supabase niet geladen)");
+    }
+  }
   function doLogin(rol, naam) {
     setSplash(true);
     setTimeout(function() {
@@ -713,7 +745,27 @@ function LoginScreen({ onLogin }) {
     setP(e.target.value);
   }, onKeyDown: function(e) {
     if (e.key === "Enter") go();
-  } })), err && /* @__PURE__ */ React.createElement("div", { style: { color: C.hot, fontSize: 11, fontWeight: 700, marginBottom: 10 } }, "\u26A0 ", err), /* @__PURE__ */ React.createElement("button", { style: { ...btnP, width: "100%", justifyContent: "center", padding: "11px 16px", fontSize: 13 }, onClick: go }, "Inloggen \u2192"), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 12, fontSize: 10, color: C.muted } }, "Inloggen met je e-mailadres (bijv. stefan@upevents.nl)")))));
+  } })), err && /* @__PURE__ */ React.createElement("div", { style: { color: C.hot, fontSize: 11, fontWeight: 700, marginBottom: 10 } }, "\u26A0 ", err), /* @__PURE__ */ React.createElement("button", { style: { ...btnP, width: "100%", justifyContent: "center", padding: "11px 16px", fontSize: 13 }, onClick: go }, "Inloggen \u2192"), /* @__PURE__ */ React.createElement("div", { style: { marginTop: 12, fontSize: 10, color: C.muted, display: "flex", justifyContent: "space-between", alignItems: "center" } },
+        /* @__PURE__ */ React.createElement("span", null, "Inloggen met je e-mailadres"),
+        /* @__PURE__ */ React.createElement("a", { href: "#", onClick: function(e){ e.preventDefault(); setResetModal(true); setResetEmail(u); }, style: { color: C.aqua, fontWeight: 700, textDecoration: "none", cursor: "pointer" } }, "Wachtwoord vergeten?")
+      ),
+      resetModal && /* @__PURE__ */ React.createElement("div", { style: { position: "fixed", inset: 0, background: "rgba(0,30,50,.55)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: 12 } },
+        /* @__PURE__ */ React.createElement("div", { style: { background: "#fff", borderRadius: 12, padding: 24, width: "min(420px, 100%)", boxShadow: "0 10px 40px rgba(0,0,0,.3)" } },
+          /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 800, fontSize: 17, color: "#234756", marginBottom: 8 } }, "Wachtwoord vergeten"),
+          /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: "#78909C", marginBottom: 14, lineHeight: 1.5 } }, "Vul je e-mail in. Je ontvangt een mail met een link om een nieuw wachtwoord in te stellen."),
+          /* @__PURE__ */ React.createElement("input", {
+            type: "email", value: resetEmail,
+            onChange: function(e){ setResetEmail(e.target.value); },
+            placeholder: "jouw@email.nl",
+            style: { display: "block", width: "100%", padding: "10px 12px", border: "1px solid #CFD8DC", borderRadius: 6, fontSize: 13, marginBottom: 14, boxSizing: "border-box" }
+          }),
+          resetMeld && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, color: resetMeld.indexOf("✓") === 0 ? "#2E7D32" : "#C62828", marginBottom: 12, fontWeight: 600 } }, resetMeld),
+          /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "flex-end", gap: 8 } },
+            /* @__PURE__ */ React.createElement("button", { onClick: function(){ setResetModal(false); setResetMeld(""); }, disabled: resetBezig, style: { background: "transparent", border: "1px solid #CFD8DC", color: "#78909C", borderRadius: 6, padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer" } }, "Annuleer"),
+            /* @__PURE__ */ React.createElement("button", { onClick: vraagReset, disabled: resetBezig, style: { background: "#E8202B", color: "#fff", border: "none", borderRadius: 6, padding: "8px 20px", fontSize: 13, fontWeight: 700, cursor: "pointer", opacity: resetBezig ? 0.6 : 1 } }, resetBezig ? "Versturen..." : "Stuur reset-link")
+          )
+        )
+      )))));
 }
 function Header({ sc, setSc, user, logout }) {
   var [menuOpen, setMenuOpen] = useState(false);
@@ -20694,5 +20746,5 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
 
 
 
-<div id="admin-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#1976D2;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.75;pointer-events:none">v2026-04-28-08:40 ✓ admin</div>
+<div id="admin-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#1976D2;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.75;pointer-events:none">v2026-04-28-08:55 ✓ admin</div>
 </body></html>
