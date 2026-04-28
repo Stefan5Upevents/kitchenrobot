@@ -257,6 +257,33 @@ table.kr-table tbody tr.kr-leeg td, .kr-wrap table tbody tr.kr-leeg td {
 }
 </style>
 
+<!-- KR-FB-CONTRAST-FIX v1: forceer wit op donker voor F&B kopteksten. 28 apr 2026 -->
+<style id="kr-fb-contrast-css">
+.kr-fb-screen table thead tr,
+.kr-fb-screen table thead {
+  background: #002D41 !important;
+}
+.kr-fb-screen table thead th {
+  color: #FFFFFF !important;
+  font-weight: 700 !important;
+  background: #002D41 !important;
+  letter-spacing: 0.02em;
+  border-bottom: 2px solid #00897B !important;
+}
+/* Body-rijen leesbaarheid: zorg dat tekst contrast heeft */
+.kr-fb-screen table tbody td {
+  color: #234756;
+}
+.kr-fb-screen table tbody tr:nth-child(odd) td {
+  background: #FAFCFD;
+}
+/* Sectie-koppen (h2/h3 of div met groot fontWeight) */
+.kr-fb-screen h2,
+.kr-fb-screen h3 {
+  color: #002D41 !important;
+}
+</style>
+
 </head><body><div id='root'></div>
 <script src='https://unpkg.com/react@18/umd/react.production.min.js'></script>
 <script src='https://unpkg.com/react-dom@18/umd/react-dom.production.min.js'></script>
@@ -16848,7 +16875,7 @@ window._FBAnalyseScreen = function FBAnalyseScreen() {
   // ================================
   // RENDER
   // ================================
-  return e('div',{style:{fontFamily:'system-ui,-apple-system,sans-serif',color:NIGHT,maxWidth:900}},
+  return e('div',{className:'kr-fb-screen',style:{fontFamily:'system-ui,-apple-system,sans-serif',color:NIGHT,maxWidth:900}},
 
     // Header
     e('div',{style:{display:'flex',alignItems:'flex-start',justifyContent:'space-between',marginBottom:16,flexWrap:'wrap',gap:8}},
@@ -20667,5 +20694,5 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
 
 
 
-<div id="admin-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#1976D2;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.75;pointer-events:none">v2026-04-28-08:33 ✓ admin</div>
+<div id="admin-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#1976D2;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.75;pointer-events:none">v2026-04-28-08:40 ✓ admin</div>
 </body></html>
