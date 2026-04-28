@@ -781,6 +781,11 @@ function Header({ sc, setSc, user, logout }) {
       window.removeEventListener('kr-tab-overrides-geladen', onProf);
     };
   }, []);
+  // KR-SCHERMDOC v1: publiceer huidig scherm zodat help-overlay (?) doel-zin kan tonen
+  useEffect(function() {
+    window._huidigScherm = sc;
+    try { window.dispatchEvent(new CustomEvent('kr-scherm-gewijzigd', { detail: sc })); } catch(e) {}
+  }, [sc]);
   var navGroups = [
     { label: "Dagelijks", items: [
       ["adviezen", "📥", "Adviezen-inbox"],
@@ -18232,7 +18237,7 @@ window._FBProductenTab = function FBProductenTab({ outlet }) {
 </script>
 <!-- KR-UI-END -->
 
-<!-- KR-EXTRAS-START v1: keyboard shortcuts + global error handler. 27 apr 2026 -->
+<!-- KR-EXTRAS-START v2: keyboard shortcuts + global error handler + schermdoc help (28 apr 2026) -->
 <style id="kr-extras-css">
 /* Help overlay (?) */
 #kr-help-overlay {
@@ -18249,13 +18254,15 @@ window._FBProductenTab = function FBProductenTab({ outlet }) {
   background: var(--kr-bg-page, #fff);
   border-radius: var(--kr-radius-lg, 14px);
   padding: var(--kr-space-5, 24px);
-  max-width: 480px;
+  max-width: 540px;
   width: calc(100% - 40px);
+  max-height: 85vh;
+  overflow-y: auto;
   box-shadow: var(--kr-shadow-xl, 0 20px 60px rgba(0,30,60,.3));
   animation: kr-pop-in .2s cubic-bezier(.2,.8,.2,1);
 }
 #kr-help-card h3 {
-  margin: 0 0 var(--kr-space-4, 16px);
+  margin: 0 0 var(--kr-space-3, 12px);
   font-size: 16px;
   font-weight: 700;
   color: var(--kr-night, #002D41);
@@ -18292,34 +18299,172 @@ window._FBProductenTab = function FBProductenTab({ outlet }) {
   color: var(--kr-text-muted, #6E8591);
   text-align: center;
 }
+/* Scherm-info bovenaan */
+.kr-help-scherm {
+  background: linear-gradient(135deg, #EEF7FB 0%, #F5F8FA 100%);
+  border: 1px solid var(--kr-border, #D8E8EF);
+  border-left: 4px solid var(--kr-aqua, #3FB8C4);
+  border-radius: var(--kr-radius-md, 10px);
+  padding: 14px 16px;
+  margin-bottom: 18px;
+}
+.kr-help-scherm__label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--kr-aqua, #3FB8C4);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+.kr-help-scherm__naam {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--kr-night, #002D41);
+  margin: 0 0 6px;
+}
+.kr-help-scherm__doel {
+  font-size: 13px;
+  color: var(--kr-text, #234756);
+  line-height: 1.5;
+  margin: 0 0 8px;
+}
+.kr-help-scherm__meta {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  color: var(--kr-text-muted, #6E8591);
+}
+.kr-help-scherm__meta b {
+  color: var(--kr-night, #002D41);
+  font-weight: 700;
+}
+.kr-help-scherm__leeg {
+  font-size: 12px;
+  color: var(--kr-text-muted, #6E8591);
+  font-style: italic;
+}
+.kr-help-link {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--kr-aqua, #3FB8C4);
+  text-decoration: none;
+  font-weight: 600;
+}
+.kr-help-link:hover { text-decoration: underline; }
+.kr-help-uitgebreid {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--kr-border, #D8E8EF);
+  font-size: 12px;
+  color: var(--kr-text, #234756);
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
 </style>
 
 <script id="kr-extras-js">
 (function(){
-  if (window.kr && window.kr._extras === 'v1') return;
+  if (window.kr && window.kr._extras === 'v2') return;
   
-  // Wacht tot kr is geladen (defensief)
   if (!window.kr) {
     console.warn('[kr-extras] window.kr niet geladen, keyboard shortcuts niet actief');
     return;
   }
-  window.kr._extras = 'v1';
+  window.kr._extras = 'v2';
   
   var SHORTCUTS = [
-    { keys: ['?'],         desc: 'Toon dit help-scherm' },
+    { keys: ['?'],         desc: 'Toon dit help-scherm + uitleg huidig scherm' },
     { keys: ['Esc'],       desc: 'Sluit modal/dialog' },
     { keys: ['/'],         desc: 'Focus eerste zoekveld' },
     { keys: ['Ctrl','K'],  desc: 'Globaal zoeken (komt nog)' }
   ];
+
+  // Cache van schermdocumentatie — eenmaal ophalen, daarna geheugen
+  var _schermDocCache = null;       // map: admin_tab_key → row
+  var _cacheTijd = 0;
+  var CACHE_TTL_MS = 5 * 60 * 1000; // 5 min
+  
+  function laadSchermDoc() {
+    var nu = Date.now();
+    if (_schermDocCache && (nu - _cacheTijd) < CACHE_TTL_MS) {
+      return Promise.resolve(_schermDocCache);
+    }
+    if (!window._supa) return Promise.resolve({});
+    return window._supa.from('scherm_documentatie')
+      .select('admin_tab_key, weergave_naam, doel_zin, wie_opent, wanneer, uitgebreide_uitleg, scherm_key')
+      .eq('app', 'admin')
+      .not('admin_tab_key', 'is', null)
+      .then(function(res) {
+        var map = {};
+        if (res.data) {
+          res.data.forEach(function(r) { map[r.admin_tab_key] = r; });
+        }
+        _schermDocCache = map;
+        _cacheTijd = nu;
+        return map;
+      })
+      .catch(function() { return {}; });
+  }
+
+  function escapeHtml(s) {
+    if (s == null) return '';
+    return String(s).replace(/[&<>"']/g, function(c) {
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  function bouwSchermBlok(huidig, doc) {
+    if (!huidig) {
+      return '<div class="kr-help-scherm">' +
+        '<div class="kr-help-scherm__label">📍 Huidig scherm</div>' +
+        '<div class="kr-help-scherm__leeg">Onbekend — open eerst een scherm uit het menu</div>' +
+        '</div>';
+    }
+    if (!doc) {
+      return '<div class="kr-help-scherm">' +
+        '<div class="kr-help-scherm__label">📍 Huidig scherm: ' + escapeHtml(huidig) + '</div>' +
+        '<div class="kr-help-scherm__leeg">Geen documentatie. Voeg toe via Beheer → Schermdocumentatie.</div>' +
+        '<a href="/handboek.html" target="_blank" class="kr-help-link">↗ Open handboek</a>' +
+        '</div>';
+    }
+    var meta = [];
+    if (doc.wie_opent) meta.push('<span><b>Wie:</b> ' + escapeHtml(doc.wie_opent) + '</span>');
+    if (doc.wanneer)   meta.push('<span><b>Wanneer:</b> ' + escapeHtml(doc.wanneer) + '</span>');
+    var html = '<div class="kr-help-scherm">' +
+      '<div class="kr-help-scherm__label">📍 Huidig scherm</div>' +
+      '<h4 class="kr-help-scherm__naam">' + escapeHtml(doc.weergave_naam) + '</h4>' +
+      '<p class="kr-help-scherm__doel">' + escapeHtml(doc.doel_zin) + '</p>';
+    if (meta.length) html += '<div class="kr-help-scherm__meta">' + meta.join('') + '</div>';
+    if (doc.uitgebreide_uitleg) html += '<div class="kr-help-uitgebreid">' + escapeHtml(doc.uitgebreide_uitleg) + '</div>';
+    html += '<a href="/handboek.html" target="_blank" class="kr-help-link">↗ Open handboek</a>' +
+      '</div>';
+    return html;
+  }
   
   // === Help-overlay ===
   function toggleHelp(){
     var bestaand = document.getElementById('kr-help-overlay');
     if (bestaand) { bestaand.remove(); return; }
-    
+
     var ov = document.createElement('div'); ov.id = 'kr-help-overlay';
     var card = document.createElement('div'); card.id = 'kr-help-card';
-    
+
+    // Placeholder voor scherm-blok (wordt async ingevuld)
+    var schermContainer = document.createElement('div');
+    schermContainer.id = 'kr-help-scherm-container';
+    schermContainer.innerHTML = bouwSchermBlok(window._huidigScherm, null);
+    card.appendChild(schermContainer);
+
+    // Async: haal doc op + render
+    laadSchermDoc().then(function(map) {
+      var huidig = window._huidigScherm;
+      var doc = huidig ? map[huidig] : null;
+      var c = document.getElementById('kr-help-scherm-container');
+      if (c) c.innerHTML = bouwSchermBlok(huidig, doc);
+    });
+
     var titel = document.createElement('h3');
     titel.textContent = '⌨️  Sneltoetsen';
     card.appendChild(titel);
@@ -18354,33 +18499,37 @@ window._FBProductenTab = function FBProductenTab({ outlet }) {
     document.body.appendChild(ov);
   }
   
-  // Publiceer in API
   window.kr.help = toggleHelp;
+  
+  // Pre-load schermdocumentatie zodra Supabase klaar is, zodat eerste ?-druk snel is
+  function preloadDoc() {
+    if (window._supa) {
+      laadSchermDoc();
+    } else {
+      setTimeout(preloadDoc, 500);
+    }
+  }
+  preloadDoc();
   
   // === Keyboard listener ===
   document.addEventListener('keydown', function(e){
-    // Skip als we in een input/textarea/contenteditable typen
     var t = e.target;
     var tag = t && t.tagName;
     var typing = (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' ||
                   (t && t.isContentEditable));
     
-    // ESC werkt altijd: sluit help, eventuele modals
     if (e.key === 'Escape') {
       var help = document.getElementById('kr-help-overlay');
       if (help) { help.remove(); e.preventDefault(); return; }
-      // confirm-modal heeft eigen handler — niet meer doen
       return;
     }
     
-    // Modifier-shortcuts werken altijd (ook in inputs)
     if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
       e.preventDefault();
       window.kr.toast('Globaal zoeken komt eraan ✨', 'info', 2500);
       return;
     }
     
-    // Niet-modifier shortcuts alleen als NIET in een input
     if (typing) return;
     
     if (e.key === '?' && e.shiftKey) {
@@ -18390,7 +18539,6 @@ window._FBProductenTab = function FBProductenTab({ outlet }) {
     }
     
     if (e.key === '/') {
-      // Zoek eerste zichtbare input met type=search of placeholder met "zoek"
       var zoek = document.querySelector('input[type="search"]:not([disabled]), input[placeholder*="oek" i]:not([disabled])');
       if (zoek && zoek.offsetParent !== null) {
         e.preventDefault();
@@ -18401,13 +18549,10 @@ window._FBProductenTab = function FBProductenTab({ outlet }) {
   });
   
   // === Globale error handler ===
-  // Vangt onverwachte JS-errors + unhandled promise rejections en toont een toast
-  // ipv stille console-error die niemand ziet
   var errCount = 0;
   var lastErrTs = 0;
   function meldError(msg){
     var nu = Date.now();
-    // Dempen: max 1 error-toast per 3 sec, max 5 totaal per page-load
     if (nu - lastErrTs < 3000) return;
     if (errCount >= 5) return;
     errCount++;
@@ -18417,7 +18562,6 @@ window._FBProductenTab = function FBProductenTab({ outlet }) {
   }
   
   window.addEventListener('error', function(e){
-    // Skip resource-load errors (afbeeldingen, scripts)
     if (e.target && (e.target.tagName === 'IMG' || e.target.tagName === 'SCRIPT' || e.target.tagName === 'LINK')) return;
     meldError(e.message);
   }, true);
@@ -18427,11 +18571,17 @@ window._FBProductenTab = function FBProductenTab({ outlet }) {
     meldError(msg);
   });
   
-  // Kondig aan via console (geen toast bij start)
-  console.log('[kr-extras v1] Sneltoetsen actief: ? Esc / Ctrl+K · Druk ? voor help');
+  // Re-fetch doc cache wanneer scherm-doc gewijzigd wordt (custom event vanuit _SchermDocScreen)
+  window.addEventListener('kr-schermdoc-gewijzigd', function() {
+    _schermDocCache = null;
+    laadSchermDoc();
+  });
+  
+  console.log('[kr-extras v2] Sneltoetsen + scherm-help actief: ? Esc / Ctrl+K · Druk ? voor help');
 })();
 </script>
 <!-- KR-EXTRAS-END -->
+
 
 <!-- KR-PROFILE-START v1: profielindicatie rechtsboven (filter shortcut). 27 apr 2026 -->
 <style id="kr-profile-css">
@@ -20931,6 +21081,7 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
           }
           setMeld('Opgeslagen ✓');
           if (window.kr && window.kr.toast) window.kr.toast('Schermdocumentatie bijgewerkt', 'success');
+          try { window.dispatchEvent(new CustomEvent('kr-schermdoc-gewijzigd')); } catch(e) {}
           laadLijst();
           setTimeout(sluitModal, 700);
         });
