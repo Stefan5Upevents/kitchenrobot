@@ -19961,6 +19961,47 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
         setModal('apikey');
         setModalData({ vault_naam: 'api_koppeling_recras', nieuwe_waarde: '' });
       }
+      function openCleanup() {
+        setModal('cleanup');
+        setModalData({ laden: true });
+        callActie_cleanup({ dry_run: true }).then(function(res) {
+          if (res && res.error) setModalData({ fout: res.error, hint: res.hint });
+          else setModalData({
+            laden: false,
+            te_verwijderen: res.te_verwijderen || [],
+            blijven_aantal: res.blijven_aantal,
+          });
+        });
+      }
+      function callActie_cleanup(body) {
+        return window._supa.auth.getSession().then(function(s) {
+          var jwt = s && s.data && s.data.session && s.data.session.access_token;
+          return fetch(window._supa.functionsUrl + '/cleanup-edge-functions', {
+            method:'POST',
+            headers:{
+              'Content-Type':'application/json',
+              'Authorization':'Bearer ' + jwt,
+              'apikey':window._supa.supabaseKey,
+            },
+            body: JSON.stringify(body || {}),
+          }).then(function(r){ return r.json(); });
+        });
+      }
+      function cleanupUitvoeren() {
+        var n = (modalData && modalData.te_verwijderen) ? modalData.te_verwijderen.length : 0;
+        if (!confirm('Echt ' + n + ' edge functions verwijderen?\n\nDit kan niet ongedaan worden gemaakt. Functies die in cron of de UI worden gebruikt blijven behouden.')) return;
+        setActieBezig('cleanup');
+        callActie_cleanup({ dry_run: false }).then(function(res) {
+          setActieBezig(null);
+          if (res && res.error) {
+            if (window.kr && window.kr.toast) window.kr.toast('Fout: ' + res.error, 'error');
+          } else {
+            if (window.kr && window.kr.toast) window.kr.toast('✓ ' + (res.verwijderd || 0) + ' functies verwijderd', 'success');
+            setModal(null);
+            laad();
+          }
+        });
+      }
       function apiKeyOpslaan() {
         if (!modalData || !modalData.nieuwe_waarde || modalData.nieuwe_waarde.length < 10) {
           alert('Vul een geldige nieuwe waarde in (minstens 10 tekens)');
@@ -20018,6 +20059,7 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
               : R('span', { style:{ background:'#FFF3E0', color:C.orange, padding:'6px 14px', borderRadius:20, fontSize:12, fontWeight:700 } }, '⚠ Aandachtspunten'),
             knop('🔄 Rollback', '#7B1FA2', openRollback),
             knop('🔐 API-key', '#1976D2', openApiKey),
+            knop('🧹 Edge cleanup', '#5D4037', openCleanup),
             R('button', { onClick: laad, style:{ background:'transparent', border:'1px solid #CFD8DC', borderRadius:6, padding:'5px 12px', fontSize:11, fontWeight:600, color:C.muted, cursor:'pointer' } }, '↻ Ververs'),
             R('span', { style:{ fontSize:10, color:C.muted } }, laatstGeladen.toLocaleTimeString('nl-NL'))
           )
@@ -20209,7 +20251,8 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
                 style:{ display:'block', width:'100%', padding:'8px 10px', border:'1px solid #CFD8DC', borderRadius:6, fontSize:13, marginTop:3 }
               },
                 R('option', { value:'api_koppeling_recras' }, 'Recras (api_koppeling_recras)'),
-                R('option', { value:'api_koppeling_switchbot' }, 'SwitchBot (api_koppeling_switchbot)')
+                R('option', { value:'api_koppeling_switchbot' }, 'SwitchBot (api_koppeling_switchbot)'),
+                R('option', { value:'supabase_management_token' }, 'Supabase Personal Access Token (voor cleanup edge functions)')
               )
             ),
             R('label', { style:{ display:'block', fontSize:12, fontWeight:600, color:C.night, marginBottom:14 } },
@@ -20228,6 +20271,40 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
             R('div', { style:{ display:'flex', justifyContent:'flex-end', gap:8 } },
               R('button', { onClick: function(){ setModal(null); }, disabled: actieBezig==='apikey', style:{ background:'transparent', border:'1px solid #CFD8DC', color:C.muted, borderRadius:6, padding:'8px 16px', fontSize:13, fontWeight:600, cursor:'pointer' } }, 'Annuleer'),
               R('button', { onClick: apiKeyOpslaan, disabled: actieBezig==='apikey', style:{ background:C.red, color:'#fff', border:'none', borderRadius:6, padding:'8px 20px', fontSize:13, fontWeight:700, cursor:'pointer', opacity: actieBezig==='apikey'?0.6:1 } }, actieBezig==='apikey' ? 'Bezig...' : 'Vervangen')
+            )
+          )
+        ),
+        // Modal: cleanup edge functions
+        modal === 'cleanup' && R('div', { style:{ position:'fixed', inset:0, background:'rgba(0,30,50,.55)', zIndex:9999, display:'flex', alignItems:'flex-start', justifyContent:'center', overflowY:'auto', padding:'24px 12px' } },
+          R('div', { style:{ background:'#fff', borderRadius:12, padding:20, width:'min(640px, 100%)', boxShadow:'0 10px 40px rgba(0,0,0,.3)' } },
+            R('div', { style:{ fontWeight:800, fontSize:18, color:C.night, marginBottom:6 } }, '🧹 Edge functions opruimen'),
+            R('div', { style:{ fontSize:12, color:C.muted, marginBottom:14, lineHeight:1.5 } }, 'Verwijdert oude eenmalige patch-/inspect-/fix-functies. Functies die in cron, mail, kiosk of UI worden gebruikt blijven behouden.'),
+            modalData && modalData.laden && R('div', { style:{ padding:20, textAlign:'center', color:C.muted } }, 'Lijst opbouwen...'),
+            modalData && modalData.fout && R('div', null,
+              R('div', { style:{ background:'#FFEBEE', color:'#B71C1C', padding:10, borderRadius:6, marginBottom:10 } }, modalData.fout),
+              modalData.hint && R('div', { style:{ background:'#FFF8E1', color:'#E65100', padding:10, borderRadius:6, fontSize:12, lineHeight:1.6 } }, '💡 ' + modalData.hint)
+            ),
+            modalData && modalData.te_verwijderen && R('div', null,
+              R('div', { style:{ display:'flex', gap:14, marginBottom:12, fontSize:13 } },
+                R('div', null, R('strong', null, modalData.te_verwijderen.length), ' worden verwijderd'),
+                R('div', { style:{ color:C.muted } }, '|'),
+                R('div', { style:{ color:C.muted } }, modalData.blijven_aantal + ' blijven behouden')
+              ),
+              R('div', { style:{ maxHeight:'40vh', overflowY:'auto', border:'1px solid #E0E7EB', borderRadius:8, padding:8, background:'#FAFCFD', fontFamily:'monospace', fontSize:11, color:C.night } },
+                modalData.te_verwijderen.map(function(slug) {
+                  return R('div', { key:slug, style:{ padding:'2px 6px' } }, '• ' + slug);
+                })
+              ),
+              R('div', { style:{ background:'#FFF8E1', color:'#E65100', padding:'8px 10px', borderRadius:6, fontSize:11, marginTop:12 } },
+                '⚠ Dubbel-check de lijst. Verwijdering is permanent.'
+              ),
+              R('div', { style:{ display:'flex', justifyContent:'flex-end', gap:8, marginTop:14 } },
+                R('button', { onClick: function(){ setModal(null); }, disabled: actieBezig==='cleanup', style:{ background:'transparent', border:'1px solid #CFD8DC', color:C.muted, borderRadius:6, padding:'8px 16px', fontSize:13, fontWeight:600, cursor:'pointer' } }, 'Annuleer'),
+                R('button', { onClick: cleanupUitvoeren, disabled: actieBezig==='cleanup' || modalData.te_verwijderen.length === 0, style:{ background:'#5D4037', color:'#fff', border:'none', borderRadius:6, padding:'8px 20px', fontSize:13, fontWeight:700, cursor:'pointer', opacity: actieBezig==='cleanup'?0.6:1 } }, actieBezig==='cleanup' ? 'Verwijderen...' : 'Verwijder ' + modalData.te_verwijderen.length + ' functies')
+              )
+            ),
+            modalData && modalData.fout && R('div', { style:{ display:'flex', justifyContent:'flex-end', marginTop:14 } },
+              R('button', { onClick: function(){ setModal(null); }, style:{ background:'transparent', border:'1px solid #CFD8DC', color:C.muted, borderRadius:6, padding:'8px 16px', fontSize:13, fontWeight:600, cursor:'pointer' } }, 'Sluiten')
             )
           )
         ),
@@ -20746,5 +20823,5 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
 
 
 
-<div id="admin-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#1976D2;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.75;pointer-events:none">v2026-04-28-08:55 ✓ admin</div>
+<div id="admin-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#1976D2;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.75;pointer-events:none">v2026-04-28-08:58 ✓ admin</div>
 </body></html>
