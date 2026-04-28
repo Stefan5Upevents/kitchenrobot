@@ -728,6 +728,7 @@ function Header({ sc, setSc, user, logout }) {
       ["stam:dr", "📖", "Draaiboek-links"],
       ["staffel", "📊", "Opzet-staffel"],
       ["gebruikers", "👤", "Gebruikers"],
+      ["systeem", "🩺", "Systeem-gezondheid"],
       ["fin_inst", "💸", "Financiële instellingen"],
       ["haccp_inst", "🏥", "HACCP Bedrijfsgegevens"],
       ["sensoren", "🌡️", "Sensoren"],
@@ -12828,7 +12829,7 @@ function SensorenScreen() {
   if (!user) {
     return /* @__PURE__ */ React.createElement(LoginScreen, { onLogin: handleLogin });
   }
-  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", minHeight: "100vh", background: "#F0F4F7" } }, /* @__PURE__ */ React.createElement(Header, { sc, setSc, user, logout: handleLogout }), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto", overflowX: "hidden" }, className: "mobile-padding" }, /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 1200, margin: "0 auto", padding: "28px 20px 60px" } }, sc === "home" && /* @__PURE__ */ React.createElement(HomeScreen, { setSc }), sc === "boekingen" && /* @__PURE__ */ React.createElement(BoekingenScreen, { setSc, setActieve }), sc === "financieel" && /* @__PURE__ */ React.createElement(FinancieelScreen, { setSc }), sc === "chef" && /* @__PURE__ */ React.createElement(ChefScreen, { setSc, setActieve }), sc === "buffet" && /* @__PURE__ */ React.createElement(BuffetScreen, { actieve, setActieve, setSc }), sc === "opzet" && /* @__PURE__ */ React.createElement(OpzetScreen, null), sc === "tijden" && /* @__PURE__ */ React.createElement(TijdenScreen, null), sc.startsWith("stam:") && (typeof window._krMagScherm !== "function" || window._krMagScherm(sc)) && /* @__PURE__ */ React.createElement(StamScreen, { initTab: sc.split(":")[1] || "pg" }), sc === "fin" && /* @__PURE__ */ React.createElement(FinancieelScreen, null), sc === "adviezen" && /* @__PURE__ */ React.createElement(AdviezenScreen, null), sc === "fin_inst" && /* @__PURE__ */ React.createElement(FinInstellingenScreen, null), sc === "sensoren" && /* @__PURE__ */ React.createElement(SensorenScreen, null), sc === "apikeys" && /* @__PURE__ */ React.createElement(ApiKoppelingenScreen, null), sc === "staffel" && window._OpzetStaffelScreen && /* @__PURE__ */ React.createElement(window._OpzetStaffelScreen, null), sc === "gebruikers" && window._GebruikersScreen && /* @__PURE__ */ React.createElement(window._GebruikersScreen, null), sc === "stam:fi" && /* @__PURE__ */ React.createElement(FinInstellingenScreen, null), sc === "allergenen" && /* @__PURE__ */ React.createElement(AllergenenScreen, null), sc === "inspiratie" && /* @__PURE__ */ React.createElement(InspiratieScreen, null), sc === "opzetlog" && /* @__PURE__ */ React.createElement(OpzetLogboekScreen, null), sc === "haccp" && /* @__PURE__ */ React.createElement(HACCPScreen, null), sc === "nvwa" && window._NVWAInspectieScreen && /* @__PURE__ */ React.createElement(window._NVWAInspectieScreen, null), sc === "fb" && window._FBAnalyseScreen && /* @__PURE__ */ React.createElement(window._FBAnalyseScreen, null), sc === "berichten" && window._BerichtenChefScreen && /* @__PURE__ */ React.createElement(window._BerichtenChefScreen, null), sc === "haccp_inst" && window._HACCPInstellingenScreen && /* @__PURE__ */ React.createElement(window._HACCPInstellingenScreen, null), sc === "bestelling" && /* @__PURE__ */ React.createElement(SligroBestellingScreen, null))));
+  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", minHeight: "100vh", background: "#F0F4F7" } }, /* @__PURE__ */ React.createElement(Header, { sc, setSc, user, logout: handleLogout }), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto", overflowX: "hidden" }, className: "mobile-padding" }, /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 1200, margin: "0 auto", padding: "28px 20px 60px" } }, sc === "home" && /* @__PURE__ */ React.createElement(HomeScreen, { setSc }), sc === "boekingen" && /* @__PURE__ */ React.createElement(BoekingenScreen, { setSc, setActieve }), sc === "financieel" && /* @__PURE__ */ React.createElement(FinancieelScreen, { setSc }), sc === "chef" && /* @__PURE__ */ React.createElement(ChefScreen, { setSc, setActieve }), sc === "buffet" && /* @__PURE__ */ React.createElement(BuffetScreen, { actieve, setActieve, setSc }), sc === "opzet" && /* @__PURE__ */ React.createElement(OpzetScreen, null), sc === "tijden" && /* @__PURE__ */ React.createElement(TijdenScreen, null), sc.startsWith("stam:") && (typeof window._krMagScherm !== "function" || window._krMagScherm(sc)) && /* @__PURE__ */ React.createElement(StamScreen, { initTab: sc.split(":")[1] || "pg" }), sc === "fin" && /* @__PURE__ */ React.createElement(FinancieelScreen, null), sc === "adviezen" && /* @__PURE__ */ React.createElement(AdviezenScreen, null), sc === "fin_inst" && /* @__PURE__ */ React.createElement(FinInstellingenScreen, null), sc === "sensoren" && /* @__PURE__ */ React.createElement(SensorenScreen, null), sc === "apikeys" && /* @__PURE__ */ React.createElement(ApiKoppelingenScreen, null), sc === "staffel" && window._OpzetStaffelScreen && /* @__PURE__ */ React.createElement(window._OpzetStaffelScreen, null), sc === "gebruikers" && window._GebruikersScreen && /* @__PURE__ */ React.createElement(window._GebruikersScreen, null), sc === "systeem" && window._SysteemScreen && /* @__PURE__ */ React.createElement(window._SysteemScreen, null), sc === "stam:fi" && /* @__PURE__ */ React.createElement(FinInstellingenScreen, null), sc === "allergenen" && /* @__PURE__ */ React.createElement(AllergenenScreen, null), sc === "inspiratie" && /* @__PURE__ */ React.createElement(InspiratieScreen, null), sc === "opzetlog" && /* @__PURE__ */ React.createElement(OpzetLogboekScreen, null), sc === "haccp" && /* @__PURE__ */ React.createElement(HACCPScreen, null), sc === "nvwa" && window._NVWAInspectieScreen && /* @__PURE__ */ React.createElement(window._NVWAInspectieScreen, null), sc === "fb" && window._FBAnalyseScreen && /* @__PURE__ */ React.createElement(window._FBAnalyseScreen, null), sc === "berichten" && window._BerichtenChefScreen && /* @__PURE__ */ React.createElement(window._BerichtenChefScreen, null), sc === "haccp_inst" && window._HACCPInstellingenScreen && /* @__PURE__ */ React.createElement(window._HACCPInstellingenScreen, null), sc === "bestelling" && /* @__PURE__ */ React.createElement(SligroBestellingScreen, null))));
 }
 function InspiratieScreen() {
   var _a, _b;
@@ -19685,6 +19686,255 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
 })();
 </script>
 <!-- KR-GEBRUIKERS-END -->
+<!-- KR-SYSTEEM-START v1: systeem-gezondheid scherm. 28 apr 2026 -->
+<script id="kr-systeem-js">
+(function() {
+  function init() {
+    if (!window.React || !window._supa) { setTimeout(init, 100); return; }
+    var R = window.React.createElement;
+    var useState = window.React.useState;
+    var useEffect = window.React.useEffect;
+    var useRef = window.React.useRef;
+
+    function fmtDur(ms) {
+      if (ms === null || ms === undefined) return '-';
+      if (ms < 1000) return ms + ' ms';
+      if (ms < 60000) return (ms/1000).toFixed(1) + ' s';
+      return (ms/60000).toFixed(1) + ' min';
+    }
+    function fmtTijd(d) {
+      if (!d) return '-';
+      var dt = new Date(d);
+      var nu = new Date();
+      var verschil = (nu - dt) / 1000;
+      if (verschil < 60) return 'net';
+      if (verschil < 3600) return Math.floor(verschil/60) + ' min geleden';
+      if (verschil < 86400) return Math.floor(verschil/3600) + ' u geleden';
+      var d2 = Math.floor(verschil/86400);
+      return d2 + (d2===1 ? ' dag' : ' dagen') + ' geleden';
+    }
+
+    var KLEUREN = {
+      ok: '#2E7D32', inactief: '#757575', geen_runs: '#90A4AE',
+      gefaald: '#C62828', verlaat: '#E65100', instabiel: '#F57C00', fout: '#C62828', onbekend: '#90A4AE'
+    };
+
+    window._SysteemScreen = function() {
+      var C = window._C || { night:'#234756', aqua:'#3FB8C4', red:'#E8202B', green:'#2E7D32', muted:'#78909C', orange:'#FF9800', light:'#F5F8FA' };
+
+      var s_data = useState(null); var data = s_data[0], setData = s_data[1];
+      var s_laden = useState(true); var laden = s_laden[0], setLaden = s_laden[1];
+      var s_fout = useState(''); var fout = s_fout[0], setFout = s_fout[1];
+      var s_t = useState(new Date()); var laatstGeladen = s_t[0], setLaatstGeladen = s_t[1];
+
+      function laad() {
+        var supa = window._supa;
+        Promise.all([
+          supa.from('v_health_samenvatting').select('*').single(),
+          supa.from('v_health_cron').select('*').order('jobname'),
+          supa.from('v_health_api').select('*').order('koppeling_naam'),
+          supa.from('v_health_http_24u').select('*').order('categorie'),
+          supa.from('v_health_email').select('*').order('status'),
+          supa.from('v_health_recente_fouten').select('*').limit(15),
+        ]).then(function(res) {
+          var errors = res.filter(function(r){ return r.error; });
+          if (errors.length > 0) {
+            setFout('Fout bij laden: ' + errors.map(function(e){ return e.error.message; }).join('; '));
+          } else {
+            setData({
+              samenvatting: res[0].data,
+              cron: res[1].data || [],
+              api: res[2].data || [],
+              http: res[3].data || [],
+              email: res[4].data || [],
+              fouten: res[5].data || []
+            });
+            setFout('');
+          }
+          setLaden(false);
+          setLaatstGeladen(new Date());
+        }).catch(function(e) {
+          setFout(String(e));
+          setLaden(false);
+        });
+      }
+
+      useEffect(function() {
+        laad();
+        var iv = setInterval(laad, 60000); // 1 min auto-refresh
+        return function(){ clearInterval(iv); };
+      }, []);
+
+      if (laden && !data) {
+        return R('div', { style:{ padding:30, textAlign:'center', color:C.muted } }, 'Status laden...');
+      }
+
+      var s = data && data.samenvatting;
+      var allesOk = s && s.cron_problemen===0 && s.api_problemen===0 && s.http_problemen_24u<5 && s.mail_problemen_7d===0;
+
+      function tegel(label, waarde, totaal, kleur, icoon) {
+        return R('div', { style:{ background:'#fff', border:'1px solid #E0E7EB', borderRadius:10, padding:'12px 14px', flex:1, minWidth:160 } },
+          R('div', { style:{ fontSize:11, color:C.muted, fontWeight:600, textTransform:'uppercase', letterSpacing:1, marginBottom:6 } }, icoon + ' ' + label),
+          R('div', { style:{ fontSize:24, fontWeight:800, color: kleur } }, waarde),
+          totaal !== null && totaal !== undefined && R('div', { style:{ fontSize:11, color:C.muted, marginTop:2 } }, 'van ' + totaal)
+        );
+      }
+      function pill(tekst, kleur) {
+        return R('span', { style:{ display:'inline-block', background: kleur+'22', color: kleur, padding:'2px 8px', borderRadius:8, fontSize:11, fontWeight:700 } }, tekst);
+      }
+
+      return R('div', null,
+        // Header
+        R('div', { style:{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:16, flexWrap:'wrap', gap:12 } },
+          R('div', null,
+            R('div', { style:{ fontWeight:900, fontSize:22, color:C.night } }, 'Systeem-gezondheid'),
+            R('div', { style:{ fontSize:12, color:C.muted, marginTop:4 } },
+              'Status van cron-jobs, externe koppelingen, edge functions en e-mails. Auto-refresh elke minuut.'
+            )
+          ),
+          R('div', { style:{ display:'flex', alignItems:'center', gap:10 } },
+            allesOk
+              ? R('span', { style:{ background:'#E8F5E9', color:C.green, padding:'6px 14px', borderRadius:20, fontSize:12, fontWeight:700 } }, '✓ Alles operationeel')
+              : R('span', { style:{ background:'#FFF3E0', color:C.orange, padding:'6px 14px', borderRadius:20, fontSize:12, fontWeight:700 } }, '⚠ Aandachtspunten'),
+            R('button', { onClick: laad, style:{ background:'transparent', border:'1px solid #CFD8DC', borderRadius:6, padding:'5px 12px', fontSize:11, fontWeight:600, color:C.muted, cursor:'pointer' } }, '↻ Ververs nu'),
+            R('span', { style:{ fontSize:10, color:C.muted } }, 'Bijgewerkt: ' + laatstGeladen.toLocaleTimeString('nl-NL'))
+          )
+        ),
+        fout && R('div', { style:{ background:'#FFEBEE', color:'#B71C1C', padding:'8px 12px', borderRadius:6, marginBottom:12, fontSize:12 } }, fout),
+        // Tegels
+        s && R('div', { style:{ display:'flex', gap:12, marginBottom:18, flexWrap:'wrap' } },
+          tegel('Cron-jobs', s.cron_problemen, s.cron_totaal, s.cron_problemen===0 ? C.green : C.orange, '⏱'),
+          tegel('Externe API\'s', s.api_problemen, s.api_totaal, s.api_problemen===0 ? C.green : C.red, '🔌'),
+          tegel('HTTP-fouten 24u', s.http_problemen_24u, null, s.http_problemen_24u===0 ? C.green : (s.http_problemen_24u<5 ? C.orange : C.red), '⚠'),
+          tegel('Mail-fouten 7d', s.mail_problemen_7d, null, s.mail_problemen_7d===0 ? C.green : C.red, '📧')
+        ),
+        // CRON tabel
+        R('div', { style:{ background:'#fff', borderRadius:10, border:'1px solid #E0E7EB', overflow:'hidden', marginBottom:16 } },
+          R('div', { style:{ padding:'10px 14px', background:C.light, fontWeight:700, color:C.night, fontSize:13 } }, '⏱ Cron-jobs (' + (data.cron.length) + ')'),
+          R('table', { style:{ width:'100%', borderCollapse:'collapse', fontSize:12 } },
+            R('thead', null,
+              R('tr', { style:{ background:'#FAFCFD' } },
+                ['Naam','Schedule','Laatste run','Duur','Runs 24u','Status'].map(function(h, i){
+                  return R('th', { key:i, style:{ padding:'8px 10px', textAlign:'left', fontWeight:700, color:C.muted, fontSize:10, textTransform:'uppercase', letterSpacing:1 } }, h);
+                })
+              )
+            ),
+            R('tbody', null,
+              data.cron.map(function(c) {
+                var kl = KLEUREN[c.gezondheid] || C.muted;
+                return R('tr', { key:c.jobid, style:{ borderTop:'1px solid #ECEFF1' } },
+                  R('td', { style:{ padding:'8px 10px', fontWeight:600, color:C.night, fontFamily:'monospace', fontSize:11 } }, c.jobname),
+                  R('td', { style:{ padding:'8px 10px', color:C.muted, fontFamily:'monospace', fontSize:11 } }, c.schedule),
+                  R('td', { style:{ padding:'8px 10px', color:C.muted } }, fmtTijd(c.laatste_run)),
+                  R('td', { style:{ padding:'8px 10px', color:C.muted } }, fmtDur(c.laatste_duurtijd_ms)),
+                  R('td', { style:{ padding:'8px 10px', color:C.muted } },
+                    c.aantal_runs_24u + (c.aantal_fouten_24u > 0 ? R('span', { style:{ color:C.red, marginLeft:6 } }, '(' + c.aantal_fouten_24u + ' fout)') : null)
+                  ),
+                  R('td', { style:{ padding:'8px 10px' } }, pill(c.gezondheid, kl))
+                );
+              })
+            )
+          )
+        ),
+        // API tabel
+        R('div', { style:{ background:'#fff', borderRadius:10, border:'1px solid #E0E7EB', overflow:'hidden', marginBottom:16 } },
+          R('div', { style:{ padding:'10px 14px', background:C.light, fontWeight:700, color:C.night, fontSize:13 } }, '🔌 Externe koppelingen (' + (data.api.length) + ')'),
+          R('table', { style:{ width:'100%', borderCollapse:'collapse', fontSize:12 } },
+            R('thead', null,
+              R('tr', { style:{ background:'#FAFCFD' } },
+                ['Naam','Laatste sync','Sync-status','Laatste test','Status'].map(function(h, i){
+                  return R('th', { key:i, style:{ padding:'8px 10px', textAlign:'left', fontWeight:700, color:C.muted, fontSize:10, textTransform:'uppercase', letterSpacing:1 } }, h);
+                })
+              )
+            ),
+            R('tbody', null,
+              data.api.map(function(a) {
+                var kl = KLEUREN[a.gezondheid] || C.muted;
+                return R('tr', { key:a.koppeling_naam, style:{ borderTop:'1px solid #ECEFF1' } },
+                  R('td', { style:{ padding:'8px 10px', fontWeight:600, color:C.night } }, a.titel || a.koppeling_naam),
+                  R('td', { style:{ padding:'8px 10px', color:C.muted } }, fmtTijd(a.laatste_sync_op)),
+                  R('td', { style:{ padding:'8px 10px', color:C.muted, fontFamily:'monospace', fontSize:11 } }, a.laatste_sync_status || '-'),
+                  R('td', { style:{ padding:'8px 10px', color:C.muted } }, fmtTijd(a.laatste_test_op)),
+                  R('td', { style:{ padding:'8px 10px' } }, pill(a.gezondheid, kl))
+                );
+              })
+            )
+          )
+        ),
+        // HTTP + Mail naast elkaar
+        R('div', { style:{ display:'flex', gap:16, marginBottom:16, flexWrap:'wrap' } },
+          R('div', { style:{ flex:1, minWidth:280, background:'#fff', borderRadius:10, border:'1px solid #E0E7EB', overflow:'hidden' } },
+            R('div', { style:{ padding:'10px 14px', background:C.light, fontWeight:700, color:C.night, fontSize:13 } }, '⚠ HTTP-resultaten 24u'),
+            data.http.length === 0
+              ? R('div', { style:{ padding:'14px', color:C.muted, fontSize:12 } }, 'Geen HTTP-calls in laatste 24u')
+              : R('div', { style:{ padding:'10px 14px' } },
+                  data.http.map(function(h, i) {
+                    var kl = h.categorie === 'ok' ? C.green : (h.categorie === 'client_fout' ? C.orange : C.red);
+                    return R('div', { key:i, style:{ display:'flex', justifyContent:'space-between', padding:'4px 0', fontSize:12 } },
+                      R('span', null, pill(h.categorie, kl)),
+                      R('span', { style:{ color:C.muted } }, h.aantal + 'x · laatste ' + fmtTijd(h.laatste))
+                    );
+                  })
+                )
+          ),
+          R('div', { style:{ flex:1, minWidth:280, background:'#fff', borderRadius:10, border:'1px solid #E0E7EB', overflow:'hidden' } },
+            R('div', { style:{ padding:'10px 14px', background:C.light, fontWeight:700, color:C.night, fontSize:13 } }, '📧 E-mails 7 dagen'),
+            data.email.length === 0
+              ? R('div', { style:{ padding:'14px', color:C.muted, fontSize:12 } }, 'Geen e-mails verstuurd in laatste 7 dagen')
+              : R('div', { style:{ padding:'10px 14px' } },
+                  data.email.map(function(e, i) {
+                    var ok = ['ok','sent','succes','succeeded','success','verstuurd','verzonden'].indexOf((e.status||'').toLowerCase()) >= 0;
+                    var kl = ok ? C.green : C.red;
+                    return R('div', { key:i, style:{ display:'flex', justifyContent:'space-between', padding:'4px 0', fontSize:12 } },
+                      R('span', null, pill(e.status, kl)),
+                      R('span', { style:{ color:C.muted } }, e.aantal + 'x · laatste ' + fmtTijd(e.laatste))
+                    );
+                  })
+                )
+          )
+        ),
+        // Recente fouten
+        data.fouten.length > 0 && R('div', { style:{ background:'#fff', borderRadius:10, border:'1px solid #E0E7EB', overflow:'hidden' } },
+          R('div', { style:{ padding:'10px 14px', background:C.light, fontWeight:700, color:C.night, fontSize:13 } }, '📋 Recente fouten (' + data.fouten.length + ')'),
+          R('table', { style:{ width:'100%', borderCollapse:'collapse', fontSize:11 } },
+            R('thead', null,
+              R('tr', { style:{ background:'#FAFCFD' } },
+                ['Tijdstip','Status','Bericht'].map(function(h, i){
+                  return R('th', { key:i, style:{ padding:'6px 10px', textAlign:'left', fontWeight:700, color:C.muted, fontSize:10, textTransform:'uppercase', letterSpacing:1 } }, h);
+                })
+              )
+            ),
+            R('tbody', null,
+              data.fouten.map(function(f) {
+                return R('tr', { key:f.id, style:{ borderTop:'1px solid #ECEFF1' } },
+                  R('td', { style:{ padding:'6px 10px', color:C.muted, whiteSpace:'nowrap' } }, fmtTijd(f.created)),
+                  R('td', { style:{ padding:'6px 10px', whiteSpace:'nowrap' } },
+                    f.timed_out ? pill('timeout', C.orange) : pill(f.status_code || 'geen', C.red)
+                  ),
+                  R('td', { style:{ padding:'6px 10px', color:C.night, fontFamily:'monospace', fontSize:10, wordBreak:'break-word' } }, f.bericht || '-')
+                );
+              })
+            )
+          )
+        ),
+        R('div', { style:{ marginTop:14, padding:'10px 14px', background:'#F5F7F8', borderRadius:8, fontSize:11, color:C.muted, lineHeight:1.5 } },
+          R('strong', null, 'Wat zie ik hier? '), 'Cron-jobs zijn de geplande taken die automatisch boekingen ophalen, snapshots genereren en sensor-data ophalen. Een job die "verlaat" of "gefaald" is heeft aandacht nodig. ',
+          R('strong', null, 'Externe koppelingen'), ' = Recras + SwitchBot. ',
+          R('strong', null, 'HTTP-fouten'), ' tellen alle edge function-aanroepen die niet 200-OK retourneerden in 24u. ',
+          R('strong', null, 'E-mails'), ' geeft het aantal verstuurde mails per status van afgelopen 7 dagen.'
+        )
+      );
+    };
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>
+<!-- KR-SYSTEEM-END -->
+
 
 
 
@@ -19990,5 +20240,5 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
 
 
 
-<div id="admin-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#1976D2;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.75;pointer-events:none">v2026-04-28-06:55 ✓ admin</div>
+<div id="admin-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#1976D2;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.75;pointer-events:none">v2026-04-28-07:03 ✓ admin</div>
 </body></html>
