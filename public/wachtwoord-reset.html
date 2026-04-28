@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nieuw wachtwoord — KitchenRobot</title>
+<style>
+  body { margin: 0; font-family: system-ui, -apple-system, sans-serif; background: #234756; color: #234756; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .card { background: white; border-radius: 14px; padding: 32px; width: min(420px, 100%); box-shadow: 0 10px 40px rgba(0,0,0,.3); }
+  .logo { color: #E8202B; font-weight: 900; font-size: 24px; letter-spacing: -1px; margin-bottom: 4px; }
+  .sub { color: #00897B; font-size: 11px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 22px; }
+  h2 { margin: 0 0 8px 0; font-size: 18px; color: #234756; }
+  p { color: #78909C; font-size: 13px; line-height: 1.5; margin: 0 0 18px 0; }
+  label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 5px; }
+  input[type=password], input[type=text] {
+    display: block; width: 100%; padding: 11px 13px; border: 1px solid #CFD8DC;
+    border-radius: 7px; font-size: 14px; box-sizing: border-box; margin-bottom: 14px;
+    font-family: inherit;
+  }
+  input:focus { outline: none; border-color: #00897B; }
+  button {
+    background: #E8202B; color: white; border: none; border-radius: 7px;
+    padding: 11px 22px; font-size: 14px; font-weight: 700; cursor: pointer;
+    width: 100%; font-family: inherit;
+  }
+  button:disabled { opacity: 0.6; cursor: not-allowed; }
+  .meld { padding: 10px 12px; border-radius: 7px; font-size: 12px; margin-bottom: 14px; font-weight: 600; }
+  .meld.error { background: #FFEBEE; color: #C62828; }
+  .meld.ok { background: #E8F5E9; color: #2E7D32; }
+  .terug { display: block; text-align: center; margin-top: 18px; color: #00897B; font-size: 12px; text-decoration: none; font-weight: 600; }
+  .strength { font-size: 11px; margin-top: -10px; margin-bottom: 14px; font-weight: 600; }
+  .strength.zwak { color: #C62828; }
+  .strength.matig { color: #F57C00; }
+  .strength.sterk { color: #2E7D32; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">KitchenRobot</div>
+    <div class="sub">UP Events</div>
+    <h2>Nieuw wachtwoord instellen</h2>
+    <p id="uitleg">We controleren je reset-link...</p>
+    <div id="meld"></div>
+    <div id="form" style="display:none">
+      <label>Nieuw wachtwoord (min. 8 tekens)</label>
+      <input type="password" id="ww" autocomplete="new-password">
+      <div class="strength" id="sterkte"></div>
+      <label>Bevestig nieuw wachtwoord</label>
+      <input type="password" id="ww2" autocomplete="new-password">
+      <button id="opslaan" onclick="zetWachtwoord()">Wachtwoord opslaan</button>
+    </div>
+    <a href="/" class="terug" id="terug">← Terug naar login</a>
+  </div>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const SUPABASE_URL = 'https://aezatnwsrhlwtykpixsq.supabase.co';
+const ANON_KEY = 'sb_publishable_qkQzUEM5fvJPSsfScEzNCg_Eug8-d4t';
+const supa = createClient(SUPABASE_URL, ANON_KEY, {
+  auth: { detectSessionInUrl: true, persistSession: true, autoRefreshToken: true },
+});
+
+const meldEl = document.getElementById('meld');
+const formEl = document.getElementById('form');
+const uitlegEl = document.getElementById('uitleg');
+
+function meld(tekst, type) {
+  meldEl.className = 'meld ' + (type || 'error');
+  meldEl.textContent = tekst;
+}
+
+// Wacht tot de URL-token verwerkt is
+async function init() {
+  // Supabase pikt automatisch ?code= of #access_token op via detectSessionInUrl
+  // Geef het 1 sec om de URL te lezen
+  await new Promise(r => setTimeout(r, 600));
+  const { data: { session }, error } = await supa.auth.getSession();
+  if (error || !session) {
+    uitlegEl.textContent = 'De reset-link is ongeldig of verlopen. Vraag opnieuw een reset-link aan via "Wachtwoord vergeten?".';
+    return;
+  }
+  uitlegEl.textContent = 'Welkom ' + session.user.email + '. Stel een nieuw wachtwoord in.';
+  formEl.style.display = 'block';
+}
+
+document.getElementById('ww').addEventListener('input', e => {
+  const w = e.target.value;
+  const el = document.getElementById('sterkte');
+  if (w.length === 0) { el.textContent = ''; return; }
+  if (w.length < 8) { el.textContent = '⚠ Te kort (' + w.length + '/8)'; el.className = 'strength zwak'; }
+  else if (w.length < 12 || !/[A-Z]/.test(w) || !/[0-9]/.test(w)) { el.textContent = 'Matig — voeg cijfer of hoofdletter toe'; el.className = 'strength matig'; }
+  else { el.textContent = '✓ Sterk wachtwoord'; el.className = 'strength sterk'; }
+});
+
+window.zetWachtwoord = async function() {
+  const ww = document.getElementById('ww').value;
+  const ww2 = document.getElementById('ww2').value;
+  if (ww.length < 8) { meld('Wachtwoord moet minstens 8 tekens zijn', 'error'); return; }
+  if (ww !== ww2) { meld('Wachtwoorden komen niet overeen', 'error'); return; }
+  const btn = document.getElementById('opslaan');
+  btn.disabled = true;
+  btn.textContent = 'Opslaan...';
+  const { data, error } = await supa.auth.updateUser({ password: ww });
+  if (error) {
+    meld('Fout: ' + error.message, 'error');
+    btn.disabled = false;
+    btn.textContent = 'Wachtwoord opslaan';
+    return;
+  }
+  meld('✓ Wachtwoord aangepast! Je wordt over enkele seconden doorgestuurd...', 'ok');
+  formEl.style.display = 'none';
+  setTimeout(() => { window.location.href = '/'; }, 2500);
+};
+
+init();
+</script>
+</body>
+</html>
