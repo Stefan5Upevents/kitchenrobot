@@ -21720,13 +21720,20 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
     toonTyping();
 
     try {
-      var sb = window.supabase || window._krSupabase;
-      var session = null;
-      if (sb && sb.auth) {
-        var s = await sb.auth.getSession();
-        session = s.data.session;
+      var sb = window._supa;
+      if (!sb || !sb.auth) {
+        verwijderTyping();
+        voegBerichtToe('systeem', '⚠ Niet ingelogd — herlaad de pagina en log opnieuw in.');
+        return;
       }
-      var token = session ? session.access_token : ANON_KEY;
+      var s = await sb.auth.getSession();
+      var session = s && s.data ? s.data.session : null;
+      if (!session) {
+        verwijderTyping();
+        voegBerichtToe('systeem', '⚠ Sessie verlopen — log opnieuw in.');
+        return;
+      }
+      var token = session.access_token;
 
       var resp = await fetch(SUPABASE_URL + '/functions/v1/sjef-chat', {
         method: 'POST',
