@@ -291,6 +291,42 @@
     </div>
   </section>
 
+  <!-- 5. FEEDBACK FLOW -->
+  <section id="scherm-feedback" class="hidden">
+    <button class="btn-back" onclick="naarMenu()">← <span data-t="terug">terug</span></button>
+    <h2 data-t="feedback_titel">Vraag of feedback</h2>
+    <p class="small" data-t="feedback_intro">Stuur direct een bericht naar Stefan. Komt in zijn adviezen-inbox.</p>
+
+    <div id="fb-form">
+      <label data-t="naam_optioneel">Jouw naam (optioneel)</label>
+      <input type="text" id="fbNaam" placeholder="bv. Sarah">
+
+      <label style="margin-top: 12px;" data-t="urgentie_label">Hoe dringend?</label>
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;">
+        <button class="keuze fb-urg" data-urg="normaal" onclick="kiesUrgentie(this)" data-t="urg_normaal">Gewoon</button>
+        <button class="keuze fb-urg" data-urg="hoog" onclick="kiesUrgentie(this)" data-t="urg_hoog">Belangrijk</button>
+        <button class="keuze fb-urg" data-urg="urgent" onclick="kiesUrgentie(this)" data-t="urg_urgent">Urgent</button>
+      </div>
+
+      <label style="margin-top: 12px;" data-t="bericht_label">Je bericht</label>
+      <div style="position: relative;">
+        <textarea id="fbBericht" rows="6" placeholder="Typ je vraag, zorg, of idee..." style="padding-right: 50px;"></textarea>
+        <button id="micBtn" type="button" onclick="toggleMic()" title="Spraak"
+          style="position: absolute; right: 10px; bottom: 10px; background: var(--aqua); color: white; border: 0; width: 38px; height: 38px; border-radius: 50%; font-size: 18px; cursor: pointer;">🎤</button>
+      </div>
+      <p class="small" id="micStatus" style="margin-top: 4px;"></p>
+
+      <button class="btn btn-success" style="margin-top: 14px;" onclick="versturenFeedback()" id="fbVerzendBtn" data-t="versturen">Versturen</button>
+    </div>
+
+    <div id="fb-klaar" class="hidden" style="text-align: center; padding: 24px 0;">
+      <div style="font-size: 64px;">📬</div>
+      <h2 data-t="fb_dank">Verstuurd!</h2>
+      <p data-t="fb_opgeslagen">Stefan ziet 't in zijn adviezen-inbox.</p>
+      <button class="btn btn-primary" onclick="naarMenu()" data-t="naar_menu">Terug naar menu</button>
+    </div>
+  </section>
+
 </main>
 
 <footer>KitchenRobot Hospitality v1 · <span id="versie">2026-04-29</span></footer>
@@ -336,6 +372,13 @@ const T = {
     verzenden: 'Versturen', dank: 'Dankjewel!', opgeslagen: 'Melding opgeslagen.',
     naar_menu: 'Terug naar menu', nieuwe_melding: 'Nog een melding',
     ja: 'Ja', nee: 'Nee', weet_niet: 'Weet niet',
+    feedback_titel: 'Vraag of feedback',
+    feedback_intro: 'Stuur direct een bericht naar Stefan. Komt in zijn adviezen-inbox.',
+    naam_optioneel: 'Jouw naam (optioneel)',
+    urgentie_label: 'Hoe dringend?',
+    urg_normaal: 'Gewoon', urg_hoog: 'Belangrijk', urg_urgent: 'Urgent',
+    bericht_label: 'Je bericht',
+    fb_dank: 'Verstuurd!', fb_opgeslagen: 'Stefan ziet \'t in zijn adviezen-inbox.',
   },
   en: {
     kies_outlet: 'Choose your location', kies_outlet_uitleg: 'Which venue are you working at?',
@@ -368,6 +411,13 @@ const T = {
     verzenden: 'Send', dank: 'Thanks!', opgeslagen: 'Report saved.',
     naar_menu: 'Back to menu', nieuwe_melding: 'Another report',
     ja: 'Yes', nee: 'No', weet_niet: 'Don\'t know',
+    feedback_titel: 'Question or feedback',
+    feedback_intro: 'Send a direct message to Stefan. Lands in his advice inbox.',
+    naam_optioneel: 'Your name (optional)',
+    urgentie_label: 'How urgent?',
+    urg_normaal: 'Normal', urg_hoog: 'Important', urg_urgent: 'Urgent',
+    bericht_label: 'Your message',
+    fb_dank: 'Sent!', fb_opgeslagen: 'Stefan will see it in his advice inbox.',
   }
 };
 
@@ -410,7 +460,7 @@ function api(actie, data = {}) {
   }).then(r => r.json());
 }
 function toon(id) {
-  ['scherm-outlet','scherm-pin','scherm-menu','scherm-waste'].forEach(s => {
+  ['scherm-outlet','scherm-pin','scherm-menu','scherm-waste','scherm-feedback'].forEach(s => {
     document.getElementById(s).classList.toggle('hidden', s !== id);
   });
   window.scrollTo(0, 0);
@@ -507,7 +557,81 @@ function naarBBQForm() {
 }
 
 function naarFeedback() {
-  toast('Feedback via Sjef komt later. Tijdelijk: app Stefan.', 'ok');
+  document.getElementById('fb-form').classList.remove('hidden');
+  document.getElementById('fb-klaar').classList.add('hidden');
+  document.getElementById('fbBericht').value = '';
+  document.querySelectorAll('.fb-urg').forEach(b => b.classList.remove('selected'));
+  document.querySelector('.fb-urg[data-urg="normaal"]').classList.add('selected');
+  state.feedback = { urgentie: 'normaal' };
+  toon('scherm-feedback');
+}
+
+function kiesUrgentie(btn) {
+  document.querySelectorAll('.fb-urg').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  state.feedback = state.feedback || {};
+  state.feedback.urgentie = btn.dataset.urg;
+}
+
+// ============ SPRAAK ============
+let recognizer = null;
+let recordering = false;
+function toggleMic() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const stat = document.getElementById('micStatus');
+  if (!SR) { stat.textContent = 'Spraak niet beschikbaar in deze browser. Typ je bericht.'; return; }
+  if (recordering) {
+    if (recognizer) try { recognizer.stop(); } catch(e) {}
+    return;
+  }
+  recognizer = new SR();
+  recognizer.lang = taal === 'en' ? 'en-US' : 'nl-NL';
+  recognizer.continuous = true;
+  recognizer.interimResults = true;
+  let baseTekst = document.getElementById('fbBericht').value;
+  if (baseTekst && !baseTekst.endsWith(' ')) baseTekst += ' ';
+  recognizer.onresult = (e) => {
+    let interim = '';
+    let finaal = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const tr = e.results[i][0].transcript;
+      if (e.results[i].isFinal) finaal += tr; else interim += tr;
+    }
+    document.getElementById('fbBericht').value = baseTekst + finaal + interim;
+    if (finaal) baseTekst += finaal;
+  };
+  recognizer.onerror = (e) => { stat.textContent = 'Spraak-fout: ' + e.error; };
+  recognizer.onend = () => {
+    recordering = false;
+    document.getElementById('micBtn').style.background = 'var(--aqua)';
+    stat.textContent = '';
+  };
+  try {
+    recognizer.start();
+    recordering = true;
+    document.getElementById('micBtn').style.background = 'var(--red)';
+    stat.textContent = '🎙️ Aan het luisteren... tap nogmaals om te stoppen.';
+  } catch(e) {
+    stat.textContent = 'Kon mic niet starten: ' + e.message;
+  }
+}
+
+async function versturenFeedback() {
+  const naam = document.getElementById('fbNaam').value.trim();
+  const bericht = document.getElementById('fbBericht').value.trim();
+  const urgentie = (state.feedback && state.feedback.urgentie) || 'normaal';
+  if (bericht.length < 5) { toast('Bericht is leeg', 'fout'); return; }
+  const btn = document.getElementById('fbVerzendBtn');
+  btn.disabled = true; btn.textContent = '⏳ Versturen...';
+  if (recordering && recognizer) try { recognizer.stop(); } catch(e) {}
+
+  const r = await api('feedback_versturen', {
+    token: state.token, naam, bericht, urgentie, taal
+  });
+  btn.disabled = false; btn.textContent = T[taal].versturen;
+  if (!r.ok) { toast('Fout: ' + (r.fout || 'onbekend'), 'fout'); return; }
+  document.getElementById('fb-form').classList.add('hidden');
+  document.getElementById('fb-klaar').classList.remove('hidden');
 }
 
 // ============ WASTE FLOW ============
