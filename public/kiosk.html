@@ -277,7 +277,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; back
 </head>
 <body>
 <div class="preview-banner">✨ Kiosk v2 PREVIEW — werkt met echte data</div>
-<div id="kiosk-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#43A047;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.85;pointer-events:none">v2026-04-26-23:00 ✓ allergenen-fix</div>
+<div id="kiosk-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#43A047;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.85;pointer-events:none">v2026-04-29-19:00 ✓ waste+sjef</div>
 <div id="app"><div class="loader">Laden...</div></div>
 <script>
 var SUPABASE_URL = 'https://aezatnwsrhlwtykpixsq.supabase.co';
@@ -1733,7 +1733,7 @@ function renderOnderBlokken(d) {
     '<div class="onder-blok" data-onder="documenten"><div class="icoon">📄</div><div class="label">Documenten</div><div class="stat">Buffet &middot; BBQ-PDF</div></div>' +
     '<div class="onder-blok ' + (d.meldingen_chef_open > 0 ? 'urgent' : '') + '" data-onder="meldingen"><div class="icoon">📨</div><div class="label">Meldingen</div><div class="stat">' + (d.meldingen_chef_open || 0) + ' open</div></div>' +
     '<div class="onder-blok" data-onder="buffet"><div class="icoon">🔥</div><div class="label">BBQ / Buffet</div><div class="stat">Formulier per groep</div></div>' +
-    '<div class="onder-blok onder-waste" data-onder="waste"><div class="icoon">🗑️</div><div class="label">Waste</div><div class="stat">Sligro · breuk · THT</div></div>' +
+    '<div class="onder-blok onder-waste" data-onder="waste" style="grid-column:span 2;background:#FFF3E0;border-color:#E65100;display:flex;align-items:center;gap:14px;padding:18px;"><div class="icoon" style="font-size:28px;margin:0">🗑️</div><div style="flex:1"><div class="label" style="font-size:14px">Waste melden</div><div class="stat" style="font-size:11px">Sligro / gerecht · breuk · THT · over datum</div></div><div style="font-size:20px;color:#E65100">›</div></div>' +
   '</div>';
 }
 
