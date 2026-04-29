@@ -1,0 +1,759 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#002D41">
+<title>Hospitality · KitchenRobot</title>
+<style>
+  :root {
+    --night: #002D41;
+    --aqua: #3FB8C4;
+    --blue: #1976D2;
+    --green: #2E7D32;
+    --red: #C62828;
+    --orange: #E65100;
+    --gray: #6E8591;
+    --light: #F5F8FA;
+    --warm: #FFF8E7;
+    --border: #D8E8EF;
+    --text: #234756;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
+  body { background: var(--night); color: white; min-height: 100vh; overflow-x: hidden; }
+  .app { max-width: 600px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; background: white; color: var(--text); }
+  header { background: var(--night); color: white; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
+  header h1 { margin: 0; font-size: 16px; font-weight: 600; }
+  header .outlet-badge { font-size: 11px; padding: 3px 8px; border-radius: 10px; background: var(--aqua); color: var(--night); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  .lang-toggle { display: flex; gap: 4px; align-items: center; font-size: 12px; }
+  .lang-toggle button { background: rgba(255,255,255,0.1); border: none; color: rgba(255,255,255,0.6); padding: 4px 8px; border-radius: 4px; font-weight: 600; cursor: pointer; font-size: 11px; }
+  .lang-toggle button.active { background: white; color: var(--night); }
+  main { flex: 1; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .hidden { display: none !important; }
+
+  h2 { margin: 0 0 4px; color: var(--night); font-size: 22px; }
+  h3 { margin: 8px 0 4px; color: var(--night); font-size: 16px; }
+  p { margin: 0 0 8px; line-height: 1.4; color: var(--text); }
+  .small { font-size: 13px; color: var(--gray); }
+
+  .btn { display: block; width: 100%; padding: 18px; font-size: 17px; font-weight: 600; border: none; border-radius: 12px; cursor: pointer; text-align: center; transition: transform 0.1s; }
+  .btn:active { transform: scale(0.98); }
+  .btn-primary { background: var(--aqua); color: var(--night); }
+  .btn-secondary { background: var(--light); color: var(--night); border: 2px solid var(--border); }
+  .btn-tertiary { background: white; color: var(--blue); border: 2px solid var(--blue); }
+  .btn-warning { background: var(--orange); color: white; }
+  .btn-success { background: var(--green); color: white; }
+  .btn-disabled { background: var(--gray); color: white; opacity: 0.5; cursor: not-allowed; }
+  .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .btn-back { background: none; border: none; color: var(--blue); font-size: 14px; padding: 4px 0; cursor: pointer; align-self: flex-start; font-weight: 600; }
+
+  .kaart { background: var(--light); border-radius: 12px; padding: 16px; border: 1px solid var(--border); }
+  .kaart-actie { background: white; border: 2px solid var(--border); border-radius: 12px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: all 0.15s; }
+  .kaart-actie:active { background: var(--light); border-color: var(--aqua); }
+  .kaart-actie .ico { font-size: 28px; }
+  .kaart-actie .tekst { flex: 1; }
+  .kaart-actie .tekst .titel { font-weight: 600; color: var(--night); font-size: 15px; }
+  .kaart-actie .tekst .desc { font-size: 13px; color: var(--gray); margin-top: 2px; }
+
+  input[type=text], input[type=tel], input[type=number], select, textarea {
+    width: 100%; padding: 14px; font-size: 16px; border: 2px solid var(--border); border-radius: 10px; background: white; color: var(--text); -webkit-appearance: none; appearance: none;
+  }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--aqua); }
+  textarea { resize: vertical; min-height: 80px; font-family: inherit; }
+  label { display: block; font-weight: 600; color: var(--night); font-size: 14px; margin-bottom: 6px; }
+
+  .pin-input { letter-spacing: 0.4em; text-align: center; font-size: 28px !important; font-weight: 600; padding: 18px !important; }
+
+  .keuze-grid { display: grid; gap: 8px; }
+  .keuze { background: white; border: 2px solid var(--border); border-radius: 10px; padding: 14px; cursor: pointer; text-align: left; font-size: 15px; color: var(--text); display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .keuze:active, .keuze.selected { border-color: var(--aqua); background: var(--light); }
+  .keuze.selected { border-color: var(--green); background: #e8f5e9; }
+  .keuze .meta { font-size: 12px; color: var(--gray); }
+
+  .pct-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+  .pct-btn { padding: 16px 4px; border: 2px solid var(--border); border-radius: 10px; background: white; font-weight: 600; font-size: 16px; cursor: pointer; color: var(--text); }
+  .pct-btn.selected { border-color: var(--green); background: #e8f5e9; color: var(--green); }
+
+  .ja-nee { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .ja-nee .keuze { justify-content: center; padding: 16px 8px; font-weight: 600; }
+  .ja-nee .keuze.ja.selected { border-color: var(--green); background: #e8f5e9; color: var(--green); }
+  .ja-nee .keuze.nee.selected { border-color: var(--red); background: #ffe8e8; color: var(--red); }
+  .ja-nee .keuze.weet-niet.selected { border-color: var(--orange); background: var(--warm); color: var(--orange); }
+
+  .foto-zone { border: 2px dashed var(--border); border-radius: 12px; padding: 24px 16px; text-align: center; cursor: pointer; background: var(--light); }
+  .foto-zone:active { background: white; border-color: var(--aqua); }
+  .foto-zone .ico { font-size: 40px; }
+  .foto-zone .titel { font-weight: 600; color: var(--night); margin-top: 4px; }
+  .foto-zone .desc { font-size: 13px; color: var(--gray); margin-top: 2px; }
+  .foto-zone img { max-width: 100%; max-height: 200px; border-radius: 10px; margin-top: 8px; }
+  .foto-zone input[type=file] { display: none; }
+
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--night); color: white; padding: 12px 18px; border-radius: 10px; font-size: 14px; z-index: 100; opacity: 0; transition: opacity 0.2s; max-width: 90%; }
+  .toast.show { opacity: 1; }
+  .toast.fout { background: var(--red); }
+  .toast.ok { background: var(--green); }
+
+  .laden { text-align: center; padding: 40px; color: var(--gray); }
+  .spinner { display: inline-block; width: 24px; height: 24px; border: 3px solid var(--border); border-top-color: var(--aqua); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .progress { display: flex; gap: 4px; margin: 4px 0 12px; }
+  .progress .stap { flex: 1; height: 4px; background: var(--border); border-radius: 2px; }
+  .progress .stap.actief { background: var(--aqua); }
+  .progress .stap.gedaan { background: var(--green); }
+
+  .versturen-zone { background: var(--warm); border: 2px solid var(--orange); border-radius: 12px; padding: 16px; }
+  .versturen-zone h3 { color: var(--orange); margin-top: 0; }
+
+  footer { padding: 16px; text-align: center; font-size: 11px; color: var(--gray); border-top: 1px solid var(--border); }
+</style>
+</head>
+<body>
+<div class="app">
+
+<header>
+  <h1>👨‍🍳 Hospitality</h1>
+  <span id="outletBadge" class="outlet-badge hidden"></span>
+  <div class="lang-toggle">
+    <button id="lang-nl" class="active" onclick="zetTaal('nl')">NL</button>
+    <button id="lang-en" onclick="zetTaal('en')">EN</button>
+  </div>
+</header>
+
+<main id="main">
+  <!-- Schermen worden via JS getoond/verborgen -->
+
+  <!-- 1. OUTLET KIEZEN -->
+  <section id="scherm-outlet" class="hidden">
+    <h2 data-t="kies_outlet">Kies je locatie</h2>
+    <p class="small" data-t="kies_outlet_uitleg">Welke vestiging werk je nu in?</p>
+    <div id="outletKnoppen" style="display: grid; gap: 10px; margin-top: 8px;"></div>
+  </section>
+
+  <!-- 2. PIN -->
+  <section id="scherm-pin" class="hidden">
+    <button class="btn-back" onclick="naarOutlet()">← <span data-t="terug">terug</span></button>
+    <h2 data-t="vul_pin">Vul je PIN in</h2>
+    <p class="small" id="pinUitleg"></p>
+    <input type="tel" inputmode="numeric" id="pinInput" class="pin-input" maxlength="8" autocomplete="off" placeholder="••••••" oninput="checkPin()" autofocus>
+    <button class="btn btn-primary" onclick="versturePin()" data-t="inloggen">Inloggen</button>
+  </section>
+
+  <!-- 3. HOOFDMENU -->
+  <section id="scherm-menu" class="hidden">
+    <h2 data-t="wat_doe_je">Wat ga je doen?</h2>
+    <div style="display: grid; gap: 10px; margin-top: 4px;">
+      <div class="kaart-actie" onclick="naarWaste()">
+        <span class="ico">🍽️</span>
+        <div class="tekst">
+          <div class="titel" data-t="meld_waste">Restant melden</div>
+          <div class="desc" data-t="meld_waste_desc">Bak komt terug, foto + paar vragen</div>
+        </div>
+        <span style="color: var(--gray);">›</span>
+      </div>
+      <div class="kaart-actie" onclick="naarBBQForm()">
+        <span class="ico">🔥</span>
+        <div class="tekst">
+          <div class="titel" data-t="bbq_form">BBQ-formulier</div>
+          <div class="desc" data-t="bbq_form_desc">Conflict-checker voor je locatie</div>
+        </div>
+        <span style="color: var(--gray);">›</span>
+      </div>
+      <div class="kaart-actie" onclick="naarFeedback()">
+        <span class="ico">💬</span>
+        <div class="tekst">
+          <div class="titel" data-t="feedback">Vraag of feedback</div>
+          <div class="desc" data-t="feedback_desc">Sjef helpt en stuurt naar Stefan</div>
+        </div>
+        <span style="color: var(--gray);">›</span>
+      </div>
+    </div>
+    <div style="margin-top: 24px;">
+      <button class="btn btn-secondary" onclick="uitloggen()" data-t="uitloggen">Uitloggen</button>
+    </div>
+  </section>
+
+  <!-- 4. WASTE FLOW -->
+  <section id="scherm-waste" class="hidden">
+    <button class="btn-back" onclick="naarMenu()">← <span data-t="terug">terug</span></button>
+    <div class="progress" id="wasteProgress">
+      <div class="stap"></div><div class="stap"></div><div class="stap"></div><div class="stap"></div><div class="stap"></div>
+    </div>
+
+    <!-- Stap 1: Welke groep -->
+    <div id="waste-stap-1">
+      <h2 data-t="welke_groep">Welke groep?</h2>
+      <p class="small" data-t="welke_groep_uitleg">Voor welke boeking is dit?</p>
+      <div id="boekingenLijst" class="laden"><div class="spinner"></div></div>
+      <div id="boekingZoeken" class="hidden" style="margin-top: 8px;">
+        <input type="text" id="boekingZoekText" placeholder="Of typ andere groep..." oninput="zoekBoekingHandmatig()">
+      </div>
+    </div>
+
+    <!-- Stap 2: Welk gerecht -->
+    <div id="waste-stap-2" class="hidden">
+      <h2 data-t="welk_gerecht">Welk gerecht?</h2>
+      <input type="text" id="gerechtZoek" placeholder="Zoek gerecht..." oninput="zoekGerechten()">
+      <div id="gerechtenLijst" class="keuze-grid" style="margin-top: 8px;"></div>
+    </div>
+
+    <!-- Stap 3: Hoeveelheid + presentatie -->
+    <div id="waste-stap-3" class="hidden">
+      <h2 data-t="hoeveel_over">Hoeveel is er over?</h2>
+      <p class="small" data-t="hoeveel_over_uitleg">Tik op het percentage dat ongeveer klopt.</p>
+      <div class="pct-grid">
+        <button class="pct-btn" data-pct="0" onclick="kiesPct(this)">0%</button>
+        <button class="pct-btn" data-pct="25" onclick="kiesPct(this)">25%</button>
+        <button class="pct-btn" data-pct="50" onclick="kiesPct(this)">50%</button>
+        <button class="pct-btn" data-pct="75" onclick="kiesPct(this)">75%</button>
+        <button class="pct-btn" data-pct="100" onclick="kiesPct(this)">100%</button>
+      </div>
+      <div id="leerfase-gewicht" style="margin-top: 16px;">
+        <label data-t="gewicht_label">Gewicht (gram, gewogen op weegschaal)</label>
+        <input type="number" id="gewichtInput" inputmode="numeric" placeholder="bv. 850">
+        <p class="small" data-t="gewicht_uitleg">In de leerfase wegen we elke retour. Vul het getal van de weegschaal in.</p>
+      </div>
+      <div style="margin-top: 16px;">
+        <label data-t="presentatie_label">Welke bak?</label>
+        <select id="presentatieSelect">
+          <option value="">— kies —</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" style="margin-top: 16px;" onclick="naarWasteStap(4)" data-t="volgende">Volgende →</button>
+    </div>
+
+    <!-- Stap 4: Foto's -->
+    <div id="waste-stap-4" class="hidden">
+      <h2 data-t="maak_fotos">Foto's maken</h2>
+      <p class="small" data-t="fotos_uitleg">Twee foto's: een van bovenaf (overzicht) en een close-up van het restant.</p>
+
+      <h3 data-t="foto_overzicht">📷 Foto van bovenaf</h3>
+      <label class="foto-zone" id="zone-overzicht">
+        <input type="file" accept="image/*" capture="environment" onchange="zetFoto(this, 'overzicht')">
+        <div class="ico">📷</div>
+        <div class="titel" data-t="foto_tap">Tap om te fotograferen</div>
+        <div class="desc" data-t="foto_overzicht_desc">Recht van bovenaf, hele bak in beeld</div>
+        <img id="img-overzicht" class="hidden">
+      </label>
+
+      <h3 data-t="foto_close">🔍 Close-up van restant</h3>
+      <label class="foto-zone" id="zone-close">
+        <input type="file" accept="image/*" capture="environment" onchange="zetFoto(this, 'close')">
+        <div class="ico">🔍</div>
+        <div class="titel" data-t="foto_tap">Tap om te fotograferen</div>
+        <div class="desc" data-t="foto_close_desc">Schuin van dichtbij, structuur zichtbaar</div>
+        <img id="img-close" class="hidden">
+      </label>
+
+      <button class="btn btn-primary" style="margin-top: 16px;" onclick="naarWasteStap(5)" data-t="volgende">Volgende →</button>
+    </div>
+
+    <!-- Stap 5: Context + verzenden -->
+    <div id="waste-stap-5" class="hidden">
+      <h2 data-t="extra_info">Nog drie vragen</h2>
+
+      <h3 data-t="groep_compleet_titel">Was de groep compleet?</h3>
+      <div class="ja-nee">
+        <button class="keuze ja" onclick="kiesContext('compleet', true, this)" data-t="ja">Ja</button>
+        <button class="keuze nee" onclick="kiesContext('compleet', false, this)" data-t="nee">Nee</button>
+        <button class="keuze weet-niet" onclick="kiesContext('compleet', null, this)" data-t="weet_niet">Weet niet</button>
+      </div>
+
+      <h3 data-t="bijgemaakt_titel">Is er bijgemaakt door de keuken?</h3>
+      <div class="ja-nee">
+        <button class="keuze ja" onclick="kiesContext('bijgemaakt', true, this)" data-t="ja">Ja</button>
+        <button class="keuze nee" onclick="kiesContext('bijgemaakt', false, this)" data-t="nee">Nee</button>
+        <button class="keuze weet-niet" onclick="kiesContext('bijgemaakt', null, this)" data-t="weet_niet">Weet niet</button>
+      </div>
+      <p class="small" data-t="bijgemaakt_uitleg">Bij "weet niet" vragen we het na bij de keuken.</p>
+
+      <h3 data-t="naam_titel">Jouw voornaam (optioneel)</h3>
+      <input type="text" id="naamInput" placeholder="bv. Sarah">
+
+      <h3 data-t="opmerking_titel">Opmerking (optioneel)</h3>
+      <textarea id="opmerkingInput" placeholder="bijv. te scherp, niet lekker bevonden, te veel..."></textarea>
+
+      <div class="versturen-zone" style="margin-top: 16px;">
+        <h3 data-t="klaar">Klaar?</h3>
+        <p data-t="klaar_uitleg">Hierna gaat de melding direct naar Stefan en Joël voor controle.</p>
+        <button class="btn btn-success" id="btnVerzend" onclick="verzendMelding()" data-t="verzenden">Versturen</button>
+      </div>
+    </div>
+
+    <!-- Klaar -->
+    <div id="waste-klaar" class="hidden" style="text-align: center; padding: 24px 0;">
+      <div style="font-size: 64px;">✅</div>
+      <h2 data-t="dank">Dankjewel!</h2>
+      <p data-t="opgeslagen">Melding opgeslagen.</p>
+      <button class="btn btn-primary" onclick="naarMenu()" data-t="naar_menu">Terug naar menu</button>
+      <button class="btn btn-secondary" style="margin-top: 8px;" onclick="naarWaste()" data-t="nieuwe_melding">Nog een melding</button>
+    </div>
+  </section>
+
+</main>
+
+<footer>KitchenRobot Hospitality v1 · <span id="versie">2026-04-29</span></footer>
+
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+const API = 'https://aezatnwsrhlwtykpixsq.supabase.co/functions/v1/hospitality-melding';
+const ANON = 'sb_publishable_qkQzUEM5fvJPSsfScEzNCg_Eug8-d4t';
+
+// ============ TALEN ============
+const T = {
+  nl: {
+    kies_outlet: 'Kies je locatie', kies_outlet_uitleg: 'Welke vestiging werk je nu in?',
+    terug: 'terug', vul_pin: 'Vul je PIN in', inloggen: 'Inloggen',
+    wat_doe_je: 'Wat ga je doen?', meld_waste: 'Restant melden',
+    meld_waste_desc: 'Bak komt terug, foto + paar vragen',
+    bbq_form: 'BBQ-formulier', bbq_form_desc: 'Conflict-checker voor je locatie',
+    feedback: 'Vraag of feedback', feedback_desc: 'Sjef helpt en stuurt naar Stefan',
+    uitloggen: 'Uitloggen',
+    welke_groep: 'Welke groep?', welke_groep_uitleg: 'Voor welke boeking is dit?',
+    welk_gerecht: 'Welk gerecht?', hoeveel_over: 'Hoeveel is er over?',
+    hoeveel_over_uitleg: 'Tik op het percentage dat ongeveer klopt.',
+    gewicht_label: 'Gewicht (gram, gewogen op weegschaal)',
+    gewicht_uitleg: 'In de leerfase wegen we elke retour. Vul het getal van de weegschaal in.',
+    presentatie_label: 'Welke bak?', volgende: 'Volgende →',
+    maak_fotos: 'Foto\'s maken',
+    fotos_uitleg: 'Twee foto\'s: een van bovenaf (overzicht) en een close-up van het restant.',
+    foto_overzicht: '📷 Foto van bovenaf', foto_close: '🔍 Close-up van restant',
+    foto_tap: 'Tap om te fotograferen',
+    foto_overzicht_desc: 'Recht van bovenaf, hele bak in beeld',
+    foto_close_desc: 'Schuin van dichtbij, structuur zichtbaar',
+    extra_info: 'Nog drie vragen',
+    groep_compleet_titel: 'Was de groep compleet?',
+    bijgemaakt_titel: 'Is er bijgemaakt door de keuken?',
+    bijgemaakt_uitleg: 'Bij "weet niet" vragen we het na bij de keuken.',
+    naam_titel: 'Jouw voornaam (optioneel)',
+    opmerking_titel: 'Opmerking (optioneel)',
+    klaar: 'Klaar?',
+    klaar_uitleg: 'Hierna gaat de melding direct naar Stefan en Joël voor controle.',
+    verzenden: 'Versturen', dank: 'Dankjewel!', opgeslagen: 'Melding opgeslagen.',
+    naar_menu: 'Terug naar menu', nieuwe_melding: 'Nog een melding',
+    ja: 'Ja', nee: 'Nee', weet_niet: 'Weet niet',
+  },
+  en: {
+    kies_outlet: 'Choose your location', kies_outlet_uitleg: 'Which venue are you working at?',
+    terug: 'back', vul_pin: 'Enter your PIN', inloggen: 'Sign in',
+    wat_doe_je: 'What are you doing?', meld_waste: 'Report leftovers',
+    meld_waste_desc: 'Tray comes back, photo + a few questions',
+    bbq_form: 'BBQ form', bbq_form_desc: 'Conflict checker for your venue',
+    feedback: 'Question or feedback', feedback_desc: 'Sjef helps and sends it to Stefan',
+    uitloggen: 'Sign out',
+    welke_groep: 'Which group?', welke_groep_uitleg: 'For which booking is this?',
+    welk_gerecht: 'Which dish?', hoeveel_over: 'How much is left?',
+    hoeveel_over_uitleg: 'Tap the percentage that fits best.',
+    gewicht_label: 'Weight (grams, weighed on scale)',
+    gewicht_uitleg: 'During the learning phase we weigh every return. Enter the scale value.',
+    presentatie_label: 'Which container?', volgende: 'Next →',
+    maak_fotos: 'Take photos',
+    fotos_uitleg: 'Two photos: one from above (overview) and one close-up of the leftover.',
+    foto_overzicht: '📷 Photo from above', foto_close: '🔍 Close-up of leftover',
+    foto_tap: 'Tap to take photo',
+    foto_overzicht_desc: 'Straight down, whole tray in view',
+    foto_close_desc: 'Diagonal close-up, texture visible',
+    extra_info: 'Three more questions',
+    groep_compleet_titel: 'Was the group complete?',
+    bijgemaakt_titel: 'Did the kitchen prepare more?',
+    bijgemaakt_uitleg: 'If "don\'t know", we will ask the kitchen.',
+    naam_titel: 'Your first name (optional)',
+    opmerking_titel: 'Comment (optional)',
+    klaar: 'Done?',
+    klaar_uitleg: 'After this the report goes straight to Stefan and Joël for review.',
+    verzenden: 'Send', dank: 'Thanks!', opgeslagen: 'Report saved.',
+    naar_menu: 'Back to menu', nieuwe_melding: 'Another report',
+    ja: 'Yes', nee: 'No', weet_niet: 'Don\'t know',
+  }
+};
+
+let taal = 'nl';
+function zetTaal(t) {
+  taal = t;
+  document.getElementById('lang-nl').classList.toggle('active', t === 'nl');
+  document.getElementById('lang-en').classList.toggle('active', t === 'en');
+  document.querySelectorAll('[data-t]').forEach(el => {
+    const k = el.dataset.t;
+    if (T[t][k]) el.textContent = T[t][k];
+  });
+}
+
+// ============ STATE ============
+const state = {
+  outlet: null,
+  token: localStorage.getItem('hosp_token') || null,
+  tokenOutlet: localStorage.getItem('hosp_outlet') || null,
+  tokenVerloop: localStorage.getItem('hosp_verloop') || null,
+  // waste flow
+  waste: {
+    boeking_id: null, boeking_naam: null, bedrijf_naam: null, personen: null,
+    gerecht_id: null, gerecht_naam: null, productsoort_naam: null,
+    presentatievorm_id: null, presentatievorm_naam: null,
+    percentage_over: null, gewogen_grammen: null,
+    foto_overzicht_base64: null, foto_close_base64: null,
+    groep_compleet: undefined, bijgemaakt: undefined,
+    naam: '', opmerking: ''
+  },
+  presentatievormen: [],
+};
+
+// ============ HELPERS ============
+function api(actie, data = {}) {
+  return fetch(API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ANON, 'apikey': ANON },
+    body: JSON.stringify({ actie, ...data })
+  }).then(r => r.json());
+}
+function toon(id) {
+  ['scherm-outlet','scherm-pin','scherm-menu','scherm-waste'].forEach(s => {
+    document.getElementById(s).classList.toggle('hidden', s !== id);
+  });
+  window.scrollTo(0, 0);
+}
+function toast(msg, soort = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.className = 'toast show ' + soort;
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+function badgeUpdate() {
+  const b = document.getElementById('outletBadge');
+  if (state.outlet) { b.textContent = state.outlet; b.classList.remove('hidden'); }
+  else b.classList.add('hidden');
+}
+
+// ============ START ============
+async function start() {
+  // Token nog geldig?
+  if (state.token && state.tokenVerloop && new Date(state.tokenVerloop) > new Date()) {
+    state.outlet = state.tokenOutlet;
+    badgeUpdate();
+    naarMenu();
+    return;
+  }
+  // Outlet kiezen
+  await toonOutletKnoppen();
+  toon('scherm-outlet');
+}
+
+async function toonOutletKnoppen() {
+  // Voor fase 1 zetten we 'm hard op weesp + west, maar de actief_outlets bepaalt later
+  const c = document.getElementById('outletKnoppen');
+  c.innerHTML = '';
+  const outlets = [
+    { code: 'weesp', label: 'Weesp', emoji: '🏛️' },
+    { code: 'west', label: 'West', emoji: '🏗️' },
+  ];
+  outlets.forEach(o => {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-secondary';
+    btn.style.padding = '24px';
+    btn.style.fontSize = '20px';
+    btn.innerHTML = `${o.emoji} ${o.label}`;
+    btn.onclick = () => kiesOutlet(o.code);
+    c.appendChild(btn);
+  });
+}
+
+function kiesOutlet(code) {
+  state.outlet = code;
+  badgeUpdate();
+  document.getElementById('pinUitleg').textContent = `Locatie: ${code === 'weesp' ? 'Weesp' : 'West'}`;
+  document.getElementById('pinInput').value = '';
+  toon('scherm-pin');
+  setTimeout(() => document.getElementById('pinInput').focus(), 100);
+}
+
+function naarOutlet() {
+  state.outlet = null; badgeUpdate(); toon('scherm-outlet');
+}
+
+function checkPin() {
+  const v = document.getElementById('pinInput').value;
+  if (v.length >= 6) versturePin();
+}
+
+async function versturePin() {
+  const pin = document.getElementById('pinInput').value;
+  if (pin.length < 4) { toast('PIN te kort', 'fout'); return; }
+  const r = await api('pin_check', { outlet: state.outlet, pin });
+  if (!r.ok) { toast(r.fout || 'PIN onjuist', 'fout'); return; }
+  state.token = r.token;
+  state.tokenOutlet = r.outlet;
+  state.tokenVerloop = r.verloopt_op;
+  localStorage.setItem('hosp_token', r.token);
+  localStorage.setItem('hosp_outlet', r.outlet);
+  localStorage.setItem('hosp_verloop', r.verloopt_op);
+  badgeUpdate();
+  naarMenu();
+}
+
+function uitloggen() {
+  state.token = null; state.outlet = null;
+  ['hosp_token','hosp_outlet','hosp_verloop'].forEach(k => localStorage.removeItem(k));
+  badgeUpdate();
+  toon('scherm-outlet');
+}
+
+function naarMenu() { toon('scherm-menu'); }
+
+function naarBBQForm() {
+  const slug = state.outlet === 'west' ? 'sales-bbq.html' : 'sales-bbq.html';
+  window.location.href = '/' + slug;
+}
+
+function naarFeedback() {
+  toast('Feedback via Sjef komt later. Tijdelijk: app Stefan.', 'ok');
+}
+
+// ============ WASTE FLOW ============
+async function naarWaste() {
+  Object.assign(state.waste, {
+    boeking_id: null, boeking_naam: null, bedrijf_naam: null, personen: null,
+    gerecht_id: null, gerecht_naam: null, productsoort_naam: null,
+    presentatievorm_id: null, presentatievorm_naam: null,
+    percentage_over: null, gewogen_grammen: null,
+    foto_overzicht_base64: null, foto_close_base64: null,
+    groep_compleet: undefined, bijgemaakt: undefined,
+    naam: '', opmerking: ''
+  });
+  document.getElementById('waste-klaar').classList.add('hidden');
+  ['waste-stap-1','waste-stap-2','waste-stap-3','waste-stap-4','waste-stap-5'].forEach((id,i) => {
+    document.getElementById(id).classList.toggle('hidden', i !== 0);
+  });
+  zetProgress(1);
+  toon('scherm-waste');
+  await laadBoekingen();
+  await laadPresentatievormen();
+}
+
+function zetProgress(stap) {
+  const stappen = document.querySelectorAll('#wasteProgress .stap');
+  stappen.forEach((el, i) => {
+    el.classList.remove('actief', 'gedaan');
+    if (i + 1 < stap) el.classList.add('gedaan');
+    else if (i + 1 === stap) el.classList.add('actief');
+  });
+}
+
+async function laadBoekingen() {
+  const r = await api('boekingen_vandaag', { token: state.token });
+  const c = document.getElementById('boekingenLijst');
+  if (!r.ok) { c.innerHTML = '<p class="small">Kon boekingen niet ophalen</p>'; return; }
+  c.innerHTML = '';
+  c.className = 'keuze-grid';
+  if (!r.boekingen.length) {
+    c.innerHTML = '<p class="small">Geen boekingen vandaag.</p>';
+  } else {
+    r.boekingen.forEach(b => {
+      const el = document.createElement('button');
+      el.className = 'keuze';
+      el.innerHTML = `
+        <div>
+          <div style="font-weight:600;">${b.naam || '(geen naam)'}</div>
+          <div class="meta">${b.bedrijf_naam || ''} · ${b.personen || '?'}p · ${b.deadline_tijd || ''}</div>
+        </div>
+        <span style="color: var(--gray);">›</span>`;
+      el.onclick = () => kiesBoeking(b);
+      c.appendChild(el);
+    });
+  }
+  // 'Andere'-knop
+  const elAnder = document.createElement('button');
+  elAnder.className = 'keuze';
+  elAnder.innerHTML = `<div><div style="font-weight:600;">+ Andere groep / niet in lijst</div><div class="meta">Vrij intypen</div></div>`;
+  elAnder.onclick = () => {
+    document.getElementById('boekingZoeken').classList.remove('hidden');
+    document.getElementById('boekingZoekText').focus();
+  };
+  c.appendChild(elAnder);
+}
+
+function kiesBoeking(b) {
+  state.waste.boeking_id = b.id;
+  state.waste.boeking_naam = b.naam;
+  state.waste.bedrijf_naam = b.bedrijf_naam;
+  state.waste.personen = b.personen;
+  naarWasteStap(2);
+}
+
+function zoekBoekingHandmatig() {
+  // Niet auto-doorgaan; gebruiker drukt Enter
+  const v = document.getElementById('boekingZoekText').value.trim();
+  if (v.length > 2) {
+    state.waste.boeking_id = null;
+    state.waste.boeking_naam = v;
+    state.waste.bedrijf_naam = null;
+    state.waste.personen = null;
+  }
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    const t = document.getElementById('boekingZoekText');
+    if (t && document.activeElement === t && t.value.trim().length > 2) {
+      naarWasteStap(2);
+    }
+  }
+});
+
+let zoekGerechtTimer = null;
+async function zoekGerechten() {
+  clearTimeout(zoekGerechtTimer);
+  zoekGerechtTimer = setTimeout(async () => {
+    const v = document.getElementById('gerechtZoek').value.trim();
+    const r = await api('gerechten_lijst', { token: state.token, zoek: v });
+    if (!r.ok) return;
+    const c = document.getElementById('gerechtenLijst');
+    c.innerHTML = '';
+    r.gerechten.forEach(g => {
+      const el = document.createElement('button');
+      el.className = 'keuze';
+      el.innerHTML = `<div><div style="font-weight:600;">${g.naam}</div><div class="meta">${g.productsoort}</div></div><span style="color: var(--gray);">›</span>`;
+      el.onclick = () => {
+        state.waste.gerecht_id = g.id;
+        state.waste.gerecht_naam = g.naam;
+        state.waste.productsoort_naam = g.productsoort;
+        naarWasteStap(3);
+      };
+      c.appendChild(el);
+    });
+  }, 250);
+}
+
+async function laadPresentatievormen() {
+  if (state.presentatievormen.length) { vulPresentatieSelect(); return; }
+  const r = await api('presentatievormen', { token: state.token });
+  if (!r.ok) return;
+  state.presentatievormen = r.presentatievormen;
+  vulPresentatieSelect();
+}
+function vulPresentatieSelect() {
+  const s = document.getElementById('presentatieSelect');
+  s.innerHTML = '<option value="">— kies —</option>';
+  state.presentatievormen.forEach(p => {
+    const o = document.createElement('option');
+    o.value = p.id; o.textContent = p.naam;
+    s.appendChild(o);
+  });
+}
+
+function kiesPct(btn) {
+  document.querySelectorAll('.pct-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  state.waste.percentage_over = parseInt(btn.dataset.pct);
+}
+
+function kiesContext(veld, waarde, btn) {
+  state.waste[veld === 'compleet' ? 'groep_compleet' : 'bijgemaakt'] = waarde;
+  // visueel
+  const grp = btn.parentElement;
+  grp.querySelectorAll('.keuze').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+
+async function zetFoto(input, type) {
+  const file = input.files[0];
+  if (!file) return;
+  const base64 = await comprimeerFoto(file, 1280, 0.8);
+  state.waste[`foto_${type}_base64`] = base64;
+  const img = document.getElementById(`img-${type}`);
+  img.src = base64;
+  img.classList.remove('hidden');
+  // verberg titel/desc
+  const zone = document.getElementById(`zone-${type}`);
+  zone.querySelectorAll('.ico, .titel, .desc').forEach(el => el.classList.add('hidden'));
+  toast('Foto opgeslagen', 'ok');
+}
+
+function comprimeerFoto(file, maxBreed, kwaliteit) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let w = img.width, h = img.height;
+        if (w > maxBreed) { h = h * (maxBreed / w); w = maxBreed; }
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        res(canvas.toDataURL('image/jpeg', kwaliteit));
+      };
+      img.onerror = rej;
+      img.src = r.result;
+    };
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+}
+
+function naarWasteStap(stap) {
+  // Validatie per stap
+  if (stap === 2 && !state.waste.boeking_naam) { toast('Kies een groep', 'fout'); return; }
+  if (stap === 3 && !state.waste.gerecht_id) { toast('Kies een gerecht', 'fout'); return; }
+  if (stap === 4) {
+    if (state.waste.percentage_over === null) { toast('Kies percentage over', 'fout'); return; }
+    state.waste.gewogen_grammen = parseInt(document.getElementById('gewichtInput').value) || null;
+    const ps = document.getElementById('presentatieSelect');
+    state.waste.presentatievorm_id = ps.value || null;
+    state.waste.presentatievorm_naam = ps.options[ps.selectedIndex]?.text || null;
+  }
+  if (stap === 5) {
+    if (!state.waste.foto_overzicht_base64) { toast('Foto van bovenaf nog ontbreekt', 'fout'); return; }
+  }
+  ['waste-stap-1','waste-stap-2','waste-stap-3','waste-stap-4','waste-stap-5'].forEach((id,i) => {
+    document.getElementById(id).classList.toggle('hidden', i !== stap - 1);
+  });
+  zetProgress(stap);
+}
+
+async function verzendMelding() {
+  const btn = document.getElementById('btnVerzend');
+  btn.disabled = true; btn.textContent = '⏳ Versturen...';
+  state.waste.naam = document.getElementById('naamInput').value;
+  state.waste.opmerking = document.getElementById('opmerkingInput').value;
+
+  const payload = {
+    token: state.token,
+    melding: {
+      gemeld_door_naam: state.waste.naam || null,
+      taal: taal,
+      boeking_id: state.waste.boeking_id,
+      boeking_naam: state.waste.boeking_naam,
+      bedrijf_naam: state.waste.bedrijf_naam,
+      personen_op_boeking: state.waste.personen,
+      gerecht_id: state.waste.gerecht_id,
+      gerecht_naam: state.waste.gerecht_naam,
+      productsoort_naam: state.waste.productsoort_naam,
+      presentatievorm_id: state.waste.presentatievorm_id,
+      presentatievorm_naam: state.waste.presentatievorm_naam,
+      percentage_over: state.waste.percentage_over,
+      gewogen_grammen: state.waste.gewogen_grammen,
+      groep_compleet: state.waste.groep_compleet,
+      bijgemaakt: state.waste.bijgemaakt,
+      opmerking: state.waste.opmerking,
+      foto_overzicht_base64: state.waste.foto_overzicht_base64,
+      foto_close_base64: state.waste.foto_close_base64,
+    }
+  };
+
+  const r = await api('melding_opslaan', payload);
+  btn.disabled = false; btn.textContent = T[taal].verzenden;
+  if (!r.ok) { toast('Fout: ' + (r.fout || 'onbekend'), 'fout'); return; }
+
+  // Klaar-scherm
+  ['waste-stap-1','waste-stap-2','waste-stap-3','waste-stap-4','waste-stap-5'].forEach(id => {
+    document.getElementById(id).classList.add('hidden');
+  });
+  document.getElementById('waste-klaar').classList.remove('hidden');
+  toast('Verzonden', 'ok');
+}
+
+// Start de app
+start();
+</script>
+</body>
+</html>
