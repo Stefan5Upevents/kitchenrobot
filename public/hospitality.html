@@ -107,6 +107,10 @@
   .versturen-zone h3 { color: var(--orange); margin-top: 0; }
 
   footer { padding: 16px; text-align: center; font-size: 11px; color: var(--gray); border-top: 1px solid var(--border); }
+
+.niveau-btn { font-size: 13px !important; padding: 10px 8px !important; text-align: left !important; }
+.niveau-btn.niveau-actief { background: var(--aqua) !important; color: white !important; border-color: var(--aqua) !important; }
+
 </style>
 </head>
 <body>
@@ -144,11 +148,19 @@
   <section id="scherm-menu" class="hidden">
     <h2 data-t="wat_doe_je">Wat ga je doen?</h2>
     <div style="display: grid; gap: 10px; margin-top: 4px;">
-      <div class="kaart-actie" onclick="naarWaste()">
-        <span class="ico">🍽️</span>
+      <div class="kaart-actie" onclick="naarSnelWaste()">
+        <span class="ico">⚡</span>
         <div class="tekst">
-          <div class="titel" data-t="meld_waste">Restant melden</div>
-          <div class="desc" data-t="meld_waste_desc">Bak komt terug, foto + paar vragen</div>
+          <div class="titel" data-t="snel_waste">Snelle waste-melding</div>
+          <div class="desc" data-t="snel_waste_desc">Foto + welke groep + compleet ja/nee</div>
+        </div>
+        <span style="color: var(--gray);">›</span>
+      </div>
+      <div class="kaart-actie" onclick="naarWaste()">
+        <span class="ico">📊</span>
+        <div class="tekst">
+          <div class="titel" data-t="meld_waste">Uitgebreide melding</div>
+          <div class="desc" data-t="meld_waste_desc">Met weegschaal en foto's — leerfase</div>
         </div>
         <span style="color: var(--gray);">›</span>
       </div>
@@ -193,9 +205,19 @@
 
     <!-- Stap 2: Welk gerecht -->
     <div id="waste-stap-2" class="hidden">
-      <h2 data-t="welk_gerecht">Welk gerecht?</h2>
-      <input type="text" id="gerechtZoek" placeholder="Zoek gerecht..." oninput="zoekGerechten()">
-      <div id="gerechtenLijst" class="keuze-grid" style="margin-top: 8px;"></div>
+      <h2 data-t="wat_komt_terug">Wat komt er terug?</h2>
+      <div class="ja-nee" style="margin-bottom: 12px;">
+        <button class="keuze niveau-btn niveau-actief" data-niveau="gerecht" onclick="kiesNiveau('gerecht')" data-t="niveau_gerecht">🍽️ Specifiek gerecht</button>
+        <button class="keuze niveau-btn" data-niveau="productsoort" onclick="kiesNiveau('productsoort')" data-t="niveau_productsoort">📦 Hele groep (Borrelplateau, Bitterganituur, …)</button>
+      </div>
+      <div id="niveau-gerecht-view">
+        <input type="text" id="gerechtZoek" placeholder="Zoek gerecht..." oninput="zoekGerechten()">
+        <div id="gerechtenLijst" class="keuze-grid" style="margin-top: 8px;"></div>
+      </div>
+      <div id="niveau-productsoort-view" class="hidden">
+        <p class="small" data-t="kies_productsoort">Kies de productsoort van wat er terugkomt</p>
+        <div id="productsoortLijst" class="keuze-grid" style="margin-top: 8px;"></div>
+      </div>
     </div>
 
     <!-- Stap 3: Hoeveelheid + presentatie -->
@@ -204,6 +226,8 @@
       <p class="small" data-t="hoeveel_over_uitleg">Tik op het percentage dat ongeveer klopt.</p>
       <div class="pct-grid">
         <button class="pct-btn" data-pct="0" onclick="kiesPct(this)">0%</button>
+        <button class="pct-btn" data-pct="5" onclick="kiesPct(this)">5%</button>
+        <button class="pct-btn" data-pct="10" onclick="kiesPct(this)">10%</button>
         <button class="pct-btn" data-pct="25" onclick="kiesPct(this)">25%</button>
         <button class="pct-btn" data-pct="50" onclick="kiesPct(this)">50%</button>
         <button class="pct-btn" data-pct="75" onclick="kiesPct(this)">75%</button>
@@ -214,11 +238,12 @@
         <input type="number" id="gewichtInput" inputmode="numeric" placeholder="bv. 850">
         <p class="small" data-t="gewicht_uitleg">In de leerfase wegen we elke retour. Vul het getal van de weegschaal in.</p>
       </div>
-      <div style="margin-top: 16px;">
+      <div style="margin-top: 16px;" id="presentatie-blok">
         <label data-t="presentatie_label">Welke bak?</label>
         <select id="presentatieSelect">
           <option value="">— kies —</option>
         </select>
+        <p class="small" id="bak-overslaan-uitleg" style="margin-top: 6px; display: none;" data-t="bak_overslaan_uitleg">Bij groep-niveau is bak optioneel — sla over of kies een algemene vorm.</p>
       </div>
       <button class="btn btn-primary" style="margin-top: 16px;" onclick="naarWasteStap(4)" data-t="volgende">Volgende →</button>
     </div>
@@ -288,6 +313,56 @@
       <p data-t="opgeslagen">Melding opgeslagen.</p>
       <button class="btn btn-primary" onclick="naarMenu()" data-t="naar_menu">Terug naar menu</button>
       <button class="btn btn-secondary" style="margin-top: 8px;" onclick="naarWaste()" data-t="nieuwe_melding">Nog een melding</button>
+    </div>
+  </section>
+
+  <!-- 4b. SNELLE WASTE FLOW (nieuw v2) -->
+  <section id="scherm-snel-waste" class="hidden">
+    <button class="btn-back" onclick="naarMenu()">← <span data-t="terug">terug</span></button>
+    <div class="progress" id="snelProgress">
+      <div class="stap"></div><div class="stap"></div><div class="stap"></div>
+    </div>
+
+    <div id="snel-stap-1">
+      <h2 data-t="snel_groep">Welke groep komt terug?</h2>
+      <div id="snelBoekingenLijst" class="keuze-grid"></div>
+    </div>
+
+    <div id="snel-stap-2" class="hidden">
+      <h2 data-t="snel_foto">Snelle foto</h2>
+      <p class="small" data-t="snel_foto_uitleg">Eén foto van wat er terugkomt — optioneel.</p>
+      <label class="foto-zone" id="snel-zone-overzicht">
+        <input type="file" accept="image/*" capture="environment" onchange="zetSnelFoto(this)">
+        <div class="ico">📷</div>
+        <div class="titel" data-t="foto_tap">Tap om te fotograferen</div>
+        <div class="desc" data-t="snel_foto_desc">Recht van bovenaf is meestal genoeg</div>
+        <img id="snel-img-overzicht" class="hidden">
+      </label>
+      <button class="btn btn-secondary" style="margin-top: 12px;" onclick="snelStap(3)" data-t="snel_zonder_foto">Verder zonder foto →</button>
+      <button class="btn btn-primary" style="margin-top: 8px;" onclick="snelStap(3)" id="snelFotoVolgende" data-t="volgende" disabled>Volgende →</button>
+    </div>
+
+    <div id="snel-stap-3" class="hidden">
+      <h2 data-t="snel_compleet">Was de groep compleet?</h2>
+      <p class="small" id="snel-boeking-info"></p>
+      <div class="ja-nee">
+        <button class="keuze ja" onclick="kiesSnelCompleet(true, this)" data-t="ja">Ja</button>
+        <button class="keuze nee" onclick="kiesSnelCompleet(false, this)" data-t="nee">Nee</button>
+        <button class="keuze weet-niet" onclick="kiesSnelCompleet(null, this)" data-t="weet_niet">Weet niet</button>
+      </div>
+      <h3 style="margin-top: 16px;" data-t="opmerking_optioneel">Opmerking (optioneel)</h3>
+      <textarea id="snelOpmerking" placeholder="bv. te scherp, niet lekker..."></textarea>
+      <h3 style="margin-top: 12px;" data-t="naam_titel">Jouw voornaam (optioneel)</h3>
+      <input type="text" id="snelNaam" placeholder="bv. Sarah">
+      <button class="btn btn-success" style="margin-top: 16px;" id="btnSnelVerzend" onclick="verzendSnelMelding()" data-t="verzenden">Versturen</button>
+    </div>
+
+    <div id="snel-klaar" class="hidden" style="text-align: center; padding: 24px 0;">
+      <div style="font-size: 64px;">✅</div>
+      <h2 data-t="dank">Dankjewel!</h2>
+      <p data-t="opgeslagen">Melding opgeslagen.</p>
+      <button class="btn btn-primary" onclick="naarMenu()" data-t="naar_menu">Terug naar menu</button>
+      <button class="btn btn-secondary" style="margin-top: 8px;" onclick="naarSnelWaste()" data-t="nieuwe_melding">Nog een melding</button>
     </div>
   </section>
 
@@ -438,17 +513,26 @@ const state = {
   token: localStorage.getItem('hosp_token') || null,
   tokenOutlet: localStorage.getItem('hosp_outlet') || null,
   tokenVerloop: localStorage.getItem('hosp_verloop') || null,
-  // waste flow
+  // waste flow (uitgebreid)
   waste: {
+    niveau: 'gerecht', // 'gerecht' | 'productsoort'
     boeking_id: null, boeking_naam: null, bedrijf_naam: null, personen: null,
-    gerecht_id: null, gerecht_naam: null, productsoort_naam: null,
+    gerecht_id: null, gerecht_naam: null,
+    productsoort_id: null, productsoort_naam: null,
     presentatievorm_id: null, presentatievorm_naam: null,
     percentage_over: null, gewogen_grammen: null,
     foto_overzicht_base64: null, foto_close_base64: null,
     groep_compleet: undefined, bijgemaakt: undefined,
     naam: '', opmerking: ''
   },
+  // snelle waste flow (nieuw v2)
+  snel: {
+    boeking_id: null, boeking_naam: null, bedrijf_naam: null, personen: null,
+    foto_overzicht_base64: null, groep_compleet: undefined,
+    naam: '', opmerking: ''
+  },
   presentatievormen: [],
+  productsoorten: [],
 };
 
 // ============ HELPERS ============
@@ -460,7 +544,7 @@ function api(actie, data = {}) {
   }).then(r => r.json());
 }
 function toon(id) {
-  ['scherm-outlet','scherm-pin','scherm-menu','scherm-waste','scherm-feedback'].forEach(s => {
+  ['scherm-outlet','scherm-pin','scherm-menu','scherm-waste','scherm-snel-waste','scherm-feedback'].forEach(s => {
     document.getElementById(s).classList.toggle('hidden', s !== id);
   });
   window.scrollTo(0, 0);
@@ -749,8 +833,12 @@ async function zoekGerechten() {
 }
 
 async function laadPresentatievormen() {
-  if (state.presentatievormen.length) { vulPresentatieSelect(); return; }
-  const r = await api('presentatievormen', { token: state.token });
+  // v3: filter op gerecht_id als gerecht-niveau, anders unieke namen
+  const params = { token: state.token };
+  if (state.waste.niveau === 'gerecht' && state.waste.gerecht_id) {
+    params.gerecht_id = state.waste.gerecht_id;
+  }
+  const r = await api('presentatievormen', params);
   if (!r.ok) return;
   state.presentatievormen = r.presentatievormen;
   vulPresentatieSelect();
@@ -817,13 +905,18 @@ function comprimeerFoto(file, maxBreed, kwaliteit) {
 function naarWasteStap(stap) {
   // Validatie per stap
   if (stap === 2 && !state.waste.boeking_naam) { toast('Kies een groep', 'fout'); return; }
-  if (stap === 3 && !state.waste.gerecht_id) { toast('Kies een gerecht', 'fout'); return; }
+  if (stap === 3) {
+    // Op stap 3 moet er een gekozen item zijn — gerecht OF productsoort
+    if (state.waste.niveau === 'gerecht' && !state.waste.gerecht_id) { toast('Kies een gerecht', 'fout'); return; }
+    if (state.waste.niveau === 'productsoort' && !state.waste.productsoort_id) { toast('Kies een productsoort', 'fout'); return; }
+  }
   if (stap === 4) {
     if (state.waste.percentage_over === null) { toast('Kies percentage over', 'fout'); return; }
     state.waste.gewogen_grammen = parseInt(document.getElementById('gewichtInput').value) || null;
     const ps = document.getElementById('presentatieSelect');
+    // Bak is altijd optioneel — bij productsoort-niveau extra vrijwillig
     state.waste.presentatievorm_id = ps.value || null;
-    state.waste.presentatievorm_naam = ps.options[ps.selectedIndex]?.text || null;
+    state.waste.presentatievorm_naam = ps.value ? (ps.options[ps.selectedIndex]?.text || null) : null;
   }
   if (stap === 5) {
     if (!state.waste.foto_overzicht_base64) { toast('Foto van bovenaf nog ontbreekt', 'fout'); return; }
@@ -832,6 +925,156 @@ function naarWasteStap(stap) {
     document.getElementById(id).classList.toggle('hidden', i !== stap - 1);
   });
   zetProgress(stap);
+}
+
+// === NIVEAU-KEUZE (gerecht / productsoort) v2 ===
+function kiesNiveau(niveau) {
+  state.waste.niveau = niveau;
+  // Reset andere keuze
+  if (niveau === 'gerecht') {
+    state.waste.productsoort_id = null;
+    state.waste.productsoort_naam = null;
+  } else {
+    state.waste.gerecht_id = null;
+    state.waste.gerecht_naam = null;
+  }
+  document.querySelectorAll('.niveau-btn').forEach(b => {
+    b.classList.toggle('niveau-actief', b.dataset.niveau === niveau);
+  });
+  document.getElementById('niveau-gerecht-view').classList.toggle('hidden', niveau !== 'gerecht');
+  document.getElementById('niveau-productsoort-view').classList.toggle('hidden', niveau !== 'productsoort');
+  if (niveau === 'productsoort' && !state.productsoorten.length) laadProductsoorten();
+}
+
+async function laadProductsoorten() {
+  const c = document.getElementById('productsoortLijst');
+  c.innerHTML = '<p class="small">Laden...</p>';
+  const r = await api('productsoorten_lijst', { token: state.token });
+  if (!r.ok) { c.innerHTML = '<p class="small">Kon productsoorten niet ophalen</p>'; return; }
+  state.productsoorten = r.productsoorten;
+  c.innerHTML = '';
+  state.productsoorten.forEach(ps => {
+    const el = document.createElement('button');
+    el.className = 'keuze';
+    el.textContent = ps.naam;
+    el.onclick = () => kiesProductsoort(ps);
+    c.appendChild(el);
+  });
+}
+
+function kiesProductsoort(ps) {
+  state.waste.productsoort_id = ps.id;
+  state.waste.productsoort_naam = ps.naam;
+  state.waste.gerecht_id = null;
+  state.waste.gerecht_naam = null;
+  // Markeer geselecteerde
+  document.querySelectorAll('#productsoortLijst .keuze').forEach(b => b.classList.remove('selected'));
+  event.target.classList.add('selected');
+  // Toon "bak overslaan"-uitleg in stap 3
+  setTimeout(() => {
+    const u = document.getElementById('bak-overslaan-uitleg');
+    if (u) u.style.display = 'block';
+  }, 100);
+  naarWasteStap(3);
+}
+
+// === SNELLE WASTE-FLOW v2 ===
+async function naarSnelWaste() {
+  // Reset state
+  state.snel = { boeking_id: null, boeking_naam: null, bedrijf_naam: null, personen: null,
+    foto_overzicht_base64: null, groep_compleet: undefined, naam: '', opmerking: '' };
+  toon('scherm-snel-waste');
+  snelStap(1);
+  await laadSnelBoekingen();
+}
+
+async function laadSnelBoekingen() {
+  const r = await api('boekingen_vandaag', { token: state.token });
+  const c = document.getElementById('snelBoekingenLijst');
+  if (!r.ok) { c.innerHTML = '<p class="small">Kon boekingen niet ophalen</p>'; return; }
+  c.innerHTML = '';
+  if (!r.boekingen.length) {
+    c.innerHTML = '<p class="small">Geen boekingen vandaag.</p>';
+    return;
+  }
+  r.boekingen.forEach(b => {
+    const el = document.createElement('button');
+    el.className = 'keuze';
+    el.innerHTML = `<div><div style="font-weight:600;">${b.naam || '(geen naam)'}</div><div class="meta">${b.bedrijf_naam || ''} · ${b.personen || '?'}p · ${b.deadline_tijd || ''}</div></div><span style="color: var(--gray);">›</span>`;
+    el.onclick = () => kiesSnelBoeking(b);
+    c.appendChild(el);
+  });
+}
+
+function kiesSnelBoeking(b) {
+  state.snel.boeking_id = b.id;
+  state.snel.boeking_naam = b.naam;
+  state.snel.bedrijf_naam = b.bedrijf_naam;
+  state.snel.personen = b.personen;
+  snelStap(2);
+}
+
+function snelStap(stap) {
+  ['snel-stap-1','snel-stap-2','snel-stap-3'].forEach((id,i) => {
+    document.getElementById(id).classList.toggle('hidden', i !== stap - 1);
+  });
+  document.getElementById('snel-klaar').classList.add('hidden');
+  // Progress balk
+  const stappen = document.querySelectorAll('#snelProgress .stap');
+  stappen.forEach((el, i) => {
+    el.classList.remove('actief', 'gedaan');
+    if (i < stap - 1) el.classList.add('gedaan');
+    if (i === stap - 1) el.classList.add('actief');
+  });
+  // Boeking-info tonen op stap 3
+  if (stap === 3) {
+    const info = document.getElementById('snel-boeking-info');
+    info.textContent = (state.snel.boeking_naam || '?') + (state.snel.personen ? ' · ' + state.snel.personen + 'p' : '');
+  }
+}
+
+async function zetSnelFoto(input) {
+  if (!input.files || !input.files[0]) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    state.snel.foto_overzicht_base64 = e.target.result;
+    const img = document.getElementById('snel-img-overzicht');
+    img.src = e.target.result;
+    img.classList.remove('hidden');
+    document.getElementById('snelFotoVolgende').disabled = false;
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+
+function kiesSnelCompleet(waarde, btn) {
+  state.snel.groep_compleet = waarde;
+  document.querySelectorAll('#snel-stap-3 .ja-nee .keuze').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+
+async function verzendSnelMelding() {
+  const btn = document.getElementById('btnSnelVerzend');
+  btn.disabled = true; btn.textContent = '⏳ Versturen...';
+  state.snel.naam = document.getElementById('snelNaam').value;
+  state.snel.opmerking = document.getElementById('snelOpmerking').value;
+
+  const payload = {
+    token: state.token,
+    melding: {
+      gemeld_door_naam: state.snel.naam || null,
+      taal: taal,
+      boeking_id: state.snel.boeking_id,
+      groep_compleet: state.snel.groep_compleet,
+      opmerking: state.snel.opmerking,
+      foto_overzicht_base64: state.snel.foto_overzicht_base64,
+    }
+  };
+  const r = await api('melding_opslaan_snel', payload);
+  btn.disabled = false; btn.textContent = (T[taal] && T[taal].verzenden) || 'Versturen';
+  if (!r.ok) { toast('Fout: ' + (r.fout || 'onbekend'), 'fout'); return; }
+  // Klaar
+  ['snel-stap-1','snel-stap-2','snel-stap-3'].forEach(id => document.getElementById(id).classList.add('hidden'));
+  document.getElementById('snel-klaar').classList.remove('hidden');
 }
 
 async function verzendMelding() {
@@ -851,6 +1094,7 @@ async function verzendMelding() {
       personen_op_boeking: state.waste.personen,
       gerecht_id: state.waste.gerecht_id,
       gerecht_naam: state.waste.gerecht_naam,
+      productsoort_id: state.waste.productsoort_id,
       productsoort_naam: state.waste.productsoort_naam,
       presentatievorm_id: state.waste.presentatievorm_id,
       presentatievorm_naam: state.waste.presentatievorm_naam,
