@@ -89,7 +89,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; back
     .week-info { flex: 1; min-width: 0; }
     .week-naam { font-size: 13px; font-weight: 600; line-height: 1.2; }
     .week-meta { font-size: 11px; color: #78909C; }
-    /* Schoonmaak modal */
+    .onder-blok.onder-waste { border-color: #E65100; }
+.onder-blok.onder-waste .icoon { color: #E65100; }
+.atm-tab { padding: 10px 14px; border: 1.5px solid #D8E8EF; background: white; color: #234756; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; flex: 1; font-family: inherit; }
+.atm-tab.actief { background: #234756; color: white; border-color: #234756; }
+.waste-result { display: block; width: 100%; text-align: left; padding: 10px 12px; background: white; border: 1px solid #D8E8EF; border-radius: 8px; margin-bottom: 6px; cursor: pointer; font-family: inherit; }
+.waste-result:hover { border-color: #1976D2; background: #F5F8FA; }
+/* Schoonmaak modal */
     .sm-rij { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; border-bottom: 1px solid #F0F4F6; cursor: pointer; }
     .sm-rij:active { background: #F8FAFC; }
     .sm-urg { width: 8px; min-height: 40px; border-radius: 4px; flex-shrink: 0; background: #27AE60; margin-top: 3px; }
@@ -1727,6 +1733,7 @@ function renderOnderBlokken(d) {
     '<div class="onder-blok" data-onder="documenten"><div class="icoon">📄</div><div class="label">Documenten</div><div class="stat">Buffet &middot; BBQ-PDF</div></div>' +
     '<div class="onder-blok ' + (d.meldingen_chef_open > 0 ? 'urgent' : '') + '" data-onder="meldingen"><div class="icoon">📨</div><div class="label">Meldingen</div><div class="stat">' + (d.meldingen_chef_open || 0) + ' open</div></div>' +
     '<div class="onder-blok" data-onder="buffet"><div class="icoon">🔥</div><div class="label">BBQ / Buffet</div><div class="stat">Formulier per groep</div></div>' +
+    '<div class="onder-blok onder-waste" data-onder="waste"><div class="icoon">🗑️</div><div class="label">Waste</div><div class="stat">Sligro · breuk · THT</div></div>' +
   '</div>';
 }
 
@@ -1744,6 +1751,8 @@ function renderModal() {
   if (state.modal && state.modal.type === 'buffet') return renderBbqBuffetModalV2();
   if (state.modal && state.modal.type === 'opzet') return renderOpzetModal();
   if (state.modal && state.modal.type === 'bericht') return renderBerichtModal();
+  if (state.modal && state.modal.type === 'waste') return renderWasteModal();
+  if (state.modal && state.modal.type === 'sjef') return renderSjefModal();
   return '';
 }
 
@@ -2915,6 +2924,19 @@ document.addEventListener('click', function(e) {
         if (soort === 'documenten') { state.modal = { type: 'documenten' }; render(); return; }
         if (soort === 'meldingen') { state.modal = { type: 'meldingen' }; render(); return; }
         if (soort === 'opzet') { openOpzetModal(); return; }
+        if (soort === 'waste') {
+          state.modal = { type: 'waste', stap: 1, niveau: 'sligro', zoek: '', resultaten: [], gekozen: null, hoeveelheid: '', reden_id: null, opmerking: '', foto_base64: null, redenen: [], recent: [], bezig: false };
+          render();
+          // Laad redenen + recente meldingen async
+          laadWasteRedenen();
+          laadMijnRecenteWaste();
+          return;
+        }
+        if (soort === 'sjef') {
+          state.modal = { type: 'sjef', berichten: state.sjef_berichten || [], invoer: '', bezig: false, sjef_sessie: state.sjef_sessie || null };
+          render();
+          return;
+        }
         if (soort === 'buffet') {
           state.modal = { type: 'buffet', laden: true };
           render();
@@ -4077,6 +4099,348 @@ function klikKolom(boeking_id) {
   m.rij_kolom_popup = { type: 'kolom', modus: modus, boeking_naam: b.naam, aantal: cellen.length, cellen: cellen };
   render();
 }
+
+// ===========================================================
+//  KIOSK-WASTE FLOW v1 (29 apr 2026)
+// ===========================================================
+
+async function apiKioskWaste(actie, extra) {
+  var body = Object.assign({ actie: actie, sessie_id: state.sessie_id }, extra || {});
+  try {
+    var r = await fetch('https://aezatnwsrhlwtykpixsq.supabase.co/functions/v1/kiosk-waste', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json',
+                 'Authorization': 'Bearer sb_publishable_qkQzUEM5fvJPSsfScEzNCg_Eug8-d4t',
+                 'apikey': 'sb_publishable_qkQzUEM5fvJPSsfScEzNCg_Eug8-d4t' },
+      body: JSON.stringify(body)
+    });
+    return await r.json();
+  } catch (e) { return { error: e.message }; }
+}
+
+async function laadWasteRedenen() {
+  if (!state.modal || state.modal.type !== 'waste') return;
+  var r = await apiKioskWaste('lijst_redenen');
+  if (state.modal && state.modal.type === 'waste') {
+    state.modal.redenen = (r && r.redenen) || [];
+    render();
+  }
+}
+
+async function laadMijnRecenteWaste() {
+  if (!state.modal || state.modal.type !== 'waste') return;
+  var r = await apiKioskWaste('mijn_recente');
+  if (state.modal && state.modal.type === 'waste') {
+    state.modal.recent = (r && r.recent) || [];
+    render();
+  }
+}
+
+async function zoekWasteProduct() {
+  if (!state.modal || state.modal.type !== 'waste') return;
+  var m = state.modal;
+  var actie = m.niveau === 'sligro' ? 'zoek_sligro' : 'zoek_gerecht';
+  m.bezig = true; render();
+  var r = await apiKioskWaste(actie, { zoek: m.zoek });
+  if (state.modal && state.modal.type === 'waste') {
+    state.modal.resultaten = (m.niveau === 'sligro' ? r.producten : r.gerechten) || [];
+    state.modal.bezig = false;
+    render();
+  }
+}
+
+function kiesWasteNiveau(niveau) {
+  if (!state.modal || state.modal.type !== 'waste') return;
+  state.modal.niveau = niveau;
+  state.modal.zoek = '';
+  state.modal.resultaten = [];
+  state.modal.gekozen = null;
+  zoekWasteProduct();
+}
+
+function kiesWasteProduct(p) {
+  if (!state.modal || state.modal.type !== 'waste') return;
+  state.modal.gekozen = p;
+  state.modal.stap = 2;
+  render();
+}
+
+function kiesWasteReden(rid) {
+  if (!state.modal || state.modal.type !== 'waste') return;
+  state.modal.reden_id = rid;
+  render();
+}
+
+function zetWasteFoto(input) {
+  if (!input.files || !input.files[0]) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    if (state.modal && state.modal.type === 'waste') {
+      state.modal.foto_base64 = e.target.result;
+      render();
+    }
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+
+async function verzendWaste() {
+  if (!state.modal || state.modal.type !== 'waste') return;
+  var m = state.modal;
+  if (!m.gekozen) { alert('Kies een product'); return; }
+  if (!m.hoeveelheid || parseFloat(m.hoeveelheid) <= 0) { alert('Vul een hoeveelheid in'); return; }
+  if (!m.reden_id) { alert('Kies een reden'); return; }
+  m.bezig = true; render();
+  var r = await apiKioskWaste('melding_opslaan', {
+    melding: {
+      product_type: m.niveau,
+      product_id: m.gekozen.id,
+      product_naam: m.gekozen.naam,
+      hoeveelheid: parseFloat(m.hoeveelheid),
+      eenheid: m.gekozen.eenheid || (m.niveau === 'sligro' ? 'stuks' : 'portie'),
+      reden_id: m.reden_id,
+      opmerking: m.opmerking || null,
+      foto_base64: m.foto_base64 || null,
+    }
+  });
+  if (state.modal && state.modal.type === 'waste') {
+    state.modal.bezig = false;
+    if (r && r.ok) {
+      state.modal.stap = 4;
+      state.modal.kosten = r.kosten_indicatie;
+      laadMijnRecenteWaste();
+    } else {
+      alert('Fout: ' + ((r && r.error) || 'onbekend'));
+    }
+    render();
+  }
+}
+
+async function verwijderWaste(id) {
+  if (!confirm('Verwijder deze melding?')) return;
+  var r = await apiKioskWaste('verwijder', { id: id });
+  if (r && r.ok) laadMijnRecenteWaste();
+  else alert('Kan niet verwijderen: ' + ((r && r.error) || 'onbekend'));
+}
+
+function nieuweWasteMelding() {
+  if (!state.modal || state.modal.type !== 'waste') return;
+  state.modal.stap = 1;
+  state.modal.gekozen = null;
+  state.modal.hoeveelheid = '';
+  state.modal.reden_id = null;
+  state.modal.opmerking = '';
+  state.modal.foto_base64 = null;
+  state.modal.zoek = '';
+  state.modal.resultaten = [];
+  render();
+}
+
+function renderWasteModal() {
+  var m = state.modal;
+  var stap = m.stap || 1;
+  var html = '<div class="atm-overlay" onclick="if(event.target===this){state.modal=null;render();}">';
+  html += '<div class="atm-modal" style="max-width:560px;max-height:92vh;display:flex;flex-direction:column;">';
+  html += '<div class="atm-header"><div><h3>🗑️ Waste melden</h3><div class="atm-sub">Stap ' + stap + ' van 3 · Sligro/breuk/THT/gerecht</div></div>';
+  html += '<button class="atm-close" onclick="state.modal=null;render();">✕</button></div>';
+  html += '<div style="overflow-y:auto;padding:14px;flex:1">';
+
+  if (stap === 1) {
+    // KIES PRODUCT
+    html += '<div style="display:flex;gap:6px;margin-bottom:12px">';
+    html += '<button class="atm-tab' + (m.niveau==='sligro'?' actief':'') + '" onclick="kiesWasteNiveau(\'sligro\')">🛒 Sligro-product</button>';
+    html += '<button class="atm-tab' + (m.niveau==='gerecht'?' actief':'') + '" onclick="kiesWasteNiveau(\'gerecht\')">🍽️ Gerecht</button>';
+    html += '</div>';
+    html += '<input type="text" placeholder="Zoek op naam of artnr..." value="' + esc(m.zoek||'') + '" oninput="state.modal.zoek=this.value;clearTimeout(window._wzt);window._wzt=setTimeout(zoekWasteProduct,300);" style="width:100%;padding:12px;border:2px solid #D8E8EF;border-radius:8px;font-size:14px;font-family:inherit">';
+    html += '<div style="margin-top:12px">';
+    if (m.bezig) {
+      html += '<p style="text-align:center;color:#6E8591">Zoeken...</p>';
+    } else if (!m.resultaten.length) {
+      html += '<p style="text-align:center;color:#6E8591">' + (m.zoek ? 'Geen resultaten' : 'Typ om te zoeken') + '</p>';
+    } else {
+      m.resultaten.forEach(function(p) {
+        var meta = m.niveau === 'sligro'
+          ? (p.artnr || '') + (p.merk ? ' · ' + p.merk : '') + (p.eenheid ? ' · ' + p.eenheid : '')
+          : (p.eenheid || 'portie');
+        html += '<button class="waste-result" onclick=\'kiesWasteProduct(' + JSON.stringify(p).replace(/\\/g,"\\\\").replace(/\'/g,"\\\'") + ')\'>'
+              + '<div style="font-weight:600">' + esc(p.naam) + '</div>'
+              + '<div style="font-size:11px;color:#6E8591">' + esc(meta) + '</div></button>';
+      });
+    }
+    html += '</div>';
+
+    if (m.recent && m.recent.length) {
+      html += '<div style="margin-top:18px;padding-top:14px;border-top:1px solid #D8E8EF"><div style="font-size:11px;font-weight:700;color:#6E8591;text-transform:uppercase;margin-bottom:8px">Mijn recente meldingen</div>';
+      m.recent.slice(0, 5).forEach(function(r) {
+        var leeftijdMin = Math.floor((Date.now() - new Date(r.geregistreerd_op).getTime()) / 60000);
+        var kanWeg = leeftijdMin <= 5;
+        html += '<div style="display:flex;align-items:center;gap:8px;padding:8px;background:#F5F8FA;border-radius:6px;margin-bottom:4px;font-size:12px">';
+        html += '<div style="flex:1"><div style="font-weight:600">' + esc(r.product_naam) + '</div><div style="color:#6E8591">' + r.hoeveelheid + ' ' + esc(r.eenheid||'') + ' · ' + esc(r.reden_naam||'') + ' · ' + leeftijdMin + 'min</div></div>';
+        if (kanWeg) html += '<button onclick="verwijderWaste(\'' + r.id + '\')" style="background:#FE424D;color:white;border:none;padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer">↶</button>';
+        html += '</div>';
+      });
+      html += '</div>';
+    }
+  } else if (stap === 2) {
+    // HOEVEELHEID + FOTO
+    html += '<div style="background:#F5F8FA;padding:12px;border-radius:8px;margin-bottom:14px"><div style="font-size:11px;color:#6E8591;text-transform:uppercase;font-weight:700">' + (m.niveau==='sligro'?'Sligro':'Gerecht') + '</div><div style="font-weight:700">' + esc(m.gekozen.naam) + '</div></div>';
+    html += '<label style="display:block;font-weight:600;margin-bottom:6px">Hoeveelheid</label>';
+    html += '<div style="display:flex;gap:8px;align-items:center;margin-bottom:14px">';
+    html += '<input type="number" inputmode="decimal" step="0.1" min="0" value="' + (m.hoeveelheid||'') + '" oninput="state.modal.hoeveelheid=this.value" style="flex:1;padding:12px;border:2px solid #D8E8EF;border-radius:8px;font-size:18px;font-family:inherit">';
+    html += '<div style="font-weight:600;color:#234756">' + esc(m.gekozen.eenheid || (m.niveau==='sligro'?'stuks':'portie')) + '</div>';
+    html += '</div>';
+    html += '<label style="display:block;font-weight:600;margin-bottom:6px">Foto (optioneel)</label>';
+    if (m.foto_base64) {
+      html += '<img src="' + m.foto_base64 + '" style="width:100%;max-height:200px;object-fit:cover;border-radius:8px;margin-bottom:8px">';
+      html += '<button onclick="state.modal.foto_base64=null;render();" style="background:#FE424D;color:white;border:none;padding:8px 14px;border-radius:6px;font-size:12px;cursor:pointer">Foto verwijderen</button>';
+    } else {
+      html += '<label style="display:block;border:2px dashed #D8E8EF;border-radius:8px;padding:24px;text-align:center;cursor:pointer">';
+      html += '<input type="file" accept="image/*" capture="environment" onchange="zetWasteFoto(this)" style="display:none">';
+      html += '<div style="font-size:32px">📷</div><div style="color:#6E8591">Tap om foto te maken</div>';
+      html += '</label>';
+    }
+    html += '<div style="display:flex;gap:8px;margin-top:18px">';
+    html += '<button onclick="state.modal.stap=1;render();" style="flex:1;background:white;color:#234756;border:2px solid #D8E8EF;padding:12px;border-radius:8px;font-weight:600;cursor:pointer">← Terug</button>';
+    html += '<button onclick="if(state.modal.hoeveelheid && parseFloat(state.modal.hoeveelheid)>0){state.modal.stap=3;render();}else{alert(\'Vul een hoeveelheid in\');}" style="flex:2;background:#234756;color:white;border:none;padding:12px;border-radius:8px;font-weight:600;cursor:pointer">Volgende →</button>';
+    html += '</div>';
+  } else if (stap === 3) {
+    // REDEN + VERZEND
+    html += '<div style="background:#F5F8FA;padding:10px;border-radius:8px;margin-bottom:14px;font-size:13px"><b>' + esc(m.gekozen.naam) + '</b> · ' + m.hoeveelheid + ' ' + esc(m.gekozen.eenheid || '') + '</div>';
+    html += '<label style="display:block;font-weight:600;margin-bottom:8px">Reden</label>';
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px">';
+    (m.redenen || []).forEach(function(r) {
+      var sel = m.reden_id === r.id;
+      html += '<button onclick="kiesWasteReden(\'' + r.id + '\')" style="padding:12px 8px;border-radius:8px;border:2px solid ' + (sel ? r.kleur : '#D8E8EF') + ';background:' + (sel ? r.kleur : 'white') + ';color:' + (sel ? 'white' : '#234756') + ';font-weight:600;font-size:13px;cursor:pointer;text-align:center">' + esc(r.naam) + '</button>';
+    });
+    html += '</div>';
+    html += '<label style="display:block;font-weight:600;margin-bottom:6px">Opmerking (optioneel)</label>';
+    html += '<textarea oninput="state.modal.opmerking=this.value" placeholder="bijv. THT 25/04 · vergeten in koeling" style="width:100%;min-height:60px;padding:10px;border:2px solid #D8E8EF;border-radius:8px;font-family:inherit;font-size:13px;resize:vertical">' + esc(m.opmerking||'') + '</textarea>';
+    html += '<div style="display:flex;gap:8px;margin-top:18px">';
+    html += '<button onclick="state.modal.stap=2;render();" style="flex:1;background:white;color:#234756;border:2px solid #D8E8EF;padding:12px;border-radius:8px;font-weight:600;cursor:pointer">← Terug</button>';
+    html += '<button onclick="verzendWaste()" ' + (m.bezig?'disabled':'') + ' style="flex:2;background:#2E7D32;color:white;border:none;padding:12px;border-radius:8px;font-weight:600;cursor:pointer">' + (m.bezig ? '⏳ Versturen...' : '✓ Verzend') + '</button>';
+    html += '</div>';
+  } else if (stap === 4) {
+    // KLAAR
+    html += '<div style="text-align:center;padding:20px"><div style="font-size:64px">✅</div>';
+    html += '<h3 style="margin:12px 0 6px">Genoteerd</h3>';
+    html += '<p style="color:#6E8591">' + esc(m.gekozen.naam) + ' · ' + m.hoeveelheid + ' ' + esc(m.gekozen.eenheid || '') + '</p>';
+    if (m.kosten) html += '<p style="color:#6E8591;font-size:12px">Geschatte kosten: €' + m.kosten.toFixed(2) + '</p>';
+    html += '<button onclick="nieuweWasteMelding()" style="background:#234756;color:white;border:none;padding:12px 24px;border-radius:100px;font-weight:600;font-size:14px;cursor:pointer;margin-top:14px">+ Nog een melding</button>';
+    html += '<button onclick="state.modal=null;render();" style="display:block;margin:8px auto 0;background:white;color:#6E8591;border:none;padding:8px;font-size:13px;cursor:pointer">Sluiten</button></div>';
+  }
+  html += '</div></div></div>';
+  return html;
+}
+
+// ===========================================================
+//  SJEF KIOSK-CHAT v1 (29 apr 2026)
+// ===========================================================
+
+async function vraagSjef(bericht) {
+  if (!state.modal || state.modal.type !== 'sjef') return;
+  var m = state.modal;
+  m.bezig = true; m.invoer = ''; render();
+  m.berichten.push({ rol: 'gebruiker', tekst: bericht, ts: Date.now() });
+  state.sjef_berichten = m.berichten;
+  render();
+  try {
+    var r = await fetch('https://aezatnwsrhlwtykpixsq.supabase.co/functions/v1/sjef-kiosk', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json',
+                 'Authorization': 'Bearer sb_publishable_qkQzUEM5fvJPSsfScEzNCg_Eug8-d4t',
+                 'apikey': 'sb_publishable_qkQzUEM5fvJPSsfScEzNCg_Eug8-d4t' },
+      body: JSON.stringify({ sessie_id: state.sessie_id, sjef_sessie_id: m.sjef_sessie || null, bericht: bericht })
+    });
+    var data = await r.json();
+    if (state.modal && state.modal.type === 'sjef') {
+      m.bezig = false;
+      if (data.ok) {
+        m.berichten.push({ rol: 'sjef', tekst: data.antwoord || '(geen antwoord)', ts: Date.now() });
+        m.sjef_sessie = data.sjef_sessie_id;
+        state.sjef_sessie = data.sjef_sessie_id;
+      } else {
+        m.berichten.push({ rol: 'systeem', tekst: '⚠ ' + (data.error || 'fout'), ts: Date.now() });
+      }
+      state.sjef_berichten = m.berichten;
+      render();
+      // Scroll naar onder
+      setTimeout(function(){ var s = document.getElementById('sjef-scroll'); if (s) s.scrollTop = s.scrollHeight; }, 50);
+    }
+  } catch (e) {
+    if (state.modal && state.modal.type === 'sjef') {
+      m.bezig = false;
+      m.berichten.push({ rol: 'systeem', tekst: '⚠ Geen verbinding' });
+      render();
+    }
+  }
+}
+
+function nieuwSjefGesprek() {
+  if (state.modal && state.modal.type === 'sjef') {
+    state.modal.berichten = [];
+    state.modal.sjef_sessie = null;
+    state.sjef_berichten = [];
+    state.sjef_sessie = null;
+    render();
+  }
+}
+
+function renderSjefModal() {
+  var m = state.modal;
+  var html = '<div class="atm-overlay" onclick="if(event.target===this){state.modal=null;render();}">';
+  html += '<div class="atm-modal" style="max-width:560px;max-height:90vh;display:flex;flex-direction:column;">';
+  html += '<div class="atm-header"><div style="display:flex;align-items:center;gap:10px"><div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#1976D2,#002D41);display:flex;align-items:center;justify-content:center;font-size:18px">👨‍🍳</div><div><h3 style="margin:0">Sjef</h3><div class="atm-sub">AI keuken-assistent · alleen lezen</div></div></div>';
+  html += '<div style="display:flex;gap:6px"><button onclick="nieuwSjefGesprek()" title="Nieuw gesprek" style="background:transparent;border:none;cursor:pointer;font-size:16px;padding:4px 8px">↻</button><button class="atm-close" onclick="state.modal=null;render();">✕</button></div></div>';
+  html += '<div id="sjef-scroll" style="flex:1;overflow-y:auto;padding:14px;background:#F5F8FA">';
+  if (!m.berichten || !m.berichten.length) {
+    html += '<div style="text-align:center;color:#6E8591;padding:30px 10px"><div style="font-size:48px;margin-bottom:8px">👋</div><div style="font-weight:600;color:#234756">Hoi ' + esc(state.medewerker_naam || '') + '</div><div style="font-size:13px;margin-top:6px">Vraag me over vandaag, gerechten, dieet, HACCP, waste...</div></div>';
+    html += '<div style="display:grid;gap:6px;margin-top:14px">';
+    var hints = ['Wat staat er vandaag op?', 'Open HACCP-alarmen?', 'Hoeveel waste deze week?', 'Eerstvolgende BBQ-boeking', 'Dieet-check vegan voor BBQ'];
+    hints.forEach(function(h) {
+      html += '<button onclick="vraagSjef(\'' + h.replace(/\'/g,"\\\'") + '\')" style="background:white;border:1px solid #D8E8EF;border-radius:100px;padding:10px 14px;text-align:left;cursor:pointer;font-size:13px;color:#234756">' + esc(h) + '</button>';
+    });
+    html += '</div>';
+  } else {
+    m.berichten.forEach(function(b) {
+      var isSjef = b.rol === 'sjef';
+      var isSys = b.rol === 'systeem';
+      var bg = isSys ? '#FFF3E0' : (isSjef ? 'white' : '#234756');
+      var col = isSjef || isSys ? '#234756' : 'white';
+      var align = isSjef || isSys ? 'flex-start' : 'flex-end';
+      var inhoud = (b.tekst || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g, '<br>');
+      html += '<div style="display:flex;justify-content:' + align + ';margin-bottom:10px">';
+      html += '<div style="max-width:80%;background:' + bg + ';color:' + col + ';padding:10px 14px;border-radius:14px;font-size:14px;line-height:1.5;box-shadow:0 1px 3px rgba(0,0,0,.06)">' + inhoud + '</div>';
+      html += '</div>';
+    });
+    if (m.bezig) {
+      html += '<div style="display:flex;justify-content:flex-start;margin-bottom:10px"><div style="background:white;padding:10px 14px;border-radius:14px;color:#6E8591">💭 Sjef denkt na...</div></div>';
+    }
+  }
+  html += '</div>';
+  html += '<div style="padding:10px;background:white;border-top:1px solid #D8E8EF;display:flex;gap:8px"><input id="sjef-input" type="text" value="' + esc(m.invoer || '') + '" oninput="state.modal.invoer=this.value" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey&&state.modal.invoer){event.preventDefault();vraagSjef(state.modal.invoer);}" placeholder="Vraag iets..." ' + (m.bezig?'disabled':'') + ' style="flex:1;padding:12px;border:2px solid #D8E8EF;border-radius:100px;font-size:14px;font-family:inherit">';
+  html += '<button onclick="if(state.modal.invoer)vraagSjef(state.modal.invoer);" ' + (m.bezig?'disabled':'') + ' style="background:#234756;color:white;border:none;padding:0 18px;border-radius:100px;font-weight:600;cursor:pointer">→</button></div>';
+  html += '</div></div>';
+  return html;
+}
+
+// Sjef-FAB inserter — wordt aangeroepen na elke render via observer
+function injectSjefFab() {
+  if (document.getElementById('sjef-fab')) return;
+  if (!state.sessie_id) return; // alleen na login
+  var fab = document.createElement('button');
+  fab.id = 'sjef-fab';
+  fab.title = 'Vraag Sjef';
+  fab.innerHTML = '👨‍🍳';
+  fab.style.cssText = 'position:fixed;right:16px;bottom:16px;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#1976D2,#002D41);color:white;border:none;font-size:26px;cursor:pointer;z-index:9000;box-shadow:0 4px 16px rgba(0,45,65,0.35);display:flex;align-items:center;justify-content:center;transition:transform 0.15s';
+  fab.onmouseover = function(){ fab.style.transform = 'scale(1.06)'; };
+  fab.onmouseout = function(){ fab.style.transform = 'scale(1)'; };
+  fab.onclick = function() {
+    state.modal = { type: 'sjef', berichten: state.sjef_berichten || [], invoer: '', bezig: false, sjef_sessie: state.sjef_sessie || null };
+    render();
+  };
+  document.body.appendChild(fab);
+}
+// Probeer FAB elke 2s te injecteren (na login wordt sessie_id gezet)
+setInterval(injectSjefFab, 2000);
 
 </script>
 </body>
