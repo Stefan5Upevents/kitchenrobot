@@ -22159,6 +22159,135 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
     );
   }
 
+  // ===== INSTELLINGEN TAB =====
+  function InstellingenTab(props) {
+    var inst = React.useState([]);
+    var laden = React.useState(true);
+    var bezig = React.useState(null);
+    var lokaal = React.useState({});
+
+    async function laad() {
+      laden[1](true);
+      var r = await call('instellingen_lijst', {});
+      laden[1](false);
+      if (!r.ok) {
+        if (window.kr && window.kr.toast) window.kr.toast('Fout: ' + r.fout, 'error');
+        return;
+      }
+      inst[1](r.instellingen || []);
+      var L = {};
+      (r.instellingen || []).forEach(function(i) { L[i.sleutel] = i.waarde; });
+      lokaal[1](L);
+    }
+    React.useEffect(function() { laad(); }, []);
+
+    async function opslaan(sleutel) {
+      var nieuwe_waarde = lokaal[0][sleutel] || '';
+      bezig[1](sleutel);
+      var r = await call('instellingen_wijzig', { sleutel: sleutel, waarde: nieuwe_waarde });
+      bezig[1](null);
+      if (!r.ok) {
+        if (window.kr && window.kr.toast) window.kr.toast('Fout: ' + r.fout, 'error');
+        else alert('Fout: ' + r.fout);
+        return;
+      }
+      if (window.kr && window.kr.toast) window.kr.toast('Opgeslagen', 'success');
+      laad();
+    }
+
+    function pinKaart(item) {
+      var key = item.sleutel;
+      var label = key === 'pin_west' ? '🏗️ PIN West' : '🏛️ PIN Weesp';
+      return h('div', { key: key, style: { background: 'white', border: '1px solid #D8E8EF', borderRadius: 12, padding: 16, marginBottom: 12 } },
+        h('div', { style: { fontWeight: 700, color: '#002D41', fontSize: 15 } }, label),
+        h('div', { style: { fontSize: 12, color: '#6E8591', marginBottom: 8 } }, item.omschrijving || ''),
+        h('div', { style: { display: 'flex', gap: 8, alignItems: 'center' } },
+          h('input', {
+            type: 'tel', inputMode: 'numeric', maxLength: 8, placeholder: 'PIN (4-8 cijfers)',
+            value: lokaal[0][key] || '',
+            onChange: function(e) {
+              var nw = Object.assign({}, lokaal[0]); nw[key] = e.target.value.replace(/\D/g,''); lokaal[1](nw);
+            },
+            style: {
+              flex: 1, padding: 10, borderRadius: 8, border: '1px solid #D8E8EF',
+              fontSize: 18, fontWeight: 600, letterSpacing: 4, textAlign: 'center'
+            }
+          }),
+          h('button', {
+            onClick: function() { opslaan(key); },
+            disabled: bezig[0] === key,
+            style: {
+              padding: '10px 18px', borderRadius: 8, border: 0,
+              background: bezig[0] === key ? '#6E8591' : '#2E7D32',
+              color: 'white', fontWeight: 600, cursor: 'pointer'
+            }
+          }, bezig[0] === key ? '...' : '💾')
+        ),
+        item.bijgewerkt_op && h('div', { style: { fontSize: 11, color: '#6E8591', marginTop: 6 } },
+          'Laatst gewijzigd: ' + fmtDatum(item.bijgewerkt_op))
+      );
+    }
+
+    function actiefKaart(item) {
+      var key = item.sleutel;
+      return h('div', { key: key, style: { background: 'white', border: '1px solid #D8E8EF', borderRadius: 12, padding: 16, marginBottom: 12 } },
+        h('div', { style: { fontWeight: 700, color: '#002D41', fontSize: 15 } }, '🟢 Actieve outlets'),
+        h('div', { style: { fontSize: 12, color: '#6E8591', marginBottom: 8 } }, 'Welke outlets accepteren PIN-login (komma-lijst, bv. "weesp" of "west,weesp")'),
+        h('div', { style: { display: 'flex', gap: 8 } },
+          h('input', {
+            type: 'text', value: lokaal[0][key] || '',
+            onChange: function(e) {
+              var nw = Object.assign({}, lokaal[0]); nw[key] = e.target.value.toLowerCase(); lokaal[1](nw);
+            },
+            style: { flex: 1, padding: 10, borderRadius: 8, border: '1px solid #D8E8EF', fontSize: 14 }
+          }),
+          h('button', {
+            onClick: function() { opslaan(key); }, disabled: bezig[0] === key,
+            style: { padding: '10px 18px', borderRadius: 8, border: 0, background: bezig[0] === key ? '#6E8591' : '#2E7D32', color: 'white', fontWeight: 600, cursor: 'pointer' }
+          }, bezig[0] === key ? '...' : '💾')
+        )
+      );
+    }
+
+    function vlagKaart(item) {
+      var key = item.sleutel;
+      var aan = String(lokaal[0][key]).toLowerCase() === 'true';
+      var label = key === 'leerfase_actief' ? '🎓 Leerfase actief' :
+                  key === 'foto_validatie_aan' ? '📷 Foto-validatie door Sjef' : key;
+      var desc = key === 'leerfase_actief' ? 'Hospitality wordt gevraagd om gewicht in te vullen (weegschaal). Zet uit zodra we genoeg data hebben.' :
+                 key === 'foto_validatie_aan' ? 'Sjef checkt direct of foto bruikbaar is (toekomst).' : item.omschrijving;
+      return h('div', { key: key, style: { background: 'white', border: '1px solid #D8E8EF', borderRadius: 12, padding: 16, marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 } },
+        h('div', null,
+          h('div', { style: { fontWeight: 700, color: '#002D41', fontSize: 15 } }, label),
+          h('div', { style: { fontSize: 12, color: '#6E8591', marginTop: 2 } }, desc)
+        ),
+        h('button', {
+          onClick: function() {
+            var nw = Object.assign({}, lokaal[0]); nw[key] = aan ? 'false' : 'true'; lokaal[1](nw);
+            setTimeout(function() { opslaan(key); }, 50);
+          },
+          style: {
+            padding: '8px 16px', borderRadius: 20, border: 0,
+            background: aan ? '#2E7D32' : '#6E8591',
+            color: 'white', fontWeight: 600, fontSize: 13, cursor: 'pointer', minWidth: 70
+          }
+        }, aan ? '✓ aan' : '○ uit')
+      );
+    }
+
+    if (laden[0]) return h('div', { style: { padding: 40, textAlign: 'center', color: '#6E8591' } }, 'Laden...');
+
+    return h('div', null,
+      h('div', { style: { background: '#FFF8E7', border: '1px solid #E65100', borderRadius: 10, padding: 12, marginBottom: 16, fontSize: 13 } },
+        '⚠️ Wijzigingen werken direct. Hospitality moet opnieuw inloggen na PIN-wijziging.'),
+      h('h3', { style: { color: '#002D41', marginTop: 0 } }, 'PIN-codes'),
+      inst[0].filter(function(i) { return i.sleutel.startsWith('pin_'); }).map(pinKaart),
+      h('h3', { style: { color: '#002D41', marginTop: 16 } }, 'Toegang & gedrag'),
+      inst[0].filter(function(i) { return i.sleutel === 'actief_outlets'; }).map(actiefKaart),
+      inst[0].filter(function(i) { return ['leerfase_actief','foto_validatie_aan'].includes(i.sleutel); }).map(vlagKaart)
+    );
+  }
+
   // ===== HOOFDSCHERM =====
   window._WasteAdminScreen = function() {
     var st_meldingen = React.useState([]);
@@ -22202,8 +22331,8 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
 
     var tabs = function() {
       return h('div', { style: { display: 'flex', gap: 4, borderBottom: '2px solid #D8E8EF', marginBottom: 16 } },
-        ['meldingen','leerstand'].map(function(t) {
-          var labelT = t === 'meldingen' ? '📥 Meldingen' : '📚 Leerstand';
+        ['meldingen','leerstand','instellingen'].map(function(t) {
+          var labelT = t === 'meldingen' ? '📥 Meldingen' : t === 'leerstand' ? '📚 Leerstand' : '⚙️ Instellingen';
           var sel = st_tab[0] === t;
           return h('button', {
             key: t, onClick: function() { st_tab[1](t); },
@@ -22261,6 +22390,10 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
         }, '🔄 Vernieuw')
       );
     };
+
+    if (st_tab[0] === 'instellingen') {
+      return h('div', null, titel(), tabs(), h(InstellingenTab, null));
+    }
 
     if (st_tab[0] === 'leerstand') {
       return h('div', null,
