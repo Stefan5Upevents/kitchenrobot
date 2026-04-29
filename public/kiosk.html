@@ -277,7 +277,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; back
 </head>
 <body>
 <div class="preview-banner">✨ Kiosk v2 PREVIEW — werkt met echte data</div>
-<div id="kiosk-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#43A047;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.85;pointer-events:none">v2026-04-29-21:30 ✓ waste-debug</div>
+<div id="kiosk-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#43A047;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.85;pointer-events:none">v2026-04-29-20:55 ✓ waste-fix</div>
 <div id="app"><div class="loader">Laden...</div></div>
 <script>
 var SUPABASE_URL = 'https://aezatnwsrhlwtykpixsq.supabase.co';
@@ -2925,16 +2925,11 @@ document.addEventListener('click', function(e) {
         if (soort === 'meldingen') { state.modal = { type: 'meldingen' }; render(); return; }
         if (soort === 'opzet') { openOpzetModal(); return; }
         if (soort === 'waste') {
-          try {
-            console.log('[waste] tile clicked, opening modal');
-            state.modal = { type: 'waste', stap: 1, niveau: 'sligro', zoek: '', resultaten: [], gekozen: null, hoeveelheid: '', reden_id: null, opmerking: '', foto_base64: null, redenen: [], recent: [], bezig: false };
-            render();
-            laadWasteRedenen();
-            laadMijnRecenteWaste();
-          } catch(wasteErr) {
-            alert('Waste-click crasht: ' + wasteErr.message + '\n\nKopieer dit aan Stefan.');
-            console.error('[waste] click error', wasteErr);
-          }
+          state.modal = { type: 'waste', stap: 1, niveau: 'sligro', zoek: '', resultaten: [], gekozen: null, hoeveelheid: '', reden_id: null, opmerking: '', foto_base64: null, redenen: [], recent: [], bezig: false };
+          render();
+          // Laad redenen + recente meldingen async
+          laadWasteRedenen();
+          laadMijnRecenteWaste();
           return;
         }
         if (soort === 'sjef') {
@@ -4243,11 +4238,10 @@ function nieuweWasteMelding() {
 function renderWasteModal() {
   var m = state.modal;
   var stap = m.stap || 1;
-  var html = '<div class="atm-overlay" onclick="if(event.target===this){state.modal=null;render();}">';
-  html += '<div class="atm-modal" style="max-width:560px;max-height:92vh;display:flex;flex-direction:column;">';
+  var html = '<div class="alle-tijden-modal">';
   html += '<div class="atm-header"><div><h3>🗑️ Waste melden</h3><div class="atm-sub">Stap ' + stap + ' van 3 · Sligro/breuk/THT/gerecht</div></div>';
-  html += '<button class="atm-close" onclick="state.modal=null;render();">✕</button></div>';
-  html += '<div style="overflow-y:auto;padding:14px;flex:1">';
+  html += '<button class="atm-close" onclick="state.modal=null;render();">✕ Sluiten</button></div>';
+  html += '<div style="overflow-y:auto;padding:14px;flex:1;background:#F5F8FA">';
 
   if (stap === 1) {
     // KIES PRODUCT
@@ -4332,7 +4326,7 @@ function renderWasteModal() {
     html += '<button onclick="nieuweWasteMelding()" style="background:#234756;color:white;border:none;padding:12px 24px;border-radius:100px;font-weight:600;font-size:14px;cursor:pointer;margin-top:14px">+ Nog een melding</button>';
     html += '<button onclick="state.modal=null;render();" style="display:block;margin:8px auto 0;background:white;color:#6E8591;border:none;padding:8px;font-size:13px;cursor:pointer">Sluiten</button></div>';
   }
-  html += '</div></div></div>';
+  html += '</div></div>';
   return html;
 }
 
@@ -4391,10 +4385,9 @@ function nieuwSjefGesprek() {
 
 function renderSjefModal() {
   var m = state.modal;
-  var html = '<div class="atm-overlay" onclick="if(event.target===this){state.modal=null;render();}">';
-  html += '<div class="atm-modal" style="max-width:560px;max-height:90vh;display:flex;flex-direction:column;">';
+  var html = '<div class="alle-tijden-modal">';
   html += '<div class="atm-header"><div style="display:flex;align-items:center;gap:10px"><div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#1976D2,#002D41);display:flex;align-items:center;justify-content:center;font-size:18px">👨‍🍳</div><div><h3 style="margin:0">Sjef</h3><div class="atm-sub">AI keuken-assistent · alleen lezen</div></div></div>';
-  html += '<div style="display:flex;gap:6px"><button onclick="nieuwSjefGesprek()" title="Nieuw gesprek" style="background:transparent;border:none;cursor:pointer;font-size:16px;padding:4px 8px">↻</button><button class="atm-close" onclick="state.modal=null;render();">✕</button></div></div>';
+  html += '<div style="display:flex;gap:6px"><button onclick="nieuwSjefGesprek()" title="Nieuw gesprek" style="background:transparent;border:none;cursor:pointer;font-size:16px;padding:4px 8px">↻</button><button class="atm-close" onclick="state.modal=null;render();">✕ Sluiten</button></div></div>';
   html += '<div id="sjef-scroll" style="flex:1;overflow-y:auto;padding:14px;background:#F5F8FA">';
   if (!m.berichten || !m.berichten.length) {
     html += '<div style="text-align:center;color:#6E8591;padding:30px 10px"><div style="font-size:48px;margin-bottom:8px">👋</div><div style="font-weight:600;color:#234756">Hoi ' + esc(state.medewerker_naam || '') + '</div><div style="font-size:13px;margin-top:6px">Vraag me over vandaag, gerechten, dieet, HACCP, waste...</div></div>';
@@ -4423,22 +4416,19 @@ function renderSjefModal() {
   html += '</div>';
   html += '<div style="padding:10px;background:white;border-top:1px solid #D8E8EF;display:flex;gap:8px"><input id="sjef-input" type="text" value="' + esc(m.invoer || '') + '" oninput="state.modal.invoer=this.value" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey&&state.modal.invoer){event.preventDefault();vraagSjef(state.modal.invoer);}" placeholder="Vraag iets..." ' + (m.bezig?'disabled':'') + ' style="flex:1;padding:12px;border:2px solid #D8E8EF;border-radius:100px;font-size:14px;font-family:inherit">';
   html += '<button onclick="if(state.modal.invoer)vraagSjef(state.modal.invoer);" ' + (m.bezig?'disabled':'') + ' style="background:#234756;color:white;border:none;padding:0 18px;border-radius:100px;font-weight:600;cursor:pointer">→</button></div>';
-  html += '</div></div>';
+  html += '</div>';
   return html;
 }
 
 // GLOBAL waste-modal opener (callable vanuit onclick=) — bypassen event delegation
 window.openWasteModal = function() {
-  console.log('[waste] openWasteModal called');
   try {
     state.modal = { type: 'waste', stap: 1, niveau: 'sligro', zoek: '', resultaten: [], gekozen: null, hoeveelheid: '', reden_id: null, opmerking: '', foto_base64: null, redenen: [], recent: [], bezig: false };
-    console.log('[waste] state.modal set, calling render');
     render();
-    console.log('[waste] render done');
     if (typeof laadWasteRedenen === 'function') laadWasteRedenen();
     if (typeof laadMijnRecenteWaste === 'function') laadMijnRecenteWaste();
   } catch(e) {
-    alert('Waste-modal fout in openWasteModal: ' + e.message + '\n\nKopieer aan Stefan.');
+    alert('Waste-modal fout: ' + e.message);
     console.error('openWasteModal', e);
   }
 };
