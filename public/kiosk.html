@@ -277,7 +277,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; back
 </head>
 <body>
 <div class="preview-banner">✨ Kiosk v2 PREVIEW — werkt met echte data</div>
-<div id="kiosk-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#43A047;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.85;pointer-events:none">v2026-04-29-20:55 ✓ waste-fix</div>
+<div id="kiosk-versie-tag" style="position:fixed;bottom:6px;right:8px;background:#43A047;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:monospace;z-index:99999;opacity:.85;pointer-events:none">v2026-04-29-21:30 ✓ waste-debug</div>
 <div id="app"><div class="loader">Laden...</div></div>
 <script>
 var SUPABASE_URL = 'https://aezatnwsrhlwtykpixsq.supabase.co';
@@ -2925,11 +2925,16 @@ document.addEventListener('click', function(e) {
         if (soort === 'meldingen') { state.modal = { type: 'meldingen' }; render(); return; }
         if (soort === 'opzet') { openOpzetModal(); return; }
         if (soort === 'waste') {
-          state.modal = { type: 'waste', stap: 1, niveau: 'sligro', zoek: '', resultaten: [], gekozen: null, hoeveelheid: '', reden_id: null, opmerking: '', foto_base64: null, redenen: [], recent: [], bezig: false };
-          render();
-          // Laad redenen + recente meldingen async
-          laadWasteRedenen();
-          laadMijnRecenteWaste();
+          try {
+            console.log('[waste] tile clicked, opening modal');
+            state.modal = { type: 'waste', stap: 1, niveau: 'sligro', zoek: '', resultaten: [], gekozen: null, hoeveelheid: '', reden_id: null, opmerking: '', foto_base64: null, redenen: [], recent: [], bezig: false };
+            render();
+            laadWasteRedenen();
+            laadMijnRecenteWaste();
+          } catch(wasteErr) {
+            alert('Waste-click crasht: ' + wasteErr.message + '\n\nKopieer dit aan Stefan.');
+            console.error('[waste] click error', wasteErr);
+          }
           return;
         }
         if (soort === 'sjef') {
@@ -4424,13 +4429,16 @@ function renderSjefModal() {
 
 // GLOBAL waste-modal opener (callable vanuit onclick=) — bypassen event delegation
 window.openWasteModal = function() {
+  console.log('[waste] openWasteModal called');
   try {
     state.modal = { type: 'waste', stap: 1, niveau: 'sligro', zoek: '', resultaten: [], gekozen: null, hoeveelheid: '', reden_id: null, opmerking: '', foto_base64: null, redenen: [], recent: [], bezig: false };
+    console.log('[waste] state.modal set, calling render');
     render();
+    console.log('[waste] render done');
     if (typeof laadWasteRedenen === 'function') laadWasteRedenen();
     if (typeof laadMijnRecenteWaste === 'function') laadMijnRecenteWaste();
   } catch(e) {
-    alert('Waste-modal fout: ' + e.message);
+    alert('Waste-modal fout in openWasteModal: ' + e.message + '\n\nKopieer aan Stefan.');
     console.error('openWasteModal', e);
   }
 };
