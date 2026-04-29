@@ -4114,6 +4114,17 @@ async function apiKioskWaste(actie, extra) {
                  'apikey': 'sb_publishable_qkQzUEM5fvJPSsfScEzNCg_Eug8-d4t' },
       body: JSON.stringify(body)
     });
+    if (r.status === 401) {
+      // Sessie verlopen — auto-logout
+      state.sessie_id = null;
+      state.medewerker_naam = null;
+      localStorage.removeItem('kiosk_sessie');
+      localStorage.removeItem('kiosk_naam');
+      state.modal = null;
+      alert('Sessie verlopen — log opnieuw in met je PIN');
+      render();
+      return { error: 'sessie_verlopen' };
+    }
     return await r.json();
   } catch (e) { return { error: e.message }; }
 }
@@ -4349,6 +4360,14 @@ async function vraagSjef(bericht) {
                  'apikey': 'sb_publishable_qkQzUEM5fvJPSsfScEzNCg_Eug8-d4t' },
       body: JSON.stringify({ sessie_id: state.sessie_id, sjef_sessie_id: m.sjef_sessie || null, bericht: bericht })
     });
+    if (r.status === 401) {
+      state.sessie_id = null; state.medewerker_naam = null;
+      localStorage.removeItem('kiosk_sessie'); localStorage.removeItem('kiosk_naam');
+      state.modal = null;
+      alert('Sessie verlopen — log opnieuw in met je PIN');
+      render();
+      return;
+    }
     var data = await r.json();
     if (state.modal && state.modal.type === 'sjef') {
       m.bezig = false;
