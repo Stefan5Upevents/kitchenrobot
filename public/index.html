@@ -12939,7 +12939,7 @@ function SensorenScreen() {
   if (!user) {
     return /* @__PURE__ */ React.createElement(LoginScreen, { onLogin: handleLogin });
   }
-  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", minHeight: "100vh", background: "#F0F4F7" } }, /* @__PURE__ */ React.createElement(Header, { sc, setSc, user, logout: handleLogout }), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto", overflowX: "hidden" }, className: "mobile-padding" }, /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 1200, margin: "0 auto", padding: "28px 20px 60px" } }, sc === "home" && /* @__PURE__ */ React.createElement(HomeScreen, { setSc }), sc === "boekingen" && /* @__PURE__ */ React.createElement(BoekingenScreen, { setSc, setActieve }), sc === "financieel" && /* @__PURE__ */ React.createElement(FinancieelScreen, { setSc }), sc === "chef" && /* @__PURE__ */ React.createElement(ChefScreen, { setSc, setActieve }), sc === "buffet" && /* @__PURE__ */ React.createElement(BuffetScreen, { actieve, setActieve, setSc }), sc === "opzet" && /* @__PURE__ */ React.createElement(OpzetScreen, null), sc === "tijden" && /* @__PURE__ */ React.createElement(TijdenScreen, null), sc.startsWith("stam:") && (typeof window._krMagScherm !== "function" || window._krMagScherm(sc)) && /* @__PURE__ */ React.createElement(StamScreen, { initTab: sc.split(":")[1] || "pg" }), sc === "fin" && /* @__PURE__ */ React.createElement(FinancieelScreen, null), sc === "adviezen" && /* @__PURE__ */ React.createElement(AdviezenScreen, null), sc === "fin_inst" && /* @__PURE__ */ React.createElement(FinInstellingenScreen, null), sc === "sensoren" && /* @__PURE__ */ React.createElement(SensorenScreen, null), sc === "apikeys" && /* @__PURE__ */ React.createElement(ApiKoppelingenScreen, null), sc === "staffel" && window._OpzetStaffelScreen && /* @__PURE__ */ React.createElement(window._OpzetStaffelScreen, null), sc === "gebruikers" && window._GebruikersScreen && /* @__PURE__ */ React.createElement(window._GebruikersScreen, null), sc === "systeem" && window._SysteemScreen && /* @__PURE__ */ React.createElement(window._SysteemScreen, null), sc === "schermdoc" && window._SchermDocScreen && /* @__PURE__ */ React.createElement(window._SchermDocScreen, null), sc === "stam:fi" && /* @__PURE__ */ React.createElement(FinInstellingenScreen, null), sc === "allergenen" && /* @__PURE__ */ React.createElement(AllergenenScreen, null), sc === "inspiratie" && /* @__PURE__ */ React.createElement(InspiratieScreen, null), sc === "opzetlog" && /* @__PURE__ */ React.createElement(OpzetLogboekScreen, null), sc === "haccp" && /* @__PURE__ */ React.createElement(HACCPScreen, null), sc === "nvwa" && window._NVWAInspectieScreen && /* @__PURE__ */ React.createElement(window._NVWAInspectieScreen, null), sc === "fb" && window._FBAnalyseScreen && /* @__PURE__ */ React.createElement(window._FBAnalyseScreen, null), sc === "berichten" && window._BerichtenChefScreen && /* @__PURE__ */ React.createElement(window._BerichtenChefScreen, null), sc === "haccp_inst" && window._HACCPInstellingenScreen && /* @__PURE__ */ React.createElement(window._HACCPInstellingenScreen, null), sc === "bestelling" && /* @__PURE__ */ React.createElement(SligroBestellingScreen, null))));
+  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", minHeight: "100vh", background: "#F0F4F7" } }, /* @__PURE__ */ React.createElement(Header, { sc, setSc, user, logout: handleLogout }), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto", overflowX: "hidden" }, className: "mobile-padding" }, /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 1200, margin: "0 auto", padding: "28px 20px 60px" } }, sc === "home" && /* @__PURE__ */ React.createElement(HomeScreen, { setSc }), sc === "boekingen" && /* @__PURE__ */ React.createElement(BoekingenScreen, { setSc, setActieve }), sc === "financieel" && /* @__PURE__ */ React.createElement(FinancieelScreen, { setSc }), sc === "chef" && /* @__PURE__ */ React.createElement(ChefScreen, { setSc, setActieve }), sc === "buffet" && /* @__PURE__ */ React.createElement(BuffetScreen, { actieve, setActieve, setSc }), sc === "opzet" && /* @__PURE__ */ React.createElement(OpzetScreen, null), sc === "tijden" && /* @__PURE__ */ React.createElement(TijdenScreen, null), sc.startsWith("stam:") && (typeof window._krMagScherm !== "function" || window._krMagScherm(sc)) && /* @__PURE__ */ React.createElement(StamScreen, { initTab: sc.split(":")[1] || "pg" }), sc === "fin" && /* @__PURE__ */ React.createElement(FinancieelScreen, null), sc === "adviezen" && /* @__PURE__ */ React.createElement(AdviezenScreen, null), sc === "fin_inst" && /* @__PURE__ */ React.createElement(FinInstellingenScreen, null), sc === "sensoren" && /* @__PURE__ */ React.createElement(SensorenScreen, null), sc === "apikeys" && /* @__PURE__ */ React.createElement(ApiKoppelingenScreen, null), sc === "staffel" && window._OpzetStaffelScreen && /* @__PURE__ */ React.createElement(window._OpzetStaffelScreen, null), sc === "gebruikers" && window._GebruikersScreen && /* @__PURE__ */ React.createElement(window._GebruikersScreen, null), sc === "systeem" && window._SysteemScreen && /* @__PURE__ */ React.createElement(window._SysteemScreen, null), sc === "schermdoc" && window._SchermDocScreen && /* @__PURE__ */ React.createElement(window._SchermDocScreen, null), sc === "stam:fi" && /* @__PURE__ */ React.createElement(FinInstellingenScreen, null), sc === "allergenen" && /* @__PURE__ */ React.createElement(AllergenenScreen, null), sc === "inspiratie" && /* @__PURE__ */ React.createElement(InspiratieScreen, null), sc === "opzetlog" && /* @__PURE__ */ React.createElement(OpzetLogboekScreen, null), sc === "haccp" && /* @__PURE__ */ React.createElement(HACCPScreen, null), sc === "nvwa" && window._NVWAInspectieScreen && /* @__PURE__ */ React.createElement(window._NVWAInspectieScreen, null), sc === "fb" && window._FBAnalyseScreen && /* @__PURE__ */ React.createElement(window._FBAnalyseScreen, null), sc === "berichten" && window._BerichtenChefScreen && /* @__PURE__ */ React.createElement(window._BerichtenChefScreen, null), sc === "waste" && window._WasteAdminScreen && /* @__PURE__ */ React.createElement(window._WasteAdminScreen, null), sc === "haccp_inst" && window._HACCPInstellingenScreen && /* @__PURE__ */ React.createElement(window._HACCPInstellingenScreen, null), sc === "bestelling" && /* @__PURE__ */ React.createElement(SligroBestellingScreen, null))));
 }
 function InspiratieScreen() {
   var _a, _b;
@@ -21867,5 +21867,469 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
 <!-- KR-SJEF-END -->
 
 
+
+<!-- KR-WASTE-START v1 -->
+<script>
+(function() {
+  if (window._WasteAdminScreen) return; // al geladen
+  if (typeof React === 'undefined') return;
+
+  var supa = window._supa;
+  var API = 'https://aezatnwsrhlwtykpixsq.supabase.co/functions/v1/waste-admin';
+
+  async function call(actie, body) {
+    var sess = supa ? await supa.auth.getSession() : null;
+    var jwt = sess && sess.data && sess.data.session ? sess.data.session.access_token : null;
+    if (!jwt) return { ok: false, fout: 'Niet ingelogd' };
+    try {
+      var r = await fetch(API, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + jwt,
+          'apikey': 'sb_publishable_qkQzUEM5fvJPSsfScEzNCg_Eug8-d4t'
+        },
+        body: JSON.stringify(Object.assign({ actie: actie }, body || {}))
+      });
+      return await r.json();
+    } catch (e) { return { ok: false, fout: e.message }; }
+  }
+
+  var h = React.createElement;
+
+  function statusKleur(s) {
+    return s === 'nieuw' ? '#E65100' :
+           s === 'bevestigd' ? '#2E7D32' :
+           s === 'gecorrigeerd' ? '#1976D2' :
+           '#6E8591';
+  }
+
+  function statusEmoji(s) {
+    return s === 'nieuw' ? '🆕' :
+           s === 'bevestigd' ? '✅' :
+           s === 'gecorrigeerd' ? '✏️' :
+           '🚫';
+  }
+
+  function fmtDatum(iso) {
+    if (!iso) return '';
+    var d = new Date(iso);
+    return d.toLocaleString('nl-NL', { dateStyle: 'short', timeStyle: 'short' });
+  }
+
+  // ===== MELDING KAART =====
+  function MeldingKaart(props) {
+    var m = props.melding;
+    var onClick = props.onClick;
+    return h('div', {
+      onClick: onClick,
+      style: {
+        background: 'white', border: '1px solid #D8E8EF', borderRadius: 12,
+        padding: 14, marginBottom: 10, cursor: 'pointer',
+        display: 'grid', gridTemplateColumns: '70px 1fr auto', gap: 12, alignItems: 'center'
+      }
+    },
+      // Foto thumbnail
+      m.foto_overzicht_url
+        ? h('img', { src: m.foto_overzicht_url, style: { width: 70, height: 70, objectFit: 'cover', borderRadius: 8, background: '#F5F8FA' } })
+        : h('div', { style: { width: 70, height: 70, background: '#F5F8FA', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6E8591', fontSize: 24 } }, '📷'),
+      // Tekst
+      h('div', null,
+        h('div', { style: { fontWeight: 600, color: '#002D41', fontSize: 14 } },
+          (m.gerecht_naam || '?') + (m.presentatievorm_naam ? ' · ' + m.presentatievorm_naam : '')
+        ),
+        h('div', { style: { fontSize: 12, color: '#6E8591', marginTop: 2 } },
+          m.boeking_naam || '(geen boeking)',
+          m.bedrijf_naam ? ' · ' + m.bedrijf_naam : '',
+          m.personen_op_boeking ? ' · ' + m.personen_op_boeking + 'p' : ''
+        ),
+        h('div', { style: { fontSize: 12, color: '#234756', marginTop: 4 } },
+          (m.percentage_over !== null ? m.percentage_over + '% over' : ''),
+          (m.gewogen_grammen ? ' · ' + m.gewogen_grammen + 'g' : ''),
+          (m.bijgemaakt_navraag_keuken ? ' · ⚠️ navraag keuken' : ''),
+          (m.is_steekproef ? ' · 📌 steekproef' : '')
+        ),
+        h('div', { style: { fontSize: 11, color: '#6E8591', marginTop: 4 } },
+          fmtDatum(m.gemeld_op),
+          ' · ', m.outlet_code,
+          m.gemeld_door_naam ? ' · ' + m.gemeld_door_naam : ''
+        )
+      ),
+      // Status badge
+      h('div', {
+        style: {
+          fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 12,
+          background: statusKleur(m.status) + '22', color: statusKleur(m.status),
+          textTransform: 'uppercase', letterSpacing: 0.5
+        }
+      }, statusEmoji(m.status), ' ', m.status)
+    );
+  }
+
+  // ===== DETAIL MODAL =====
+  function DetailModal(props) {
+    var m = props.melding;
+    var onClose = props.onClose;
+    var onSaved = props.onSaved;
+
+    var _useState = React.useState;
+    var corStr = _useState(m.correctie_grammen != null ? String(m.correctie_grammen) : '');
+    var corOpm = _useState(m.correctie_opmerking || '');
+    var nieuweStatus = _useState(m.status);
+    var bezig = _useState(false);
+    var bijgemaaktV = _useState(m.bijgemaakt);
+    var bijgemaaktG = _useState(m.bijgemaakt_grammen != null ? String(m.bijgemaakt_grammen) : '');
+
+    async function opslaan() {
+      bezig[1](true);
+      var payload = {
+        id: m.id,
+        status: nieuweStatus[0],
+        correctie_grammen: corStr[0] === '' ? null : parseInt(corStr[0]),
+        correctie_opmerking: corOpm[0] || null
+      };
+      // Als bijgemaakt-vraag is beantwoord, dan navraag uit
+      if (bijgemaaktV[0] !== null && bijgemaaktV[0] !== undefined && bijgemaaktV[0] !== m.bijgemaakt) {
+        payload.bijgemaakt = bijgemaaktV[0];
+        payload.bijgemaakt_grammen = bijgemaaktG[0] === '' ? null : parseInt(bijgemaaktG[0]);
+        payload.bijgemaakt_navraag_keuken = false;
+      }
+      var r = await call('corrigeren', payload);
+      bezig[1](false);
+      if (!r.ok) {
+        if (window.kr && window.kr.toast) window.kr.toast('Fout: ' + r.fout, 'error');
+        else alert('Fout: ' + r.fout);
+        return;
+      }
+      if (window.kr && window.kr.toast) window.kr.toast('Opgeslagen', 'success');
+      onSaved && onSaved();
+      onClose();
+    }
+
+    var label = function(t) { return h('div', { style: { fontSize: 12, fontWeight: 600, color: '#002D41', marginBottom: 4, marginTop: 12 } }, t); };
+    var rij = function(k, v) { return h('div', { style: { fontSize: 13, padding: '4px 0', display: 'grid', gridTemplateColumns: '140px 1fr', gap: 8 } },
+      h('div', { style: { color: '#6E8591' } }, k),
+      h('div', { style: { color: '#234756' } }, v == null || v === '' ? '—' : v)
+    ); };
+
+    return h('div', {
+      style: {
+        position: 'fixed', inset: 0, background: 'rgba(0,45,65,0.5)', zIndex: 9999,
+        display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '20px',
+        overflowY: 'auto'
+      },
+      onClick: function(e) { if (e.target === e.currentTarget) onClose(); }
+    },
+      h('div', {
+        style: {
+          background: 'white', borderRadius: 16, maxWidth: 720, width: '100%',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.3)', overflow: 'hidden',
+          maxHeight: '95vh', display: 'flex', flexDirection: 'column'
+        }
+      },
+        // Header
+        h('div', { style: { padding: '16px 20px', borderBottom: '1px solid #D8E8EF', display: 'flex', justifyContent: 'space-between', alignItems: 'center' } },
+          h('div', null,
+            h('div', { style: { fontWeight: 700, color: '#002D41', fontSize: 16 } }, 'Waste-melding #' + m.id),
+            h('div', { style: { fontSize: 12, color: '#6E8591', marginTop: 2 } }, fmtDatum(m.gemeld_op) + ' · ' + m.outlet_code)
+          ),
+          h('button', {
+            onClick: onClose,
+            style: { background: 'transparent', border: 0, fontSize: 24, color: '#6E8591', cursor: 'pointer', padding: '4px 12px' }
+          }, '×')
+        ),
+        // Body (scrollbaar)
+        h('div', { style: { padding: 20, overflowY: 'auto', flex: 1 } },
+          // Foto's
+          h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 } },
+            m.foto_overzicht_url
+              ? h('a', { href: m.foto_overzicht_url, target: '_blank', style: { display: 'block' } },
+                  h('img', { src: m.foto_overzicht_url, style: { width: '100%', maxHeight: 240, objectFit: 'cover', borderRadius: 8, background: '#F5F8FA' } }),
+                  h('div', { style: { fontSize: 11, color: '#6E8591', textAlign: 'center', marginTop: 2 } }, '📷 Overzicht')
+                )
+              : h('div', { style: { padding: 30, background: '#F5F8FA', borderRadius: 8, textAlign: 'center', color: '#6E8591' } }, 'Geen foto'),
+            m.foto_close_url
+              ? h('a', { href: m.foto_close_url, target: '_blank', style: { display: 'block' } },
+                  h('img', { src: m.foto_close_url, style: { width: '100%', maxHeight: 240, objectFit: 'cover', borderRadius: 8, background: '#F5F8FA' } }),
+                  h('div', { style: { fontSize: 11, color: '#6E8591', textAlign: 'center', marginTop: 2 } }, '🔍 Close-up')
+                )
+              : h('div', { style: { padding: 30, background: '#F5F8FA', borderRadius: 8, textAlign: 'center', color: '#6E8591' } }, 'Geen foto')
+          ),
+
+          // Vaste data
+          label('Boeking'),
+          rij('Naam', m.boeking_naam),
+          rij('Bedrijf', m.bedrijf_naam),
+          rij('Personen', m.personen_op_boeking),
+
+          label('Gerecht'),
+          rij('Naam', m.gerecht_naam),
+          rij('Productsoort', m.productsoort_naam),
+          rij('Bak', m.presentatievorm_naam),
+
+          label('Meting'),
+          rij('Percentage over', m.percentage_over != null ? m.percentage_over + '%' : null),
+          rij('Gewogen', m.gewogen_grammen ? m.gewogen_grammen + 'g' : null),
+          rij('Geschat (gram)', m.geschatte_grammen ? m.geschatte_grammen + 'g' : null),
+
+          label('Context'),
+          rij('Groep compleet', m.groep_compleet === true ? 'Ja' : m.groep_compleet === false ? 'Nee' : 'weet niet'),
+          rij('Bijgemaakt', m.bijgemaakt === true ? 'Ja' + (m.bijgemaakt_grammen ? ' (' + m.bijgemaakt_grammen + 'g)' : '') : m.bijgemaakt === false ? 'Nee' : 'weet niet — navraag bij keuken'),
+          rij('Reden', m.reden),
+          rij('Opmerking', m.opmerking),
+          rij('Gemeld door', m.gemeld_door_naam),
+          rij('Foto-retentie', m.is_steekproef ? 'permanent (steekproef)' : (m.verloopt_foto_op ? 'tot ' + m.verloopt_foto_op : '—')),
+
+          // Correctie
+          h('div', { style: { background: '#FFF8E7', border: '1px solid #E65100', borderRadius: 10, padding: 14, marginTop: 16 } },
+            h('div', { style: { fontWeight: 700, color: '#E65100', marginBottom: 8 } }, '✏️ Jouw correctie / besluit'),
+
+            // Bijgemaakt-navraag (alleen als nodig)
+            m.bijgemaakt_navraag_keuken && h('div', { style: { background: 'white', borderRadius: 8, padding: 10, marginBottom: 10, border: '1px solid #FFD699' } },
+              h('div', { style: { fontSize: 12, fontWeight: 600, color: '#E65100', marginBottom: 6 } }, '⚠️ Navraag keuken: was er bijgemaakt?'),
+              h('div', { style: { display: 'flex', gap: 6 } },
+                ['ja','nee','weet_niet'].map(function(v) {
+                  var actief = (v === 'ja' && bijgemaaktV[0] === true) ||
+                               (v === 'nee' && bijgemaaktV[0] === false) ||
+                               (v === 'weet_niet' && (bijgemaaktV[0] === null || bijgemaaktV[0] === undefined));
+                  return h('button', {
+                    key: v,
+                    onClick: function() { bijgemaaktV[1](v === 'ja' ? true : v === 'nee' ? false : null); },
+                    style: {
+                      padding: '6px 12px', borderRadius: 6, border: '1px solid #D8E8EF',
+                      background: actief ? '#E65100' : 'white', color: actief ? 'white' : '#234756',
+                      fontWeight: 600, fontSize: 12, cursor: 'pointer', flex: 1
+                    }
+                  }, v === 'weet_niet' ? 'weet niet' : v);
+                })
+              ),
+              bijgemaaktV[0] === true && h('div', { style: { marginTop: 8 } },
+                h('input', {
+                  type: 'number', placeholder: 'Hoeveel gram bijgemaakt?',
+                  value: bijgemaaktG[0], onChange: function(e) { bijgemaaktG[1](e.target.value); },
+                  style: { width: '100%', padding: 8, borderRadius: 6, border: '1px solid #D8E8EF', fontSize: 13 }
+                })
+              )
+            ),
+
+            label('Echte gewicht (gram, na nameten)'),
+            h('input', {
+              type: 'number', value: corStr[0],
+              onChange: function(e) { corStr[1](e.target.value); },
+              placeholder: m.gewogen_grammen ? 'Origineel: ' + m.gewogen_grammen + 'g' : 'gram',
+              style: { width: '100%', padding: 10, borderRadius: 8, border: '1px solid #D8E8EF', fontSize: 14 }
+            }),
+
+            label('Opmerking'),
+            h('textarea', {
+              value: corOpm[0],
+              onChange: function(e) { corOpm[1](e.target.value); },
+              placeholder: 'bv. eigenlijk veel meer over dan gemeld; sensor leek raar; etc.',
+              style: { width: '100%', padding: 10, borderRadius: 8, border: '1px solid #D8E8EF', fontSize: 13, minHeight: 60, fontFamily: 'inherit' }
+            }),
+
+            label('Status'),
+            h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 6 } },
+              ['nieuw','bevestigd','gecorrigeerd','ongeldig'].map(function(s) {
+                var sel = nieuweStatus[0] === s;
+                return h('button', {
+                  key: s, onClick: function() { nieuweStatus[1](s); },
+                  style: {
+                    padding: '8px 4px', borderRadius: 6, border: '1px solid ' + statusKleur(s),
+                    background: sel ? statusKleur(s) : 'white', color: sel ? 'white' : statusKleur(s),
+                    fontWeight: 600, fontSize: 12, cursor: 'pointer', textTransform: 'uppercase'
+                  }
+                }, s);
+              })
+            )
+          )
+        ),
+        // Footer
+        h('div', { style: { padding: '12px 20px', borderTop: '1px solid #D8E8EF', display: 'flex', gap: 8, justifyContent: 'flex-end' } },
+          h('button', {
+            onClick: onClose,
+            style: { padding: '10px 18px', borderRadius: 8, border: '1px solid #D8E8EF', background: 'white', color: '#234756', fontWeight: 600, cursor: 'pointer' }
+          }, 'Annuleren'),
+          h('button', {
+            onClick: opslaan, disabled: bezig[0],
+            style: { padding: '10px 24px', borderRadius: 8, border: 0, background: bezig[0] ? '#6E8591' : '#2E7D32', color: 'white', fontWeight: 600, cursor: bezig[0] ? 'wait' : 'pointer' }
+          }, bezig[0] ? '...' : '💾 Opslaan')
+        )
+      )
+    );
+  }
+
+  // ===== HOOFDSCHERM =====
+  window._WasteAdminScreen = function() {
+    var st_meldingen = React.useState([]);
+    var st_tellers = React.useState({ nieuw: 0, bevestigd: 0, gecorrigeerd: 0, ongeldig: 0 });
+    var st_status = React.useState('nieuw');
+    var st_outlet = React.useState(null);
+    var st_laden = React.useState(true);
+    var st_open = React.useState(null);
+    var st_tab = React.useState('meldingen');
+    var st_leerstand = React.useState(null);
+
+    async function laad() {
+      st_laden[1](true);
+      var r = await call('lijst', { status: st_status[0], outlet: st_outlet[0] });
+      st_laden[1](false);
+      if (!r.ok) {
+        if (window.kr && window.kr.toast) window.kr.toast('Fout: ' + r.fout, 'error');
+        return;
+      }
+      st_meldingen[1](r.meldingen || []);
+      st_tellers[1](r.tellers || {});
+    }
+
+    async function laadLeerstand() {
+      var r = await call('leerstand', {});
+      if (r.ok) st_leerstand[1](r.leerstand || []);
+    }
+
+    React.useEffect(function() { laad(); }, [st_status[0], st_outlet[0]]);
+    React.useEffect(function() {
+      if (st_tab[0] === 'leerstand' && st_leerstand[0] === null) laadLeerstand();
+    }, [st_tab[0]]);
+
+    var titel = function() {
+      return h('div', { style: { marginBottom: 16 } },
+        h('h2', { style: { color: '#002D41', margin: 0, fontSize: 22 } }, '🗑️ Waste-meldingen'),
+        h('div', { style: { color: '#6E8591', fontSize: 13, marginTop: 4 } },
+          'Meldingen vanuit hospitality-kiosk. Bekijk, corrigeer, bevestig.')
+      );
+    };
+
+    var tabs = function() {
+      return h('div', { style: { display: 'flex', gap: 4, borderBottom: '2px solid #D8E8EF', marginBottom: 16 } },
+        ['meldingen','leerstand'].map(function(t) {
+          var labelT = t === 'meldingen' ? '📥 Meldingen' : '📚 Leerstand';
+          var sel = st_tab[0] === t;
+          return h('button', {
+            key: t, onClick: function() { st_tab[1](t); },
+            style: {
+              padding: '10px 18px', border: 0, background: 'transparent',
+              borderBottom: sel ? '3px solid #3FB8C4' : '3px solid transparent',
+              fontWeight: 600, color: sel ? '#002D41' : '#6E8591',
+              cursor: 'pointer', marginBottom: -2
+            }
+          }, labelT);
+        })
+      );
+    };
+
+    var filterBar = function() {
+      var statusKnop = function(s, label) {
+        var sel = st_status[0] === s;
+        return h('button', {
+          key: s, onClick: function() { st_status[1](s); },
+          style: {
+            padding: '8px 14px', borderRadius: 8,
+            border: '1px solid ' + (sel ? statusKleur(s || 'nieuw') : '#D8E8EF'),
+            background: sel ? statusKleur(s || 'nieuw') : 'white',
+            color: sel ? 'white' : '#234756', fontWeight: 600, fontSize: 13, cursor: 'pointer'
+          }
+        }, label,
+          (s && st_tellers[0][s] != null) ? ' · ' + st_tellers[0][s] : ''
+        );
+      };
+      var outletKnop = function(o, label) {
+        var sel = st_outlet[0] === o;
+        return h('button', {
+          key: String(o), onClick: function() { st_outlet[1](o); },
+          style: {
+            padding: '8px 14px', borderRadius: 8, border: '1px solid #D8E8EF',
+            background: sel ? '#002D41' : 'white', color: sel ? 'white' : '#234756',
+            fontWeight: 600, fontSize: 13, cursor: 'pointer'
+          }
+        }, label);
+      };
+      return h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 16 } },
+        statusKnop('nieuw', 'Nieuw'),
+        statusKnop('bevestigd', 'Bevestigd'),
+        statusKnop('gecorrigeerd', 'Gecorrigeerd'),
+        statusKnop('ongeldig', 'Ongeldig'),
+        statusKnop(null, 'Alles'),
+        h('div', { style: { width: 1, background: '#D8E8EF', margin: '0 6px' } }),
+        outletKnop(null, 'Beide'),
+        outletKnop('weesp', 'Weesp'),
+        outletKnop('west', 'West'),
+        h('div', { style: { flex: 1 } }),
+        h('button', {
+          onClick: laad,
+          style: { padding: '8px 14px', borderRadius: 8, border: '1px solid #D8E8EF', background: 'white', cursor: 'pointer', fontSize: 13 }
+        }, '🔄 Vernieuw')
+      );
+    };
+
+    if (st_tab[0] === 'leerstand') {
+      return h('div', null,
+        titel(),
+        tabs(),
+        st_leerstand[0] === null
+          ? h('div', { style: { padding: 40, textAlign: 'center', color: '#6E8591' } }, 'Laden...')
+          : st_leerstand[0].length === 0
+            ? h('div', { style: { padding: 40, textAlign: 'center', color: '#6E8591', background: '#F5F8FA', borderRadius: 12 } },
+                h('div', { style: { fontSize: 36 } }, '📚'),
+                h('div', { style: { marginTop: 8, fontWeight: 600 } }, 'Nog geen gewogen meldingen'),
+                h('div', { style: { fontSize: 13, marginTop: 4 } }, 'In de leerfase wegen we elke retour. Zodra hospitality met weegschaal werkt, verschijnt hier de tabel.')
+              )
+            : h('div', { style: { background: 'white', borderRadius: 12, padding: 16, border: '1px solid #D8E8EF' } },
+                h('div', { style: { fontSize: 13, color: '#6E8591', marginBottom: 12 } },
+                  st_leerstand[0].length, ' verschillende gerecht-bak combinaties tot nu toe gemeten'),
+                h('table', { style: { width: '100%', borderCollapse: 'collapse', fontSize: 13 } },
+                  h('thead', null,
+                    h('tr', { style: { background: '#F5F8FA', textAlign: 'left' } },
+                      ['Gerecht','Bak','Metingen','Gem. % over','Gem. gram','Laatste'].map(function(t) {
+                        return h('th', { key: t, style: { padding: '8px 10px', fontWeight: 600, color: '#002D41' } }, t);
+                      })
+                    )
+                  ),
+                  h('tbody', null,
+                    st_leerstand[0].map(function(r, i) {
+                      return h('tr', { key: i, style: { borderTop: '1px solid #D8E8EF' } },
+                        h('td', { style: { padding: '8px 10px' } }, r.gerecht_naam),
+                        h('td', { style: { padding: '8px 10px', color: '#6E8591' } }, r.presentatievorm_naam),
+                        h('td', { style: { padding: '8px 10px', textAlign: 'center', fontWeight: 600 } }, r.metingen),
+                        h('td', { style: { padding: '8px 10px', textAlign: 'right' } }, r.gemiddeld_pct_over != null ? r.gemiddeld_pct_over + '%' : '—'),
+                        h('td', { style: { padding: '8px 10px', textAlign: 'right' } }, r.gemiddeld_gram != null ? r.gemiddeld_gram + 'g' : '—'),
+                        h('td', { style: { padding: '8px 10px', fontSize: 11, color: '#6E8591' } }, fmtDatum(r.laatste_meting))
+                      );
+                    })
+                  )
+                )
+              )
+      );
+    }
+
+    return h('div', null,
+      titel(),
+      tabs(),
+      filterBar(),
+      st_laden[0]
+        ? h('div', { style: { padding: 40, textAlign: 'center', color: '#6E8591' } }, 'Laden...')
+        : st_meldingen[0].length === 0
+          ? h('div', { style: { padding: 40, textAlign: 'center', color: '#6E8591', background: '#F5F8FA', borderRadius: 12 } },
+              h('div', { style: { fontSize: 36 } }, '🍽️'),
+              h('div', { style: { marginTop: 8, fontWeight: 600 } }, 'Geen meldingen'),
+              h('div', { style: { fontSize: 13, marginTop: 4 } }, 'Hier verschijnen meldingen zodra hospitality ze opstuurt via de hospitality-kiosk.')
+            )
+          : h('div', null,
+              st_meldingen[0].map(function(m) {
+                return h(MeldingKaart, { key: m.id, melding: m, onClick: function() { st_open[1](m); } });
+              })
+            ),
+      st_open[0] && h(DetailModal, {
+        melding: st_open[0],
+        onClose: function() { st_open[1](null); },
+        onSaved: function() { laad(); }
+      })
+    );
+  };
+
+  console.log('✓ KR-WASTE module geladen');
+})();
+</script>
+<!-- KR-WASTE-END -->
 
 </body></html>
