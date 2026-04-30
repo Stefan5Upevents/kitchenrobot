@@ -22097,6 +22097,43 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
           rij('Reden', m.reden),
           rij('Opmerking', m.opmerking),
 
+          // Hospitality: AI-resultaat blok (alleen tonen als beschikbaar)
+          m.bron === 'hospitality' && (m.ai_zekerheid != null || m.ai_opmerking) && h('div', {
+            style: { background: '#E8F4F8', border: '1px solid #1976D2', borderRadius: 10, padding: 14, marginTop: 16 }
+          },
+            h('div', { style: { fontWeight: 700, color: '#1976D2', marginBottom: 8 } },
+              '🤖 AI foto-analyse',
+              m.ai_zekerheid != null && h('span', { style: { fontWeight: 400, fontSize: 12, color: '#6E8591', marginLeft: 8 } },
+                '· zekerheid ' + m.ai_zekerheid + '%')
+            ),
+            m.ai_opmerking && h('div', { style: { fontSize: 13, color: '#234756', marginBottom: 6 } }, '"' + m.ai_opmerking + '"'),
+            m.ai_geschatte_grammen != null && h('div', { style: { fontSize: 12, color: '#234756' } },
+              'AI schatting: ' + m.ai_geschatte_grammen + 'g',
+              m.gewogen_grammen ? ' (medewerker gaf ' + m.gewogen_grammen + 'g op)' : '')
+          ),
+
+          // Hospitality: opnieuw-checken knop
+          m.bron === 'hospitality' && (!m.ai_opmerking || m.foto_status === 'check_fout' || m.foto_status === 'wacht_op_check') && h('div', { style: { marginTop: 12 } },
+            h('button', {
+              onClick: async function() {
+                bezig[1](true);
+                if (window.kr && window.kr.toast) window.kr.toast('AI bekijkt foto...', 'info');
+                var r = await call('foto_check_trigger', { melding_id: parseInt(m.bron_id, 10) });
+                bezig[1](false);
+                if (r.ok) {
+                  if (window.kr && window.kr.toast) window.kr.toast('AI-check klaar', 'success');
+                  onSaved && onSaved();
+                  onClose();
+                } else {
+                  alert('AI-fout: ' + (r.fout || 'onbekend'));
+                }
+              },
+              disabled: bezig[0],
+              style: { background: '#1976D2', color: 'white', border: 0, padding: '8px 14px',
+                       borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: 'pointer' }
+            }, bezig[0] ? '⏳ Bezig...' : '🤖 AI foto-check uitvoeren')
+          ),
+
           // Hospitality: correctie-blok
           m.bron === 'hospitality' && h('div', { style: { background: '#FFF8E7', border: '1px solid #E65100', borderRadius: 10, padding: 14, marginTop: 16 } },
             h('div', { style: { fontWeight: 700, color: '#E65100', marginBottom: 8 } }, '✏️ Correctie / besluit'),
@@ -22266,8 +22303,36 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
       );
     }
 
+    var aiBalk = function() {
+      // Toon alleen als bron != keuken (keuken heeft geen AI-check)
+      if (st_bron[0] === 'keuken') return null;
+      return h('div', { style: { background: '#FFF8E7', border: '1px solid #FFD699', borderRadius: 10,
+                                 padding: '10px 14px', marginBottom: 14, display: 'flex',
+                                 alignItems: 'center', gap: 10, fontSize: 13 } },
+        h('div', { style: { fontSize: 18 } }, '🤖'),
+        h('div', { style: { flex: 1 } },
+          h('div', { style: { fontWeight: 700, color: '#234756' } }, 'AI foto-check (Claude vision)'),
+          h('div', { style: { color: '#6E8591', fontSize: 12 } }, 'Draait automatisch elke 5 min op meldingen met status "wacht_op_check". Klik "Check nu" om handmatig te triggeren.')
+        ),
+        h('button', {
+          onClick: async function() {
+            if (window.kr && window.kr.toast) window.kr.toast('AI-check gestart...', 'info');
+            var r = await call('foto_check_trigger', {});
+            if (r.ok) {
+              if (window.kr && window.kr.toast) window.kr.toast('AI-check klaar: ' + (r.verwerkt || 0) + ' verwerkt', 'success');
+              laad();
+            } else {
+              if (window.kr && window.kr.toast) window.kr.toast('Fout: ' + (r.fout || 'onbekend'), 'error');
+            }
+          },
+          style: { background: '#E65100', color: 'white', border: 0, padding: '8px 14px',
+                   borderRadius: 100, fontWeight: 600, fontSize: 12, cursor: 'pointer' }
+        }, '🤖 Check nu')
+      );
+    };
+
     return h('div', null,
-      titel(), tabs(), filterBar(),
+      titel(), tabs(), filterBar(), aiBalk(),
       st_laden[0]
         ? h('div', { style: { padding: 40, textAlign: 'center', color: '#6E8591' } }, 'Laden...')
         : st_meldingen[0].length === 0
