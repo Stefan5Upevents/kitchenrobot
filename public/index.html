@@ -804,7 +804,8 @@ function Header({ sc, setSc, user, logout }) {
       ["nvwa", "📋", "NVWA Inspectie"],
       ["fb", "📊", "F&B Analyse"],
       ["bestelling", "🛒", "Sligro Bestelling"],
-      ["opzetlog", "\u2705", "Opzet Logboek"]
+      ["opzetlog", "\u2705", "Opzet Logboek"],
+      ["waste_analytics", "📊", "Waste Analytics"]
     ] },
     { label: "Beheer", items: [
       ["stam:pg", "🏗", "Productgroepen"],
@@ -9966,6 +9967,7 @@ function FinancieelScreen({ setSc }) {
   }
 
   return React.createElement('div', { style:{maxWidth:1000,margin:'0 auto',padding:'0 12px 40px'} },
+    window._FilterBar ? React.createElement(window._FilterBar, { key: 'krfb' }) : null,
     React.createElement(LiveDashboardBlok, { outletFilter: outlet }),
 
     // Header
@@ -11898,6 +11900,7 @@ function AdviezenScreen() {
   }
 
   return React.createElement('div', null,
+    window._FilterBar ? React.createElement(window._FilterBar, { key: 'krfb' }) : null,
     React.createElement('div', { style: SS.pT }, '📥 Adviezen-inbox'),
     React.createElement('div', { style: SS.pD }, 'Laatste controle voor bestellingen & menu-wijzigingen worden doorgezet'),
     React.createElement('div', { style:{marginBottom:12} },
@@ -12940,7 +12943,7 @@ function SensorenScreen() {
   if (!user) {
     return /* @__PURE__ */ React.createElement(LoginScreen, { onLogin: handleLogin });
   }
-  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", minHeight: "100vh", background: "#F0F4F7" } }, /* @__PURE__ */ React.createElement(Header, { sc, setSc, user, logout: handleLogout }), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto", overflowX: "hidden" }, className: "mobile-padding" }, /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 1200, margin: "0 auto", padding: "28px 20px 60px" } }, sc === "home" && /* @__PURE__ */ React.createElement(HomeScreen, { setSc }), sc === "boekingen" && /* @__PURE__ */ React.createElement(BoekingenScreen, { setSc, setActieve }), sc === "financieel" && /* @__PURE__ */ React.createElement(FinancieelScreen, { setSc }), sc === "chef" && /* @__PURE__ */ React.createElement(ChefScreen, { setSc, setActieve }), sc === "buffet" && /* @__PURE__ */ React.createElement(BuffetScreen, { actieve, setActieve, setSc }), sc === "opzet" && /* @__PURE__ */ React.createElement(OpzetScreen, null), sc === "tijden" && /* @__PURE__ */ React.createElement(TijdenScreen, null), sc.startsWith("stam:") && (typeof window._krMagScherm !== "function" || window._krMagScherm(sc)) && /* @__PURE__ */ React.createElement(StamScreen, { initTab: sc.split(":")[1] || "pg" }), sc === "fin" && /* @__PURE__ */ React.createElement(FinancieelScreen, null), sc === "adviezen" && /* @__PURE__ */ React.createElement(AdviezenScreen, null), sc === "fin_inst" && /* @__PURE__ */ React.createElement(FinInstellingenScreen, null), sc === "sensoren" && /* @__PURE__ */ React.createElement(SensorenScreen, null), sc === "apikeys" && /* @__PURE__ */ React.createElement(ApiKoppelingenScreen, null), sc === "staffel" && window._OpzetStaffelScreen && /* @__PURE__ */ React.createElement(window._OpzetStaffelScreen, null), sc === "gebruikers" && window._GebruikersScreen && /* @__PURE__ */ React.createElement(window._GebruikersScreen, null), sc === "systeem" && window._SysteemScreen && /* @__PURE__ */ React.createElement(window._SysteemScreen, null), sc === "schermdoc" && window._SchermDocScreen && /* @__PURE__ */ React.createElement(window._SchermDocScreen, null), sc === "stam:fi" && /* @__PURE__ */ React.createElement(FinInstellingenScreen, null), sc === "allergenen" && /* @__PURE__ */ React.createElement(AllergenenScreen, null), sc === "inspiratie" && /* @__PURE__ */ React.createElement(InspiratieScreen, null), sc === "opzetlog" && /* @__PURE__ */ React.createElement(OpzetLogboekScreen, null), sc === "haccp" && /* @__PURE__ */ React.createElement(HACCPScreen, null), sc === "nvwa" && window._NVWAInspectieScreen && /* @__PURE__ */ React.createElement(window._NVWAInspectieScreen, null), sc === "fb" && window._FBAnalyseScreen && /* @__PURE__ */ React.createElement(window._FBAnalyseScreen, null), sc === "berichten" && window._BerichtenChefScreen && /* @__PURE__ */ React.createElement(window._BerichtenChefScreen, null), sc === "waste" && window._WasteAdminScreen && /* @__PURE__ */ React.createElement(window._WasteAdminScreen, null), sc === "haccp_inst" && window._HACCPInstellingenScreen && /* @__PURE__ */ React.createElement(window._HACCPInstellingenScreen, null), sc === "bestelling" && /* @__PURE__ */ React.createElement(SligroBestellingScreen, null))));
+  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", minHeight: "100vh", background: "#F0F4F7" } }, /* @__PURE__ */ React.createElement(Header, { sc, setSc, user, logout: handleLogout }), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto", overflowX: "hidden" }, className: "mobile-padding" }, /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 1200, margin: "0 auto", padding: "28px 20px 60px" } }, sc === "home" && /* @__PURE__ */ React.createElement(HomeScreen, { setSc }), sc === "boekingen" && /* @__PURE__ */ React.createElement(BoekingenScreen, { setSc, setActieve }), sc === "financieel" && /* @__PURE__ */ React.createElement(FinancieelScreen, { setSc }), sc === "chef" && /* @__PURE__ */ React.createElement(ChefScreen, { setSc, setActieve }), sc === "buffet" && /* @__PURE__ */ React.createElement(BuffetScreen, { actieve, setActieve, setSc }), sc === "opzet" && /* @__PURE__ */ React.createElement(OpzetScreen, null), sc === "tijden" && /* @__PURE__ */ React.createElement(TijdenScreen, null), sc.startsWith("stam:") && (typeof window._krMagScherm !== "function" || window._krMagScherm(sc)) && /* @__PURE__ */ React.createElement(StamScreen, { initTab: sc.split(":")[1] || "pg" }), sc === "fin" && /* @__PURE__ */ React.createElement(FinancieelScreen, null), sc === "adviezen" && /* @__PURE__ */ React.createElement(AdviezenScreen, null), sc === "fin_inst" && /* @__PURE__ */ React.createElement(FinInstellingenScreen, null), sc === "sensoren" && /* @__PURE__ */ React.createElement(SensorenScreen, null), sc === "apikeys" && /* @__PURE__ */ React.createElement(ApiKoppelingenScreen, null), sc === "staffel" && window._OpzetStaffelScreen && /* @__PURE__ */ React.createElement(window._OpzetStaffelScreen, null), sc === "gebruikers" && window._GebruikersScreen && /* @__PURE__ */ React.createElement(window._GebruikersScreen, null), sc === "systeem" && window._SysteemScreen && /* @__PURE__ */ React.createElement(window._SysteemScreen, null), sc === "schermdoc" && window._SchermDocScreen && /* @__PURE__ */ React.createElement(window._SchermDocScreen, null), sc === "stam:fi" && /* @__PURE__ */ React.createElement(FinInstellingenScreen, null), sc === "allergenen" && /* @__PURE__ */ React.createElement(AllergenenScreen, null), sc === "inspiratie" && /* @__PURE__ */ React.createElement(InspiratieScreen, null), sc === "opzetlog" && /* @__PURE__ */ React.createElement(OpzetLogboekScreen, null), sc === "haccp" && /* @__PURE__ */ React.createElement(HACCPScreen, null), sc === "nvwa" && window._NVWAInspectieScreen && /* @__PURE__ */ React.createElement(window._NVWAInspectieScreen, null), sc === "fb" && window._FBAnalyseScreen && /* @__PURE__ */ React.createElement(window._FBAnalyseScreen, null), sc === "berichten" && window._BerichtenChefScreen && /* @__PURE__ */ React.createElement(window._BerichtenChefScreen, null), sc === "waste" && window._WasteAdminScreen && /* @__PURE__ */ React.createElement(window._WasteAdminScreen, null), sc === "waste_analytics" && window._WasteAnalyticsScreen && /* @__PURE__ */ React.createElement(window._WasteAnalyticsScreen, null), sc === "haccp_inst" && window._HACCPInstellingenScreen && /* @__PURE__ */ React.createElement(window._HACCPInstellingenScreen, null), sc === "bestelling" && /* @__PURE__ */ React.createElement(SligroBestellingScreen, null))));
 }
 function InspiratieScreen() {
   var _a, _b;
@@ -22363,5 +22366,420 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
 })();
 </script>
 <!-- KR-WASTE-END -->
+
+<!-- KR-WASTE-ANALYTICS-START v1 -->
+<script>
+(function() {
+  if (window._WasteAnalyticsScreen) return;
+  if (typeof React === 'undefined') return;
+
+  var supa = window._supa;
+  var API = 'https://aezatnwsrhlwtykpixsq.supabase.co/functions/v1/waste-analytics';
+  var ANON = 'sb_publishable_qkQzUEM5fvJPSsfScEzNCg_Eug8-d4t';
+
+  async function call(actie, body) {
+    var sess = supa ? await supa.auth.getSession() : null;
+    var jwt = sess && sess.data && sess.data.session ? sess.data.session.access_token : null;
+    if (!jwt) return { ok: false, fout: 'Niet ingelogd' };
+    try {
+      var r = await fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt, 'apikey': ANON },
+        body: JSON.stringify(Object.assign({ actie: actie }, body || {}))
+      });
+      return await r.json();
+    } catch (e) { return { ok: false, fout: e.message }; }
+  }
+
+  var h = React.createElement;
+
+  function fmtEur(n) { return '€ ' + (Number(n) || 0).toFixed(2).replace('.', ','); }
+  function fmtKg(g) { return ((Number(g) || 0) / 1000).toFixed(1) + ' kg'; }
+  function pctIcon(p) {
+    if (p == null) return '—';
+    if (p > 0) return '↑ +' + p + '%';
+    if (p < 0) return '↓ ' + p + '%';
+    return '0%';
+  }
+  function pctKleur(p, omgekeerd) {
+    // Voor waste: omhoog = SLECHT (rood)
+    if (p == null) return '#6E8591';
+    if (p > 5) return omgekeerd ? '#2E7D32' : '#C62828';
+    if (p < -5) return omgekeerd ? '#C62828' : '#2E7D32';
+    return '#6E8591';
+  }
+
+  function KpiTegel(props) {
+    var titel = props.titel, waarde = props.waarde, sub = props.sub, kleur = props.kleur || '#3FB8C4';
+    return h('div', { style: { background: 'white', borderRadius: 12, padding: 16, borderTop: '4px solid ' + kleur, flex: 1, minWidth: 160 } },
+      h('div', { style: { fontSize: 11, color: '#6E8591', textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: 600 } }, titel),
+      h('div', { style: { fontSize: 26, fontWeight: 800, color: '#002D41', marginTop: 4 } }, waarde),
+      sub && h('div', { style: { fontSize: 12, color: '#6E8591', marginTop: 4 } }, sub)
+    );
+  }
+
+  function Tabel(props) {
+    var titel = props.titel;
+    var rijen = props.rijen || [];
+    var kolommen = props.kolommen; // [{key, label, format}]
+    if (!rijen.length) {
+      return h('div', { style: { background: 'white', borderRadius: 12, padding: 20 } },
+        h('div', { style: { fontWeight: 700, fontSize: 14, marginBottom: 8, color: '#002D41' } }, titel),
+        h('div', { style: { color: '#6E8591', fontSize: 13, padding: '20px 0', textAlign: 'center' } }, 'Geen data in deze periode')
+      );
+    }
+    return h('div', { style: { background: 'white', borderRadius: 12, padding: 16 } },
+      h('div', { style: { fontWeight: 700, fontSize: 14, marginBottom: 12, color: '#002D41' } }, titel),
+      h('table', { style: { width: '100%', borderCollapse: 'collapse', fontSize: 13 } },
+        h('thead', null,
+          h('tr', { style: { background: '#F5F8FA', textAlign: 'left' } },
+            kolommen.map(function(k) {
+              return h('th', { key: k.key, style: { padding: '8px 10px', fontWeight: 600, color: '#002D41', textAlign: k.align || 'left' } }, k.label);
+            })
+          )
+        ),
+        h('tbody', null,
+          rijen.map(function(r, i) {
+            return h('tr', { key: i, style: { borderTop: '1px solid #D8E8EF' } },
+              kolommen.map(function(k) {
+                var v = r[k.key];
+                if (k.format) v = k.format(v, r);
+                return h('td', { key: k.key, style: { padding: '8px 10px', color: '#234756', textAlign: k.align || 'left' } }, v == null ? '—' : v);
+              })
+            );
+          })
+        )
+      )
+    );
+  }
+
+  window._WasteAnalyticsScreen = function() {
+    var st_dagen = React.useState(30);
+    var st_outlet = React.useState('alle');
+    var st_kpi = React.useState(null);
+    var st_top_p = React.useState([]);
+    var st_top_r = React.useState([]);
+    var st_trend = React.useState([]);
+    var st_laden = React.useState(true);
+
+    async function laad() {
+      st_laden[1](true);
+      var body = { dagen: st_dagen[0], outlet: st_outlet[0] };
+      var [kpi, prod, redenen, trend] = await Promise.all([
+        call('kpi', body),
+        call('top_producten', body),
+        call('top_redenen', body),
+        call('trend_per_week', body),
+      ]);
+      st_laden[1](false);
+      if (kpi.ok) st_kpi[1](kpi);
+      if (prod.ok) st_top_p[1](prod.top_producten || []);
+      if (redenen.ok) st_top_r[1](redenen.top_redenen || []);
+      if (trend.ok) st_trend[1](trend.weken || []);
+    }
+    React.useEffect(function() { laad(); }, [st_dagen[0], st_outlet[0]]);
+
+    var titel = h('div', { style: { marginBottom: 16 } },
+      h('h2', { style: { color: '#002D41', margin: 0, fontSize: 22 } }, '📊 Waste analytics'),
+      h('div', { style: { color: '#6E8591', fontSize: 13, marginTop: 4 } }, 'Trends en patronen — Hospitality (gram) + Keuken (€) gecombineerd.')
+    );
+
+    var perKnop = function(d, label) {
+      var sel = st_dagen[0] === d;
+      return h('button', { key: d, onClick: function() { st_dagen[1](d); },
+        style: { padding: '8px 14px', borderRadius: 100, border: '1.5px solid ' + (sel ? '#234756' : '#D8E8EF'),
+                 background: sel ? '#234756' : 'white', color: sel ? 'white' : '#234756',
+                 fontWeight: 600, fontSize: 13, cursor: 'pointer' } }, label);
+    };
+    var outletKnop = function(o, label) {
+      var sel = st_outlet[0] === o;
+      return h('button', { key: o, onClick: function() { st_outlet[1](o); },
+        style: { padding: '8px 14px', borderRadius: 8, border: '1px solid #D8E8EF',
+                 background: sel ? '#002D41' : 'white', color: sel ? 'white' : '#234756',
+                 fontWeight: 600, fontSize: 12, cursor: 'pointer' } }, label);
+    };
+
+    var filterBar = h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 16, alignItems: 'center' } },
+      perKnop(7, '7 dagen'), perKnop(30, '30 dagen'), perKnop(90, '90 dagen'),
+      h('div', { style: { width: 1, background: '#D8E8EF', height: 24, margin: '0 6px' } }),
+      outletKnop('alle', 'Beide'), outletKnop('weesp', 'Weesp'), outletKnop('west', 'West'),
+      h('div', { style: { flex: 1 } }),
+      h('button', { onClick: laad,
+        style: { padding: '7px 12px', borderRadius: 8, border: '1px solid #D8E8EF', background: 'white', cursor: 'pointer', fontSize: 12 } }, '🔄 Vernieuw')
+    );
+
+    if (st_laden[0] && !st_kpi[0]) {
+      return h('div', null, titel, filterBar,
+        h('div', { style: { padding: 60, textAlign: 'center', color: '#6E8591' } }, 'Laden...'));
+    }
+
+    var kpi = st_kpi[0];
+    var hasData = kpi && kpi.huidig.aantal_meldingen > 0;
+
+    var kpiTegels = hasData
+      ? h('div', { style: { display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 16 } },
+          h(KpiTegel, {
+            titel: 'Aantal meldingen', waarde: kpi.huidig.aantal_meldingen,
+            sub: kpi.verandering_pct.meldingen != null ? h('span', { style: { color: pctKleur(kpi.verandering_pct.meldingen) } }, pctIcon(kpi.verandering_pct.meldingen) + ' vs vorige periode') : null,
+            kleur: '#3FB8C4',
+          }),
+          h(KpiTegel, {
+            titel: 'Geschatte kosten', waarde: fmtEur(kpi.huidig.totaal_kosten_eur),
+            sub: h('span', { style: { color: pctKleur(kpi.verandering_pct.kosten) } }, pctIcon(kpi.verandering_pct.kosten) + ' vs vorige'),
+            kleur: '#E65100',
+          }),
+          kpi.huidig.totaal_gram_hospitality > 0 && h(KpiTegel, {
+            titel: 'Hospitality gewicht', waarde: fmtKg(kpi.huidig.totaal_gram_hospitality),
+            sub: h('span', { style: { color: pctKleur(kpi.verandering_pct.gram) } }, pctIcon(kpi.verandering_pct.gram) + ' vs vorige'),
+            kleur: '#1976D2',
+          }),
+          h(KpiTegel, {
+            titel: 'Verdeling', waarde: h('div', { style: { fontSize: 14, fontWeight: 600 } },
+              h('div', null, '🍽️ Hosp: ' + fmtEur(kpi.huidig.kosten_hospitality)),
+              h('div', null, '🍳 Keuken: ' + fmtEur(kpi.huidig.kosten_keuken))),
+            kleur: '#2E7D32',
+          })
+        )
+      : h('div', { style: { background: '#F5F8FA', borderRadius: 12, padding: 30, textAlign: 'center', color: '#6E8591', marginBottom: 16 } },
+          h('div', { style: { fontSize: 36 } }, '📭'),
+          h('div', { style: { marginTop: 8, fontWeight: 600 } }, 'Geen waste-meldingen in deze periode'),
+          h('div', { style: { fontSize: 13, marginTop: 4 } }, 'Hospitality registreert via /hospitality.html · Keuken registreert via de kiosk waste-knop.'));
+
+    var topProductenTabel = h(Tabel, {
+      titel: '🥇 Top producten met meeste waste',
+      rijen: st_top_p[0],
+      kolommen: [
+        { key: 'product', label: 'Product' },
+        { key: 'bron', label: 'Bron', format: function(v) { return v === 'keuken' ? '🍳' : '🍽️'; } },
+        { key: 'aantal', label: 'Aantal', align: 'right' },
+        { key: 'kosten', label: 'Kosten', align: 'right', format: function(v) { return fmtEur(v); } },
+        { key: 'gram', label: 'Gram', align: 'right', format: function(v) { return v > 0 ? v + 'g' : '—'; } },
+      ],
+    });
+
+    var topRedenenTabel = h(Tabel, {
+      titel: '🎯 Top redenen voor waste',
+      rijen: st_top_r[0],
+      kolommen: [
+        { key: 'reden', label: 'Reden' },
+        { key: 'aantal', label: 'Aantal', align: 'right' },
+        { key: 'kosten', label: 'Kosten', align: 'right', format: function(v) { return fmtEur(v); } },
+      ],
+    });
+
+    var trendBlok = st_trend[0].length > 1 && h('div', { style: { background: 'white', borderRadius: 12, padding: 16, marginTop: 16 } },
+      h('div', { style: { fontWeight: 700, fontSize: 14, marginBottom: 12, color: '#002D41' } }, '📈 Trend per week'),
+      h('div', { style: { display: 'flex', alignItems: 'flex-end', gap: 4, height: 120, marginTop: 12 } },
+        st_trend[0].map(function(w) {
+          var maxK = Math.max.apply(null, st_trend[0].map(function(x) { return x.kosten; }));
+          var hgt = maxK > 0 ? Math.max(8, (w.kosten / maxK) * 100) : 4;
+          return h('div', { key: w.week, style: { flex: 1, textAlign: 'center', minWidth: 30 } },
+            h('div', { title: w.week + ': ' + fmtEur(w.kosten),
+              style: { height: hgt + 'px', background: 'linear-gradient(180deg,#E65100,#FF9800)', borderRadius: '4px 4px 0 0', margin: '0 2px' } }),
+            h('div', { style: { fontSize: 10, color: '#6E8591', marginTop: 4 } }, w.week.slice(5)),
+            h('div', { style: { fontSize: 10, color: '#234756', fontWeight: 600 } }, fmtEur(w.kosten))
+          );
+        })
+      )
+    );
+
+    return h('div', null,
+      titel, filterBar, kpiTegels,
+      hasData && h('div', { style: { display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))' } },
+        topProductenTabel, topRedenenTabel),
+      hasData && trendBlok
+    );
+  };
+
+  console.log('✓ KR-WASTE-ANALYTICS module geladen');
+})();
+</script>
+<!-- KR-WASTE-ANALYTICS-END -->
+
+
+<!-- KR-SJEF-ADMIN-START v1 -->
+<script>
+(function() {
+  if (window._SjefAdminFab) return;
+  if (typeof React === 'undefined') return;
+  var supa = window._supa;
+  if (!supa) return;
+
+  var SJEF_API = 'https://aezatnwsrhlwtykpixsq.supabase.co/functions/v1/sjef-chat';
+  var ANON = 'sb_publishable_qkQzUEM5fvJPSsfScEzNCg_Eug8-d4t';
+
+  // State buiten React (FAB injecteren we via vanilla JS)
+  var sjefState = {
+    open: false,
+    berichten: [],
+    invoer: '',
+    bezig: false,
+    sjef_sessie: null,
+  };
+
+  function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  function renderPanel() {
+    var p = document.getElementById('sjef-admin-panel');
+    if (!p) return;
+    if (!sjefState.open) { p.style.display = 'none'; return; }
+    p.style.display = 'flex';
+
+    var html = '';
+    html += '<div style="padding:14px 16px;border-bottom:1px solid #D8E8EF;display:flex;justify-content:space-between;align-items:center;background:#002D41;color:white;border-radius:16px 16px 0 0">';
+    html += '<div style="display:flex;align-items:center;gap:10px">';
+    html += '<div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#3FB8C4,#1976D2);display:flex;align-items:center;justify-content:center;font-size:20px">👨‍🍳</div>';
+    html += '<div><div style="font-weight:700;font-size:15px">Sjef</div><div style="font-size:11px;opacity:.7">AI keukenmanager</div></div>';
+    html += '</div>';
+    html += '<div style="display:flex;gap:6px">';
+    html += '<button id="sjef-admin-nieuw" title="Nieuw gesprek" style="background:transparent;border:0;color:white;cursor:pointer;font-size:16px;padding:6px 8px;opacity:.8">↻</button>';
+    html += '<button id="sjef-admin-close" title="Sluiten" style="background:transparent;border:0;color:white;cursor:pointer;font-size:18px;padding:4px 10px">✕</button>';
+    html += '</div></div>';
+
+    html += '<div id="sjef-admin-scroll" style="flex:1;overflow-y:auto;padding:14px;background:#F5F8FA">';
+    if (!sjefState.berichten.length) {
+      html += '<div style="text-align:center;color:#6E8591;padding:24px 10px"><div style="font-size:48px;margin-bottom:8px">👋</div>';
+      html += '<div style="font-weight:600;color:#234756">Hoi Stefan</div>';
+      html += '<div style="font-size:13px;margin-top:6px">Vraag me iets over boekingen, financiën, advies, leerstand, waste...</div></div>';
+      html += '<div style="display:grid;gap:6px;margin-top:14px">';
+      var hints = [
+        'Wat staat er morgen op de planning?',
+        'Hoe is de marge deze maand?',
+        'Welke open adviezen liggen er?',
+        'Top-5 waste deze week',
+        'Hoeveel boekingen volgende week?'
+      ];
+      hints.forEach(function(h) {
+        html += '<button class="sjef-admin-hint" data-tekst="' + escHtml(h) + '" style="background:white;border:1px solid #D8E8EF;border-radius:100px;padding:10px 14px;text-align:left;cursor:pointer;font-size:13px;color:#234756;font-family:inherit">' + escHtml(h) + '</button>';
+      });
+      html += '</div>';
+    } else {
+      sjefState.berichten.forEach(function(b) {
+        var isSjef = b.rol === 'sjef';
+        var isSys = b.rol === 'systeem';
+        var bg = isSys ? '#FFF3E0' : (isSjef ? 'white' : '#234756');
+        var col = (isSjef || isSys) ? '#234756' : 'white';
+        var align = (isSjef || isSys) ? 'flex-start' : 'flex-end';
+        var inhoud = escHtml(b.tekst).replace(/\n/g, '<br>');
+        html += '<div style="display:flex;justify-content:' + align + ';margin-bottom:10px">';
+        html += '<div style="max-width:85%;background:' + bg + ';color:' + col + ';padding:10px 14px;border-radius:14px;font-size:14px;line-height:1.5;box-shadow:0 1px 3px rgba(0,0,0,.06)">' + inhoud + '</div>';
+        html += '</div>';
+      });
+      if (sjefState.bezig) {
+        html += '<div style="display:flex;justify-content:flex-start;margin-bottom:10px"><div style="background:white;padding:10px 14px;border-radius:14px;color:#6E8591">💭 Sjef denkt na...</div></div>';
+      }
+    }
+    html += '</div>';
+
+    html += '<div style="padding:10px;background:white;border-top:1px solid #D8E8EF;display:flex;gap:8px;border-radius:0 0 16px 16px">';
+    html += '<input id="sjef-admin-input" type="text" value="' + escHtml(sjefState.invoer || '') + '" placeholder="Vraag iets..." ' + (sjefState.bezig?'disabled':'') + ' style="flex:1;padding:11px 14px;border:1.5px solid #D8E8EF;border-radius:100px;font-size:14px;font-family:inherit;outline:none">';
+    html += '<button id="sjef-admin-send" ' + (sjefState.bezig?'disabled':'') + ' style="background:#234756;color:white;border:0;padding:0 18px;border-radius:100px;font-weight:600;cursor:pointer;font-size:16px">→</button>';
+    html += '</div>';
+
+    p.innerHTML = html;
+
+    // Event handlers
+    var closeBtn = document.getElementById('sjef-admin-close');
+    if (closeBtn) closeBtn.onclick = function() { sjefState.open = false; renderPanel(); };
+    var nieuwBtn = document.getElementById('sjef-admin-nieuw');
+    if (nieuwBtn) nieuwBtn.onclick = function() {
+      sjefState.berichten = []; sjefState.sjef_sessie = null; renderPanel();
+    };
+    var inp = document.getElementById('sjef-admin-input');
+    if (inp) {
+      inp.oninput = function(e) { sjefState.invoer = e.target.value; };
+      inp.onkeydown = function(e) {
+        if (e.key === 'Enter' && !e.shiftKey && sjefState.invoer && !sjefState.bezig) {
+          e.preventDefault();
+          stuurBericht(sjefState.invoer);
+        }
+      };
+      // Auto-focus na render
+      setTimeout(function(){ try { inp.focus(); } catch(e) {} }, 50);
+    }
+    var sendBtn = document.getElementById('sjef-admin-send');
+    if (sendBtn) sendBtn.onclick = function() {
+      if (sjefState.invoer && !sjefState.bezig) stuurBericht(sjefState.invoer);
+    };
+    var hintBtns = document.querySelectorAll('.sjef-admin-hint');
+    for (var i = 0; i < hintBtns.length; i++) {
+      hintBtns[i].onclick = (function(t) { return function() { stuurBericht(t); }; })(hintBtns[i].dataset.tekst);
+    }
+
+    // Auto-scroll
+    var s = document.getElementById('sjef-admin-scroll');
+    if (s) s.scrollTop = s.scrollHeight;
+  }
+
+  async function stuurBericht(tekst) {
+    if (sjefState.bezig) return;
+    sjefState.berichten.push({ rol: 'gebruiker', tekst: tekst });
+    sjefState.invoer = '';
+    sjefState.bezig = true;
+    renderPanel();
+
+    try {
+      var sess = await supa.auth.getSession();
+      var jwt = sess && sess.data && sess.data.session ? sess.data.session.access_token : null;
+      if (!jwt) {
+        sjefState.berichten.push({ rol: 'systeem', tekst: '⚠ Niet ingelogd' });
+        sjefState.bezig = false; renderPanel(); return;
+      }
+
+      // Genereer sessie-id eenmalig per chat
+      if (!sjefState.sjef_sessie) sjefState.sjef_sessie = crypto.randomUUID();
+
+      var r = await fetch(SJEF_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt, 'apikey': ANON },
+        body: JSON.stringify({ sessie_id: sjefState.sjef_sessie, bron: 'admin', bericht: tekst })
+      });
+      var data = await r.json();
+      sjefState.bezig = false;
+      if (data && data.ok) {
+        sjefState.berichten.push({ rol: 'sjef', tekst: data.antwoord || '(geen antwoord)' });
+      } else {
+        sjefState.berichten.push({ rol: 'systeem', tekst: '⚠ ' + ((data && data.error) || (data && data.fout) || 'fout') });
+      }
+      renderPanel();
+    } catch (e) {
+      sjefState.bezig = false;
+      sjefState.berichten.push({ rol: 'systeem', tekst: '⚠ Geen verbinding: ' + e.message });
+      renderPanel();
+    }
+  }
+
+  function injecteer() {
+    if (document.getElementById('sjef-admin-fab')) return;
+    var fab = document.createElement('button');
+    fab.id = 'sjef-admin-fab';
+    fab.title = 'Vraag Sjef';
+    fab.innerHTML = '👨‍🍳';
+    fab.style.cssText = 'position:fixed;right:18px;bottom:18px;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#3FB8C4,#002D41);color:white;border:0;font-size:26px;cursor:pointer;z-index:9000;box-shadow:0 6px 18px rgba(0,45,65,0.35);display:flex;align-items:center;justify-content:center;transition:transform 0.15s';
+    fab.onmouseover = function(){ fab.style.transform = 'scale(1.06)'; };
+    fab.onmouseout = function(){ fab.style.transform = 'scale(1)'; };
+    fab.onclick = function() {
+      sjefState.open = !sjefState.open;
+      if (sjefState.open && !document.getElementById('sjef-admin-panel')) {
+        var panel = document.createElement('div');
+        panel.id = 'sjef-admin-panel';
+        panel.style.cssText = 'position:fixed;right:18px;bottom:84px;width:420px;max-width:calc(100vw - 36px);height:560px;max-height:calc(100vh - 110px);background:white;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.3);z-index:9001;display:flex;flex-direction:column;overflow:hidden;';
+        document.body.appendChild(panel);
+      }
+      renderPanel();
+    };
+    document.body.appendChild(fab);
+  }
+
+  // Periodiek injecteren — zorgt dat FAB blijft staan ook na re-renders
+  setInterval(injecteer, 1500);
+  injecteer();
+
+  window._SjefAdminFab = { state: sjefState, render: renderPanel };
+  console.log('✓ KR-SJEF-ADMIN module geladen');
+})();
+</script>
+<!-- KR-SJEF-ADMIN-END -->
+
 
 </body></html>
