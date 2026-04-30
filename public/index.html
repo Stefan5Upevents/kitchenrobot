@@ -821,6 +821,7 @@ function Header({ sc, setSc, user, logout }) {
       ["gebruikers", "👤", "Gebruikers"],
       ["systeem", "🩺", "Systeem-gezondheid"],
       ["schermdoc", "📚", "Schermdocumentatie"],
+      ["notif_predict", "🔔", "Notificaties + voorspel"],
       ["fin_inst", "💸", "Financiële instellingen"],
       ["haccp_inst", "🏥", "HACCP Bedrijfsgegevens"],
       ["sensoren", "🌡️", "Sensoren"],
@@ -9551,8 +9552,9 @@ function LiveDashboardBlok({ outletFilter }) {
         )
       );
     })(),
-    // RIJ 2: Forecast
-    React.createElement('div', { style:{fontSize:10,color:C.night,fontWeight:800,letterSpacing:1,textTransform:'uppercase',marginBottom:6} }, '🔮 Forecast & geplande boekingen'),
+    // RIJ 2: Forecast — eerst de RANGE (statistisch, conservatief↔positief)
+    window._ForecastRangeBlok ? React.createElement(window._ForecastRangeBlok) : null,
+    React.createElement('div', { style:{fontSize:10,color:C.night,fontWeight:800,letterSpacing:1,textTransform:'uppercase',marginBottom:6} }, '🔮 Forecast & geplande boekingen (oud)'),
     React.createElement('div', { style:{display:'flex',gap:8,flexWrap:'wrap'} },
       KPICard({ label:'Maand-forecast', waarde:euro(data.maand_forecast), kleur:C.orange, sub:'gerealiseerd + geplande boekingen' }),
       KPICard({ label:'Jaar-forecast', waarde:euro(data.jaar_forecast), kleur:C.orange, sub:'gerealiseerd + alle geplande boekingen' }),
@@ -12945,7 +12947,7 @@ function SensorenScreen() {
   if (!user) {
     return /* @__PURE__ */ React.createElement(LoginScreen, { onLogin: handleLogin });
   }
-  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", minHeight: "100vh", background: "#F0F4F7" } }, /* @__PURE__ */ React.createElement(Header, { sc, setSc, user, logout: handleLogout }), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto", overflowX: "hidden" }, className: "mobile-padding" }, /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 1200, margin: "0 auto", padding: "28px 20px 60px" } }, sc === "home" && /* @__PURE__ */ React.createElement(HomeScreen, { setSc }), sc === "boekingen" && /* @__PURE__ */ React.createElement(BoekingenScreen, { setSc, setActieve }), sc === "financieel" && /* @__PURE__ */ React.createElement(FinancieelScreen, { setSc }), sc === "chef" && /* @__PURE__ */ React.createElement(ChefScreen, { setSc, setActieve }), sc === "buffet" && /* @__PURE__ */ React.createElement(BuffetScreen, { actieve, setActieve, setSc }), sc === "opzet" && /* @__PURE__ */ React.createElement(OpzetScreen, null), sc === "tijden" && /* @__PURE__ */ React.createElement(TijdenScreen, null), sc.startsWith("stam:") && (typeof window._krMagScherm !== "function" || window._krMagScherm(sc)) && /* @__PURE__ */ React.createElement(StamScreen, { initTab: sc.split(":")[1] || "pg" }), sc === "fin" && /* @__PURE__ */ React.createElement(FinancieelScreen, null), sc === "adviezen" && /* @__PURE__ */ React.createElement(AdviezenScreen, null), sc === "fin_inst" && /* @__PURE__ */ React.createElement(FinInstellingenScreen, null), sc === "sensoren" && /* @__PURE__ */ React.createElement(SensorenScreen, null), sc === "apikeys" && /* @__PURE__ */ React.createElement(ApiKoppelingenScreen, null), sc === "staffel" && window._OpzetStaffelScreen && /* @__PURE__ */ React.createElement(window._OpzetStaffelScreen, null), sc === "gebruikers" && window._GebruikersScreen && /* @__PURE__ */ React.createElement(window._GebruikersScreen, null), sc === "systeem" && window._SysteemScreen && /* @__PURE__ */ React.createElement(window._SysteemScreen, null), sc === "schermdoc" && window._SchermDocScreen && /* @__PURE__ */ React.createElement(window._SchermDocScreen, null), sc === "stam:fi" && /* @__PURE__ */ React.createElement(FinInstellingenScreen, null), sc === "allergenen" && /* @__PURE__ */ React.createElement(AllergenenScreen, null), sc === "inspiratie" && /* @__PURE__ */ React.createElement(InspiratieScreen, null), sc === "opzetlog" && /* @__PURE__ */ React.createElement(OpzetLogboekScreen, null), sc === "haccp" && /* @__PURE__ */ React.createElement(HACCPScreen, null), sc === "nvwa" && window._NVWAInspectieScreen && /* @__PURE__ */ React.createElement(window._NVWAInspectieScreen, null), sc === "fb" && window._FBAnalyseScreen && /* @__PURE__ */ React.createElement(window._FBAnalyseScreen, null), sc === "berichten" && window._BerichtenChefScreen && /* @__PURE__ */ React.createElement(window._BerichtenChefScreen, null), sc === "waste" && window._WasteAdminScreen && /* @__PURE__ */ React.createElement(window._WasteAdminScreen, null), sc === "notificaties" && window._NotificatiesScreen && /* @__PURE__ */ React.createElement(window._NotificatiesScreen, null), sc === "waste_analytics" && window._WasteAnalyticsScreen && /* @__PURE__ */ React.createElement(window._WasteAnalyticsScreen, null), sc === "haccp_inst" && window._HACCPInstellingenScreen && /* @__PURE__ */ React.createElement(window._HACCPInstellingenScreen, null), sc === "bestelling" && /* @__PURE__ */ React.createElement(SligroBestellingScreen, null))));
+  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", minHeight: "100vh", background: "#F0F4F7" } }, /* @__PURE__ */ React.createElement(Header, { sc, setSc, user, logout: handleLogout }), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto", overflowX: "hidden" }, className: "mobile-padding" }, /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 1200, margin: "0 auto", padding: "28px 20px 60px" } }, sc === "home" && /* @__PURE__ */ React.createElement(HomeScreen, { setSc }), sc === "boekingen" && /* @__PURE__ */ React.createElement(BoekingenScreen, { setSc, setActieve }), sc === "financieel" && /* @__PURE__ */ React.createElement(FinancieelScreen, { setSc }), sc === "chef" && /* @__PURE__ */ React.createElement(ChefScreen, { setSc, setActieve }), sc === "buffet" && /* @__PURE__ */ React.createElement(BuffetScreen, { actieve, setActieve, setSc }), sc === "opzet" && /* @__PURE__ */ React.createElement(OpzetScreen, null), sc === "tijden" && /* @__PURE__ */ React.createElement(TijdenScreen, null), sc.startsWith("stam:") && (typeof window._krMagScherm !== "function" || window._krMagScherm(sc)) && /* @__PURE__ */ React.createElement(StamScreen, { initTab: sc.split(":")[1] || "pg" }), sc === "fin" && /* @__PURE__ */ React.createElement(FinancieelScreen, null), sc === "adviezen" && /* @__PURE__ */ React.createElement(AdviezenScreen, null), sc === "fin_inst" && /* @__PURE__ */ React.createElement(FinInstellingenScreen, null), sc === "sensoren" && /* @__PURE__ */ React.createElement(SensorenScreen, null), sc === "apikeys" && /* @__PURE__ */ React.createElement(ApiKoppelingenScreen, null), sc === "staffel" && window._OpzetStaffelScreen && /* @__PURE__ */ React.createElement(window._OpzetStaffelScreen, null), sc === "gebruikers" && window._GebruikersScreen && /* @__PURE__ */ React.createElement(window._GebruikersScreen, null), sc === "systeem" && window._SysteemScreen && /* @__PURE__ */ React.createElement(window._SysteemScreen, null), sc === "schermdoc" && window._SchermDocScreen && /* @__PURE__ */ React.createElement(window._SchermDocScreen, null), sc === "stam:fi" && /* @__PURE__ */ React.createElement(FinInstellingenScreen, null), sc === "allergenen" && /* @__PURE__ */ React.createElement(AllergenenScreen, null), sc === "inspiratie" && /* @__PURE__ */ React.createElement(InspiratieScreen, null), sc === "opzetlog" && /* @__PURE__ */ React.createElement(OpzetLogboekScreen, null), sc === "haccp" && /* @__PURE__ */ React.createElement(HACCPScreen, null), sc === "nvwa" && window._NVWAInspectieScreen && /* @__PURE__ */ React.createElement(window._NVWAInspectieScreen, null), sc === "fb" && window._FBAnalyseScreen && /* @__PURE__ */ React.createElement(window._FBAnalyseScreen, null), sc === "berichten" && window._BerichtenChefScreen && /* @__PURE__ */ React.createElement(window._BerichtenChefScreen, null), sc === "waste" && window._WasteAdminScreen && /* @__PURE__ */ React.createElement(window._WasteAdminScreen, null), sc === "notificaties" && window._NotificatiesScreen && /* @__PURE__ */ React.createElement(window._NotificatiesScreen, null), sc === "waste_analytics" && window._WasteAnalyticsScreen && /* @__PURE__ */ React.createElement(window._WasteAnalyticsScreen, null), sc === "notif_predict" && window._NotifPredictScreen && /* @__PURE__ */ React.createElement(window._NotifPredictScreen, null), sc === "haccp_inst" && window._HACCPInstellingenScreen && /* @__PURE__ */ React.createElement(window._HACCPInstellingenScreen, null), sc === "bestelling" && /* @__PURE__ */ React.createElement(SligroBestellingScreen, null))));
 }
 function InspiratieScreen() {
   var _a, _b;
@@ -23159,6 +23161,409 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
 })();
 </script>
 <!-- KR-FORECAST-RANGE-END -->
+
+
+<!-- KR-FORECAST-RANGE-START v1 -->
+<script>
+(function() {
+  if (window._ForecastRangeBlok) return;
+  if (typeof React === 'undefined') return;
+
+  var supa = window._supa;
+  var API = 'https://aezatnwsrhlwtykpixsq.supabase.co/functions/v1/fin-forecast';
+  var ANON = 'sb_publishable_qkQzUEM5fvJPSsfScEzNCg_Eug8-d4t';
+
+  async function call(actie, body) {
+    var sess = supa ? await supa.auth.getSession() : null;
+    var jwt = sess && sess.data && sess.data.session ? sess.data.session.access_token : null;
+    if (!jwt) return { ok: false, fout: 'Niet ingelogd' };
+    try {
+      var r = await fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt, 'apikey': ANON },
+        body: JSON.stringify(Object.assign({ actie: actie }, body || {}))
+      });
+      return await r.json();
+    } catch (e) { return { ok: false, fout: e.message }; }
+  }
+
+  var h = React.createElement;
+
+  function fmtEur(n) {
+    if (n == null) return '—';
+    var x = Number(n);
+    if (x >= 1000000) return '€ ' + (x / 1000000).toFixed(2).replace('.', ',') + 'M';
+    if (x >= 1000) return '€ ' + Math.round(x / 1000).toLocaleString('nl-NL') + 'k';
+    return '€ ' + Math.round(x).toLocaleString('nl-NL');
+  }
+
+  // 3-card forecast-range
+  window._ForecastRangeBlok = function() {
+    var st_data = React.useState(null);
+    var st_inst = React.useState(null);
+    var st_open = React.useState(false);
+
+    React.useEffect(function() {
+      call('haal_op').then(function(r) { if (r.ok) st_data[1](r.range); });
+      call('instellingen_lees').then(function(r) { if (r.ok) st_inst[1](r.instellingen); });
+    }, []);
+
+    if (!st_data[0]) return h('div', { style: { color: '#6E8591', fontSize: 12 } }, 'Forecast-range laden...');
+
+    var d = st_data[0];
+
+    function Card(props) {
+      return h('div', { style: { background: 'white', borderRadius: 10, padding: '14px 16px', flex: 1, minWidth: 160, borderTop: '4px solid ' + props.kleur } },
+        h('div', { style: { fontSize: 10, color: '#6E8591', textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: 700 } }, props.label),
+        h('div', { style: { fontSize: 22, fontWeight: 800, color: '#002D41', marginTop: 4 } }, fmtEur(props.waarde)),
+        h('div', { style: { fontSize: 11, color: '#6E8591', marginTop: 4 } }, props.sub)
+      );
+    }
+
+    return h('div', { style: { background: '#F5F8FA', borderRadius: 12, padding: 14, marginBottom: 16 } },
+      h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 } },
+        h('div', { style: { fontSize: 11, color: '#002D41', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase' } }, '📊 Jaar-forecast (statistisch, met range)'),
+        h('button', { onClick: function() { st_open[1](!st_open[0]); },
+          style: { background: 'transparent', border: '1px solid #D8E8EF', padding: '4px 10px', borderRadius: 6, fontSize: 11, cursor: 'pointer' } },
+          st_open[0] ? '↑ Inklappen' : '⚙️ Uitleg + instellingen')
+      ),
+      h('div', { style: { display: 'flex', gap: 8, flexWrap: 'wrap' } },
+        Card({ label: 'Conservatief', waarde: d.forecast_conservatief, kleur: '#1976D2',
+          sub: 'YTD + alleen wat NU in DB staat' }),
+        Card({ label: 'Verwacht (' + Math.round((d.f_verw || 0.85) * 100) + '%)', waarde: d.forecast_verwacht, kleur: '#2E7D32',
+          sub: 'YTD + DB + 85% historisch instroom' }),
+        Card({ label: 'Positief (' + Math.round((d.f_pos || 1.10) * 100) + '%)', waarde: d.forecast_positief, kleur: '#FF9800',
+          sub: 'YTD + DB + 110% historisch instroom' })
+      ),
+      h('div', { style: { fontSize: 11, color: '#6E8591', marginTop: 8, fontStyle: 'italic' } },
+        'YTD: ' + fmtEur(d.ytd_realiseerd) + ' • Rest in DB: ' + fmtEur(d.rest_in_db) + ' • Hist. gem. jaar: ' + fmtEur(d.hist_gem_jaar)
+      ),
+      st_open[0] && h('div', { style: { background: 'white', borderRadius: 8, padding: 12, marginTop: 10, fontSize: 12, color: '#234756', lineHeight: 1.5 } },
+        h('div', { style: { fontWeight: 700, marginBottom: 6 } }, 'Hoe wordt dit berekend?'),
+        h('div', null, '1. ', h('strong', null, 'Conservatief'), ' = YTD gerealiseerd + alleen geboekte rest van het jaar (geen aanname over nog te komen aanvragen).'),
+        h('div', { style: { marginTop: 4 } }, '2. ', h('strong', null, 'Verwacht'), ' = + 85% van het historisch instroom-gat (wat er gemiddeld in voorgaande jaren nog binnen kwam in deze periode).'),
+        h('div', { style: { marginTop: 4 } }, '3. ', h('strong', null, 'Positief'), ' = + 110% van dat instroom-gat (groei-scenario).'),
+        h('div', { style: { marginTop: 8, color: '#E65100' } }, '⚠ Range bedoeld als realistische bandbreedte. Conservatief = veiligheidsmodus, niet streefcijfer.'),
+        st_inst[0] && h('div', { style: { borderTop: '1px solid #D8E8EF', marginTop: 10, paddingTop: 10 } },
+          h('div', { style: { fontWeight: 700, marginBottom: 6 } }, 'Instellingen (factoren)'),
+          h('div', null, 'Conservatief factor: ', h('strong', null, st_inst[0].conservatief_factor)),
+          h('div', null, 'Verwacht factor: ', h('strong', null, st_inst[0].verwacht_factor)),
+          h('div', null, 'Positief factor: ', h('strong', null, st_inst[0].positief_factor)),
+          h('div', { style: { fontSize: 10, color: '#6E8591', marginTop: 6 } }, 'Aanpasbaar via Beheer → Forecast-instellingen (alleen beheerder).')
+        )
+      )
+    );
+  };
+
+  console.log('✓ KR-FORECAST-RANGE module geladen');
+})();
+</script>
+<!-- KR-FORECAST-RANGE-END -->
+
+
+<!-- KR-NOTIF-PREDICT-START v1 -->
+<script>
+(function() {
+  if (window._NotifPredictScreen) return;
+  if (typeof React === 'undefined') return;
+
+  var supa = window._supa;
+  var ANON = 'sb_publishable_qkQzUEM5fvJPSsfScEzNCg_Eug8-d4t';
+  var URL_PREFIX = 'https://aezatnwsrhlwtykpixsq.supabase.co/functions/v1/';
+  var h = React.createElement;
+
+  async function callEdge(slug, body) {
+    var sess = supa ? await supa.auth.getSession() : null;
+    var jwt = sess && sess.data && sess.data.session ? sess.data.session.access_token : null;
+    if (!jwt) return { ok: false, fout: 'Niet ingelogd' };
+    try {
+      var r = await fetch(URL_PREFIX + slug, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt, 'apikey': ANON },
+        body: JSON.stringify(body || {})
+      });
+      return await r.json();
+    } catch (e) { return { ok: false, fout: e.message }; }
+  }
+
+  var EVENT_TYPES = [
+    { key: 'haccp_kritiek', label: '🚨 HACCP kritiek alarm', uitleg: 'Mail bij nieuwe kritieke HACCP-alarmen (laatste 30 min, status open)' },
+    { key: 'waste_mismatch', label: '⚠️ Waste mismatch (AI)', uitleg: 'Mail wanneer AI groot verschil ziet tussen waste-melding en foto' },
+    { key: 'advies_dag_vooruit', label: '🌅 Advies voor morgen', uitleg: 'Dagelijkse briefing om 18:00, wat speelt er morgen' },
+  ];
+
+  window._NotifPredictScreen = function() {
+    var st_tab = React.useState('notif');
+    var st_voorkeuren = React.useState([]);
+    var st_log = React.useState([]);
+    var st_baseline = React.useState(null);
+    var st_inst = React.useState(null);
+    var st_user = React.useState(null);
+    var st_msg = React.useState('');
+
+    async function laad() {
+      var sess = supa ? await supa.auth.getSession() : null;
+      var u = sess && sess.data && sess.data.session ? sess.data.session.user : null;
+      st_user[1](u);
+      if (!u) return;
+
+      // Voorkeuren voor deze gebruiker
+      var v = await supa.from('notificatie_voorkeuren').select('*').eq('gebruiker_id', u.id);
+      if (v.data) st_voorkeuren[1](v.data);
+
+      // Laatste 20 log-entries
+      var l = await supa.from('notificatie_log').select('*').eq('gebruiker_id', u.id).order('verzonden_op', { ascending: false }).limit(20);
+      if (l.data) st_log[1](l.data);
+
+      // Baseline status
+      var bs = await callEdge('waste-voorspel', { actie: 'baseline_status' });
+      if (bs.ok) st_baseline[1](bs);
+
+      // Forecast instellingen
+      var fi = await callEdge('fin-forecast', { actie: 'instellingen_lees' });
+      if (fi.ok) st_inst[1](fi.instellingen);
+    }
+    React.useEffect(function() { laad(); }, []);
+
+    async function toggleVoorkeur(eventType, actief) {
+      if (!st_user[0]) return;
+      st_msg[1]('Bezig...');
+      var bestaand = (st_voorkeuren[0] || []).find(function(v) { return v.event_type === eventType && v.kanaal === 'email'; });
+      if (bestaand) {
+        await supa.from('notificatie_voorkeuren').update({ actief: actief }).eq('id', bestaand.id);
+      } else {
+        await supa.from('notificatie_voorkeuren').insert({
+          gebruiker_id: st_user[0].id, event_type: eventType, kanaal: 'email', actief: actief,
+        });
+      }
+      st_msg[1]('✓ Opgeslagen');
+      laad();
+      setTimeout(function() { st_msg[1](''); }, 2000);
+    }
+
+    async function testAdviesNu() {
+      st_msg[1]('Bezig met genereren advies voor morgen...');
+      var r = await callEdge('advies-dag-vooruit', {});
+      if (r.ok) {
+        st_msg[1]('✓ Advies aangemaakt voor ' + r.datum + ': west=' + (r.west && r.west.actie || '-') + ', weesp=' + (r.weesp && r.weesp.actie || '-'));
+      } else {
+        st_msg[1]('⚠ ' + (r.fout || 'fout'));
+      }
+    }
+
+    async function testNotifNu() {
+      st_msg[1]('Bezig met scannen events...');
+      var r = await callEdge('notificatie-engine', { actie: 'scan' });
+      if (r.ok) {
+        st_msg[1]('✓ Gescand: HACCP=' + r.gescand.haccp + ', Waste=' + r.gescand.waste + ', Advies=' + r.gescand.advies + ' • Verzonden: ' + r.verzonden + ' • Resend OK: ' + r.resend_geconfigureerd);
+      } else {
+        st_msg[1]('⚠ ' + (r.fout || 'fout'));
+      }
+    }
+
+    async function setForecastFactor(veld, waarde) {
+      var body = { actie: 'instellingen_zet' };
+      body[veld] = parseFloat(waarde);
+      var r = await callEdge('fin-forecast', body);
+      if (r.ok) {
+        st_msg[1]('✓ Factor opgeslagen');
+        laad();
+      } else {
+        st_msg[1]('⚠ ' + (r.fout || 'fout'));
+      }
+    }
+
+    var titel = h('div', { style: { marginBottom: 16 } },
+      h('h2', { style: { color: '#002D41', margin: 0, fontSize: 22 } }, '🔔 Notificaties + voorspellingen'),
+      h('div', { style: { color: '#6E8591', fontSize: 13, marginTop: 4 } }, 'Email-notificaties, predictive waste, dag-vooruit briefing en forecast-factoren.')
+    );
+
+    var tabKnop = function(k, label) {
+      var sel = st_tab[0] === k;
+      return h('button', { key: k, onClick: function() { st_tab[1](k); },
+        style: { padding: '8px 14px', borderRadius: 8, border: '1px solid #D8E8EF',
+                 background: sel ? '#234756' : 'white', color: sel ? 'white' : '#234756',
+                 fontWeight: 600, fontSize: 13, cursor: 'pointer' } }, label);
+    };
+
+    var tabBalk = h('div', { style: { display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' } },
+      tabKnop('notif', '🔔 Notificaties'),
+      tabKnop('advies', '🌅 Dag-vooruit'),
+      tabKnop('waste', '🔮 Predictive waste'),
+      tabKnop('forecast', '📊 Forecast-factoren')
+    );
+
+    var msgBalk = st_msg[0] && h('div', { style: { padding: 10, background: '#FFF3E0', borderRadius: 8, marginBottom: 12, fontSize: 13, color: '#E65100' } }, st_msg[0]);
+
+    // === NOTIFICATIES TAB ===
+    var notifInhoud = st_tab[0] === 'notif' && h('div', null,
+      h('div', { style: { background: 'white', borderRadius: 12, padding: 16, marginBottom: 12 } },
+        h('div', { style: { fontWeight: 700, fontSize: 14, marginBottom: 12, color: '#002D41' } }, 'Mijn notificatie-voorkeuren'),
+        h('div', { style: { fontSize: 12, color: '#6E8591', marginBottom: 14 } }, 'Welke events wil je per email ontvangen?'),
+        EVENT_TYPES.map(function(et) {
+          var v = (st_voorkeuren[0] || []).find(function(x) { return x.event_type === et.key && x.kanaal === 'email'; });
+          var actief = v ? v.actief : false;
+          return h('div', { key: et.key, style: { padding: '12px 0', borderBottom: '1px solid #F0F0F0', display: 'flex', alignItems: 'center', gap: 12 } },
+            h('div', { style: { flex: 1 } },
+              h('div', { style: { fontWeight: 600, fontSize: 13, color: '#234756' } }, et.label),
+              h('div', { style: { fontSize: 11, color: '#6E8591', marginTop: 2 } }, et.uitleg)
+            ),
+            h('label', { style: { display: 'flex', alignItems: 'center', cursor: 'pointer' } },
+              h('input', { type: 'checkbox', checked: actief, onChange: function(e) { toggleVoorkeur(et.key, e.target.checked); },
+                style: { width: 18, height: 18, marginRight: 6 } }),
+              h('span', { style: { fontSize: 12, fontWeight: 600, color: actief ? '#2E7D32' : '#6E8591' } }, actief ? 'AAN' : 'uit')
+            )
+          );
+        }),
+        h('div', { style: { marginTop: 14, paddingTop: 14, borderTop: '1px solid #F0F0F0', display: 'flex', gap: 8 } },
+          h('button', { onClick: testNotifNu,
+            style: { background: '#234756', color: 'white', border: 0, padding: '10px 14px', borderRadius: 8, fontSize: 13, cursor: 'pointer', fontWeight: 600 } }, '🧪 Test scan nu')
+        )
+      ),
+      h('div', { style: { background: 'white', borderRadius: 12, padding: 16 } },
+        h('div', { style: { fontWeight: 700, fontSize: 14, marginBottom: 12, color: '#002D41' } }, 'Verzendlog (laatste 20)'),
+        st_log[0].length === 0
+          ? h('div', { style: { color: '#6E8591', fontSize: 13, padding: 20, textAlign: 'center' } }, 'Nog geen notificaties verzonden.')
+          : h('table', { style: { width: '100%', fontSize: 12, borderCollapse: 'collapse' } },
+              h('thead', null, h('tr', { style: { background: '#F5F8FA', textAlign: 'left' } },
+                h('th', { style: { padding: 8 } }, 'Datum'),
+                h('th', { style: { padding: 8 } }, 'Event'),
+                h('th', { style: { padding: 8 } }, 'Status'),
+                h('th', { style: { padding: 8 } }, 'Fout')
+              )),
+              h('tbody', null, st_log[0].map(function(l) {
+                return h('tr', { key: l.id, style: { borderTop: '1px solid #D8E8EF' } },
+                  h('td', { style: { padding: 6 } }, new Date(l.verzonden_op).toLocaleString('nl-NL')),
+                  h('td', { style: { padding: 6 } }, l.event_type),
+                  h('td', { style: { padding: 6, color: l.status === 'verzonden' ? '#2E7D32' : '#C62828' } }, l.status),
+                  h('td', { style: { padding: 6, fontSize: 11, color: '#C62828' } }, l.fout_melding || '')
+                );
+              }))
+            )
+      )
+    );
+
+    // === ADVIES DAG VOORUIT TAB ===
+    var adviesInhoud = st_tab[0] === 'advies' && h('div', null,
+      h('div', { style: { background: 'white', borderRadius: 12, padding: 16 } },
+        h('div', { style: { fontWeight: 700, fontSize: 14, marginBottom: 8, color: '#002D41' } }, 'Dag-vooruit advies'),
+        h('div', { style: { fontSize: 13, color: '#234756', lineHeight: 1.6 } },
+          'Elke avond om ', h('strong', null, '18:00'), ' draait een cron-job die voor MORGEN per outlet (West/Weesp) een AI-briefing maakt.',
+          h('br'), 'De briefing kijkt naar:',
+          h('ul', { style: { marginTop: 8 } },
+            h('li', null, 'Boekingen voor morgen (aantal, personen, deadline-tijden)'),
+            h('li', null, 'Open meldingen en HACCP-alarmen'),
+            h('li', null, 'Voorraad-meldingen uit operationeel geheugen'),
+            h('li', null, 'Bijzondere boekingen (groot/klein/dieet)')
+          ),
+          h('div', { style: { background: '#FFF3E0', padding: 10, borderRadius: 8, marginTop: 10, fontSize: 12 } },
+            '✨ Het advies komt automatisch in je ', h('strong', null, 'Adviezen-inbox'), ' (Dagelijks → Adviezen-inbox), met type ', h('em', null, 'dag_vooruit'), '. Als je notificaties aan hebt staan, krijg je 5 min later ook een mail.'
+          )
+        ),
+        h('div', { style: { marginTop: 14, display: 'flex', gap: 8 } },
+          h('button', { onClick: testAdviesNu,
+            style: { background: '#1976D2', color: 'white', border: 0, padding: '10px 14px', borderRadius: 8, fontSize: 13, cursor: 'pointer', fontWeight: 600 } }, '🧪 Genereer nu (test)')
+        )
+      )
+    );
+
+    // === PREDICTIVE WASTE TAB ===
+    var bs = st_baseline[0];
+    var wasteInhoud = st_tab[0] === 'waste' && h('div', null,
+      h('div', { style: { background: 'white', borderRadius: 12, padding: 16 } },
+        h('div', { style: { fontWeight: 700, fontSize: 14, marginBottom: 8, color: '#002D41' } }, '🔮 Predictive waste model — status'),
+        bs ? h('div', null,
+          h('div', { style: { display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 10 } },
+            h('div', { style: { background: '#F5F8FA', padding: 12, borderRadius: 8, flex: 1, minWidth: 150 } },
+              h('div', { style: { fontSize: 10, color: '#6E8591', textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: 700 } }, 'Gerechten met baseline'),
+              h('div', { style: { fontSize: 26, fontWeight: 800, color: '#002D41', marginTop: 4 } }, bs.totaal_gerechten_met_baseline)
+            ),
+            h('div', { style: { background: '#F5F8FA', padding: 12, borderRadius: 8, flex: 1, minWidth: 150 } },
+              h('div', { style: { fontSize: 10, color: '#6E8591', textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: 700 } }, 'Hoog betrouwbaar (≥20)'),
+              h('div', { style: { fontSize: 26, fontWeight: 800, color: '#2E7D32', marginTop: 4 } }, bs.betrouwbaarheid.hoog_20plus)
+            ),
+            h('div', { style: { background: '#F5F8FA', padding: 12, borderRadius: 8, flex: 1, minWidth: 150 } },
+              h('div', { style: { fontSize: 10, color: '#6E8591', textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: 700 } }, 'Middel (8-19)'),
+              h('div', { style: { fontSize: 26, fontWeight: 800, color: '#FF9800', marginTop: 4 } }, bs.betrouwbaarheid.middel_8_19)
+            ),
+            h('div', { style: { background: '#F5F8FA', padding: 12, borderRadius: 8, flex: 1, minWidth: 150 } },
+              h('div', { style: { fontSize: 10, color: '#6E8591', textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: 700 } }, 'Laag (3-7)'),
+              h('div', { style: { fontSize: 26, fontWeight: 800, color: '#1976D2', marginTop: 4 } }, bs.betrouwbaarheid.laag_3_7)
+            )
+          ),
+          h('div', { style: { background: bs.totaal_gerechten_met_baseline < 10 ? '#FFF3E0' : '#E8F5E9', padding: 12, borderRadius: 8, marginTop: 14, fontSize: 13, color: '#234756' } },
+            bs.opmerking
+          )
+        ) : h('div', { style: { color: '#6E8591', padding: 20 } }, 'Status laden...'),
+        h('div', { style: { marginTop: 14, padding: 12, background: '#F5F8FA', borderRadius: 8, fontSize: 13, lineHeight: 1.5 } },
+          h('strong', null, 'Hoe het werkt:'),
+          h('br'), '• Per gerecht wordt een ', h('em', null, 'baseline'), ' bijgehouden: gemiddeld % over, gemiddeld gewicht/persoon, std-deviatie.',
+          h('br'), '• Bij een toekomstige boeking met dat gerecht: voorspelling op basis van personen × gem-gewicht.',
+          h('br'), '• Zekerheid: hoog (≥20 metingen), middel (8-19), laag (3-7), onbekend (<3).',
+          h('br'), '• Cron evalueert dagelijks gisteren: voorspelling vs werkelijke waste-melding.',
+          h('br'), '• Voorspellingen komen in tabel ', h('code', null, 'waste_voorspellingen'), ' (later UI op boeking-detail).'
+        )
+      )
+    );
+
+    // === FORECAST FACTOREN TAB ===
+    var inst = st_inst[0];
+    var forecastInhoud = st_tab[0] === 'forecast' && h('div', null,
+      h('div', { style: { background: 'white', borderRadius: 12, padding: 16 } },
+        h('div', { style: { fontWeight: 700, fontSize: 14, marginBottom: 8, color: '#002D41' } }, '📊 Forecast range-factoren'),
+        h('div', { style: { fontSize: 13, color: '#234756', lineHeight: 1.6, marginBottom: 14 } },
+          'De forecast in Financieel toont 3 scenarios. Deze factoren bepalen hoeveel ',
+          h('em', null, 'historische instroom'),
+          ' wordt meegerekend boven op de boekingen die NU al in de DB staan.',
+          h('br'),
+          h('strong', null, 'Belangrijk: '),
+          'er wordt ', h('strong', null, 'NIET'), ' gerekend met aanvragen die nog kunnen binnenkomen — alleen met statistieken uit het verleden.'
+        ),
+        inst ? h('div', null,
+          h('div', { style: { display: 'flex', gap: 10, flexWrap: 'wrap' } },
+            ['conservatief_factor', 'verwacht_factor', 'positief_factor'].map(function(veld) {
+              var label = veld === 'conservatief_factor' ? 'Conservatief'
+                        : veld === 'verwacht_factor' ? 'Verwacht'
+                        : 'Positief';
+              var kleur = veld === 'conservatief_factor' ? '#1976D2'
+                        : veld === 'verwacht_factor' ? '#2E7D32'
+                        : '#FF9800';
+              return h('div', { key: veld, style: { background: '#F5F8FA', padding: 14, borderRadius: 8, flex: 1, minWidth: 200, borderLeft: '4px solid ' + kleur } },
+                h('div', { style: { fontSize: 12, fontWeight: 700, color: '#234756' } }, label),
+                h('div', { style: { fontSize: 11, color: '#6E8591', marginTop: 4 } },
+                  veld === 'conservatief_factor' ? '0.00 = alleen DB'
+                  : veld === 'verwacht_factor' ? '0.85 = realistisch'
+                  : '1.10 = groei'),
+                h('div', { style: { display: 'flex', gap: 6, alignItems: 'center', marginTop: 8 } },
+                  h('input', { type: 'number', defaultValue: inst[veld], step: '0.05', min: '0', max: '2',
+                    id: 'inp_' + veld,
+                    style: { padding: '6px 8px', border: '1px solid #D8E8EF', borderRadius: 6, width: 80, fontSize: 13 } }),
+                  h('button', { onClick: function() {
+                      var v = document.getElementById('inp_' + veld).value;
+                      setForecastFactor(veld, v);
+                    },
+                    style: { padding: '6px 10px', background: kleur, color: 'white', border: 0, borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 600 } }, 'Opslaan')
+                )
+              );
+            })
+          ),
+          h('div', { style: { fontSize: 11, color: '#6E8591', marginTop: 12, fontStyle: 'italic' } },
+            'Laatst bijgewerkt: ' + (inst.bijgewerkt_op ? new Date(inst.bijgewerkt_op).toLocaleString('nl-NL') : 'nooit')
+          )
+        ) : h('div', { style: { color: '#6E8591' } }, 'Instellingen laden...'),
+        h('div', { style: { marginTop: 14, padding: 10, background: '#FFF3E0', borderRadius: 8, fontSize: 12 } },
+          '⚠ Alleen beheerders kunnen factoren wijzigen. Niet-beheerders krijgen een 403.'
+        )
+      )
+    );
+
+    return h('div', null, titel, msgBalk, tabBalk, notifInhoud, adviesInhoud, wasteInhoud, forecastInhoud);
+  };
+
+  console.log('✓ KR-NOTIF-PREDICT module geladen');
+})();
+</script>
+<!-- KR-NOTIF-PREDICT-END -->
 
 
 </body></html>
