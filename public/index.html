@@ -788,6 +788,7 @@ function Header({ sc, setSc, user, logout }) {
   }, [sc]);
   var navGroups = [
     { label: "Dagelijks", items: [
+      ["notificaties", "🔔", "Notificaties"],
       ["adviezen", "📥", "Adviezen-inbox"],
       ["boekingen", "📋", "Boekingen"],
       ["buffet", "🍽", "Buffetformulieren"],
@@ -9968,6 +9969,7 @@ function FinancieelScreen({ setSc }) {
 
   return React.createElement('div', { style:{maxWidth:1000,margin:'0 auto',padding:'0 12px 40px'} },
     window._FilterBar ? React.createElement(window._FilterBar, { key: 'krfb' }) : null,
+    window._ForecastRangeBlok ? React.createElement(window._ForecastRangeBlok, { key: 'krfr', outletFilter: outlet }) : null,
     React.createElement(LiveDashboardBlok, { outletFilter: outlet }),
 
     // Header
@@ -12943,7 +12945,7 @@ function SensorenScreen() {
   if (!user) {
     return /* @__PURE__ */ React.createElement(LoginScreen, { onLogin: handleLogin });
   }
-  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", minHeight: "100vh", background: "#F0F4F7" } }, /* @__PURE__ */ React.createElement(Header, { sc, setSc, user, logout: handleLogout }), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto", overflowX: "hidden" }, className: "mobile-padding" }, /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 1200, margin: "0 auto", padding: "28px 20px 60px" } }, sc === "home" && /* @__PURE__ */ React.createElement(HomeScreen, { setSc }), sc === "boekingen" && /* @__PURE__ */ React.createElement(BoekingenScreen, { setSc, setActieve }), sc === "financieel" && /* @__PURE__ */ React.createElement(FinancieelScreen, { setSc }), sc === "chef" && /* @__PURE__ */ React.createElement(ChefScreen, { setSc, setActieve }), sc === "buffet" && /* @__PURE__ */ React.createElement(BuffetScreen, { actieve, setActieve, setSc }), sc === "opzet" && /* @__PURE__ */ React.createElement(OpzetScreen, null), sc === "tijden" && /* @__PURE__ */ React.createElement(TijdenScreen, null), sc.startsWith("stam:") && (typeof window._krMagScherm !== "function" || window._krMagScherm(sc)) && /* @__PURE__ */ React.createElement(StamScreen, { initTab: sc.split(":")[1] || "pg" }), sc === "fin" && /* @__PURE__ */ React.createElement(FinancieelScreen, null), sc === "adviezen" && /* @__PURE__ */ React.createElement(AdviezenScreen, null), sc === "fin_inst" && /* @__PURE__ */ React.createElement(FinInstellingenScreen, null), sc === "sensoren" && /* @__PURE__ */ React.createElement(SensorenScreen, null), sc === "apikeys" && /* @__PURE__ */ React.createElement(ApiKoppelingenScreen, null), sc === "staffel" && window._OpzetStaffelScreen && /* @__PURE__ */ React.createElement(window._OpzetStaffelScreen, null), sc === "gebruikers" && window._GebruikersScreen && /* @__PURE__ */ React.createElement(window._GebruikersScreen, null), sc === "systeem" && window._SysteemScreen && /* @__PURE__ */ React.createElement(window._SysteemScreen, null), sc === "schermdoc" && window._SchermDocScreen && /* @__PURE__ */ React.createElement(window._SchermDocScreen, null), sc === "stam:fi" && /* @__PURE__ */ React.createElement(FinInstellingenScreen, null), sc === "allergenen" && /* @__PURE__ */ React.createElement(AllergenenScreen, null), sc === "inspiratie" && /* @__PURE__ */ React.createElement(InspiratieScreen, null), sc === "opzetlog" && /* @__PURE__ */ React.createElement(OpzetLogboekScreen, null), sc === "haccp" && /* @__PURE__ */ React.createElement(HACCPScreen, null), sc === "nvwa" && window._NVWAInspectieScreen && /* @__PURE__ */ React.createElement(window._NVWAInspectieScreen, null), sc === "fb" && window._FBAnalyseScreen && /* @__PURE__ */ React.createElement(window._FBAnalyseScreen, null), sc === "berichten" && window._BerichtenChefScreen && /* @__PURE__ */ React.createElement(window._BerichtenChefScreen, null), sc === "waste" && window._WasteAdminScreen && /* @__PURE__ */ React.createElement(window._WasteAdminScreen, null), sc === "waste_analytics" && window._WasteAnalyticsScreen && /* @__PURE__ */ React.createElement(window._WasteAnalyticsScreen, null), sc === "haccp_inst" && window._HACCPInstellingenScreen && /* @__PURE__ */ React.createElement(window._HACCPInstellingenScreen, null), sc === "bestelling" && /* @__PURE__ */ React.createElement(SligroBestellingScreen, null))));
+  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", minHeight: "100vh", background: "#F0F4F7" } }, /* @__PURE__ */ React.createElement(Header, { sc, setSc, user, logout: handleLogout }), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto", overflowX: "hidden" }, className: "mobile-padding" }, /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 1200, margin: "0 auto", padding: "28px 20px 60px" } }, sc === "home" && /* @__PURE__ */ React.createElement(HomeScreen, { setSc }), sc === "boekingen" && /* @__PURE__ */ React.createElement(BoekingenScreen, { setSc, setActieve }), sc === "financieel" && /* @__PURE__ */ React.createElement(FinancieelScreen, { setSc }), sc === "chef" && /* @__PURE__ */ React.createElement(ChefScreen, { setSc, setActieve }), sc === "buffet" && /* @__PURE__ */ React.createElement(BuffetScreen, { actieve, setActieve, setSc }), sc === "opzet" && /* @__PURE__ */ React.createElement(OpzetScreen, null), sc === "tijden" && /* @__PURE__ */ React.createElement(TijdenScreen, null), sc.startsWith("stam:") && (typeof window._krMagScherm !== "function" || window._krMagScherm(sc)) && /* @__PURE__ */ React.createElement(StamScreen, { initTab: sc.split(":")[1] || "pg" }), sc === "fin" && /* @__PURE__ */ React.createElement(FinancieelScreen, null), sc === "adviezen" && /* @__PURE__ */ React.createElement(AdviezenScreen, null), sc === "fin_inst" && /* @__PURE__ */ React.createElement(FinInstellingenScreen, null), sc === "sensoren" && /* @__PURE__ */ React.createElement(SensorenScreen, null), sc === "apikeys" && /* @__PURE__ */ React.createElement(ApiKoppelingenScreen, null), sc === "staffel" && window._OpzetStaffelScreen && /* @__PURE__ */ React.createElement(window._OpzetStaffelScreen, null), sc === "gebruikers" && window._GebruikersScreen && /* @__PURE__ */ React.createElement(window._GebruikersScreen, null), sc === "systeem" && window._SysteemScreen && /* @__PURE__ */ React.createElement(window._SysteemScreen, null), sc === "schermdoc" && window._SchermDocScreen && /* @__PURE__ */ React.createElement(window._SchermDocScreen, null), sc === "stam:fi" && /* @__PURE__ */ React.createElement(FinInstellingenScreen, null), sc === "allergenen" && /* @__PURE__ */ React.createElement(AllergenenScreen, null), sc === "inspiratie" && /* @__PURE__ */ React.createElement(InspiratieScreen, null), sc === "opzetlog" && /* @__PURE__ */ React.createElement(OpzetLogboekScreen, null), sc === "haccp" && /* @__PURE__ */ React.createElement(HACCPScreen, null), sc === "nvwa" && window._NVWAInspectieScreen && /* @__PURE__ */ React.createElement(window._NVWAInspectieScreen, null), sc === "fb" && window._FBAnalyseScreen && /* @__PURE__ */ React.createElement(window._FBAnalyseScreen, null), sc === "berichten" && window._BerichtenChefScreen && /* @__PURE__ */ React.createElement(window._BerichtenChefScreen, null), sc === "waste" && window._WasteAdminScreen && /* @__PURE__ */ React.createElement(window._WasteAdminScreen, null), sc === "notificaties" && window._NotificatiesScreen && /* @__PURE__ */ React.createElement(window._NotificatiesScreen, null), sc === "waste_analytics" && window._WasteAnalyticsScreen && /* @__PURE__ */ React.createElement(window._WasteAnalyticsScreen, null), sc === "haccp_inst" && window._HACCPInstellingenScreen && /* @__PURE__ */ React.createElement(window._HACCPInstellingenScreen, null), sc === "bestelling" && /* @__PURE__ */ React.createElement(SligroBestellingScreen, null))));
 }
 function InspiratieScreen() {
   var _a, _b;
@@ -22780,6 +22782,383 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
 })();
 </script>
 <!-- KR-SJEF-ADMIN-END -->
+
+<!-- KR-NOTIFICATIES-START v1 -->
+<script>
+(function() {
+  if (window._NotifBell) return;
+  if (typeof React === 'undefined') return;
+  var supa = window._supa;
+  if (!supa) return;
+
+  // === STATE ===
+  var notifState = {
+    open: false,
+    items: [],
+    aantalOpen: 0,
+    laden: false,
+    laatsteFetch: 0,
+  };
+
+  // === API ===
+  async function fetchOpen() {
+    if (Date.now() - notifState.laatsteFetch < 8000 && notifState.items.length) return; // throttle 8s
+    notifState.laden = true;
+    try {
+      var r = await supa.from('notificaties').select('*')
+        .is('afgehandeld_op', null)
+        .order('aangemaakt_op', { ascending: false }).limit(50);
+      if (r.data) {
+        notifState.items = r.data;
+        notifState.aantalOpen = r.data.filter(function(n) { return !n.gelezen_op; }).length;
+        notifState.laatsteFetch = Date.now();
+      }
+    } catch (e) { console.error('Notif fetch fout:', e); }
+    notifState.laden = false;
+    rerender();
+  }
+
+  async function markeerAlsGelezen(id) {
+    await supa.from('notificaties').update({ gelezen_op: new Date().toISOString() }).eq('id', id);
+    notifState.items = notifState.items.map(function(n) {
+      return n.id === id ? Object.assign({}, n, { gelezen_op: new Date().toISOString() }) : n;
+    });
+    notifState.aantalOpen = notifState.items.filter(function(n) { return !n.gelezen_op; }).length;
+    rerender();
+  }
+
+  async function handelAf(id) {
+    await supa.from('notificaties').update({ afgehandeld_op: new Date().toISOString() }).eq('id', id);
+    notifState.items = notifState.items.filter(function(n) { return n.id !== id; });
+    notifState.aantalOpen = notifState.items.filter(function(n) { return !n.gelezen_op; }).length;
+    rerender();
+  }
+
+  async function handelAlleAf() {
+    if (!confirm('Markeer alle ' + notifState.items.length + ' notificaties als afgehandeld?')) return;
+    var ids = notifState.items.map(function(n) { return n.id; });
+    await supa.from('notificaties').update({ afgehandeld_op: new Date().toISOString() }).in('id', ids);
+    notifState.items = []; notifState.aantalOpen = 0;
+    rerender();
+  }
+
+  function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  function tijdGeleden(iso) {
+    var diff = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+    if (diff < 1) return 'net';
+    if (diff < 60) return diff + ' min';
+    if (diff < 1440) return Math.round(diff/60) + ' u';
+    return Math.round(diff/1440) + ' d';
+  }
+
+  var prio = {
+    urgent: { kleur: '#C62828', icon: '🚨' },
+    hoog: { kleur: '#E65100', icon: '⚠️' },
+    normaal: { kleur: '#1976D2', icon: '🔔' },
+    laag: { kleur: '#6E8591', icon: 'ℹ️' },
+  };
+  var typeLabel = {
+    haccp_kritiek: 'HACCP', boeking_last_minute: 'Boeking', sligro_advies_open: 'Advies',
+    waste_mismatch: 'Waste', waste_advies_morgen: 'Voorbereiding', cron_faalde: 'Systeem', systeem: 'Systeem',
+  };
+
+  // === RENDER ===
+  function rerender() {
+    renderBel();
+    if (notifState.open) renderPanel();
+  }
+
+  function renderBel() {
+    var bel = document.getElementById('kr-notif-bel');
+    if (!bel) return;
+    var aantal = notifState.aantalOpen;
+    bel.innerHTML = '🔔' + (aantal > 0 ? '<span style="position:absolute;top:-4px;right:-4px;background:#C62828;color:white;border-radius:50%;font-size:10px;font-weight:700;width:18px;height:18px;display:flex;align-items:center;justify-content:center;border:2px solid white">' + (aantal > 9 ? '9+' : aantal) + '</span>' : '');
+  }
+
+  function renderPanel() {
+    var p = document.getElementById('kr-notif-panel');
+    if (!p) return;
+    if (!notifState.open) { p.style.display = 'none'; return; }
+    p.style.display = 'flex';
+
+    var html = '';
+    html += '<div style="padding:12px 14px;border-bottom:1px solid #D8E8EF;display:flex;justify-content:space-between;align-items:center;background:#002D41;color:white;border-radius:12px 12px 0 0">';
+    html += '<div style="font-weight:700">🔔 Notificaties (' + notifState.items.length + ')</div>';
+    html += '<div style="display:flex;gap:6px">';
+    if (notifState.items.length > 0) {
+      html += '<button id="kr-notif-alles-af" style="background:transparent;border:1px solid rgba(255,255,255,.4);color:white;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer">Alles afhandelen</button>';
+    }
+    html += '<button id="kr-notif-close" style="background:transparent;border:0;color:white;font-size:18px;cursor:pointer;padding:0 6px">✕</button>';
+    html += '</div></div>';
+
+    html += '<div style="flex:1;overflow-y:auto;background:#F5F8FA">';
+    if (!notifState.items.length) {
+      html += '<div style="padding:40px 20px;text-align:center;color:#6E8591">';
+      html += '<div style="font-size:36px">🎉</div>';
+      html += '<div style="margin-top:8px;font-weight:600">Geen open notificaties</div>';
+      html += '<div style="font-size:12px;margin-top:4px">Cron checkt elke 15 min op nieuwe events</div>';
+      html += '</div>';
+    } else {
+      notifState.items.forEach(function(n) {
+        var p = prio[n.prioriteit] || prio.normaal;
+        var ongelezen = !n.gelezen_op;
+        html += '<div class="kr-notif-item" data-id="' + n.id + '" style="background:white;margin:6px 8px;padding:10px 12px;border-radius:8px;border-left:4px solid ' + p.kleur + ';cursor:pointer;' + (ongelezen ? 'box-shadow:0 1px 3px rgba(0,0,0,.08)' : 'opacity:.7') + '">';
+        html += '<div style="display:flex;justify-content:space-between;align-items:start;gap:8px">';
+        html += '<div style="flex:1">';
+        html += '<div style="font-size:10px;color:' + p.kleur + ';font-weight:700;letter-spacing:0.5px;text-transform:uppercase">' + p.icon + ' ' + (typeLabel[n.type] || n.type) + (n.outlet_code ? ' · ' + n.outlet_code : '') + '</div>';
+        html += '<div style="font-weight:' + (ongelezen ? 700 : 500) + ';color:#234756;margin-top:2px;font-size:13px">' + escHtml(n.titel) + '</div>';
+        if (n.bericht) html += '<div style="font-size:12px;color:#6E8591;margin-top:3px">' + escHtml(n.bericht) + '</div>';
+        html += '<div style="font-size:10px;color:#6E8591;margin-top:4px">' + tijdGeleden(n.aangemaakt_op) + ' geleden</div>';
+        html += '</div>';
+        html += '<button class="kr-notif-af" data-id="' + n.id + '" title="Afhandelen" style="background:transparent;border:0;color:#6E8591;cursor:pointer;font-size:16px;padding:0 4px">✓</button>';
+        html += '</div></div>';
+      });
+    }
+    html += '</div>';
+    p.innerHTML = html;
+
+    // Handlers
+    var c = document.getElementById('kr-notif-close');
+    if (c) c.onclick = function() { notifState.open = false; renderPanel(); };
+    var allesBtn = document.getElementById('kr-notif-alles-af');
+    if (allesBtn) allesBtn.onclick = handelAlleAf;
+    var afBtns = document.querySelectorAll('.kr-notif-af');
+    for (var i = 0; i < afBtns.length; i++) {
+      afBtns[i].onclick = (function(id) { return function(e) { e.stopPropagation(); handelAf(id); }; })(afBtns[i].dataset.id);
+    }
+    var items = document.querySelectorAll('.kr-notif-item');
+    for (var i = 0; i < items.length; i++) {
+      items[i].onclick = (function(id) { return function() { markeerAlsGelezen(id); }; })(items[i].dataset.id);
+    }
+  }
+
+  // === INJECT ===
+  function injecteer() {
+    if (document.getElementById('kr-notif-bel')) return;
+    // Vind navigatie-balk
+    var nav = document.querySelector('header') || document.querySelector('nav') || null;
+    // Plaats een fixed bel rechtsboven
+    var bel = document.createElement('button');
+    bel.id = 'kr-notif-bel';
+    bel.title = 'Notificaties';
+    bel.style.cssText = 'position:fixed;top:12px;right:80px;background:white;border:1px solid #D8E8EF;color:#002D41;width:40px;height:40px;border-radius:50%;cursor:pointer;font-size:18px;z-index:9000;box-shadow:0 2px 8px rgba(0,0,0,.1);display:flex;align-items:center;justify-content:center';
+    bel.onclick = function() {
+      notifState.open = !notifState.open;
+      if (notifState.open) {
+        var p = document.getElementById('kr-notif-panel');
+        if (!p) {
+          p = document.createElement('div');
+          p.id = 'kr-notif-panel';
+          p.style.cssText = 'position:fixed;top:60px;right:18px;width:380px;max-width:calc(100vw - 36px);height:520px;max-height:calc(100vh - 80px);background:white;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.3);z-index:9001;display:flex;flex-direction:column;overflow:hidden';
+          document.body.appendChild(p);
+        }
+        fetchOpen();
+      }
+      renderPanel();
+    };
+    document.body.appendChild(bel);
+    renderBel();
+    // Initiële fetch
+    fetchOpen();
+  }
+
+  // Periodiek injecteren + auto-refresh
+  setInterval(injecteer, 1500);
+  setInterval(function() { if (notifState.open || Date.now() - notifState.laatsteFetch > 60000) fetchOpen(); }, 60000);
+  injecteer();
+
+  // === Notificaties-screen voor onder Dagelijks ===
+  var h = React.createElement;
+
+  window._NotificatiesScreen = function() {
+    var st_items = React.useState([]);
+    var st_filter = React.useState('open'); // open | gelezen | afgehandeld | alles
+    var st_laden = React.useState(true);
+
+    async function laad() {
+      st_laden[1](true);
+      var f = st_filter[0];
+      var q = supa.from('notificaties').select('*').order('aangemaakt_op', { ascending: false }).limit(200);
+      if (f === 'open') q = q.is('afgehandeld_op', null);
+      else if (f === 'gelezen') q = q.is('afgehandeld_op', null).not('gelezen_op', 'is', null);
+      else if (f === 'afgehandeld') q = q.not('afgehandeld_op', 'is', null);
+      var r = await q;
+      st_items[1](r.data || []);
+      st_laden[1](false);
+    }
+    React.useEffect(function() { laad(); }, [st_filter[0]]);
+
+    var titel = h('div', { style: { marginBottom: 16 } },
+      h('h2', { style: { color: '#002D41', margin: 0, fontSize: 22 } }, '🔔 Notificaties'),
+      h('div', { style: { color: '#6E8591', fontSize: 13, marginTop: 4 } },
+        'Centrale stream van alerts: HACCP, last-minute boekingen, open adviezen, waste-mismatches, dagvoorbereiding.')
+    );
+
+    var filterBar = h('div', { style: { display: 'flex', gap: 6, marginBottom: 16 } },
+      ['open','gelezen','afgehandeld','alles'].map(function(f) {
+        var sel = st_filter[0] === f;
+        return h('button', { key: f, onClick: function() { st_filter[1](f); },
+          style: { padding: '7px 14px', borderRadius: 100, border: '1.5px solid ' + (sel ? '#234756' : '#D8E8EF'),
+                   background: sel ? '#234756' : 'white', color: sel ? 'white' : '#234756',
+                   fontWeight: 600, fontSize: 13, cursor: 'pointer' } },
+          f.charAt(0).toUpperCase() + f.slice(1));
+      }),
+      h('div', { style: { flex: 1 } }),
+      h('button', { onClick: laad,
+        style: { padding: '7px 12px', borderRadius: 8, border: '1px solid #D8E8EF', background: 'white', cursor: 'pointer', fontSize: 12 } }, '🔄 Vernieuw')
+    );
+
+    var lijst = st_laden[0]
+      ? h('div', { style: { padding: 60, textAlign: 'center', color: '#6E8591' } }, 'Laden...')
+      : st_items[0].length === 0
+        ? h('div', { style: { background: 'white', padding: 40, textAlign: 'center', color: '#6E8591', borderRadius: 12 } },
+            h('div', { style: { fontSize: 36 } }, '📭'),
+            h('div', { style: { marginTop: 8, fontWeight: 600 } }, 'Geen notificaties met deze filter'))
+        : h('div', { style: { display: 'flex', flexDirection: 'column', gap: 8 } },
+            st_items[0].map(function(n) {
+              var p = prio[n.prioriteit] || prio.normaal;
+              var afgehandeld = !!n.afgehandeld_op;
+              return h('div', { key: n.id,
+                style: { background: 'white', padding: 14, borderRadius: 10, borderLeft: '4px solid ' + p.kleur, opacity: afgehandeld ? 0.6 : 1 } },
+                h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: 12 } },
+                  h('div', { style: { flex: 1 } },
+                    h('div', { style: { fontSize: 10, color: p.kleur, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase' } },
+                      p.icon + ' ' + (typeLabel[n.type] || n.type) + (n.outlet_code ? ' · ' + n.outlet_code : '')),
+                    h('div', { style: { fontWeight: 700, color: '#234756', marginTop: 4 } }, n.titel),
+                    n.bericht && h('div', { style: { fontSize: 13, color: '#6E8591', marginTop: 4 } }, n.bericht),
+                    h('div', { style: { fontSize: 11, color: '#6E8591', marginTop: 6 } },
+                      tijdGeleden(n.aangemaakt_op) + ' geleden' +
+                      (n.gelezen_op ? ' · gelezen' : '') +
+                      (n.afgehandeld_op ? ' · afgehandeld ' + tijdGeleden(n.afgehandeld_op) + ' geleden' : ''))
+                  ),
+                  !afgehandeld && h('button', {
+                    onClick: async function() {
+                      await supa.from('notificaties').update({ afgehandeld_op: new Date().toISOString() }).eq('id', n.id);
+                      laad();
+                    },
+                    style: { background: '#234756', color: 'white', border: 0, padding: '6px 12px',
+                             borderRadius: 8, fontWeight: 600, fontSize: 12, cursor: 'pointer' }
+                  }, '✓ Afhandelen')
+                )
+              );
+            })
+          );
+
+    return h('div', null, titel, filterBar, lijst);
+  };
+
+  console.log('✓ KR-NOTIFICATIES module geladen');
+})();
+</script>
+<!-- KR-NOTIFICATIES-END -->
+
+
+<!-- KR-FORECAST-RANGE-START v1 -->
+<script>
+(function() {
+  if (window._ForecastRangeBlok) return;
+  if (typeof React === 'undefined') return;
+
+  var supa = window._supa;
+  var API = 'https://aezatnwsrhlwtykpixsq.supabase.co/functions/v1/predictie-engine';
+  var ANON = 'sb_publishable_qkQzUEM5fvJPSsfScEzNCg_Eug8-d4t';
+
+  async function call(actie, body) {
+    var sess = supa ? await supa.auth.getSession() : null;
+    var jwt = sess && sess.data && sess.data.session ? sess.data.session.access_token : null;
+    if (!jwt) return { ok: false, fout: 'Niet ingelogd' };
+    try {
+      var r = await fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt, 'apikey': ANON },
+        body: JSON.stringify(Object.assign({ actie: actie }, body || {}))
+      });
+      return await r.json();
+    } catch (e) { return { ok: false, fout: e.message }; }
+  }
+
+  var h = React.createElement;
+
+  function fmtEur(n) {
+    if (n == null) return '—';
+    if (Math.abs(n) >= 1000) return '€ ' + Math.round(n/1000) + 'k';
+    return '€ ' + Math.round(n);
+  }
+
+  window._ForecastRangeBlok = function(props) {
+    var outlet = (props && props.outletFilter) || 'alle';
+    var st_dagen = React.useState(30);
+    var st_data = React.useState(null);
+    var st_laden = React.useState(true);
+    var st_scenario = React.useState('verwacht'); // conservatief | verwacht | optimistisch
+
+    async function laad() {
+      st_laden[1](true);
+      var r = await call('omzet_forecast', { dagen: st_dagen[0], outlet: outlet === 'alle' ? null : outlet });
+      st_laden[1](false);
+      if (r.ok) st_data[1](r);
+    }
+    React.useEffect(function() { laad(); }, [st_dagen[0], outlet]);
+
+    if (st_laden[0]) return h('div', { style: { background: 'white', borderRadius: 12, padding: 20, marginBottom: 16 } },
+      h('div', { style: { color: '#6E8591', textAlign: 'center' } }, 'Forecast laden...'));
+
+    if (!st_data[0]) return null;
+
+    var d = st_data[0];
+    var scen = d.scenarios[st_scenario[0]];
+
+    var dagenKnop = function(n, label) {
+      var sel = st_dagen[0] === n;
+      return h('button', { key: n, onClick: function() { st_dagen[1](n); },
+        style: { padding: '6px 12px', borderRadius: 100, border: '1px solid ' + (sel ? '#234756' : '#D8E8EF'),
+                 background: sel ? '#234756' : 'white', color: sel ? 'white' : '#234756',
+                 fontWeight: 600, fontSize: 12, cursor: 'pointer' } }, label);
+    };
+
+    var scenarioKnop = function(key, label, kleur) {
+      var sel = st_scenario[0] === key;
+      return h('button', { key: key, onClick: function() { st_scenario[1](key); },
+        style: { flex: 1, padding: '12px 14px', borderRadius: 10, border: '2px solid ' + (sel ? kleur : '#D8E8EF'),
+                 background: sel ? kleur : 'white', color: sel ? 'white' : '#234756',
+                 fontWeight: 700, fontSize: 13, cursor: 'pointer', transition: 'all 0.15s' } },
+        h('div', { style: { fontSize: 11, opacity: 0.85, marginBottom: 2 } }, label),
+        h('div', { style: { fontSize: 18, fontWeight: 800 } }, fmtEur(d.scenarios[key].omzet)));
+    };
+
+    return h('div', { style: { background: 'white', borderRadius: 12, padding: 20, marginBottom: 16, borderTop: '4px solid #1976D2' } },
+      h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4, flexWrap: 'wrap', gap: 8 } },
+        h('div', null,
+          h('div', { style: { fontSize: 16, fontWeight: 800, color: '#002D41' } }, '🔮 Forecast komende ' + st_dagen[0] + ' dagen'),
+          h('div', { style: { fontSize: 11, color: '#6E8591', marginTop: 2 } },
+            'Op basis van ' + d.input.aantal_definitief + ' definitieve boekingen. Opties (' + d.input.aantal_optie + ') en aanvragen niet meegerekend.')
+        ),
+        h('div', { style: { display: 'flex', gap: 4 } },
+          dagenKnop(7, '7d'), dagenKnop(30, '30d'), dagenKnop(90, '90d'))
+      ),
+      h('div', { style: { display: 'flex', gap: 8, marginTop: 14, marginBottom: 14 } },
+        scenarioKnop('conservatief', 'Conservatief', '#C62828'),
+        scenarioKnop('verwacht', 'Verwacht', '#1976D2'),
+        scenarioKnop('optimistisch', 'Optimistisch', '#2E7D32')
+      ),
+      h('div', { style: { background: '#F5F8FA', padding: 12, borderRadius: 8, fontSize: 12, color: '#234756' } },
+        h('div', { style: { fontWeight: 700, marginBottom: 4 } }, scen.aanname),
+        h('div', { style: { display: 'flex', gap: 16, marginTop: 6, flexWrap: 'wrap' } },
+          h('div', null, h('span', { style: { color: '#6E8591' } }, 'Omzet: '), h('strong', null, fmtEur(scen.omzet))),
+          h('div', null, h('span', { style: { color: '#6E8591' } }, 'Marge (~' + d.gemiddelde_marge_pct + '%): '), h('strong', null, fmtEur(scen.marge_eur)))
+        ),
+        d.input.omzet_geschat_op_personen > 0 && h('div', { style: { marginTop: 8, fontSize: 11, color: '#6E8591', fontStyle: 'italic' } },
+          fmtEur(d.input.omzet_uit_recras) + ' uit Recras-bedragen + ' + fmtEur(d.input.omzet_geschat_op_personen) +
+          ' geschat op basis van personen × historisch gem omzet/p (Recras vult bedragen pas later in).')
+      )
+    );
+  };
+
+  console.log('✓ KR-FORECAST-RANGE module geladen');
+})();
+</script>
+<!-- KR-FORECAST-RANGE-END -->
 
 
 </body></html>
