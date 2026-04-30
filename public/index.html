@@ -1028,7 +1028,197 @@ function genereerOpzetEmailHTML(boekingen, dagLabel) {
   var sectiesHtml = Object.values(psGroepen).map(function(grp) {
     return '<div style="margin-bottom:24px"><div style="background:' + C2.night + ';color:#fff;padding:8px 14px;border-radius:6px 6px 0 0;font-weight:900;font-size:14px">' + (grp.pgNaam ? grp.pgNaam + " \u203A " : "") + grp.psNaam + '</div><div style="background:#EEF2F6;padding:10px;border-radius:0 0 6px 6px">' + grp.boekRows.join("") + "</div></div>";
   }).join("");
-  return '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Opzetoverzicht ' + dagLabel + '</title></head><body style="font-family:Arial,sans-serif;background:#EEF2F6;padding:20px;margin:0"><div style="max-width:680px;margin:0 auto"><div style="background:' + C2.night + ';border-radius:8px;padding:16px 20px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center"><div><div style="color:' + C2.hot + ';font-weight:900;font-size:18px">KitchenRobot</div><div style="color:' + C2.aqua + ';font-size:10px;letter-spacing:2px">UP EVENTS</div></div><div style="color:#fff;font-weight:900;font-size:16px">' + dagLabel + '<br><span style="font-weight:400;font-size:12px">' + boekingen.length + " boeking" + (boekingen.length !== 1 ? "en" : "") + "</span></div></div>" + (sectiesHtml || '<div style="background:#fff;border-radius:8px;padding:20px;text-align:center;color:#999">Geen gekoppelde boekingen gevonden. Open eerst de buffetformulieren.</div>') + '<div style="text-align:center;color:#999;font-size:10px;padding:12px">Automatisch gegenereerd door KitchenRobot &bull; <a href="https://kitchenrobot.vercel.app" style="color:' + C2.aqua + '">kitchenrobot.vercel.app</a></div></div></body></html>';
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Opzetoverzicht ' + dagLabel + '</title></head><body style="font-family:Arial,sans-serif;background:#EEF2F6;padding:20px;margin:0"><div style="max-width:680px;margin:0 auto"><div style="background:' + C2.night + ';border-radius:8px;padding:16px 20px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center"><div><div style="color:' + C2.hot + ';font-weight:900;font-size:18px">KitchenRobot</div><div style="color:' + C2.aqua + ';font-size:10px;letter-spacing:2px">UP EVENTS</div></div><div style="color:#fff;font-weight:900;font-size:16px">' + dagLabel + '<br><span style="font-weight:400;font-size:12px">' + boekingen.length + " boeking" + (boekingen.length !== 1 ? "en" : "") + "</span></div></div>" + (sectiesHtml || '<div style="background:#fff;border-radius:8px;padding:20px;text-align:center;color:#999">Geen gekoppelde boekingen gevonden. Open eerst de buffetformulieren.</div>') + '<div style="text-align:center;color:#999;font-size:10px;padding:12px">Automatisch gegenereerd door KitchenRobot &bull; <a href="https://kitchenrobot.vercel.app" style="color:' + C2.aqua + '">kitchenrobot.vercel.app</a></div></div>
+<!-- KR-FORECAST-RANGE-START v2 -->
+<script>
+(function() {
+  // Vervang oude module
+  delete window._ForecastRangeBlok;
+  if (typeof React === 'undefined') return;
+
+  var supa = window._supa;
+  var API = 'https://aezatnwsrhlwtykpixsq.supabase.co/functions/v1/predictie-engine';
+  var ANON = 'sb_publishable_qkQzUEM5fvJPSsfScEzNCg_Eug8-d4t';
+
+  async function call(actie, body) {
+    var sess = supa ? await supa.auth.getSession() : null;
+    var jwt = sess && sess.data && sess.data.session ? sess.data.session.access_token : null;
+    if (!jwt) return { ok: false, fout: 'Niet ingelogd' };
+    try {
+      var r = await fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt, 'apikey': ANON },
+        body: JSON.stringify(Object.assign({ actie: actie }, body || {}))
+      });
+      return await r.json();
+    } catch (e) { return { ok: false, fout: e.message }; }
+  }
+
+  var h = React.createElement;
+
+  function fmtEur(n) {
+    if (n == null) return '—';
+    if (Math.abs(n) >= 1000000) return '€ ' + (n/1000000).toFixed(2) + 'M';
+    if (Math.abs(n) >= 1000) return '€ ' + Math.round(n/1000) + 'k';
+    return '€ ' + Math.round(n);
+  }
+
+  var MAANDEN = ['','Jan','Feb','Mrt','Apr','Mei','Jun','Jul','Aug','Sep','Okt','Nov','Dec'];
+  var OUTLET_LABEL = { west: 'West', weesp: 'Weesp', gemengd: 'Gemengd' };
+
+  function trendPijl(pct) {
+    if (pct == null) return null;
+    if (pct > 5) return h('span', { style: { color: '#2E7D32', fontWeight: 700 } }, '↑ +' + pct + '%');
+    if (pct < -5) return h('span', { style: { color: '#C62828', fontWeight: 700 } }, '↓ ' + pct + '%');
+    return h('span', { style: { color: '#6E8591', fontWeight: 600 } }, '→ ' + pct + '%');
+  }
+
+  function fillBalk(huidig, eindstand) {
+    if (!eindstand) return null;
+    var pct = Math.min(150, Math.round((huidig / eindstand) * 100));
+    var kleur = pct >= 90 ? '#2E7D32' : pct >= 50 ? '#FF9800' : '#C62828';
+    return h('div', { style: { display: 'flex', alignItems: 'center', gap: 6, fontSize: 11 } },
+      h('div', { style: { background: '#E8EDF2', height: 6, borderRadius: 100, flex: 1, overflow: 'hidden', minWidth: 60 } },
+        h('div', { style: { width: Math.min(100, pct) + '%', height: '100%', background: kleur } })),
+      h('span', { style: { color: '#234756', fontWeight: 600, minWidth: 36 } }, pct + '%')
+    );
+  }
+
+  window._ForecastRangeBlok = function(props) {
+    var outlet = (props && props.outletFilter) || 'alle';
+    var st_dagen = React.useState(90);
+    var st_data = React.useState(null);
+    var st_laden = React.useState(true);
+    var st_scenario = React.useState('verwacht');
+    var st_uitklap = React.useState(false);
+
+    async function laad() {
+      st_laden[1](true);
+      var r = await call('omzet_forecast', { dagen: st_dagen[0], outlet: outlet === 'alle' ? null : outlet });
+      st_laden[1](false);
+      if (r.ok) st_data[1](r);
+    }
+    React.useEffect(function() { laad(); }, [st_dagen[0], outlet]);
+
+    if (st_laden[0]) return h('div', { style: { background: 'white', borderRadius: 12, padding: 20, marginBottom: 16 } },
+      h('div', { style: { color: '#6E8591', textAlign: 'center' } }, 'Forecast laden...'));
+    if (!st_data[0]) return null;
+
+    var d = st_data[0];
+    var scen = d.scenarios[st_scenario[0]];
+
+    var dagenKnop = function(n, label) {
+      var sel = st_dagen[0] === n;
+      return h('button', { key: n, onClick: function() { st_dagen[1](n); },
+        style: { padding: '6px 12px', borderRadius: 100, border: '1px solid ' + (sel ? '#234756' : '#D8E8EF'),
+                 background: sel ? '#234756' : 'white', color: sel ? 'white' : '#234756',
+                 fontWeight: 600, fontSize: 12, cursor: 'pointer' } }, label);
+    };
+
+    var scenarioKnop = function(key, label, kleur) {
+      var sel = st_scenario[0] === key;
+      return h('button', { key: key, onClick: function() { st_scenario[1](key); },
+        style: { flex: 1, padding: '12px 14px', borderRadius: 10, border: '2px solid ' + (sel ? kleur : '#D8E8EF'),
+                 background: sel ? kleur : 'white', color: sel ? 'white' : '#234756',
+                 fontWeight: 700, fontSize: 13, cursor: 'pointer', transition: 'all 0.15s', textAlign: 'left' } },
+        h('div', { style: { fontSize: 11, opacity: 0.85, marginBottom: 2, textTransform: 'uppercase', letterSpacing: 0.5 } }, label),
+        h('div', { style: { fontSize: 22, fontWeight: 800 } }, fmtEur(d.scenarios[key].omzet)),
+        h('div', { style: { fontSize: 10, opacity: 0.85, marginTop: 2 } }, 'marge ' + fmtEur(d.scenarios[key].marge_eur)));
+    };
+
+    // Per-maand-blok
+    var perMaandSorted = (d.per_maand || []).slice().sort(function(a, b) {
+      if (a.jaar !== b.jaar) return a.jaar - b.jaar;
+      if (a.maand !== b.maand) return a.maand - b.maand;
+      return (a.outlet || '').localeCompare(b.outlet || '');
+    });
+
+    // Filter outlet 'gemengd' weg uit per-maand-detail (voegt weinig toe; getoond op totaal)
+    var perMaandWeergave = perMaandSorted.filter(function(r) { return r.outlet !== 'gemengd' || (r.nu && r.nu.def_aantal > 0); });
+
+    var maandRijen = perMaandWeergave.map(function(r, i) {
+      var huidig = (r.nu.def_personen || 0) + (r.nu.opt_personen || 0);
+      var eindstand_2025 = r.historie.jaar_2025.personen;
+      var hist24 = r.historie.jaar_2024;
+      var hist25 = r.historie.jaar_2025;
+
+      return h('div', { key: i, style: { background: 'white', padding: '10px 12px', borderRadius: 8, border: '1px solid #E8EDF2', marginBottom: 6 } },
+        h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 8 } },
+          h('div', { style: { fontWeight: 700, color: '#002D41', fontSize: 13 } },
+            MAANDEN[r.maand] + ' ' + r.jaar + ' · ' + (OUTLET_LABEL[r.outlet] || r.outlet)),
+          h('div', { style: { fontWeight: 700, fontSize: 16, color: st_scenario[0] === 'conservatief' ? '#C62828' : st_scenario[0] === 'optimistisch' ? '#2E7D32' : '#1976D2' } },
+            fmtEur(r.scenarios[st_scenario[0]]))
+        ),
+        h('div', { style: { fontSize: 11, color: '#6E8591', marginTop: 4 } },
+          'Historie: ',
+          h('strong', null, hist24.aantal + ' bk / ' + hist24.personen + 'p (24)'),
+          ' → ',
+          h('strong', null, hist25.aantal + ' bk / ' + hist25.personen + 'p (25)'),
+          '  ',
+          trendPijl(r.historie.trend_2024_naar_2025_pct)
+        ),
+        (r.nu.def_aantal > 0 || r.nu.opt_aantal > 0) && h('div', { style: { fontSize: 11, color: '#234756', marginTop: 6 } },
+          'Nu: ',
+          h('strong', null, r.nu.def_aantal + ' definitief'),
+          r.nu.opt_aantal > 0 && h('span', null, ' + ' + r.nu.opt_aantal + ' optie'),
+          ' · ', huidig, ' personen'
+        ),
+        eindstand_2025 > 0 && r.nu.def_aantal > 0 && h('div', { style: { marginTop: 6, fontSize: 11, color: '#6E8591' } },
+          'Fill vs 2025-eindstand: ',
+          fillBalk(huidig, eindstand_2025)
+        ),
+        h('div', { style: { fontSize: 10, color: '#6E8591', marginTop: 6, fontStyle: 'italic' } },
+          'Bron: ' + (r.dominante_bron === 'boekingen' ? '🔵 huidige boekingen' : r.dominante_bron === 'historie' ? '📊 historisch volume × actuele prijs (€' + r.actuele_prijs_per_persoon + '/p)' : '— geen data —'))
+      );
+    });
+
+    return h('div', { style: { background: 'white', borderRadius: 12, padding: 20, marginBottom: 16, borderTop: '4px solid #1976D2' } },
+      h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4, flexWrap: 'wrap', gap: 8 } },
+        h('div', null,
+          h('div', { style: { fontSize: 16, fontWeight: 800, color: '#002D41' } }, '🔮 Forecast komende ' + st_dagen[0] + ' dagen'),
+          h('div', { style: { fontSize: 11, color: '#6E8591', marginTop: 2 } },
+            d.input.aantal_definitief + ' definitief + ' + d.input.aantal_optie + ' optie · ' +
+            (d.input.totaal_personen_definitief + d.input.totaal_personen_optie) + ' personen confirmed'
+          )
+        ),
+        h('div', { style: { display: 'flex', gap: 4 } },
+          dagenKnop(7, '7d'), dagenKnop(30, '30d'), dagenKnop(90, '90d'), dagenKnop(180, '180d'))
+      ),
+
+      h('div', { style: { display: 'flex', gap: 8, marginTop: 14, marginBottom: 14 } },
+        scenarioKnop('conservatief', 'Conservatief', '#C62828'),
+        scenarioKnop('verwacht', 'Verwacht', '#1976D2'),
+        scenarioKnop('optimistisch', 'Optimistisch', '#2E7D32')
+      ),
+
+      h('div', { style: { background: '#F5F8FA', padding: 12, borderRadius: 8, fontSize: 12, color: '#234756', marginBottom: 8 } },
+        h('div', { style: { fontWeight: 700, marginBottom: 4 } }, scen.aanname),
+        h('div', { style: { fontSize: 11, color: '#6E8591', marginTop: 6 } },
+          'Methode: volume (boekingen+personen) uit 2024+2025 × ACTUELE €/persoon (laatste 90d). ' +
+          'Opties tellen mee voor ' + d.regel.opties_factor_pct[st_scenario[0]] + '%. Geen aanvragen meegerekend.'
+        ),
+        d.actuele_prijs_per_persoon_outlets && h('div', { style: { fontSize: 11, color: '#234756', marginTop: 4 } },
+          'Actuele prijs: ',
+          Object.entries(d.actuele_prijs_per_persoon_outlets).map(function(e) {
+            return (OUTLET_LABEL[e[0]] || e[0]) + ' €' + e[1] + '/p';
+          }).join(' · ')
+        )
+      ),
+
+      h('button', { onClick: function() { st_uitklap[1](!st_uitklap[0]); },
+        style: { background: '#F5F8FA', border: '1px solid #D8E8EF', color: '#234756', padding: '8px 14px', borderRadius: 8, cursor: 'pointer', width: '100%', fontWeight: 600, fontSize: 13 } },
+        st_uitklap[0] ? '▲ Verberg per-maand details' : '▼ Toon per-maand details (' + perMaandWeergave.length + ' rijen)'),
+
+      st_uitklap[0] && h('div', { style: { marginTop: 12 } }, maandRijen)
+    );
+  };
+
+  console.log('✓ KR-FORECAST-RANGE v2 module geladen');
+})();
+</script>
+<!-- KR-FORECAST-RANGE-END -->
+
+</body></html>';
 }
 function AllergenenKaart({ boeking, onClose }) {
   var gerechten = window._stamGerechten || [];
@@ -23054,211 +23244,6 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
 })();
 </script>
 <!-- KR-NOTIFICATIES-END -->
-
-
-<!-- KR-FORECAST-RANGE-START v1 -->
-<script>
-(function() {
-  if (window._ForecastRangeBlok) return;
-  if (typeof React === 'undefined') return;
-
-  var supa = window._supa;
-  var API = 'https://aezatnwsrhlwtykpixsq.supabase.co/functions/v1/predictie-engine';
-  var ANON = 'sb_publishable_qkQzUEM5fvJPSsfScEzNCg_Eug8-d4t';
-
-  async function call(actie, body) {
-    var sess = supa ? await supa.auth.getSession() : null;
-    var jwt = sess && sess.data && sess.data.session ? sess.data.session.access_token : null;
-    if (!jwt) return { ok: false, fout: 'Niet ingelogd' };
-    try {
-      var r = await fetch(API, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt, 'apikey': ANON },
-        body: JSON.stringify(Object.assign({ actie: actie }, body || {}))
-      });
-      return await r.json();
-    } catch (e) { return { ok: false, fout: e.message }; }
-  }
-
-  var h = React.createElement;
-
-  function fmtEur(n) {
-    if (n == null) return '—';
-    if (Math.abs(n) >= 1000) return '€ ' + Math.round(n/1000) + 'k';
-    return '€ ' + Math.round(n);
-  }
-
-  window._ForecastRangeBlok = function(props) {
-    var outlet = (props && props.outletFilter) || 'alle';
-    var st_dagen = React.useState(30);
-    var st_data = React.useState(null);
-    var st_laden = React.useState(true);
-    var st_scenario = React.useState('verwacht'); // conservatief | verwacht | optimistisch
-
-    async function laad() {
-      st_laden[1](true);
-      var r = await call('omzet_forecast', { dagen: st_dagen[0], outlet: outlet === 'alle' ? null : outlet });
-      st_laden[1](false);
-      if (r.ok) st_data[1](r);
-    }
-    React.useEffect(function() { laad(); }, [st_dagen[0], outlet]);
-
-    if (st_laden[0]) return h('div', { style: { background: 'white', borderRadius: 12, padding: 20, marginBottom: 16 } },
-      h('div', { style: { color: '#6E8591', textAlign: 'center' } }, 'Forecast laden...'));
-
-    if (!st_data[0]) return null;
-
-    var d = st_data[0];
-    var scen = d.scenarios[st_scenario[0]];
-
-    var dagenKnop = function(n, label) {
-      var sel = st_dagen[0] === n;
-      return h('button', { key: n, onClick: function() { st_dagen[1](n); },
-        style: { padding: '6px 12px', borderRadius: 100, border: '1px solid ' + (sel ? '#234756' : '#D8E8EF'),
-                 background: sel ? '#234756' : 'white', color: sel ? 'white' : '#234756',
-                 fontWeight: 600, fontSize: 12, cursor: 'pointer' } }, label);
-    };
-
-    var scenarioKnop = function(key, label, kleur) {
-      var sel = st_scenario[0] === key;
-      return h('button', { key: key, onClick: function() { st_scenario[1](key); },
-        style: { flex: 1, padding: '12px 14px', borderRadius: 10, border: '2px solid ' + (sel ? kleur : '#D8E8EF'),
-                 background: sel ? kleur : 'white', color: sel ? 'white' : '#234756',
-                 fontWeight: 700, fontSize: 13, cursor: 'pointer', transition: 'all 0.15s' } },
-        h('div', { style: { fontSize: 11, opacity: 0.85, marginBottom: 2 } }, label),
-        h('div', { style: { fontSize: 18, fontWeight: 800 } }, fmtEur(d.scenarios[key].omzet)));
-    };
-
-    return h('div', { style: { background: 'white', borderRadius: 12, padding: 20, marginBottom: 16, borderTop: '4px solid #1976D2' } },
-      h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4, flexWrap: 'wrap', gap: 8 } },
-        h('div', null,
-          h('div', { style: { fontSize: 16, fontWeight: 800, color: '#002D41' } }, '🔮 Forecast komende ' + st_dagen[0] + ' dagen'),
-          h('div', { style: { fontSize: 11, color: '#6E8591', marginTop: 2 } },
-            'Op basis van ' + d.input.aantal_definitief + ' definitieve boekingen. Opties (' + d.input.aantal_optie + ') en aanvragen niet meegerekend.')
-        ),
-        h('div', { style: { display: 'flex', gap: 4 } },
-          dagenKnop(7, '7d'), dagenKnop(30, '30d'), dagenKnop(90, '90d'))
-      ),
-      h('div', { style: { display: 'flex', gap: 8, marginTop: 14, marginBottom: 14 } },
-        scenarioKnop('conservatief', 'Conservatief', '#C62828'),
-        scenarioKnop('verwacht', 'Verwacht', '#1976D2'),
-        scenarioKnop('optimistisch', 'Optimistisch', '#2E7D32')
-      ),
-      h('div', { style: { background: '#F5F8FA', padding: 12, borderRadius: 8, fontSize: 12, color: '#234756' } },
-        h('div', { style: { fontWeight: 700, marginBottom: 4 } }, scen.aanname),
-        h('div', { style: { display: 'flex', gap: 16, marginTop: 6, flexWrap: 'wrap' } },
-          h('div', null, h('span', { style: { color: '#6E8591' } }, 'Omzet: '), h('strong', null, fmtEur(scen.omzet))),
-          h('div', null, h('span', { style: { color: '#6E8591' } }, 'Marge (~' + d.gemiddelde_marge_pct + '%): '), h('strong', null, fmtEur(scen.marge_eur)))
-        ),
-        d.input.omzet_geschat_op_personen > 0 && h('div', { style: { marginTop: 8, fontSize: 11, color: '#6E8591', fontStyle: 'italic' } },
-          fmtEur(d.input.omzet_uit_recras) + ' uit Recras-bedragen + ' + fmtEur(d.input.omzet_geschat_op_personen) +
-          ' geschat op basis van personen × historisch gem omzet/p (Recras vult bedragen pas later in).')
-      )
-    );
-  };
-
-  console.log('✓ KR-FORECAST-RANGE module geladen');
-})();
-</script>
-<!-- KR-FORECAST-RANGE-END -->
-
-
-<!-- KR-FORECAST-RANGE-START v1 -->
-<script>
-(function() {
-  if (window._ForecastRangeBlok) return;
-  if (typeof React === 'undefined') return;
-
-  var supa = window._supa;
-  var API = 'https://aezatnwsrhlwtykpixsq.supabase.co/functions/v1/fin-forecast';
-  var ANON = 'sb_publishable_qkQzUEM5fvJPSsfScEzNCg_Eug8-d4t';
-
-  async function call(actie, body) {
-    var sess = supa ? await supa.auth.getSession() : null;
-    var jwt = sess && sess.data && sess.data.session ? sess.data.session.access_token : null;
-    if (!jwt) return { ok: false, fout: 'Niet ingelogd' };
-    try {
-      var r = await fetch(API, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt, 'apikey': ANON },
-        body: JSON.stringify(Object.assign({ actie: actie }, body || {}))
-      });
-      return await r.json();
-    } catch (e) { return { ok: false, fout: e.message }; }
-  }
-
-  var h = React.createElement;
-
-  function fmtEur(n) {
-    if (n == null) return '—';
-    var x = Number(n);
-    if (x >= 1000000) return '€ ' + (x / 1000000).toFixed(2).replace('.', ',') + 'M';
-    if (x >= 1000) return '€ ' + Math.round(x / 1000).toLocaleString('nl-NL') + 'k';
-    return '€ ' + Math.round(x).toLocaleString('nl-NL');
-  }
-
-  // 3-card forecast-range
-  window._ForecastRangeBlok = function() {
-    var st_data = React.useState(null);
-    var st_inst = React.useState(null);
-    var st_open = React.useState(false);
-
-    React.useEffect(function() {
-      call('haal_op').then(function(r) { if (r.ok) st_data[1](r.range); });
-      call('instellingen_lees').then(function(r) { if (r.ok) st_inst[1](r.instellingen); });
-    }, []);
-
-    if (!st_data[0]) return h('div', { style: { color: '#6E8591', fontSize: 12 } }, 'Forecast-range laden...');
-
-    var d = st_data[0];
-
-    function Card(props) {
-      return h('div', { style: { background: 'white', borderRadius: 10, padding: '14px 16px', flex: 1, minWidth: 160, borderTop: '4px solid ' + props.kleur } },
-        h('div', { style: { fontSize: 10, color: '#6E8591', textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: 700 } }, props.label),
-        h('div', { style: { fontSize: 22, fontWeight: 800, color: '#002D41', marginTop: 4 } }, fmtEur(props.waarde)),
-        h('div', { style: { fontSize: 11, color: '#6E8591', marginTop: 4 } }, props.sub)
-      );
-    }
-
-    return h('div', { style: { background: '#F5F8FA', borderRadius: 12, padding: 14, marginBottom: 16 } },
-      h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 } },
-        h('div', { style: { fontSize: 11, color: '#002D41', fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase' } }, '📊 Jaar-forecast (statistisch, met range)'),
-        h('button', { onClick: function() { st_open[1](!st_open[0]); },
-          style: { background: 'transparent', border: '1px solid #D8E8EF', padding: '4px 10px', borderRadius: 6, fontSize: 11, cursor: 'pointer' } },
-          st_open[0] ? '↑ Inklappen' : '⚙️ Uitleg + instellingen')
-      ),
-      h('div', { style: { display: 'flex', gap: 8, flexWrap: 'wrap' } },
-        Card({ label: 'Conservatief', waarde: d.forecast_conservatief, kleur: '#1976D2',
-          sub: 'YTD + alleen wat NU in DB staat' }),
-        Card({ label: 'Verwacht (' + Math.round((d.f_verw || 0.85) * 100) + '%)', waarde: d.forecast_verwacht, kleur: '#2E7D32',
-          sub: 'YTD + DB + 85% historisch instroom' }),
-        Card({ label: 'Positief (' + Math.round((d.f_pos || 1.10) * 100) + '%)', waarde: d.forecast_positief, kleur: '#FF9800',
-          sub: 'YTD + DB + 110% historisch instroom' })
-      ),
-      h('div', { style: { fontSize: 11, color: '#6E8591', marginTop: 8, fontStyle: 'italic' } },
-        'YTD: ' + fmtEur(d.ytd_realiseerd) + ' • Rest in DB: ' + fmtEur(d.rest_in_db) + ' • Hist. gem. jaar: ' + fmtEur(d.hist_gem_jaar)
-      ),
-      st_open[0] && h('div', { style: { background: 'white', borderRadius: 8, padding: 12, marginTop: 10, fontSize: 12, color: '#234756', lineHeight: 1.5 } },
-        h('div', { style: { fontWeight: 700, marginBottom: 6 } }, 'Hoe wordt dit berekend?'),
-        h('div', null, '1. ', h('strong', null, 'Conservatief'), ' = YTD gerealiseerd + alleen geboekte rest van het jaar (geen aanname over nog te komen aanvragen).'),
-        h('div', { style: { marginTop: 4 } }, '2. ', h('strong', null, 'Verwacht'), ' = + 85% van het historisch instroom-gat (wat er gemiddeld in voorgaande jaren nog binnen kwam in deze periode).'),
-        h('div', { style: { marginTop: 4 } }, '3. ', h('strong', null, 'Positief'), ' = + 110% van dat instroom-gat (groei-scenario).'),
-        h('div', { style: { marginTop: 8, color: '#E65100' } }, '⚠ Range bedoeld als realistische bandbreedte. Conservatief = veiligheidsmodus, niet streefcijfer.'),
-        st_inst[0] && h('div', { style: { borderTop: '1px solid #D8E8EF', marginTop: 10, paddingTop: 10 } },
-          h('div', { style: { fontWeight: 700, marginBottom: 6 } }, 'Instellingen (factoren)'),
-          h('div', null, 'Conservatief factor: ', h('strong', null, st_inst[0].conservatief_factor)),
-          h('div', null, 'Verwacht factor: ', h('strong', null, st_inst[0].verwacht_factor)),
-          h('div', null, 'Positief factor: ', h('strong', null, st_inst[0].positief_factor)),
-          h('div', { style: { fontSize: 10, color: '#6E8591', marginTop: 6 } }, 'Aanpasbaar via Beheer → Forecast-instellingen (alleen beheerder).')
-        )
-      )
-    );
-  };
-
-  console.log('✓ KR-FORECAST-RANGE module geladen');
-})();
-</script>
-<!-- KR-FORECAST-RANGE-END -->
 
 
 <!-- KR-NOTIF-PREDICT-START v1 -->
