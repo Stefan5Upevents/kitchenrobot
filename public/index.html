@@ -17466,7 +17466,7 @@ window._FBAnalyseScreen = function FBAnalyseScreen() {
               e('div',{style:{fontSize:11,color:GRAY}},'gem. 2024+2025')
             )
           ),
-          window._ForecastRangeBlok ? e(window._ForecastRangeBlok, { key: 'krfr_fb' }) : null,
+          window._FbForecastTransparant ? e(window._FbForecastTransparant, { key: 'fbtrans' }) : null,
           e('div',{style:{...card,marginBottom:16}},
             e('div',{style:{display:'flex',alignItems:'center',marginBottom:12}},
               e('div',{style:{fontWeight:700,fontSize:13,flex:1}},'F&B forecast 2026'),InfoBtn('forecast_uitleg'),
@@ -23551,5 +23551,371 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
 })();
 </script>
 <!-- KR-FORECAST-RANGE-END -->
+
+
+<!-- KR-FB-FORECAST-TRANSPARANT-START v1: Volledig transparante F&B forecast (28 apr 2026) -->
+<script>
+(function() {
+  if (window._FbForecastTransparant) return;
+  if (typeof React === 'undefined') return;
+  var supa = window._supa;
+  if (!supa) return;
+
+  var h = React.createElement;
+
+  function fmtEur(n) {
+    if (n == null) return '—';
+    n = Number(n);
+    if (Math.abs(n) >= 1000000) return '€ ' + (n/1000000).toFixed(2) + 'M';
+    if (Math.abs(n) >= 1000) return '€ ' + Math.round(n/1000) + 'k';
+    return '€ ' + Math.round(n);
+  }
+  function fmtEurExact(n) {
+    n = Number(n);
+    return '€ ' + n.toLocaleString('nl-NL', { maximumFractionDigits: 0 });
+  }
+  function fmtPct(n) { return Math.round(n*100) + '%'; }
+
+  var MAANDEN_KORT = ['','Jan','Feb','Mrt','Apr','Mei','Jun','Jul','Aug','Sep','Okt','Nov','Dec'];
+  var MAANDEN_LANG = ['','Januari','Februari','Maart','April','Mei','Juni','Juli','Augustus','September','Oktober','November','December'];
+
+  // ============== UITLEGKAART ==============
+  function UitlegKaart(props) {
+    var st_open = React.useState(false);
+    var data = props.data; // de view-rijen
+    var factoren = props.factoren;
+
+    if (!factoren) return null;
+
+    // Voorbeeld pakken: pak een maand met flink wat boekingen voor concreet voorbeeld
+    var voorbeeldMaand = (data || []).find(function(r) {
+      return Number(r.fb_definitief) > 50000 && Number(r.fb_optie) > 0 && r.type !== 'gerealiseerd';
+    }) || (data || []).find(function(r) {
+      return Number(r.fb_definitief) > 0 && r.type !== 'gerealiseerd';
+    });
+
+    var voorbeeldNaam = voorbeeldMaand ? MAANDEN_LANG[voorbeeldMaand.maand_nr] + ' 2026' : 'een maand met boekingen';
+    var v_def = voorbeeldMaand ? Number(voorbeeldMaand.fb_definitief) : 0;
+    var v_opt = voorbeeldMaand ? Number(voorbeeldMaand.fb_optie) : 0;
+    var v_hist_gem = voorbeeldMaand ? Number(voorbeeldMaand.hist_gem_fb) : 0;
+    var v_def_factor = Number(factoren.factor_definitief_verwacht);
+    var v_opt_factor = Number(factoren.factor_optie_verwacht);
+    var v_bk_deel = v_def * v_def_factor + v_opt * v_opt_factor;
+    var v_max = Math.max(v_bk_deel, v_hist_gem);
+    var v_bron = v_bk_deel > v_hist_gem ? 'boekingen' : 'historie';
+
+    return h('div', { style: { background: '#FFFBEA', border: '1px solid #FFE082', borderRadius: 12, marginBottom: 14, overflow: 'hidden' } },
+      // Klikbare header
+      h('button', { 
+        onClick: function() { st_open[1](!st_open[0]); },
+        style: { width: '100%', textAlign: 'left', padding: '12px 16px', background: 'transparent', border: 'none', cursor: 'pointer',
+                 display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 14, fontWeight: 700, color: '#5D4037' } },
+        h('span', null, '📚 Hoe werkt deze forecast? ',
+          h('span', { style: { fontWeight: 400, color: '#8D6E63', fontSize: 12 } }, '— klik open voor uitleg in 5 stappen')),
+        h('span', { style: { fontSize: 18 } }, st_open[0] ? '▲' : '▼')
+      ),
+      
+      st_open[0] && h('div', { style: { padding: '0 16px 16px 16px', fontSize: 13, color: '#3E2723', lineHeight: 1.6 } },
+        // De 3 scenarios
+        h('div', { style: { fontWeight: 700, marginTop: 4, marginBottom: 6, color: '#5D4037', fontSize: 13 } }, '1. Drie scenarios voor jouw beeldvorming'),
+        h('ul', { style: { margin: '0 0 12px 0', paddingLeft: 18 } },
+          h('li', null, h('b', { style: { color: '#C62828' } }, 'Conservatief'), ' = worst case. Hoeveel maak je minimaal? Veilig voor begroting.'),
+          h('li', null, h('b', { style: { color: '#1976D2' } }, 'Verwacht'), ' = meest waarschijnlijke uitkomst. Voor planning gebruik je dit.'),
+          h('li', null, h('b', { style: { color: '#2E7D32' } }, 'Optimistisch'), ' = best case. Wat als alle opties doorgaan en de markt meezit.')
+        ),
+
+        // De formule
+        h('div', { style: { fontWeight: 700, marginBottom: 6, color: '#5D4037' } }, '2. Hoe rekent de forecast per maand?'),
+        h('div', { style: { background: '#FFF', padding: 10, borderRadius: 6, marginBottom: 12, fontFamily: 'monospace', fontSize: 12, border: '1px solid #FFE082' } },
+          'forecast = MAX( boekingen-deel , historie-vangnet )'),
+        h('div', { style: { marginBottom: 12 } },
+          'Het model kijkt naar 2 dingen en pakt het hoogste:',
+          h('br'), '• ',
+          h('b', null, 'Boekingen-deel'), ' = wat staat er nu in agenda × factor (zie tabel hieronder)',
+          h('br'), '• ',
+          h('b', null, 'Historie-vangnet'), ' = wat dezelfde maand in 2024+2025 deed (min/gem/max)'
+        ),
+        h('div', { style: { background: '#E8F5E9', padding: 10, borderRadius: 6, marginBottom: 12, color: '#1B5E20', fontSize: 12 } },
+          h('b', null, '💡 Waarom MAX?'), ' Als je voor mei nog maar 40% bevestigde boekingen hebt, ',
+          'wil je niet rekenen alsof dat het EINDsaldo wordt. ',
+          'De maand vult zich nog. Dus: pak op zijn minst het historisch gemiddelde, ',
+          'tenzij je al meer in agenda hebt dan dat (dan is de boeking-realiteit hoger).'
+        ),
+
+        // Factoren tabel
+        h('div', { style: { fontWeight: 700, marginBottom: 6, color: '#5D4037' } }, '3. De factoren — bewerkbaar'),
+        h('div', { style: { background: '#FFF', borderRadius: 6, padding: 8, marginBottom: 10, border: '1px solid #FFE082', overflow: 'auto' } },
+          h('table', { style: { width: '100%', fontSize: 12, borderCollapse: 'collapse' } },
+            h('thead', null,
+              h('tr', null,
+                h('th', { style: { padding: 6, textAlign: 'left' } }, ''),
+                h('th', { style: { padding: 6, textAlign: 'center', color: '#C62828' } }, 'Conservatief'),
+                h('th', { style: { padding: 6, textAlign: 'center', color: '#1976D2' } }, 'Verwacht'),
+                h('th', { style: { padding: 6, textAlign: 'center', color: '#2E7D32' } }, 'Optimistisch')
+              )
+            ),
+            h('tbody', null,
+              h('tr', { style: { borderTop: '1px solid #FFE082' } },
+                h('td', { style: { padding: 6, fontWeight: 600 } }, 'Definitief'),
+                h('td', { style: { padding: 6, textAlign: 'center' } }, fmtPct(factoren.factor_definitief_conservatief)),
+                h('td', { style: { padding: 6, textAlign: 'center', fontWeight: 700 } }, fmtPct(factoren.factor_definitief_verwacht)),
+                h('td', { style: { padding: 6, textAlign: 'center' } }, fmtPct(factoren.factor_definitief_optimistisch))
+              ),
+              h('tr', { style: { borderTop: '1px solid #FFF8E1' } },
+                h('td', { style: { padding: 6, fontWeight: 600 } }, 'Optie'),
+                h('td', { style: { padding: 6, textAlign: 'center' } }, fmtPct(factoren.factor_optie_conservatief)),
+                h('td', { style: { padding: 6, textAlign: 'center', fontWeight: 700 } }, fmtPct(factoren.factor_optie_verwacht)),
+                h('td', { style: { padding: 6, textAlign: 'center' } }, fmtPct(factoren.factor_optie_optimistisch))
+              )
+            )
+          )
+        ),
+        h('div', { style: { fontSize: 12, color: '#5D4037', marginBottom: 6 } },
+          h('b', null, 'Definitief'), ': ', factoren.toelichting_definitief || ''),
+        h('div', { style: { fontSize: 12, color: '#5D4037', marginBottom: 12 } },
+          h('b', null, 'Optie'), ': ', factoren.toelichting_optie || ''),
+
+        // Voorbeeld
+        voorbeeldMaand && h('div', null,
+          h('div', { style: { fontWeight: 700, marginBottom: 6, color: '#5D4037' } }, '4. Voorbeeld: ' + voorbeeldNaam + ' (Verwacht-scenario)'),
+          h('div', { style: { background: '#FFF', borderRadius: 6, padding: 12, marginBottom: 10, fontFamily: 'monospace', fontSize: 12, border: '1px solid #FFE082' } },
+            h('div', null, 'Boekingen-deel:'),
+            h('div', { style: { paddingLeft: 16 } },
+              '  Definitief: ' + fmtEurExact(v_def) + ' × ' + v_def_factor + ' = ' + fmtEurExact(v_def * v_def_factor)),
+            h('div', { style: { paddingLeft: 16 } },
+              '  Optie:      ' + fmtEurExact(v_opt) + ' × ' + v_opt_factor + ' = ' + fmtEurExact(v_opt * v_opt_factor)),
+            h('div', { style: { paddingLeft: 16, fontWeight: 700, borderTop: '1px solid #FFE082', marginTop: 4, paddingTop: 4 } },
+              '  Boekingen-deel = ' + fmtEurExact(v_bk_deel)),
+            h('br'),
+            h('div', null, 'Historie-vangnet:'),
+            h('div', { style: { paddingLeft: 16 } },
+              '  Gem 2024+2025 = ' + fmtEurExact(v_hist_gem)),
+            h('br'),
+            h('div', { style: { fontWeight: 700, color: v_bron === 'boekingen' ? '#1976D2' : '#E65100' } },
+              '→ Forecast = MAX(' + fmtEur(v_bk_deel) + ', ' + fmtEur(v_hist_gem) + ') = ' + fmtEurExact(v_max)),
+            h('div', { style: { fontSize: 11, color: '#6E8591', marginTop: 4 } },
+              '   Bron: ' + (v_bron === 'boekingen' ? '🔵 boekingen (agenda al voller dan gem)' : '📊 historie (agenda nog niet vol)'))
+          )
+        ),
+
+        // Wanneer wint wat
+        h('div', { style: { fontWeight: 700, marginBottom: 6, color: '#5D4037' } }, '5. Wanneer pakt het model "boekingen" en wanneer "historie"?'),
+        h('div', { style: { fontSize: 12 } },
+          '• Maand al volle agenda (juni, mei) → ', h('b', null, 'boekingen'), ' wint',
+          h('br'),
+          '• Maand nog leeg in agenda (sept-dec) → ', h('b', null, 'historie'), ' wint',
+          h('br'),
+          '• Maand al voorbij → wordt direct ', h('b', null, 'gerealiseerd'), ' (echt geboekte omzet)'
+        )
+      )
+    );
+  }
+
+  // ============== PER-MAAND BEREKENINGS-UITLEG ==============
+  function MaandRij(props) {
+    var r = props.rij;
+    var scenario = props.scenario;
+    var factoren = props.factoren;
+    var st_uit = React.useState(false);
+
+    var def_factor = Number(factoren['factor_definitief_' + (scenario === 'verwacht' ? 'verwacht' : scenario === 'conservatief' ? 'conservatief' : 'optimistisch')]);
+    var opt_factor = Number(factoren['factor_optie_' + (scenario === 'verwacht' ? 'verwacht' : scenario === 'conservatief' ? 'conservatief' : 'optimistisch')]);
+    var def = Number(r.fb_definitief);
+    var opt = Number(r.fb_optie);
+    var hist_min = Number(r.hist_min_fb);
+    var hist_gem = Number(r.hist_gem_fb);
+    var hist_max = Number(r.hist_max_fb);
+    var hist_2024 = Number(r.hist_fb_2024);
+    var hist_2025 = Number(r.hist_fb_2025);
+
+    var bk_deel = scenario === 'conservatief' ? Number(r.boekingen_deel_cons)
+                : scenario === 'verwacht' ? Number(r.boekingen_deel_verw)
+                : Number(r.boekingen_deel_opti);
+    var hi_deel = scenario === 'conservatief' ? Number(r.historie_deel_cons)
+                : scenario === 'verwacht' ? Number(r.historie_deel_verw)
+                : Number(r.historie_deel_opti);
+    var forecast = scenario === 'conservatief' ? Number(r.forecast_conservatief)
+                 : scenario === 'verwacht' ? Number(r.forecast_verwacht)
+                 : Number(r.forecast_optimistisch);
+    var bron = scenario === 'conservatief' ? r.bron_conservatief
+             : scenario === 'verwacht' ? r.bron_verwacht
+             : r.bron_optimistisch;
+
+    var isGerealiseerd = bron === 'gerealiseerd';
+    var ger = Number(r.fb_gerealiseerd);
+
+    var bronKleur = bron === 'gerealiseerd' ? '#2E7D32'
+                  : bron === 'boekingen' ? '#1976D2'
+                  : '#E65100';
+    var bronEmoji = bron === 'gerealiseerd' ? '✓'
+                  : bron === 'boekingen' ? '🔵'
+                  : '📊';
+
+    return h('div', { style: { background: 'white', padding: '10px 12px', borderRadius: 8, border: '1px solid #E8EDF2', marginBottom: 6 } },
+      // Header rij
+      h('button', { 
+        onClick: function() { st_uit[1](!st_uit[0]); },
+        style: { width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, background: 'transparent', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left' } },
+        h('div', { style: { display: 'flex', alignItems: 'center', gap: 8 } },
+          h('span', { style: { fontWeight: 700, color: '#002D41', fontSize: 13 } }, MAANDEN_LANG[r.maand_nr] + ' 2026'),
+          h('span', { style: { fontSize: 10, color: bronKleur, background: bronKleur + '22', padding: '2px 6px', borderRadius: 4, fontWeight: 600 } },
+            bronEmoji + ' ' + bron)
+        ),
+        h('div', { style: { display: 'flex', alignItems: 'baseline', gap: 6 } },
+          h('span', { style: { fontWeight: 700, fontSize: 16, color: bronKleur } }, fmtEur(forecast)),
+          h('span', { style: { fontSize: 14, color: '#6E8591' } }, st_uit[0] ? '▲' : '▼')
+        )
+      ),
+
+      // Klap-open: berekening
+      st_uit[0] && h('div', { style: { marginTop: 10, paddingTop: 10, borderTop: '1px dashed #D8E8EF' } },
+        isGerealiseerd ? (
+          h('div', { style: { padding: 12, background: '#E8F5E9', borderRadius: 6, color: '#1B5E20', fontSize: 12 } },
+            h('div', { style: { fontWeight: 700, marginBottom: 4 } }, '✓ Deze maand is al gerealiseerd'),
+            h('div', null, 'De forecast is gewoon de werkelijk geboekte omzet voor deze maand:'),
+            h('div', { style: { fontSize: 16, fontWeight: 800, marginTop: 4 } }, fmtEurExact(ger))
+          )
+        ) : (
+          h('div', { style: { fontSize: 12, color: '#234756' } },
+            // Boekingen-deel
+            h('div', { style: { fontWeight: 700, color: '#1976D2', marginBottom: 4 } }, '🔵 Boekingen-deel:'),
+            h('div', { style: { fontFamily: 'monospace', background: '#F5F8FA', padding: 8, borderRadius: 4, marginBottom: 8, fontSize: 11 } },
+              h('div', null, 'Definitief: ' + fmtEurExact(def) + ' × ' + def_factor + ' = ' + fmtEurExact(def * def_factor)),
+              h('div', null, 'Optie:      ' + fmtEurExact(opt) + ' × ' + opt_factor + ' = ' + fmtEurExact(opt * opt_factor)),
+              h('div', { style: { fontWeight: 700, borderTop: '1px solid #D8E8EF', marginTop: 4, paddingTop: 4 } },
+                '→ Boekingen-deel = ' + fmtEurExact(bk_deel))
+            ),
+            
+            // Historie-deel
+            h('div', { style: { fontWeight: 700, color: '#E65100', marginBottom: 4 } }, '📊 Historie-vangnet:'),
+            h('div', { style: { fontFamily: 'monospace', background: '#F5F8FA', padding: 8, borderRadius: 4, marginBottom: 8, fontSize: 11 } },
+              h('div', null, '2024: ' + fmtEurExact(hist_2024 || 0)),
+              h('div', null, '2025: ' + fmtEurExact(hist_2025 || 0)),
+              h('div', { style: { fontWeight: 700, borderTop: '1px solid #D8E8EF', marginTop: 4, paddingTop: 4 } },
+                '→ Min: ' + fmtEurExact(hist_min) + '  ·  Gem: ' + fmtEurExact(hist_gem) + '  ·  Max: ' + fmtEurExact(hist_max)),
+              h('div', { style: { color: bron === 'historie' ? '#E65100' : '#6E8591', fontWeight: bron === 'historie' ? 700 : 400 } },
+                '→ Voor ' + scenario + ' pakken we: ' + 
+                (scenario === 'conservatief' ? 'min = ' + fmtEurExact(hist_min)
+                 : scenario === 'verwacht' ? 'gem = ' + fmtEurExact(hist_gem)
+                 : 'max = ' + fmtEurExact(hist_max)))
+            ),
+
+            // De winnaar
+            h('div', { style: { background: bronKleur + '15', border: '1px solid ' + bronKleur, borderRadius: 6, padding: 10, marginTop: 6 } },
+              h('div', { style: { fontSize: 12, fontWeight: 700, color: bronKleur, marginBottom: 4 } }, '⚖️ Hoogste van de twee wint:'),
+              h('div', { style: { fontFamily: 'monospace', fontSize: 11 } },
+                'MAX(' + fmtEur(bk_deel) + ' boekingen, ' + fmtEur(hi_deel) + ' historie)'),
+              h('div', { style: { fontSize: 16, fontWeight: 800, color: bronKleur, marginTop: 6 } },
+                '= ' + fmtEurExact(forecast)),
+              h('div', { style: { fontSize: 11, color: '#6E8591', marginTop: 4 } },
+                bron === 'boekingen' 
+                  ? '→ Agenda is al voller dan ' + (scenario === 'conservatief' ? 'slechtste hist. jaar' : scenario === 'verwacht' ? 'historisch gemiddelde' : 'beste hist. jaar') + ' → boekingen winnen'
+                  : '→ Agenda nog niet vol genoeg → val terug op historie als ondergrens')
+            )
+          )
+        )
+      )
+    );
+  }
+
+  // ============== HOOFD-MODULE ==============
+  window._FbForecastTransparant = function() {
+    var st_data = React.useState(null);
+    var st_factoren = React.useState(null);
+    var st_scenario = React.useState('verwacht');
+    var st_laden = React.useState(true);
+    var st_alle_uit = React.useState(false);
+
+    async function laad() {
+      st_laden[1](true);
+      try {
+        var [d, f] = await Promise.all([
+          supa.from('v_fb_forecast').select('*').order('maand_nr'),
+          supa.from('fin_forecast_factoren').select('*').eq('id', 1).maybeSingle()
+        ]);
+        if (d.data) st_data[1](d.data);
+        if (f.data) st_factoren[1](f.data);
+      } catch (e) { console.error(e); }
+      st_laden[1](false);
+    }
+    React.useEffect(function() { laad(); }, []);
+
+    if (st_laden[0]) return h('div', { style: { background: 'white', borderRadius: 12, padding: 20, marginBottom: 12 } },
+      h('div', { style: { color: '#6E8591', textAlign: 'center' } }, 'Forecast laden...'));
+    if (!st_data[0] || !st_factoren[0]) return null;
+
+    var data = st_data[0];
+    var factoren = st_factoren[0];
+    var totCons = data.reduce(function(s, r) { return s + Number(r.forecast_conservatief || 0); }, 0);
+    var totVerw = data.reduce(function(s, r) { return s + Number(r.forecast_verwacht || 0); }, 0);
+    var totOpti = data.reduce(function(s, r) { return s + Number(r.forecast_optimistisch || 0); }, 0);
+    var totGer = data.reduce(function(s, r) { return s + Number(r.fb_gerealiseerd || 0); }, 0);
+    var totHist = data.reduce(function(s, r) { return s + Number(r.hist_gem_fb || 0); }, 0);
+    var totaalScenario = { conservatief: totCons, verwacht: totVerw, optimistisch: totOpti }[st_scenario[0]];
+    var pctVsHist = totHist > 0 ? Math.round((totaalScenario - totHist) / totHist * 100) : 0;
+
+    var scenarioKnop = function(key, label, kleur, sub) {
+      var sel = st_scenario[0] === key;
+      var bedrag = { conservatief: totCons, verwacht: totVerw, optimistisch: totOpti }[key];
+      return h('button', { key: key, onClick: function() { st_scenario[1](key); },
+        style: { flex: 1, padding: '14px 16px', borderRadius: 12, border: '2px solid ' + (sel ? kleur : '#D8E8EF'),
+                 background: sel ? kleur : 'white', color: sel ? 'white' : '#234756',
+                 fontWeight: 700, fontSize: 13, cursor: 'pointer', transition: 'all 0.15s', textAlign: 'left', minWidth: 0 } },
+        h('div', { style: { fontSize: 11, opacity: 0.85, marginBottom: 2, textTransform: 'uppercase', letterSpacing: 0.5 } }, label),
+        h('div', { style: { fontSize: 22, fontWeight: 800 } }, fmtEur(bedrag)),
+        h('div', { style: { fontSize: 10, opacity: 0.85, marginTop: 2 } }, sub));
+    };
+
+    return h('div', { style: { background: 'linear-gradient(180deg,#FFF,#F5F8FA)', borderRadius: 12, padding: 18, marginBottom: 12, borderTop: '4px solid #1976D2' } },
+      h('div', { style: { fontSize: 16, fontWeight: 800, color: '#002D41', marginBottom: 4 } }, '🎯 F&B Forecast 2026 — met uitleg'),
+      h('div', { style: { fontSize: 11, color: '#6E8591', marginBottom: 12 } },
+        'Klik bovenaan op "Hoe werkt deze forecast?" om de logica zelf te leren. Klik per maand voor de berekening.'),
+
+      // Uitlegkaart
+      h(UitlegKaart, { data: data, factoren: factoren }),
+
+      // Scenario-knoppen
+      h('div', { style: { display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' } },
+        scenarioKnop('conservatief', 'Conservatief', '#C62828', 'Worst case · veilig voor begroting'),
+        scenarioKnop('verwacht', 'Verwacht', '#1976D2', 'Meest waarschijnlijk · voor planning'),
+        scenarioKnop('optimistisch', 'Optimistisch', '#2E7D32', 'Best case · alles meezittend')
+      ),
+
+      // KPI tegels
+      h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, marginBottom: 14, padding: 12, background: 'white', borderRadius: 8, border: '1px solid #E8EDF2' } },
+        h('div', null,
+          h('div', { style: { fontSize: 10, color: '#6E8591', textTransform: 'uppercase', letterSpacing: 0.5 } }, 'Eindstand 2026'),
+          h('div', { style: { fontSize: 18, fontWeight: 800, color: '#002D41' } }, fmtEur(totaalScenario))),
+        h('div', null,
+          h('div', { style: { fontSize: 10, color: '#6E8591', textTransform: 'uppercase', letterSpacing: 0.5 } }, 'Al gerealiseerd'),
+          h('div', { style: { fontSize: 18, fontWeight: 800, color: '#2E7D32' } }, fmtEur(totGer))),
+        h('div', null,
+          h('div', { style: { fontSize: 10, color: '#6E8591', textTransform: 'uppercase', letterSpacing: 0.5 } }, 'Nog te doen'),
+          h('div', { style: { fontSize: 18, fontWeight: 800, color: '#E65100' } }, fmtEur(totaalScenario - totGer))),
+        h('div', null,
+          h('div', { style: { fontSize: 10, color: '#6E8591', textTransform: 'uppercase', letterSpacing: 0.5 } }, 'vs hist. gem.'),
+          h('div', { style: { fontSize: 18, fontWeight: 800, color: pctVsHist >= 0 ? '#2E7D32' : '#C62828' } },
+            (pctVsHist >= 0 ? '+' : '') + pctVsHist + '%'))
+      ),
+
+      // Toggle
+      h('button', { 
+        onClick: function() { st_alle_uit[1](!st_alle_uit[0]); },
+        style: { background: '#F5F8FA', border: '1px solid #D8E8EF', color: '#234756', padding: '8px 14px', borderRadius: 8, cursor: 'pointer', width: '100%', fontWeight: 600, fontSize: 13, marginBottom: 8 } },
+        st_alle_uit[0] ? '▲ Verberg per-maand berekening' : '▼ Toon per-maand berekening (klik elke maand voor details)'),
+
+      // Per-maand
+      st_alle_uit[0] && h('div', null,
+        data.map(function(r, i) {
+          return h(MaandRij, { key: r.maand_nr, rij: r, scenario: st_scenario[0], factoren: factoren });
+        })
+      )
+    );
+  };
+
+  console.log('✓ KR-FB-FORECAST-TRANSPARANT v1 module geladen');
+})();
+</script>
+<!-- KR-FB-FORECAST-TRANSPARANT-END -->
 
 </body></html>
