@@ -18648,6 +18648,212 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
 })();
 </script>
 <!-- KR-ROL-END -->
+<!-- KR-ROLLEN-START v1 -->
+<script id="kr-rollen-js">
+(function(){
+  function init(){
+    if(!window.React||!window._supa){ setTimeout(init,100); return; }
+    var R=window.React.createElement;
+    var useState=window.React.useState;
+    var useEffect=window.React.useEffect;
+    var useMemo=window.React.useMemo;
+
+    var FN=window._supa.functionsUrl+'/beheer-gebruiker';
+    function callFn(payload){
+      return window._supa.auth.getSession().then(function(s){
+        var jwt=s&&s.data&&s.data.session&&s.data.session.access_token;
+        return fetch(FN,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+jwt,'apikey':window._supa.supabaseKey},body:JSON.stringify(payload)}).then(function(r){return r.json();});
+      });
+    }
+
+    // Cache rol-defaults globaal voor andere onderdelen die ze willen gebruiken
+    window._rolTabDefaultsCache=null;
+    window._laadRolTabDefaults=function(){
+      return callFn({actie:'rol_lijst'}).then(function(res){
+        if(res&&res.ok){ window._rolTabDefaultsCache=res; }
+        return res;
+      });
+    };
+
+    var ROL_LABELS={
+      beheerder:{naam:'Beheerder',uitleg:'Volledige toegang. Mag alles instellen, gebruikers beheren, rollen aanpassen.'},
+      sous_chef:{naam:'Sous-chef',uitleg:'Werk + analyse + meeste stamgegevens. Geen gebruikersbeheer of API-keys.'},
+      chef:{naam:'Chef',uitleg:'Werkschermen voor de keuken: boekingen, opzet, buffet, HACCP.'},
+      operationeel:{naam:'Operationeel',uitleg:'Operationele uitvoering, lezen + werkschermen aftekenen.'},
+      financieel:{naam:'Financieel',uitleg:'Alleen financiele cijfers + boekingen. Geen werkschermen.'},
+      alleen_lezen:{naam:'Alleen lezen',uitleg:'Read-only toegang voor stagiairs, externen, of meekijkers.'},
+    };
+
+    window._RollenScreen=function(){
+      var C=window._C||{night:'#234756',aqua:'#3FB8C4',red:'#E8202B',green:'#2E7D32',muted:'#78909C',orange:'#FF9800',light:'#F5F8FA'};
+
+      var s_data=useState(null); var data=s_data[0],setData=s_data[1];
+      var s_laden=useState(true); var laden=s_laden[0],setLaden=s_laden[1];
+      var s_fout=useState(''); var fout=s_fout[0],setFout=s_fout[1];
+      var s_open=useState({}); var open=s_open[0],setOpen=s_open[1];
+      var s_dirty=useState({}); var dirty=s_dirty[0],setDirty=s_dirty[1];
+      var s_meld=useState(''); var meld=s_meld[0],setMeld=s_meld[1];
+      var s_bezig=useState({}); var bezig=s_bezig[0],setBezig=s_bezig[1];
+
+      function laad(){
+        setLaden(true); setFout('');
+        callFn({actie:'rol_lijst'}).then(function(res){
+          setLaden(false);
+          if(res&&res.error){ setFout(res.error); return; }
+          setData(res);
+          window._rolTabDefaultsCache=res;
+          setDirty({});
+        }).catch(function(e){ setLaden(false); setFout(String(e)); });
+      }
+      useEffect(laad,[]);
+
+      var tabsPerGroep=useMemo(function(){
+        if(!data||!data.tabs) return {};
+        var g={};
+        data.tabs.forEach(function(t){ if(!t.admin_tab_key) return; if(!g[t.groep]) g[t.groep]=[]; g[t.groep].push(t); });
+        return g;
+      },[data]);
+
+      var rolMap=useMemo(function(){
+        if(!data||!data.rollen) return {};
+        var m={};
+        data.rollen.forEach(function(r){ m[r.rol]=(r.zichtbare_tabs||[]).slice(); });
+        return m;
+      },[data]);
+
+      var dirtyMap=dirty;
+      function huidigeTabsVoorRol(rol){
+        if(dirtyMap[rol]) return dirtyMap[rol];
+        return rolMap[rol]||[];
+      }
+
+      function toggleTab(rol,tabKey){
+        var nu=huidigeTabsVoorRol(rol).slice();
+        var i=nu.indexOf(tabKey);
+        if(i>=0) nu.splice(i,1); else nu.push(tabKey);
+        setDirty(Object.assign({},dirtyMap,(function(){var o={}; o[rol]=nu; return o;})()));
+      }
+
+      function alleAan(rol){
+        var alle=(data.tabs||[]).map(function(t){return t.admin_tab_key;});
+        setDirty(Object.assign({},dirtyMap,(function(){var o={}; o[rol]=alle; return o;})()));
+      }
+      function allesUit(rol){
+        setDirty(Object.assign({},dirtyMap,(function(){var o={}; o[rol]=['home']; return o;})()));
+      }
+      function reset(rol){
+        var nieuw=Object.assign({},dirtyMap);
+        delete nieuw[rol];
+        setDirty(nieuw);
+      }
+      function opslaan(rol){
+        var tabs=huidigeTabsVoorRol(rol);
+        setBezig(Object.assign({},bezig,(function(){var o={}; o[rol]=true; return o;})()));
+        callFn({actie:'rol_opslaan',rol:rol,zichtbare_tabs:tabs}).then(function(res){
+          setBezig(Object.assign({},bezig,(function(){var o={}; o[rol]=false; return o;})()));
+          if(res&&res.error){ setMeld('FOUT: '+res.error); return; }
+          setMeld('Opgeslagen voor '+rol);
+          setTimeout(function(){ setMeld(''); },2200);
+          laad();
+        });
+      }
+
+      if(laden) return R('div',{style:{padding:30,textAlign:'center',color:C.muted}},'Laden...');
+      if(fout) return R('div',{style:{padding:18,background:'#FFEBEE',color:C.red,border:'1px solid #FFCDD2',borderRadius:10,margin:14}},'Fout: '+fout);
+      if(!data) return null;
+
+      var rollen=data.rollen||[];
+
+      return R('div',null,
+        R('div',{style:{padding:'0 0 14px 0',color:C.muted,fontSize:13,lineHeight:1.5}},'Per rol bepalen welke schermen standaard zichtbaar zijn. Iedere rol heeft eigen instellingen. Wijzigingen gelden voor nieuwe gebruikers en bestaande gebruikers zonder eigen tab-overrides.'),
+        meld?R('div',{style:{padding:'10px 14px',background:meld.indexOf('FOUT')===0?'#FFEBEE':'#E8F5E9',color:meld.indexOf('FOUT')===0?C.red:C.green,borderRadius:8,marginBottom:14,fontWeight:600,fontSize:13}},meld):null,
+        R('div',{style:{display:'grid',gridTemplateColumns:'1fr',gap:14}},
+          rollen.map(function(rij){
+            var rol=rij.rol;
+            var label=ROL_LABELS[rol]||{naam:rol,uitleg:''};
+            var tabsNu=huidigeTabsVoorRol(rol);
+            var heeftWijziging=!!dirtyMap[rol];
+            var isOpen=!!open[rol];
+            return R('div',{key:rol,style:{background:'#fff',border:'1px solid '+(heeftWijziging?C.orange:'#E0E7EB'),borderRadius:12,overflow:'hidden',transition:'border-color 0.15s'}},
+              R('div',{style:{padding:'14px 18px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',background:isOpen?'#F5F8FA':'#fff'},onClick:function(){ var n=Object.assign({},open); n[rol]=!isOpen; setOpen(n); }},
+                R('div',{style:{flex:1}},
+                  R('div',{style:{display:'flex',alignItems:'center',gap:10}},
+                    R('span',{style:{fontWeight:800,color:C.night,fontSize:15}},label.naam),
+                    R('span',{style:{fontSize:11,color:C.muted,fontFamily:'monospace'}},'('+rol+')'),
+                    heeftWijziging?R('span',{style:{display:'inline-flex',alignItems:'center',gap:4,padding:'2px 8px',background:'#FFF3E0',color:C.orange,borderRadius:100,fontSize:10,fontWeight:700}},'Niet opgeslagen'):null,
+                  ),
+                  R('div',{style:{fontSize:12,color:C.muted,marginTop:3}},label.uitleg),
+                  R('div',{style:{fontSize:11,color:C.muted,marginTop:4}},tabsNu.length+' van '+(data.tabs||[]).length+' schermen aan'),
+                ),
+                R('span',{style:{fontSize:18,color:C.muted,transition:'transform 0.15s',display:'inline-block',transform:isOpen?'rotate(90deg)':'rotate(0deg)'}},'▶'),
+              ),
+              isOpen?R('div',{style:{padding:'4px 18px 18px',borderTop:'1px solid #F0F0F0'}},
+                R('div',{style:{display:'flex',gap:8,padding:'12px 0',flexWrap:'wrap'}},
+                  R('button',{style:{padding:'6px 12px',background:'#fff',border:'1px solid '+C.aqua,color:C.aqua,borderRadius:6,cursor:'pointer',fontSize:12,fontWeight:600},onClick:function(){alleAan(rol);}},'Alles aan'),
+                  R('button',{style:{padding:'6px 12px',background:'#fff',border:'1px solid #BDBDBD',color:C.muted,borderRadius:6,cursor:'pointer',fontSize:12,fontWeight:600},onClick:function(){allesUit(rol);}},'Alleen Home'),
+                  heeftWijziging?R('button',{style:{padding:'6px 12px',background:'#fff',border:'1px solid '+C.muted,color:C.muted,borderRadius:6,cursor:'pointer',fontSize:12},onClick:function(){reset(rol);}},'Reset'):null,
+                  R('div',{style:{flex:1}}),
+                  heeftWijziging?R('button',{style:{padding:'7px 16px',background:C.green,border:'none',color:'#fff',borderRadius:6,cursor:'pointer',fontSize:13,fontWeight:700,opacity:bezig[rol]?0.6:1},disabled:!!bezig[rol],onClick:function(){opslaan(rol);}},bezig[rol]?'Opslaan...':'✓ Opslaan'):null,
+                ),
+                R('div',{style:{display:'grid',gridTemplateColumns:'repeat(auto-fill, minmax(220px, 1fr))',gap:10,marginTop:6}},
+                  Object.keys(tabsPerGroep).sort().map(function(groepNaam){
+                    var tabs=tabsPerGroep[groepNaam];
+                    return R('div',{key:groepNaam,style:{background:C.light,padding:'10px 12px',borderRadius:8,border:'1px solid '+'#E0E7EB'}},
+                      R('div',{style:{fontSize:11,fontWeight:800,color:C.night,letterSpacing:0.5,textTransform:'uppercase',marginBottom:8}},groepNaam),
+                      tabs.map(function(t){
+                        var aan=tabsNu.indexOf(t.admin_tab_key)>=0;
+                        var disabled=t.admin_tab_key==='home';
+                        return R('label',{key:t.admin_tab_key,style:{display:'flex',alignItems:'center',gap:8,padding:'5px 0',cursor:disabled?'not-allowed':'pointer',opacity:disabled?0.6:1}},
+                          R('input',{type:'checkbox',checked:aan,disabled:disabled,onChange:function(){ if(!disabled) toggleTab(rol,t.admin_tab_key); },style:{cursor:disabled?'not-allowed':'pointer'}}),
+                          R('span',{style:{fontSize:13,color:C.night}},t.weergave_naam),
+                        );
+                      }),
+                    );
+                  })
+                )
+              ):null,
+            );
+          })
+        )
+      );
+    };
+  }
+  init();
+})();
+</script>
+<!-- KR-ROLLEN-END -->
+<!-- KR-GEBR-WRAP-START v1 -->
+<script id="kr-gebr-wrap-js">
+(function(){
+  function init(){
+    if(!window.React||!window._GebruikersScreen){ setTimeout(init,150); return; }
+    var R=window.React.createElement;
+    var useState=window.React.useState;
+
+    var orig=window._GebruikersScreen;
+    window._GebruikersScreen=function(){
+      var C=window._C||{night:'#234756',aqua:'#3FB8C4',muted:'#78909C',light:'#F5F8FA'};
+      var s_tab=useState('gebruikers'); var tab=s_tab[0], setTab=s_tab[1];
+
+      function tabBtn(key,label){
+        var actief=tab===key;
+        return R('button',{onClick:function(){setTab(key);},style:{padding:'10px 20px',background:'transparent',border:'none',borderBottom:actief?('3px solid '+C.aqua):'3px solid transparent',color:actief?C.night:C.muted,fontWeight:actief?800:600,fontSize:14,cursor:'pointer',marginBottom:-1}},label);
+      }
+
+      return R('div',null,
+        R('div',{style:{display:'flex',gap:4,borderBottom:'1px solid #E0E7EB',marginBottom:18}},
+          tabBtn('gebruikers','👤 Gebruikers'),
+          tabBtn('rollen','🔑 Rollen'),
+        ),
+        tab==='gebruikers'?R(orig,null):null,
+        tab==='rollen'?(window._RollenScreen?R(window._RollenScreen,null):R('div',{style:{padding:30,color:C.muted}},'Rollen-module laadt...')):null
+      );
+    };
+  }
+  init();
+})();
+</script>
+<!-- KR-GEBR-WRAP-END -->
 <!-- KR-GEBRUIKERS-START v1: gebruikersbeheer scherm. 27 apr 2026 -->
 <script id="kr-gebruikers-js">
 (function() {
