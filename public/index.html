@@ -790,41 +790,45 @@ function Header({ sc, setSc, user, logout }) {
     { label: "Dagelijks", items: [
       ["inbox", "📥", "Inbox"],
       ["boekingen", "📋", "Boekingen"],
-      ["buffet", "🍽", "Buffetformulieren"],
+      ["tijden", "⏰", "Tijden"],
       ["opzet", "📊", "Opzetoverzicht"],
-      ["tijden", "\u23F0", "Tijden"],
-      ["chef", "\uD83D\uDC68\u200D\uD83C\uDF73", "Chef Review"],
-      ["inspiratie", "\u2728", "Inspiratie"],
-      ["berichten", "\uD83D\uDCE8", "Kiosk berichten"],
-      ["waste", "🗑️", "Waste-meldingen"]
+      ["buffet", "🍽", "Buffetformulieren"],
+      ["chef", "👨‍🍳", "Chef Review"],
+      ["bestelling", "🛒", "Sligro Bestelling"],
+      ["berichten", "📨", "Kiosk berichten"],
+      ["waste", "🗑️", "Waste-meldingen"],
+      ["inspiratie", "✨", "Inspiratie"]
     ] },
     { label: "Analyse", items: [
+      ["fin", "💰", "Financieel Live"],
+      ["fb", "📊", "F&B Analyse"],
       ["allergenen", "🏷", "Allergenen"],
       ["haccp", "🌡", "HACCP"],
       ["nvwa", "📋", "NVWA Inspectie"],
-      ["fb", "📊", "F&B Analyse"],
-      ["bestelling", "🛒", "Sligro Bestelling"],
-      ["opzetlog", "\u2705", "Opzet Logboek"],
+      ["opzetlog", "✅", "Opzet Logboek"],
       ["waste_analytics", "📊", "Waste Analytics"]
     ] },
-    { label: "Beheer", items: [
+    { label: "Stamgegevens", items: [
       ["stam:pg", "🏗", "Productgroepen"],
-      ["stam:gr", "🍽", "Gerechten"],
       ["stam:mn", "📋", "Menus"],
+      ["stam:gr", "🍽", "Gerechten"],
       ["stam:sl", "🛒", "Sligro Import"],
       ["stam:ti", "⏱", "Buffet / Tijden"],
-      ["stam:al", "🏷", "Allergenen Stam"],
-      ["stam:ki", "📱", "Kiosk Instellingen"],
-      ["stam:dr", "📖", "Draaiboek-links"],
       ["staffel", "📊", "Opzet-staffel"],
-      ["gebruikers", "👤", "Gebruikers"],
-      ["systeem", "🩺", "Systeem-gezondheid"],
-      ["schermdoc", "📚", "Schermdocumentatie"],
-      ["notif_predict", "🔔", "Notificaties + voorspel"],
+      ["stam:ki", "📱", "Kiosk Instellingen"],
+      ["stam:dr", "📖", "Draaiboek-links"]
+    ] },
+    { label: "Instellingen", items: [
       ["fin_inst", "💸", "Financiële instellingen"],
       ["haccp_inst", "🏥", "HACCP Bedrijfsgegevens"],
+      ["notif_predict", "🔔", "Notificaties + voorspel"]
+    ] },
+    { label: "Systeem", items: [
+      ["gebruikers", "👤", "Gebruikers"],
       ["sensoren", "🌡️", "Sensoren"],
-      ["apikeys", "🔐", "API-koppelingen"]
+      ["apikeys", "🔐", "API-koppelingen"],
+      ["systeem", "🩺", "Systeem-gezondheid"],
+      ["schermdoc", "📚", "Schermdocumentatie"]
     ] }
   ];
   var huidigLabel = "KitchenRobot";
@@ -7937,13 +7941,13 @@ function AllergenenOverzichtTab({ gerechten, sligro, productgroepen }) {
   function passFilter(bevatLijst, mogelijkLijst) {
     if (heeftBevatFilter) {
       var heeftAlle = geselecteerdBevat.every(function(k) {
-        return bevatLijst.includes(k) || mogelijkLijst.includes(k);
+        return bevatLijst.includes(k);
       });
       if (!heeftAlle) return false;
     }
     if (heeftBevatGeenFilter) {
       var heeftGeen = geselecteerdBevatGeen.every(function(k) {
-        return !bevatLijst.includes(k) && !mogelijkLijst.includes(k);
+        return !bevatLijst.includes(k);
       });
       if (!heeftGeen) return false;
     }
@@ -8094,7 +8098,7 @@ function AllergenenOverzichtTab({ gerechten, sligro, productgroepen }) {
           React.createElement("span",{style:{fontSize:14}},a.emoji), a.label);
       }),
       ALLERGENEN_14.filter(function(a) { return mogelijk.includes(a.key); }).map(function(a) {
-        return /* @__PURE__ */ React.createElement("span", { key: a.key, style: { display:"inline-flex",alignItems:"center",gap:4,background:"#FFF8E1",color:"#E65100",border:"1px dashed #FFB74D",borderRadius:100,padding:"3px 8px",fontSize:11,fontWeight:700,whiteSpace:"nowrap" } },
+        return /* @__PURE__ */ React.createElement("span", { key: a.key, style: { display:"inline-flex",alignItems:"center",gap:4,background:"#F5F5F5",color:"#757575",border:"1px dashed #BDBDBD",borderRadius:100,padding:"3px 8px",fontSize:11,fontWeight:700,whiteSpace:"nowrap" } },
           React.createElement("span",{style:{fontSize:14}},a.emoji), a.label);
       }),
       bevat.length === 0 && mogelijk.length === 0 && /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.green, fontWeight:700 } }, "\u2705 Vrij van allergenen")
@@ -8172,7 +8176,7 @@ function AllergenenOverzichtTab({ gerechten, sligro, productgroepen }) {
       }), ALLERGENEN_14.filter(function(a2) {
         return (ia.mogelijk || []).includes(a2.key);
       }).map(function(a2) {
-        return /* @__PURE__ */ React.createElement("div", { key: a2.key, style: { display: "flex", alignItems: "center", gap: 8, padding: "4px 0", borderBottom: "1px solid #F0F0F0" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 18, opacity: 0.6 } }, a2.emoji), /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 700, fontSize: 13, color: "#E65100" } }, a2.label), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.muted } }, "Mogelijk"));
+        return /* @__PURE__ */ React.createElement("div", { key: a2.key, style: { display: "flex", alignItems: "center", gap: 8, padding: "4px 0", borderBottom: "1px solid #F0F0F0" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 18, opacity: 0.6 } }, a2.emoji), /* @__PURE__ */ React.createElement("span", { style: { fontWeight: 700, fontSize: 13, color: "#757575" } }, a2.label), /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.muted } }, "Mogelijk"));
       }))), sp.ingredienten_tekst && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, fontSize: 12, marginBottom: 4 } }, "Ingredi\xEBnten (Sligro verpakking):"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.muted, lineHeight: 1.5 } }, sp.ingredienten_tekst)), !sp.allergenen_laatst_gecheckt && /* @__PURE__ */ React.createElement("div", { style: { ...alertW } }, "\u26A0 Nog niet gecheckt via Cowork Sligro Sync"));
     }
   }
@@ -8423,7 +8427,7 @@ function AllergenenOverzichtTab({ gerechten, sligro, productgroepen }) {
     })));
   }), heeftPsFilter && /* @__PURE__ */ React.createElement("div", { style: { marginTop: 6, fontSize: 10, color: C.aqua } }, "AND — toont items van ", /* @__PURE__ */ React.createElement("strong", null, Object.keys(filterPs).filter(function(k) {
     return filterPs[k];
-  }).length), " geselecteerde productsoort(en)"))), allePsGroepen.map(function(psId) {
+  }).length), " geselecteerde productsoort(en)"))), /* @__PURE__ */ React.createElement("div", { style: { display:"flex", gap:12, alignItems:"center", padding:"10px 14px", background:"#F8F9FA", border:"1px solid #E0E0E0", borderRadius:10, marginBottom:14, fontSize:12, flexWrap:"wrap" }, className:"no-print" }, React.createElement("span", { style: { color:C.muted, fontWeight:700, fontSize:11, letterSpacing:0.5 } }, "UITLEG:"), React.createElement("span", { style: { display:"inline-flex", alignItems:"center", gap:5, background:"#FFEBEE", color:"#C62828", border:"1px solid #EF9A9A", borderRadius:100, padding:"3px 10px", fontSize:11, fontWeight:700 } }, "Bevat"), React.createElement("span", { style:{ color: C.muted } }, "= zit er zeker in"), React.createElement("span", { style: { display:"inline-flex", alignItems:"center", gap:5, background:"#F5F5F5", color:"#757575", border:"1px dashed #BDBDBD", borderRadius:100, padding:"3px 10px", fontSize:11, fontWeight:700 } }, "Bevat mogelijk"), React.createElement("span", { style:{ color: C.muted } }, "= kan sporen bevatten")), allePsGroepen.map(function(psId) {
     var gRow = (gerechtenPerPs.find(function(x) {
       return x[0] === psId;
     }) || [null, { items: [] }])[1].items;
@@ -8436,7 +8440,7 @@ function AllergenenOverzichtTab({ gerechten, sligro, productgroepen }) {
       return x[0] === psId;
     }) || [null, { psNaam: "Onbekend" }])[1].psNaam;
     if (!gRow.length && !sRow.length) return null;
-    return /* @__PURE__ */ React.createElement("div", { key: psId, style: { ...SS.card, marginBottom: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 900, fontSize: 13, color: C.night, marginBottom: 10, borderBottom: "2px solid " + C.aqua, paddingBottom: 6 } }, psNaam, " ", /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.muted, fontWeight: 400 } }, "(", gRow.length, " gerechten \xB7 ", sRow.length, " producten)")), /* @__PURE__ */ React.createElement("table", { className:"kr-table", style: { ...SS.tbl, fontSize: 12 } }, /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", { style: SS.th }, /* @__PURE__ */ React.createElement("button", { style: thBtn, onClick: function() {
+    return /* @__PURE__ */ React.createElement("div", { key: psId, style: { ...SS.card, marginBottom: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 900, fontSize: 13, color: C.night, marginBottom: 10, borderBottom: "2px solid " + C.aqua, paddingBottom: 6 } }, psNaam, " ", /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, color: C.muted, fontWeight: 400 } }, "(", gRow.length, " gerechten \xB7 ", sRow.length, " producten)")), /* @__PURE__ */ React.createElement("table", { className:"kr-table", style: { ...SS.tbl, fontSize: 12, tableLayout:"fixed", width:"100%" } }, React.createElement("colgroup", null, React.createElement("col", { style:{ width:"34%" } }), React.createElement("col", { style:{ width:"22%" } }), React.createElement("col", { style:{ width:"44%" } })), /* @__PURE__ */ React.createElement("thead", null, /* @__PURE__ */ React.createElement("tr", null, /* @__PURE__ */ React.createElement("th", { style: SS.th }, /* @__PURE__ */ React.createElement("button", { style: thBtn, onClick: function() {
       toggleSort("naam");
     } }, "Naam", sortIcon("naam"))), /* @__PURE__ */ React.createElement("th", { style: SS.th }, /* @__PURE__ */ React.createElement("button", { style: thBtn, onClick: function() {
       toggleSort("ps");
@@ -18648,6 +18652,212 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
 })();
 </script>
 <!-- KR-ROL-END -->
+<!-- KR-ROLLEN-START v1 -->
+<script id="kr-rollen-js">
+(function(){
+  function init(){
+    if(!window.React||!window._supa){ setTimeout(init,100); return; }
+    var R=window.React.createElement;
+    var useState=window.React.useState;
+    var useEffect=window.React.useEffect;
+    var useMemo=window.React.useMemo;
+
+    var FN=window._supa.functionsUrl+'/beheer-gebruiker';
+    function callFn(payload){
+      return window._supa.auth.getSession().then(function(s){
+        var jwt=s&&s.data&&s.data.session&&s.data.session.access_token;
+        return fetch(FN,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+jwt,'apikey':window._supa.supabaseKey},body:JSON.stringify(payload)}).then(function(r){return r.json();});
+      });
+    }
+
+    // Cache rol-defaults globaal voor andere onderdelen die ze willen gebruiken
+    window._rolTabDefaultsCache=null;
+    window._laadRolTabDefaults=function(){
+      return callFn({actie:'rol_lijst'}).then(function(res){
+        if(res&&res.ok){ window._rolTabDefaultsCache=res; }
+        return res;
+      });
+    };
+
+    var ROL_LABELS={
+      beheerder:{naam:'Beheerder',uitleg:'Volledige toegang. Mag alles instellen, gebruikers beheren, rollen aanpassen.'},
+      sous_chef:{naam:'Sous-chef',uitleg:'Werk + analyse + meeste stamgegevens. Geen gebruikersbeheer of API-keys.'},
+      chef:{naam:'Chef',uitleg:'Werkschermen voor de keuken: boekingen, opzet, buffet, HACCP.'},
+      operationeel:{naam:'Operationeel',uitleg:'Operationele uitvoering, lezen + werkschermen aftekenen.'},
+      financieel:{naam:'Financieel',uitleg:'Alleen financiele cijfers + boekingen. Geen werkschermen.'},
+      alleen_lezen:{naam:'Alleen lezen',uitleg:'Read-only toegang voor stagiairs, externen, of meekijkers.'},
+    };
+
+    window._RollenScreen=function(){
+      var C=window._C||{night:'#234756',aqua:'#3FB8C4',red:'#E8202B',green:'#2E7D32',muted:'#78909C',orange:'#FF9800',light:'#F5F8FA'};
+
+      var s_data=useState(null); var data=s_data[0],setData=s_data[1];
+      var s_laden=useState(true); var laden=s_laden[0],setLaden=s_laden[1];
+      var s_fout=useState(''); var fout=s_fout[0],setFout=s_fout[1];
+      var s_open=useState({}); var open=s_open[0],setOpen=s_open[1];
+      var s_dirty=useState({}); var dirty=s_dirty[0],setDirty=s_dirty[1];
+      var s_meld=useState(''); var meld=s_meld[0],setMeld=s_meld[1];
+      var s_bezig=useState({}); var bezig=s_bezig[0],setBezig=s_bezig[1];
+
+      function laad(){
+        setLaden(true); setFout('');
+        callFn({actie:'rol_lijst'}).then(function(res){
+          setLaden(false);
+          if(res&&res.error){ setFout(res.error); return; }
+          setData(res);
+          window._rolTabDefaultsCache=res;
+          setDirty({});
+        }).catch(function(e){ setLaden(false); setFout(String(e)); });
+      }
+      useEffect(laad,[]);
+
+      var tabsPerGroep=useMemo(function(){
+        if(!data||!data.tabs) return {};
+        var g={};
+        data.tabs.forEach(function(t){ if(!t.admin_tab_key) return; if(!g[t.groep]) g[t.groep]=[]; g[t.groep].push(t); });
+        return g;
+      },[data]);
+
+      var rolMap=useMemo(function(){
+        if(!data||!data.rollen) return {};
+        var m={};
+        data.rollen.forEach(function(r){ m[r.rol]=(r.zichtbare_tabs||[]).slice(); });
+        return m;
+      },[data]);
+
+      var dirtyMap=dirty;
+      function huidigeTabsVoorRol(rol){
+        if(dirtyMap[rol]) return dirtyMap[rol];
+        return rolMap[rol]||[];
+      }
+
+      function toggleTab(rol,tabKey){
+        var nu=huidigeTabsVoorRol(rol).slice();
+        var i=nu.indexOf(tabKey);
+        if(i>=0) nu.splice(i,1); else nu.push(tabKey);
+        setDirty(Object.assign({},dirtyMap,(function(){var o={}; o[rol]=nu; return o;})()));
+      }
+
+      function alleAan(rol){
+        var alle=(data.tabs||[]).map(function(t){return t.admin_tab_key;});
+        setDirty(Object.assign({},dirtyMap,(function(){var o={}; o[rol]=alle; return o;})()));
+      }
+      function allesUit(rol){
+        setDirty(Object.assign({},dirtyMap,(function(){var o={}; o[rol]=['home']; return o;})()));
+      }
+      function reset(rol){
+        var nieuw=Object.assign({},dirtyMap);
+        delete nieuw[rol];
+        setDirty(nieuw);
+      }
+      function opslaan(rol){
+        var tabs=huidigeTabsVoorRol(rol);
+        setBezig(Object.assign({},bezig,(function(){var o={}; o[rol]=true; return o;})()));
+        callFn({actie:'rol_opslaan',rol:rol,zichtbare_tabs:tabs}).then(function(res){
+          setBezig(Object.assign({},bezig,(function(){var o={}; o[rol]=false; return o;})()));
+          if(res&&res.error){ setMeld('FOUT: '+res.error); return; }
+          setMeld('Opgeslagen voor '+rol);
+          setTimeout(function(){ setMeld(''); },2200);
+          laad();
+        });
+      }
+
+      if(laden) return R('div',{style:{padding:30,textAlign:'center',color:C.muted}},'Laden...');
+      if(fout) return R('div',{style:{padding:18,background:'#FFEBEE',color:C.red,border:'1px solid #FFCDD2',borderRadius:10,margin:14}},'Fout: '+fout);
+      if(!data) return null;
+
+      var rollen=data.rollen||[];
+
+      return R('div',null,
+        R('div',{style:{padding:'0 0 14px 0',color:C.muted,fontSize:13,lineHeight:1.5}},'Per rol bepalen welke schermen standaard zichtbaar zijn. Iedere rol heeft eigen instellingen. Wijzigingen gelden voor nieuwe gebruikers en bestaande gebruikers zonder eigen tab-overrides.'),
+        meld?R('div',{style:{padding:'10px 14px',background:meld.indexOf('FOUT')===0?'#FFEBEE':'#E8F5E9',color:meld.indexOf('FOUT')===0?C.red:C.green,borderRadius:8,marginBottom:14,fontWeight:600,fontSize:13}},meld):null,
+        R('div',{style:{display:'grid',gridTemplateColumns:'1fr',gap:14}},
+          rollen.map(function(rij){
+            var rol=rij.rol;
+            var label=ROL_LABELS[rol]||{naam:rol,uitleg:''};
+            var tabsNu=huidigeTabsVoorRol(rol);
+            var heeftWijziging=!!dirtyMap[rol];
+            var isOpen=!!open[rol];
+            return R('div',{key:rol,style:{background:'#fff',border:'1px solid '+(heeftWijziging?C.orange:'#E0E7EB'),borderRadius:12,overflow:'hidden',transition:'border-color 0.15s'}},
+              R('div',{style:{padding:'14px 18px',display:'flex',alignItems:'center',gap:12,cursor:'pointer',background:isOpen?'#F5F8FA':'#fff'},onClick:function(){ var n=Object.assign({},open); n[rol]=!isOpen; setOpen(n); }},
+                R('div',{style:{flex:1}},
+                  R('div',{style:{display:'flex',alignItems:'center',gap:10}},
+                    R('span',{style:{fontWeight:800,color:C.night,fontSize:15}},label.naam),
+                    R('span',{style:{fontSize:11,color:C.muted,fontFamily:'monospace'}},'('+rol+')'),
+                    heeftWijziging?R('span',{style:{display:'inline-flex',alignItems:'center',gap:4,padding:'2px 8px',background:'#FFF3E0',color:C.orange,borderRadius:100,fontSize:10,fontWeight:700}},'Niet opgeslagen'):null,
+                  ),
+                  R('div',{style:{fontSize:12,color:C.muted,marginTop:3}},label.uitleg),
+                  R('div',{style:{fontSize:11,color:C.muted,marginTop:4}},tabsNu.length+' van '+(data.tabs||[]).length+' schermen aan'),
+                ),
+                R('span',{style:{fontSize:18,color:C.muted,transition:'transform 0.15s',display:'inline-block',transform:isOpen?'rotate(90deg)':'rotate(0deg)'}},'▶'),
+              ),
+              isOpen?R('div',{style:{padding:'4px 18px 18px',borderTop:'1px solid #F0F0F0'}},
+                R('div',{style:{display:'flex',gap:8,padding:'12px 0',flexWrap:'wrap'}},
+                  R('button',{style:{padding:'6px 12px',background:'#fff',border:'1px solid '+C.aqua,color:C.aqua,borderRadius:6,cursor:'pointer',fontSize:12,fontWeight:600},onClick:function(){alleAan(rol);}},'Alles aan'),
+                  R('button',{style:{padding:'6px 12px',background:'#fff',border:'1px solid #BDBDBD',color:C.muted,borderRadius:6,cursor:'pointer',fontSize:12,fontWeight:600},onClick:function(){allesUit(rol);}},'Alleen Home'),
+                  heeftWijziging?R('button',{style:{padding:'6px 12px',background:'#fff',border:'1px solid '+C.muted,color:C.muted,borderRadius:6,cursor:'pointer',fontSize:12},onClick:function(){reset(rol);}},'Reset'):null,
+                  R('div',{style:{flex:1}}),
+                  heeftWijziging?R('button',{style:{padding:'7px 16px',background:C.green,border:'none',color:'#fff',borderRadius:6,cursor:'pointer',fontSize:13,fontWeight:700,opacity:bezig[rol]?0.6:1},disabled:!!bezig[rol],onClick:function(){opslaan(rol);}},bezig[rol]?'Opslaan...':'✓ Opslaan'):null,
+                ),
+                R('div',{style:{display:'grid',gridTemplateColumns:'repeat(auto-fill, minmax(220px, 1fr))',gap:10,marginTop:6}},
+                  Object.keys(tabsPerGroep).sort().map(function(groepNaam){
+                    var tabs=tabsPerGroep[groepNaam];
+                    return R('div',{key:groepNaam,style:{background:C.light,padding:'10px 12px',borderRadius:8,border:'1px solid '+'#E0E7EB'}},
+                      R('div',{style:{fontSize:11,fontWeight:800,color:C.night,letterSpacing:0.5,textTransform:'uppercase',marginBottom:8}},groepNaam),
+                      tabs.map(function(t){
+                        var aan=tabsNu.indexOf(t.admin_tab_key)>=0;
+                        var disabled=t.admin_tab_key==='home';
+                        return R('label',{key:t.admin_tab_key,style:{display:'flex',alignItems:'center',gap:8,padding:'5px 0',cursor:disabled?'not-allowed':'pointer',opacity:disabled?0.6:1}},
+                          R('input',{type:'checkbox',checked:aan,disabled:disabled,onChange:function(){ if(!disabled) toggleTab(rol,t.admin_tab_key); },style:{cursor:disabled?'not-allowed':'pointer'}}),
+                          R('span',{style:{fontSize:13,color:C.night}},t.weergave_naam),
+                        );
+                      }),
+                    );
+                  })
+                )
+              ):null,
+            );
+          })
+        )
+      );
+    };
+  }
+  init();
+})();
+</script>
+<!-- KR-ROLLEN-END -->
+<!-- KR-GEBR-WRAP-START v1 -->
+<script id="kr-gebr-wrap-js">
+(function(){
+  function init(){
+    if(!window.React||!window._GebruikersScreen){ setTimeout(init,150); return; }
+    var R=window.React.createElement;
+    var useState=window.React.useState;
+
+    var orig=window._GebruikersScreen;
+    window._GebruikersScreen=function(){
+      var C=window._C||{night:'#234756',aqua:'#3FB8C4',muted:'#78909C',light:'#F5F8FA'};
+      var s_tab=useState('gebruikers'); var tab=s_tab[0], setTab=s_tab[1];
+
+      function tabBtn(key,label){
+        var actief=tab===key;
+        return R('button',{onClick:function(){setTab(key);},style:{padding:'10px 20px',background:'transparent',border:'none',borderBottom:actief?('3px solid '+C.aqua):'3px solid transparent',color:actief?C.night:C.muted,fontWeight:actief?800:600,fontSize:14,cursor:'pointer',marginBottom:-1}},label);
+      }
+
+      return R('div',null,
+        R('div',{style:{display:'flex',gap:4,borderBottom:'1px solid #E0E7EB',marginBottom:18}},
+          tabBtn('gebruikers','👤 Gebruikers'),
+          tabBtn('rollen','🔑 Rollen'),
+        ),
+        tab==='gebruikers'?R(orig,null):null,
+        tab==='rollen'?(window._RollenScreen?R(window._RollenScreen,null):R('div',{style:{padding:30,color:C.muted}},'Rollen-module laadt...')):null
+      );
+    };
+  }
+  init();
+})();
+</script>
+<!-- KR-GEBR-WRAP-END -->
 <!-- KR-GEBRUIKERS-START v1: gebruikersbeheer scherm. 27 apr 2026 -->
 <script id="kr-gebruikers-js">
 (function() {
@@ -23993,8 +24203,10 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
       jaar: new Date().getFullYear(),
       modus: 'menu',        // 'menu' (default), 'product', 'pg'
       filter: 'fb',         // 'fb' / 'eten' / 'drinken' / 'alles'
+      outletFilter: 'beide', // 'beide' / 'west' / 'weesp'
+      productsoortFilter: [], // multi-select; leeg = alle
       limit: 25,
-      verberg_losse: false  // bij menu-modus: verberg niet-gekoppelde producten
+      verberg_losse: false
     });
     var s = st[0], setState = st[1];
     var update = function(patch) { setState(function(prev) { return Object.assign({}, prev, patch); }); };
@@ -24002,8 +24214,8 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
     React.useEffect(function() {
       update({ laden: true });
       Promise.all([
-        supa.from('v_fbv2_per_menu_gekoppeld').select('*').eq('jaar', s.jaar).eq('status', 'definitief').limit(300),
-        supa.from('v_fbv2_per_product').select('*').eq('jaar', s.jaar).eq('status', 'definitief').limit(300),
+        supa.from('v_fbv2_per_menu_met_productsoort').select('*').eq('jaar', s.jaar).eq('status', 'definitief').limit(500),
+        supa.from('v_fbv2_per_product').select('*').eq('jaar', s.jaar).eq('status', 'definitief').limit(500),
         supa.from('v_fbv2_per_productgroep').select('*').eq('jaar', s.jaar).eq('status', 'definitief').limit(50)
       ]).then(function(r) {
         update({ laden: false, menuData: r[0].data || [], prodData: r[1].data || [], pgData: r[2].data || [] });
@@ -24018,37 +24230,112 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
       return true;
     }
 
+    // Bedrag dat we tonen voor outlet-filter
+    function getOmzet(rij) {
+      if (s.outletFilter === 'west') return Number(rij.west_excl_btw) || 0;
+      if (s.outletFilter === 'weesp') return Number(rij.weesp_excl_btw) || 0;
+      return Number(rij.omzet_excl_btw) || 0;
+    }
+
+    // Beschikbare productsoorten (alleen in menu-modus)
+    var beschikbareProductsoorten = [];
+    if (s.modus === 'menu') {
+      var seen = {};
+      s.menuData.forEach(function(r) {
+        if (!filterFn(r)) return;
+        var ps = r.productsoort_naam || '__GEEN__';
+        if (!seen[ps]) {
+          seen[ps] = { naam: ps === '__GEEN__' ? '— Geen productsoort' : ps, key: ps, omzet: 0 };
+        }
+        seen[ps].omzet += getOmzet(r);
+      });
+      beschikbareProductsoorten = Object.values(seen).sort(function(a,b){ return b.omzet - a.omzet; });
+    }
+
     var bron = s.modus === 'menu' ? s.menuData : s.modus === 'product' ? s.prodData : s.pgData;
     var rijen = bron.filter(filterFn);
     if (s.modus === 'menu' && s.verberg_losse) {
       rijen = rijen.filter(function(r) { return r.groep_type === 'menu'; });
     }
-    rijen.sort(function(a,b) { return Number(b.omzet_excl_btw) - Number(a.omzet_excl_btw); });
+    if (s.modus === 'menu' && s.productsoortFilter.length > 0) {
+      rijen = rijen.filter(function(r) {
+        var ps = r.productsoort_naam || '__GEEN__';
+        return s.productsoortFilter.indexOf(ps) >= 0;
+      });
+    }
+    // Filter rijen waar outlet-omzet 0 is als we filteren
+    if (s.outletFilter !== 'beide') {
+      rijen = rijen.filter(function(r) { return getOmzet(r) > 0; });
+    }
+    rijen.sort(function(a,b) { return getOmzet(b) - getOmzet(a); });
     var rijenZichtbaar = rijen.slice(0, s.limit);
-    var totaal = rijen.reduce(function(t, x) { return t + Number(x.omzet_excl_btw); }, 0);
+    var totaal = rijen.reduce(function(t, x) { return t + getOmzet(x); }, 0);
 
-    // Stats voor menu-modus: hoeveel staat er nog ongekoppeld
+    // KPI-tegels: bedragen op huidige modus + filter (zonder outlet-filter zelf, dus altijd West/Weesp/Totaal)
+    var rijenVoorKpi = bron.filter(filterFn);
+    if (s.modus === 'menu' && s.verberg_losse) rijenVoorKpi = rijenVoorKpi.filter(function(r) { return r.groep_type === 'menu'; });
+    if (s.modus === 'menu' && s.productsoortFilter.length > 0) {
+      rijenVoorKpi = rijenVoorKpi.filter(function(r) {
+        var ps = r.productsoort_naam || '__GEEN__';
+        return s.productsoortFilter.indexOf(ps) >= 0;
+      });
+    }
+    var omzetWest = rijenVoorKpi.reduce(function(t, r) { return t + (Number(r.west_excl_btw) || 0); }, 0);
+    var omzetWeesp = rijenVoorKpi.reduce(function(t, r) { return t + (Number(r.weesp_excl_btw) || 0); }, 0);
+    var omzetTotaal = omzetWest + omzetWeesp;
+
+    function toggleProductsoort(key) {
+      var nu = s.productsoortFilter.slice();
+      var i = nu.indexOf(key);
+      if (i >= 0) nu.splice(i, 1); else nu.push(key);
+      update({ productsoortFilter: nu });
+    }
+
+    // KPI-tegel
+    function kpiTegel(label, bedrag, kleur, isActief, onClick) {
+      return React.createElement('button', {
+        onClick: onClick,
+        style: {
+          flex: 1, padding: '14px 18px',
+          background: isActief ? kleur : '#fff',
+          border: '2px solid ' + (isActief ? kleur : '#E0E7EB'),
+          borderRadius: 10, cursor: 'pointer', textAlign: 'left', minWidth: 140,
+          transition: 'all 0.15s'
+        }
+      },
+        React.createElement('div', { style: { fontSize: 11, color: isActief ? '#fff' : C.muted, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 4 } }, label),
+        React.createElement('div', { style: { fontSize: 22, fontWeight: 800, color: isActief ? '#fff' : C.night, lineHeight: 1.1 } }, fmtEur(bedrag))
+      );
+    }
+
+    // Niet-gekoppeld stat (alleen menu-modus)
     var nietGekoppeldStat = null;
     if (s.modus === 'menu') {
       var fbBron = s.menuData.filter(function(r) { return r.is_fb_productgroep; });
       var nietGekoppeldOmzet = fbBron.filter(function(r) { return r.groep_type === 'losse'; })
         .reduce(function(t, r) { return t + Number(r.omzet_excl_btw); }, 0);
       var totaalOmzet = fbBron.reduce(function(t, r) { return t + Number(r.omzet_excl_btw); }, 0);
-      nietGekoppeldStat = { 
-        bedrag: nietGekoppeldOmzet, 
-        totaal: totaalOmzet,
-        pct: totaalOmzet > 0 ? (nietGekoppeldOmzet / totaalOmzet * 100) : 0
-      };
+      nietGekoppeldStat = { bedrag: nietGekoppeldOmzet, totaal: totaalOmzet, pct: totaalOmzet > 0 ? (nietGekoppeldOmzet / totaalOmzet * 100) : 0 };
     }
 
     return React.createElement('div', null,
-      // Filter bar
-      React.createElement('div', { style: { display: 'flex', gap: 14, marginBottom: 14, alignItems: 'center', flexWrap: 'wrap' } },
+      // 3 KPI-tegels — outlet-filter is impliciet (klikken = filteren)
+      React.createElement('div', { style: { display: 'flex', gap: 10, marginBottom: 14, flexWrap: 'wrap' } },
+        kpiTegel('Omzet West',   omzetWest,   '#1976D2', s.outletFilter === 'west',  function() { update({ outletFilter: s.outletFilter === 'west' ? 'beide' : 'west' }); }),
+        kpiTegel('Omzet Weesp',  omzetWeesp,  '#388E3C', s.outletFilter === 'weesp', function() { update({ outletFilter: s.outletFilter === 'weesp' ? 'beide' : 'weesp' }); }),
+        kpiTegel('Omzet totaal', omzetTotaal, '#234756', s.outletFilter === 'beide', function() { update({ outletFilter: 'beide' }); })
+      ),
+      React.createElement('div', { style: { fontSize: 11, color: C.muted, marginBottom: 10, marginTop: -4 } },
+        s.outletFilter === 'beide' ? 'Klik een tegel om alleen West of alleen Weesp te tonen.' : 'Filter actief: alleen ' + (s.outletFilter === 'west' ? 'West' : 'Weesp') + '. Klik tegel "Omzet totaal" om filter weg te halen.'
+      ),
+
+      // Filter bar (modus + filter + jaar + verberg-losse)
+      React.createElement('div', { style: { display: 'flex', gap: 14, marginBottom: 10, alignItems: 'center', flexWrap: 'wrap' } },
         React.createElement('div', { style: { display: 'flex', gap: 6, alignItems: 'center' } },
           React.createElement('div', { style: { fontSize: 12, color: C.muted, fontWeight: 700 } }, 'Niveau:'),
-          React.createElement('button', { onClick: function() { update({ modus: 'menu' }); }, style: stijl.subTabBtn(s.modus === 'menu') }, '\ud83d\udcd6 Per menu'),
-          React.createElement('button', { onClick: function() { update({ modus: 'product' }); }, style: stijl.subTabBtn(s.modus === 'product') }, '\ud83c\udf7d Per product'),
-          React.createElement('button', { onClick: function() { update({ modus: 'pg' }); }, style: stijl.subTabBtn(s.modus === 'pg') }, '\ud83d\udcca Per productgroep')
+          React.createElement('button', { onClick: function() { update({ modus: 'menu', productsoortFilter: [] }); }, style: stijl.subTabBtn(s.modus === 'menu') }, '📖 Per menu'),
+          React.createElement('button', { onClick: function() { update({ modus: 'product', productsoortFilter: [] }); }, style: stijl.subTabBtn(s.modus === 'product') }, '🍽 Per product'),
+          React.createElement('button', { onClick: function() { update({ modus: 'pg', productsoortFilter: [] }); }, style: stijl.subTabBtn(s.modus === 'pg') }, '📊 Per productgroep')
         ),
         React.createElement('div', { style: { display: 'flex', gap: 6, alignItems: 'center' } },
           React.createElement('div', { style: { fontSize: 12, color: C.muted, fontWeight: 700 } }, 'Filter:'),
@@ -24072,81 +24359,111 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
         )
       ),
 
-      // Niet-gekoppeld waarschuwing in menu-modus
-      s.modus === 'menu' && nietGekoppeldStat && nietGekoppeldStat.bedrag > 0 && React.createElement('div', { 
-        style: { padding: '10px 14px', background: '#FFF8E1', borderLeft: '3px solid #F57C00', borderRadius: 6, marginBottom: 14, fontSize: 12, color: '#5D4037', lineHeight: 1.5 } 
+      // Productsoort-filter (alleen menu-modus, alleen tonen als er > 1 zijn)
+      s.modus === 'menu' && beschikbareProductsoorten.length > 1 && React.createElement('div', {
+        style: { display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap', alignItems: 'center', padding: '10px 12px', background: '#F5F8FA', borderRadius: 8, border: '1px solid #E0E7EB' }
       },
-        React.createElement('strong', null, '\u26a0\ufe0f ' + fmtEur(nietGekoppeldStat.bedrag) + ' (' + nietGekoppeldStat.pct.toFixed(1) + '%) niet gekoppeld aan een menu.'),
+        React.createElement('div', { style: { fontSize: 12, color: C.muted, fontWeight: 700, marginRight: 4 } }, 'Productsoort:'),
+        React.createElement('button', {
+          onClick: function() { update({ productsoortFilter: [] }); },
+          style: {
+            padding: '5px 11px', borderRadius: 100,
+            background: s.productsoortFilter.length === 0 ? C.aqua : '#fff',
+            color: s.productsoortFilter.length === 0 ? '#fff' : C.night,
+            border: '1px solid ' + (s.productsoortFilter.length === 0 ? C.aqua : '#E0E7EB'),
+            fontSize: 11, fontWeight: 700, cursor: 'pointer'
+          }
+        }, 'Alle'),
+        beschikbareProductsoorten.map(function(ps) {
+          var aan = s.productsoortFilter.indexOf(ps.key) >= 0;
+          return React.createElement('button', {
+            key: ps.key, onClick: function() { toggleProductsoort(ps.key); },
+            style: {
+              padding: '5px 11px', borderRadius: 100,
+              background: aan ? C.night : '#fff',
+              color: aan ? '#fff' : C.night,
+              border: '1px solid ' + (aan ? C.night : '#E0E7EB'),
+              fontSize: 11, fontWeight: 600, cursor: 'pointer'
+            }
+          }, ps.naam + ' · ' + fmtEur(ps.omzet));
+        }),
+        s.productsoortFilter.length > 0 && React.createElement('span', { style: { fontSize: 11, color: C.muted, marginLeft: 6 } }, '(' + s.productsoortFilter.length + ' geselecteerd)')
+      ),
+
+      // Niet-gekoppeld waarschuwing
+      s.modus === 'menu' && nietGekoppeldStat && nietGekoppeldStat.bedrag > 0 && React.createElement('div', {
+        style: { padding: '10px 14px', background: '#FFF8E1', borderLeft: '3px solid #F57C00', borderRadius: 6, marginBottom: 14, fontSize: 12, color: '#5D4037', lineHeight: 1.5 }
+      },
+        React.createElement('strong', null, '⚠️ ' + fmtEur(nietGekoppeldStat.bedrag) + ' (' + nietGekoppeldStat.pct.toFixed(1) + '%) niet gekoppeld aan een menu.'),
         ' Deze Recras-producten verschijnen los in het overzicht. Koppel ze in ',
-        React.createElement('strong', null, 'Stamgegevens \u2192 Recras-koppelingen'),
+        React.createElement('strong', null, 'Stamgegevens → Recras-koppelingen'),
         ' om ze te groeperen onder een menu.'
       ),
 
-      s.laden ? React.createElement('div', { style: stijl.card }, 'Laden\u2026') :
+      s.laden ? React.createElement('div', { style: stijl.card }, 'Laden…') :
       React.createElement('div', { style: stijl.card },
-        React.createElement('div', { style: stijl.cardHead }, 
-          'Top ' + (s.modus === 'menu' ? 'menu\u2019s' : s.modus === 'product' ? 'producten' : 'productgroepen') + 
-          ' \u2014 ' + s.jaar + ' (definitief, ' + rijen.length + ' rijen)'
+        React.createElement('div', { style: stijl.cardHead },
+          'Top ' + (s.modus === 'menu' ? 'menu’s' : s.modus === 'product' ? 'producten' : 'productgroepen') +
+          ' — ' + s.jaar + ' (definitief, ' + rijen.length + ' rijen' +
+          (s.outletFilter !== 'beide' ? ', alleen ' + (s.outletFilter === 'west' ? 'West' : 'Weesp') : '') +
+          ')'
         ),
-        React.createElement('div', { style: stijl.cardHint }, 
-          s.modus === 'menu' 
-            ? 'Gegroepeerd via stamgegevens-koppeling. \ud83d\udcd6 = menu, \u26a0\ufe0f = los Recras-product (niet gekoppeld).'
-            : 'Sortering: omzet hoog \u2192 laag. Toont top ' + s.limit + ' van ' + rijen.length + '.'
+        React.createElement('div', { style: stijl.cardHint },
+          s.modus === 'menu'
+            ? 'Gegroepeerd via stamgegevens-koppeling. 📖 = menu, ⚠️ = los Recras-product (niet gekoppeld).'
+            : 'Sortering: omzet hoog → laag. Toont top ' + s.limit + ' van ' + rijen.length + '.'
         ),
         React.createElement('div', { style: { overflowX: 'auto' } },
           React.createElement('table', { style: { width: '100%', borderCollapse: 'collapse', fontSize: 12 } },
             React.createElement('thead', null,
               React.createElement('tr', null,
                 React.createElement('th', { style: stijl.th }, '#'),
-                React.createElement('th', { style: stijl.th }, 
-                  s.modus === 'menu' ? 'Menu / Product' : s.modus === 'product' ? 'Product' : 'Productgroep'
-                ),
+                React.createElement('th', { style: stijl.th }, s.modus === 'menu' ? 'Menu / Product' : s.modus === 'product' ? 'Product' : 'Productgroep'),
                 s.modus === 'product' && React.createElement('th', { style: stijl.th }, 'Productgroep'),
-                s.modus === 'menu' && React.createElement('th', { style: stijl.th }, 'Productgroep'),
+                s.modus === 'menu' && React.createElement('th', { style: stijl.th }, 'Productsoort'),
                 React.createElement('th', { style: stijl.th }, 'Cat.'),
-                s.modus === 'menu' && React.createElement('th', { style: stijl.thR }, 'SKU\u2019s'),
+                s.modus === 'menu' && React.createElement('th', { style: stijl.thR }, 'SKU’s'),
                 React.createElement('th', { style: stijl.thR }, 'Regels'),
                 s.modus === 'menu' && React.createElement('th', { style: stijl.thR }, 'Verkocht'),
                 s.modus === 'product' && React.createElement('th', { style: stijl.thR }, 'Verkocht'),
                 s.modus === 'product' && React.createElement('th', { style: stijl.thR }, 'Gem. prijs'),
-                React.createElement('th', { style: stijl.thR }, 'West'),
-                React.createElement('th', { style: stijl.thR }, 'Weesp'),
-                React.createElement('th', { style: stijl.thR }, 'Totaal'),
+                s.outletFilter === 'beide' && React.createElement('th', { style: stijl.thR }, 'West'),
+                s.outletFilter === 'beide' && React.createElement('th', { style: stijl.thR }, 'Weesp'),
+                React.createElement('th', { style: stijl.thR }, s.outletFilter === 'beide' ? 'Totaal' : (s.outletFilter === 'west' ? 'West' : 'Weesp')),
                 React.createElement('th', { style: stijl.thR }, '%')
               )
             ),
             React.createElement('tbody', null,
               rijenZichtbaar.map(function(p, i) {
-                var pct = totaal > 0 ? (Number(p.omzet_excl_btw) / totaal * 100) : 0;
+                var bedrag = getOmzet(p);
+                var pct = totaal > 0 ? (bedrag / totaal * 100) : 0;
                 var catKleur = p.productgroep_categorie === 'eten' ? '#BF360C' : p.productgroep_categorie === 'drinken' ? '#0D47A1' : C.muted;
                 var rowKey = s.modus === 'menu' ? (p.groep_id + '-' + p.productgroep_naam) :
-                             s.modus === 'product' ? (p.product_id + '-' + p.productgroep_id) : 
+                             s.modus === 'product' ? (p.product_id + '-' + p.productgroep_id) :
                              (p.productgroep_id || i);
-                var displayNaam = s.modus === 'menu' ? p.groep_naam : 
-                                  s.modus === 'product' ? p.product_naam : 
-                                  p.productgroep_naam;
+                var displayNaam = s.modus === 'menu' ? p.groep_naam : s.modus === 'product' ? p.product_naam : p.productgroep_naam;
                 var isLosse = s.modus === 'menu' && p.groep_type === 'losse';
-                
+
                 return React.createElement('tr', { key: rowKey, style: isLosse ? { background: '#FFFBF0' } : null },
                   React.createElement('td', { style: Object.assign({}, stijl.td, { color: C.muted, fontSize: 11 }) }, i + 1),
-                  React.createElement('td', { style: Object.assign({}, stijl.tdM, { maxWidth: 320, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }), title: displayNaam }, 
-                    s.modus === 'menu' && (p.groep_type === 'menu' 
-                      ? React.createElement('span', { style: { fontSize: 10, marginRight: 6 }, title: 'Gekoppeld aan menu in stamgegevens' }, '\ud83d\udcd6')
-                      : React.createElement('span', { style: { fontSize: 10, marginRight: 6, color: '#F57C00' }, title: 'Niet gekoppeld aan een menu' }, '\u26a0\ufe0f')
+                  React.createElement('td', { style: Object.assign({}, stijl.tdM, { maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }), title: displayNaam },
+                    s.modus === 'menu' && (p.groep_type === 'menu'
+                      ? React.createElement('span', { style: { fontSize: 10, marginRight: 6 }, title: 'Gekoppeld aan menu in stamgegevens' }, '📖')
+                      : React.createElement('span', { style: { fontSize: 10, marginRight: 6, color: '#F57C00' }, title: 'Niet gekoppeld aan een menu' }, '⚠️')
                     ),
                     displayNaam
                   ),
                   s.modus === 'product' && React.createElement('td', { style: Object.assign({}, stijl.td, { color: C.muted, fontSize: 11 }) }, p.productgroep_naam),
-                  s.modus === 'menu' && React.createElement('td', { style: Object.assign({}, stijl.td, { color: C.muted, fontSize: 11 }) }, p.productgroep_naam),
-                  React.createElement('td', { style: Object.assign({}, stijl.td, { color: catKleur, fontSize: 11, fontWeight: 700 }) }, p.productgroep_categorie || '\u2013'),
+                  s.modus === 'menu' && React.createElement('td', { style: Object.assign({}, stijl.td, { color: C.muted, fontSize: 11 }) }, p.productsoort_naam || (p.groep_type === 'losse' ? '—' : '?')),
+                  React.createElement('td', { style: Object.assign({}, stijl.td, { color: catKleur, fontSize: 11, fontWeight: 700 }) }, p.productgroep_categorie || '–'),
                   s.modus === 'menu' && React.createElement('td', { style: Object.assign({}, stijl.tdR, { color: C.muted, fontSize: 11 }) }, p.aantal_skus),
                   React.createElement('td', { style: Object.assign({}, stijl.tdR, { color: C.muted }) }, p.aantal_regels),
-                  s.modus === 'menu' && React.createElement('td', { style: Object.assign({}, stijl.tdR, { color: C.muted }) }, p.totaal_aantal_verkocht || '\u2013'),
-                  s.modus === 'product' && React.createElement('td', { style: Object.assign({}, stijl.tdR, { color: C.muted }) }, p.totaal_aantal_verkocht || '\u2013'),
-                  s.modus === 'product' && React.createElement('td', { style: Object.assign({}, stijl.tdR, { color: C.muted }) }, p.gem_prijs_incl_btw ? '\u20ac' + Number(p.gem_prijs_incl_btw).toFixed(2) : '\u2013'),
-                  React.createElement('td', { style: stijl.tdR }, fmtEur(p.west_excl_btw)),
-                  React.createElement('td', { style: stijl.tdR }, fmtEur(p.weesp_excl_btw)),
-                  React.createElement('td', { style: Object.assign({}, stijl.tdR, { fontWeight: 700, color: C.night }) }, fmtEur(p.omzet_excl_btw)),
+                  s.modus === 'menu' && React.createElement('td', { style: Object.assign({}, stijl.tdR, { color: C.muted }) }, p.totaal_aantal_verkocht || '–'),
+                  s.modus === 'product' && React.createElement('td', { style: Object.assign({}, stijl.tdR, { color: C.muted }) }, p.totaal_aantal_verkocht || '–'),
+                  s.modus === 'product' && React.createElement('td', { style: Object.assign({}, stijl.tdR, { color: C.muted }) }, p.gem_prijs_incl_btw ? '€' + Number(p.gem_prijs_incl_btw).toFixed(2) : '–'),
+                  s.outletFilter === 'beide' && React.createElement('td', { style: stijl.tdR }, fmtEur(p.west_excl_btw)),
+                  s.outletFilter === 'beide' && React.createElement('td', { style: stijl.tdR }, fmtEur(p.weesp_excl_btw)),
+                  React.createElement('td', { style: Object.assign({}, stijl.tdR, { fontWeight: 700, color: C.night }) }, fmtEur(bedrag)),
                   React.createElement('td', { style: Object.assign({}, stijl.tdR, { color: C.muted, fontSize: 11 }) }, pct.toFixed(1) + '%')
                 );
               })
