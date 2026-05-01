@@ -4318,7 +4318,7 @@ function renderWasteModal() {
       var bg = sel ? '#234756' : 'white';
       var fg = sel ? 'white' : '#234756';
       var bd = sel ? '#234756' : '#D8E8EF';
-      html += '<button onclick="setWasteEenheid(' + JSON.stringify(o.key) + ')" style="padding:12px 6px;background:' + bg + ';color:' + fg + ';border:2px solid ' + bd + ';border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;text-align:center">' + esc(o.label) + '<div style="font-weight:400;font-size:10px;opacity:.85;margin-top:3px;line-height:1.3">' + esc(o.sub||'') + '</div></button>';
+      html += '<button onclick="setWasteEenheid(&quot;' + o.key + '&quot;)" style="padding:12px 6px;background:' + bg + ';color:' + fg + ';border:2px solid ' + bd + ';border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;text-align:center">' + esc(o.label) + '<div style="font-weight:400;font-size:10px;opacity:.85;margin-top:3px;line-height:1.3">' + esc(o.sub||'') + '</div></button>';
     });
     html += '</div>';
     // Live kosten-preview op basis van gekozen eenheid
