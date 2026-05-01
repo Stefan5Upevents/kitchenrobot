@@ -23608,16 +23608,17 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
   }
 
   // ============================================================
-  // TAB 5: PRODUCTEN (toggle: per productgroep / per product)
+  // TAB 5: PRODUCTEN (3 modi: per menu uit stamgegevens / per product / per productgroep)
   // ============================================================
   function TabProducten(props) {
     var supa = props.supa;
     var st = React.useState({
-      laden: true, prodData: [], pgData: [],
+      laden: true, menuData: [], prodData: [], pgData: [],
       jaar: new Date().getFullYear(),
-      modus: 'product',     // 'product' of 'pg'
+      modus: 'menu',        // 'menu' (default), 'product', 'pg'
       filter: 'fb',         // 'fb' / 'eten' / 'drinken' / 'alles'
-      limit: 25
+      limit: 25,
+      verberg_losse: false  // bij menu-modus: verberg niet-gekoppelde producten
     });
     var s = st[0], setState = st[1];
     var update = function(patch) { setState(function(prev) { return Object.assign({}, prev, patch); }); };
@@ -23625,10 +23626,11 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
     React.useEffect(function() {
       update({ laden: true });
       Promise.all([
-        supa.from('v_fbv2_per_product').select('*').eq('jaar', s.jaar).eq('status', 'definitief').limit(200),
+        supa.from('v_fbv2_per_menu_gekoppeld').select('*').eq('jaar', s.jaar).eq('status', 'definitief').limit(300),
+        supa.from('v_fbv2_per_product').select('*').eq('jaar', s.jaar).eq('status', 'definitief').limit(300),
         supa.from('v_fbv2_per_productgroep').select('*').eq('jaar', s.jaar).eq('status', 'definitief').limit(50)
       ]).then(function(r) {
-        update({ laden: false, prodData: r[0].data || [], pgData: r[1].data || [] });
+        update({ laden: false, menuData: r[0].data || [], prodData: r[1].data || [], pgData: r[2].data || [] });
       });
     }, [s.jaar]);
 
@@ -23640,16 +23642,35 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
       return true;
     }
 
-    var rijen = (s.modus === 'product' ? s.prodData : s.pgData).filter(filterFn);
+    var bron = s.modus === 'menu' ? s.menuData : s.modus === 'product' ? s.prodData : s.pgData;
+    var rijen = bron.filter(filterFn);
+    if (s.modus === 'menu' && s.verberg_losse) {
+      rijen = rijen.filter(function(r) { return r.groep_type === 'menu'; });
+    }
     rijen.sort(function(a,b) { return Number(b.omzet_excl_btw) - Number(a.omzet_excl_btw); });
     var rijenZichtbaar = rijen.slice(0, s.limit);
     var totaal = rijen.reduce(function(t, x) { return t + Number(x.omzet_excl_btw); }, 0);
+
+    // Stats voor menu-modus: hoeveel staat er nog ongekoppeld
+    var nietGekoppeldStat = null;
+    if (s.modus === 'menu') {
+      var fbBron = s.menuData.filter(function(r) { return r.is_fb_productgroep; });
+      var nietGekoppeldOmzet = fbBron.filter(function(r) { return r.groep_type === 'losse'; })
+        .reduce(function(t, r) { return t + Number(r.omzet_excl_btw); }, 0);
+      var totaalOmzet = fbBron.reduce(function(t, r) { return t + Number(r.omzet_excl_btw); }, 0);
+      nietGekoppeldStat = { 
+        bedrag: nietGekoppeldOmzet, 
+        totaal: totaalOmzet,
+        pct: totaalOmzet > 0 ? (nietGekoppeldOmzet / totaalOmzet * 100) : 0
+      };
+    }
 
     return React.createElement('div', null,
       // Filter bar
       React.createElement('div', { style: { display: 'flex', gap: 14, marginBottom: 14, alignItems: 'center', flexWrap: 'wrap' } },
         React.createElement('div', { style: { display: 'flex', gap: 6, alignItems: 'center' } },
           React.createElement('div', { style: { fontSize: 12, color: C.muted, fontWeight: 700 } }, 'Niveau:'),
+          React.createElement('button', { onClick: function() { update({ modus: 'menu' }); }, style: stijl.subTabBtn(s.modus === 'menu') }, '\ud83d\udcd6 Per menu'),
           React.createElement('button', { onClick: function() { update({ modus: 'product' }); }, style: stijl.subTabBtn(s.modus === 'product') }, '\ud83c\udf7d Per product'),
           React.createElement('button', { onClick: function() { update({ modus: 'pg' }); }, style: stijl.subTabBtn(s.modus === 'pg') }, '\ud83d\udcca Per productgroep')
         ),
@@ -23666,22 +23687,50 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
           [new Date().getFullYear(), new Date().getFullYear() - 1, new Date().getFullYear() - 2].map(function(j) {
             return React.createElement('button', { key: j, onClick: function() { update({ jaar: j }); }, style: stijl.subTabBtn(s.jaar === j) }, j);
           })
+        ),
+        s.modus === 'menu' && React.createElement('div', { style: { display: 'flex', gap: 6, alignItems: 'center' } },
+          React.createElement('label', { style: { fontSize: 12, color: C.muted, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' } },
+            React.createElement('input', { type: 'checkbox', checked: s.verberg_losse, onChange: function(e) { update({ verberg_losse: e.target.checked }); } }),
+            'Verberg ongekoppeld'
+          )
         )
+      ),
+
+      // Niet-gekoppeld waarschuwing in menu-modus
+      s.modus === 'menu' && nietGekoppeldStat && nietGekoppeldStat.bedrag > 0 && React.createElement('div', { 
+        style: { padding: '10px 14px', background: '#FFF8E1', borderLeft: '3px solid #F57C00', borderRadius: 6, marginBottom: 14, fontSize: 12, color: '#5D4037', lineHeight: 1.5 } 
+      },
+        React.createElement('strong', null, '\u26a0\ufe0f ' + fmtEur(nietGekoppeldStat.bedrag) + ' (' + nietGekoppeldStat.pct.toFixed(1) + '%) niet gekoppeld aan een menu.'),
+        ' Deze Recras-producten verschijnen los in het overzicht. Koppel ze in ',
+        React.createElement('strong', null, 'Stamgegevens \u2192 Recras-koppelingen'),
+        ' om ze te groeperen onder een menu.'
       ),
 
       s.laden ? React.createElement('div', { style: stijl.card }, 'Laden\u2026') :
       React.createElement('div', { style: stijl.card },
-        React.createElement('div', { style: stijl.cardHead }, 'Top ' + s.modus + ' \u2014 ' + s.jaar + ' (definitief, ' + rijen.length + ' rijen)'),
-        React.createElement('div', { style: stijl.cardHint }, 'Sortering: omzet hoog \u2192 laag. Toont top ' + s.limit + ' van ' + rijen.length + '.'),
+        React.createElement('div', { style: stijl.cardHead }, 
+          'Top ' + (s.modus === 'menu' ? 'menu\u2019s' : s.modus === 'product' ? 'producten' : 'productgroepen') + 
+          ' \u2014 ' + s.jaar + ' (definitief, ' + rijen.length + ' rijen)'
+        ),
+        React.createElement('div', { style: stijl.cardHint }, 
+          s.modus === 'menu' 
+            ? 'Gegroepeerd via stamgegevens-koppeling. \ud83d\udcd6 = menu, \u26a0\ufe0f = los Recras-product (niet gekoppeld).'
+            : 'Sortering: omzet hoog \u2192 laag. Toont top ' + s.limit + ' van ' + rijen.length + '.'
+        ),
         React.createElement('div', { style: { overflowX: 'auto' } },
           React.createElement('table', { style: { width: '100%', borderCollapse: 'collapse', fontSize: 12 } },
             React.createElement('thead', null,
               React.createElement('tr', null,
                 React.createElement('th', { style: stijl.th }, '#'),
-                React.createElement('th', { style: stijl.th }, s.modus === 'product' ? 'Product' : 'Productgroep'),
+                React.createElement('th', { style: stijl.th }, 
+                  s.modus === 'menu' ? 'Menu / Product' : s.modus === 'product' ? 'Product' : 'Productgroep'
+                ),
                 s.modus === 'product' && React.createElement('th', { style: stijl.th }, 'Productgroep'),
+                s.modus === 'menu' && React.createElement('th', { style: stijl.th }, 'Productgroep'),
                 React.createElement('th', { style: stijl.th }, 'Cat.'),
-                React.createElement('th', { style: stijl.thR }, 'Aantal regels'),
+                s.modus === 'menu' && React.createElement('th', { style: stijl.thR }, 'SKU\u2019s'),
+                React.createElement('th', { style: stijl.thR }, 'Regels'),
+                s.modus === 'menu' && React.createElement('th', { style: stijl.thR }, 'Verkocht'),
                 s.modus === 'product' && React.createElement('th', { style: stijl.thR }, 'Verkocht'),
                 s.modus === 'product' && React.createElement('th', { style: stijl.thR }, 'Gem. prijs'),
                 React.createElement('th', { style: stijl.thR }, 'West'),
@@ -23694,13 +23743,29 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
               rijenZichtbaar.map(function(p, i) {
                 var pct = totaal > 0 ? (Number(p.omzet_excl_btw) / totaal * 100) : 0;
                 var catKleur = p.productgroep_categorie === 'eten' ? '#BF360C' : p.productgroep_categorie === 'drinken' ? '#0D47A1' : C.muted;
-                var rowKey = s.modus === 'product' ? (p.product_id + '-' + p.productgroep_id) : (p.productgroep_id || i);
-                return React.createElement('tr', { key: rowKey },
+                var rowKey = s.modus === 'menu' ? (p.groep_id + '-' + p.productgroep_naam) :
+                             s.modus === 'product' ? (p.product_id + '-' + p.productgroep_id) : 
+                             (p.productgroep_id || i);
+                var displayNaam = s.modus === 'menu' ? p.groep_naam : 
+                                  s.modus === 'product' ? p.product_naam : 
+                                  p.productgroep_naam;
+                var isLosse = s.modus === 'menu' && p.groep_type === 'losse';
+                
+                return React.createElement('tr', { key: rowKey, style: isLosse ? { background: '#FFFBF0' } : null },
                   React.createElement('td', { style: Object.assign({}, stijl.td, { color: C.muted, fontSize: 11 }) }, i + 1),
-                  React.createElement('td', { style: Object.assign({}, stijl.tdM, { maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }), title: s.modus === 'product' ? p.product_naam : p.productgroep_naam }, s.modus === 'product' ? p.product_naam : p.productgroep_naam),
+                  React.createElement('td', { style: Object.assign({}, stijl.tdM, { maxWidth: 320, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }), title: displayNaam }, 
+                    s.modus === 'menu' && (p.groep_type === 'menu' 
+                      ? React.createElement('span', { style: { fontSize: 10, marginRight: 6 }, title: 'Gekoppeld aan menu in stamgegevens' }, '\ud83d\udcd6')
+                      : React.createElement('span', { style: { fontSize: 10, marginRight: 6, color: '#F57C00' }, title: 'Niet gekoppeld aan een menu' }, '\u26a0\ufe0f')
+                    ),
+                    displayNaam
+                  ),
                   s.modus === 'product' && React.createElement('td', { style: Object.assign({}, stijl.td, { color: C.muted, fontSize: 11 }) }, p.productgroep_naam),
+                  s.modus === 'menu' && React.createElement('td', { style: Object.assign({}, stijl.td, { color: C.muted, fontSize: 11 }) }, p.productgroep_naam),
                   React.createElement('td', { style: Object.assign({}, stijl.td, { color: catKleur, fontSize: 11, fontWeight: 700 }) }, p.productgroep_categorie || '\u2013'),
+                  s.modus === 'menu' && React.createElement('td', { style: Object.assign({}, stijl.tdR, { color: C.muted, fontSize: 11 }) }, p.aantal_skus),
                   React.createElement('td', { style: Object.assign({}, stijl.tdR, { color: C.muted }) }, p.aantal_regels),
+                  s.modus === 'menu' && React.createElement('td', { style: Object.assign({}, stijl.tdR, { color: C.muted }) }, p.totaal_aantal_verkocht || '\u2013'),
                   s.modus === 'product' && React.createElement('td', { style: Object.assign({}, stijl.tdR, { color: C.muted }) }, p.totaal_aantal_verkocht || '\u2013'),
                   s.modus === 'product' && React.createElement('td', { style: Object.assign({}, stijl.tdR, { color: C.muted }) }, p.gem_prijs_incl_btw ? '\u20ac' + Number(p.gem_prijs_incl_btw).toFixed(2) : '\u2013'),
                   React.createElement('td', { style: stijl.tdR }, fmtEur(p.west_excl_btw)),
