@@ -10048,7 +10048,8 @@ function FinancieelScreen({ setSc }) {
           React.createElement(TabBtn, { id:'productsoort', label:'\ud83d\udccb Categorie\u00ebn' }),
           React.createElement(TabBtn, { id:'vergelijk', label:'\ud83c\udfdb\ufe0f West vs Weesp' }),
           React.createElement(TabBtn, { id:'jaarvcmp', label:'\ud83d\udcc5 Jaarvergelijking' }),
-          React.createElement(TabBtn, { id:'prognose', label:'\ud83d\udcc8 Prognose & Aandeel' })
+          React.createElement(TabBtn, { id:'prognose', label:'\ud83d\udcc8 Prognose & Aandeel' }),
+          React.createElement(TabBtn, { id:'reconciliatie', label:'\u2696\ufe0f Recras-check' })
         ),
         tab === 'overzicht' && React.createElement('div', { style:{display:'flex',gap:6} },
           ['week','maand'].map(function(p) {
@@ -10555,6 +10556,8 @@ function FinancieelScreen({ setSc }) {
           )
         );
       })(),
+
+      tab === 'reconciliatie' && window._ReconciliatieTab && React.createElement(window._ReconciliatieTab, { supa: supa, C: C, jaar: jaar }),
 
 
 
@@ -23904,5 +23907,263 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
 })();
 </script>
 <!-- KR-FB-FORECAST-TRANSPARANT-END -->
+
+<!-- KR-RECONCILIATIE-START v1: Reconciliatie Recras-export vs KitchenRobot, geintegreerd in FinancieelScreen (1 mei 2026) -->
+<script>
+(function(){
+  var React = window.React;
+  if (!React) { console.warn('[KR-RECONCILIATIE] React niet geladen'); return; }
+
+  var MAANDEN = ['','januari','februari','maart','april','mei','juni','juli','augustus','september','oktober','november','december'];
+
+  function fmtEur(n) {
+    if (n === null || n === undefined || n === '') return '–';
+    var num = Number(n);
+    if (isNaN(num)) return '–';
+    return '\u20ac' + num.toLocaleString('nl-NL', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  }
+  function fmtPct(n) {
+    if (n === null || n === undefined) return '–';
+    var num = Number(n);
+    if (isNaN(num)) return '–';
+    return (num > 0 ? '+' : '') + num.toFixed(1) + '%';
+  }
+  function statusLabel(s) {
+    return ({
+      'exact': '\u2713 exact',
+      'binnen_1pct': 'binnen 1%',
+      'binnen_5pct': 'binnen 5%',
+      'afwijkend': '\u26a0 afwijkend',
+      'geen_referentie': 'geen ref',
+      'geen_kr_data': 'geen data'
+    })[s] || s;
+  }
+  function statusKleur(s) {
+    return ({
+      'exact':         { bg: '#E8F5E9', fg: '#1B5E20' },
+      'binnen_1pct':   { bg: '#E3F2FD', fg: '#0D47A1' },
+      'binnen_5pct':   { bg: '#FFF8E1', fg: '#E65100' },
+      'afwijkend':     { bg: '#FFEBEE', fg: '#B71C1C' },
+      'geen_referentie': { bg: '#F0F4F6', fg: '#78909C' },
+      'geen_kr_data':  { bg: '#F0F4F6', fg: '#78909C' }
+    })[s] || { bg: '#F0F4F6', fg: '#78909C' };
+  }
+
+  function ReconciliatieTab(props) {
+    var supa = props.supa || window._supa;
+    var C = props.C || { night:'#234756', aqua:'#3FB8C4', hot:'#E8202B', green:'#2E7D32', muted:'#78909C', white:'#fff' };
+    var jaar = props.jaar || new Date().getFullYear();
+
+    var st = React.useState({ laden: true, fout: null, rec: [], forecast: [], syncStatus: null });
+    var state = st[0], setState = st[1];
+
+    React.useEffect(function() {
+      if (!supa) { setState({ laden: false, fout: 'Supabase client niet beschikbaar', rec: [], forecast: [], syncStatus: null }); return; }
+      setState(function(s){ return Object.assign({}, s, { laden: true, fout: null }); });
+      Promise.all([
+        supa.from('v_reconciliatie_recras').select('*').eq('jaar', jaar).order('maand_nr'),
+        supa.from('v_fb_forecast').select('*').order('maand_nr'),
+        supa.from('recras_boekingen').select('id', { count: 'exact', head: true }).gte('datum', jaar + '-01-01').lte('datum', jaar + '-12-31'),
+        supa.from('recras_boekingen').select('id', { count: 'exact', head: true }).gte('datum', jaar + '-01-01').lte('datum', jaar + '-12-31').not('kosten_synced_at', 'is', null),
+        supa.from('recras_boekingen').select('id', { count: 'exact', head: true }).gte('datum', jaar + '-01-01').lte('datum', jaar + '-12-31').eq('status', 'definitief'),
+        supa.from('recras_boekingen').select('id', { count: 'exact', head: true }).gte('datum', jaar + '-01-01').lte('datum', jaar + '-12-31').eq('status', 'optie')
+      ]).then(function(results) {
+        var rec = results[0].data || [];
+        var fc = results[1].data || [];
+        var totaal = results[2].count || 0;
+        var metKosten = results[3].count || 0;
+        var defC = results[4].count || 0;
+        var optC = results[5].count || 0;
+        setState({
+          laden: false, fout: null,
+          rec: rec, forecast: fc,
+          syncStatus: {
+            totaal: totaal,
+            metKosten: metKosten,
+            coverage: totaal > 0 ? Math.round(metKosten / totaal * 1000) / 10 : 0,
+            def: defC,
+            opt: optC
+          }
+        });
+      }).catch(function(e) {
+        setState({ laden: false, fout: e.message || 'Fout bij laden', rec: [], forecast: [], syncStatus: null });
+      });
+    }, [supa, jaar]);
+
+    if (state.laden) {
+      return React.createElement('div', { style: { background: '#fff', borderRadius: 10, padding: 40, textAlign: 'center', color: C.muted } }, 'Reconciliatie laden\u2026');
+    }
+    if (state.fout) {
+      return React.createElement('div', { style: { background: '#FFEBEE', borderRadius: 10, padding: 20, color: C.hot } }, 'Fout: ' + state.fout);
+    }
+
+    var recDef = state.rec.filter(function(r) { return r.scope === 'def'; });
+    var recDefOpt = state.rec.filter(function(r) { return r.scope === 'def_optie'; });
+
+    function totaalKolom(rs, key) {
+      return rs.reduce(function(s, r) { return s + Number(r[key] || 0); }, 0);
+    }
+    var totRecDef = totaalKolom(recDef, 'recras_excl_btw');
+    var totKrDef = totaalKolom(recDef, 'kr_excl_btw');
+    var totRecDefOpt = totaalKolom(recDefOpt, 'recras_excl_btw');
+    var totKrDefOpt = totaalKolom(recDefOpt, 'kr_excl_btw');
+    var exactCount = recDef.filter(function(r){ return r.status === 'exact'; }).length;
+    var totaalDef = recDef.length;
+
+    var kpiStyle = { background: '#fff', borderRadius: 10, padding: 16 };
+    var lblStyle = { fontSize: 11, color: C.muted, fontWeight: 700, letterSpacing: 0.5, marginBottom: 6, textTransform: 'uppercase' };
+    var valStyle = { fontSize: 22, fontWeight: 900, color: C.night };
+    var subStyle = { fontSize: 11, color: C.muted, marginTop: 4 };
+
+    function renderKPIs() {
+      var ss = state.syncStatus || {};
+      return React.createElement('div', { style: { display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', marginBottom: 14 } },
+        React.createElement('div', { style: kpiStyle },
+          React.createElement('div', { style: lblStyle }, 'Coverage'),
+          React.createElement('div', { style: valStyle }, ss.coverage + '%'),
+          React.createElement('div', { style: subStyle }, ss.metKosten + '/' + ss.totaal + ' boekingen ' + jaar)
+        ),
+        React.createElement('div', { style: kpiStyle },
+          React.createElement('div', { style: lblStyle }, 'Boekingen'),
+          React.createElement('div', { style: valStyle }, ss.totaal),
+          React.createElement('div', { style: subStyle }, ss.def + ' def \u00b7 ' + ss.opt + ' optie')
+        ),
+        React.createElement('div', { style: kpiStyle },
+          React.createElement('div', { style: lblStyle }, 'Recras totaal def'),
+          React.createElement('div', { style: valStyle }, fmtEur(totRecDef)),
+          React.createElement('div', { style: subStyle }, 'heel jaar excl btw')
+        ),
+        React.createElement('div', { style: kpiStyle },
+          React.createElement('div', { style: lblStyle }, 'KR totaal def'),
+          React.createElement('div', { style: valStyle }, fmtEur(totKrDef)),
+          React.createElement('div', { style: subStyle, } , 'verschil ' + fmtEur(totKrDef - totRecDef) + ' (' + (totRecDef ? ((totKrDef - totRecDef) / totRecDef * 100).toFixed(1) : '0') + '%)')
+        ),
+        React.createElement('div', { style: kpiStyle },
+          React.createElement('div', { style: lblStyle }, 'Match-status'),
+          React.createElement('div', { style: valStyle }, exactCount + '/' + totaalDef),
+          React.createElement('div', { style: subStyle }, 'maanden exact')
+        )
+      );
+    }
+
+    function renderToelichting() {
+      return React.createElement('div', { style: { background: '#E3F2FD', border: '1px solid #BBDEFB', borderRadius: 8, padding: '12px 16px', fontSize: 12, color: '#0D47A1', marginBottom: 14 } },
+        React.createElement('strong', null, 'Wat is dit? '),
+        'Vergelijking van de Recras-export (jouw \"Excel met totalen\") tegen de werkelijke boekings-totalen die KitchenRobot uit de Recras kosten-API haalt. Voor toekomstige maanden moet dit 100% matchen. Voor verleden maanden kan een afwijking zijn doordat boekingen na de export zijn aangepast of geannuleerd.'
+      );
+    }
+
+    function renderTabel(titel, hint, rs, totRec, totKr) {
+      return React.createElement('div', { style: { background: '#fff', borderRadius: 10, padding: 16, marginBottom: 14 } },
+        React.createElement('div', { style: { fontWeight: 800, fontSize: 14, color: C.night, marginBottom: 4 } }, titel),
+        hint && React.createElement('div', { style: { fontSize: 11, color: C.muted, marginBottom: 12 } }, hint),
+        React.createElement('div', { style: { overflowX: 'auto' } },
+          React.createElement('table', { className: 'kr-table', style: { width: '100%', borderCollapse: 'collapse', fontSize: 12 } },
+            React.createElement('thead', null,
+              React.createElement('tr', { style: { background: '#F0F4F6' } },
+                ['Maand','Recras (\u20ac)','KitchenRobot (\u20ac)','Verschil (\u20ac)','Verschil (%)','Status'].map(function(h, i) {
+                  return React.createElement('th', { key: i, style: { padding: '8px 10px', textAlign: i > 0 && i < 5 ? 'right' : 'left', fontWeight: 700, color: C.muted, fontSize: 11, letterSpacing: 0.3 } }, h);
+                })
+              )
+            ),
+            React.createElement('tbody', null,
+              rs.map(function(r) {
+                var vEur = Number(r.verschil_eur || 0);
+                var vCol = vEur > 0 ? '#2E7D32' : vEur < 0 ? '#C62828' : C.muted;
+                var sk = statusKleur(r.status);
+                return React.createElement('tr', { key: r.maand_nr, style: { borderBottom: '1px solid #F0F4F6' } },
+                  React.createElement('td', { style: { padding: '8px 10px', fontWeight: 700, color: C.night, textTransform: 'capitalize' } }, MAANDEN[r.maand_nr]),
+                  React.createElement('td', { style: { padding: '8px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' } }, fmtEur(r.recras_excl_btw)),
+                  React.createElement('td', { style: { padding: '8px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' } }, fmtEur(r.kr_excl_btw)),
+                  React.createElement('td', { style: { padding: '8px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: vCol, fontWeight: vEur ? 700 : 400 } }, vEur ? fmtEur(vEur) : '\u2013'),
+                  React.createElement('td', { style: { padding: '8px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: vCol, fontWeight: vEur ? 700 : 400 } }, fmtPct(r.verschil_pct)),
+                  React.createElement('td', { style: { padding: '8px 10px' } },
+                    React.createElement('span', { style: { display: 'inline-block', padding: '3px 8px', borderRadius: 100, fontSize: 11, fontWeight: 700, background: sk.bg, color: sk.fg } }, statusLabel(r.status))
+                  )
+                );
+              }).concat([
+                React.createElement('tr', { key: 'tot', style: { background: '#FAFAFA', borderTop: '2px solid #D0D9E0', fontWeight: 900 } },
+                  React.createElement('td', { style: { padding: '10px', fontWeight: 900, color: C.night } }, 'Totaal jaar'),
+                  React.createElement('td', { style: { padding: '10px', textAlign: 'right' } }, fmtEur(totRec)),
+                  React.createElement('td', { style: { padding: '10px', textAlign: 'right' } }, fmtEur(totKr)),
+                  React.createElement('td', { style: { padding: '10px', textAlign: 'right', color: (totKr - totRec) >= 0 ? '#2E7D32' : '#C62828' } }, fmtEur(totKr - totRec)),
+                  React.createElement('td', { style: { padding: '10px', textAlign: 'right' } }, totRec ? ((totKr - totRec) / totRec * 100).toFixed(2) + '%' : '\u2013'),
+                  React.createElement('td', null)
+                )
+              ])
+            )
+          )
+        )
+      );
+    }
+
+    function renderForecast() {
+      if (!state.forecast || state.forecast.length === 0) return null;
+      var totVerw = state.forecast.reduce(function(s, f) { return s + Number(f.forecast_verwacht || 0); }, 0);
+      return React.createElement('div', { style: { background: '#fff', borderRadius: 10, padding: 16, marginBottom: 14 } },
+        React.createElement('div', { style: { fontWeight: 800, fontSize: 14, color: C.night, marginBottom: 4 } }, '\ud83c\udf7d F&B Forecast (eten + drinken)'),
+        React.createElement('div', { style: { fontSize: 11, color: C.muted, marginBottom: 12 } }, 'Boekingswaarde excl btw \u00b7 3 scenarios \u00b7 verleden maanden = werkelijke def-omzet'),
+        React.createElement('div', { style: { overflowX: 'auto' } },
+          React.createElement('table', { className: 'kr-table', style: { width: '100%', borderCollapse: 'collapse', fontSize: 12 } },
+            React.createElement('thead', null,
+              React.createElement('tr', { style: { background: '#F0F4F6' } },
+                ['Maand','2024','2025','def 2026','opt 2026','conservatief','verwacht','optimistisch','Bron'].map(function(h, i) {
+                  return React.createElement('th', { key: i, style: { padding: '8px 8px', textAlign: i > 0 && i < 8 ? 'right' : 'left', fontWeight: 700, color: C.muted, fontSize: 11 } }, h);
+                })
+              )
+            ),
+            React.createElement('tbody', null,
+              state.forecast.map(function(f) {
+                var bronKleur = ({
+                  'gerealiseerd': { bg: '#E8F5E9', fg: '#1B5E20' },
+                  'boekingen':    { bg: '#E3F2FD', fg: '#0D47A1' },
+                  'historie':     { bg: '#F3E8FF', fg: '#6B21A8' }
+                })[f.dominante_bron] || { bg: '#F0F4F6', fg: '#78909C' };
+                return React.createElement('tr', { key: f.maand_nr, style: { borderBottom: '1px solid #F0F4F6' } },
+                  React.createElement('td', { style: { padding: '8px', fontWeight: 700, color: C.night, textTransform: 'capitalize' } }, MAANDEN[f.maand_nr]),
+                  React.createElement('td', { style: { padding: '8px', textAlign: 'right', color: '#9E9E9E', fontVariantNumeric: 'tabular-nums' } }, fmtEur(f.hist_fb_2024)),
+                  React.createElement('td', { style: { padding: '8px', textAlign: 'right', color: '#9E9E9E', fontVariantNumeric: 'tabular-nums' } }, fmtEur(f.hist_fb_2025)),
+                  React.createElement('td', { style: { padding: '8px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' } }, fmtEur(f.fb_definitief)),
+                  React.createElement('td', { style: { padding: '8px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' } }, fmtEur(f.fb_optie)),
+                  React.createElement('td', { style: { padding: '8px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' } }, fmtEur(f.forecast_conservatief)),
+                  React.createElement('td', { style: { padding: '8px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 700, color: C.night } }, fmtEur(f.forecast_verwacht)),
+                  React.createElement('td', { style: { padding: '8px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' } }, fmtEur(f.forecast_optimistisch)),
+                  React.createElement('td', { style: { padding: '8px' } },
+                    React.createElement('span', { style: { display: 'inline-block', padding: '2px 7px', borderRadius: 100, fontSize: 10, fontWeight: 700, background: bronKleur.bg, color: bronKleur.fg } }, f.dominante_bron)
+                  )
+                );
+              }).concat([
+                React.createElement('tr', { key: 'tot', style: { background: '#FAFAFA', borderTop: '2px solid #D0D9E0', fontWeight: 900 } },
+                  React.createElement('td', { style: { padding: '10px', fontWeight: 900, color: C.night } }, 'Jaar verwacht'),
+                  React.createElement('td', { colSpan: 5 }),
+                  React.createElement('td', { style: { padding: '10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontSize: 13, fontWeight: 900, color: C.night } }, fmtEur(totVerw)),
+                  React.createElement('td', { colSpan: 2 })
+                )
+              ])
+            )
+          )
+        ),
+        React.createElement('div', { style: { fontSize: 11, color: C.muted, marginTop: 10 } },
+          React.createElement('strong', null, 'Bron-uitleg: '),
+          React.createElement('span', { style: { display: 'inline-block', padding: '1px 6px', borderRadius: 100, fontSize: 10, background: '#E8F5E9', color: '#1B5E20', marginRight: 4 } }, 'gerealiseerd'), ' = werkelijke def-omzet \u00b7 ',
+          React.createElement('span', { style: { display: 'inline-block', padding: '1px 6px', borderRadius: 100, fontSize: 10, background: '#E3F2FD', color: '#0D47A1', margin: '0 4px' } }, 'boekingen'), ' = pipeline \u00d7 factor \u00b7 ',
+          React.createElement('span', { style: { display: 'inline-block', padding: '1px 6px', borderRadius: 100, fontSize: 10, background: '#F3E8FF', color: '#6B21A8', marginLeft: 4 } }, 'historie'), ' = avg/min/max 24+25 (fallback)'
+        )
+      );
+    }
+
+    return React.createElement('div', null,
+      renderKPIs(),
+      renderToelichting(),
+      renderTabel('Reconciliatie definitief', 'Alleen status = definitief', recDef, totRecDef, totKrDef),
+      renderTabel('Reconciliatie definitief + optie', 'Volledig pipeline', recDefOpt, totRecDefOpt, totKrDefOpt),
+      renderForecast()
+    );
+  }
+
+  window._ReconciliatieTab = ReconciliatieTab;
+})();
+</script>
+<!-- KR-RECONCILIATIE-END -->
 
 </body></html>
