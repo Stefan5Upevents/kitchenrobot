@@ -2925,7 +2925,7 @@ document.addEventListener('click', function(e) {
         if (soort === 'meldingen') { state.modal = { type: 'meldingen' }; render(); return; }
         if (soort === 'opzet') { openOpzetModal(); return; }
         if (soort === 'waste') {
-          state.modal = { type: 'waste', stap: 1, niveau: 'sligro', zoek: '', resultaten: [], gekozen: null, hoeveelheid: '', reden_id: null, opmerking: '', foto_base64: null, redenen: [], recent: [], bezig: false };
+          state.modal = { type: 'waste', stap: 1, niveau: 'gerecht', zoek: '', resultaten: [], gekozen: null, hoeveelheid: '', eenheid_keuze: null, reden_id: null, opmerking: '', foto_base64: null, redenen: [], recent: [], bezig: false };
           render();
           // Laad redenen + recente meldingen async
           laadWasteRedenen();
@@ -4173,6 +4173,18 @@ function kiesWasteProduct(p) {
   if (!state.modal || state.modal.type !== 'waste') return;
   state.modal.gekozen = p;
   state.modal.stap = 2;
+  // Default eenheid = eerste van backend's beschikbare_eenheden
+  if (p.beschikbare_eenheden && p.beschikbare_eenheden.length > 0) {
+    state.modal.eenheid_keuze = p.beschikbare_eenheden[0].key;
+  } else {
+    state.modal.eenheid_keuze = state.modal.niveau === 'gerecht' ? 'portie' : 'verpakking';
+  }
+  render();
+}
+
+function setWasteEenheid(key) {
+  if (!state.modal || state.modal.type !== 'waste') return;
+  state.modal.eenheid_keuze = key;
   render();
 }
 
@@ -4207,7 +4219,7 @@ async function verzendWaste() {
       product_id: m.gekozen.id,
       product_naam: m.gekozen.naam,
       hoeveelheid: parseFloat(m.hoeveelheid),
-      eenheid: m.gekozen.eenheid || (m.niveau === 'sligro' ? 'stuks' : 'portie'),
+      eenheid: m.eenheid_keuze || (m.niveau === 'sligro' ? 'verpakking' : 'portie'),
       reden_id: m.reden_id,
       opmerking: m.opmerking || null,
       foto_base64: m.foto_base64 || null,
@@ -4243,6 +4255,7 @@ function nieuweWasteMelding() {
   state.modal.foto_base64 = null;
   state.modal.zoek = '';
   state.modal.resultaten = [];
+  state.modal.eenheid_keuze = null;
   render();
 }
 
@@ -4257,8 +4270,8 @@ function renderWasteModal() {
   if (stap === 1) {
     // KIES PRODUCT
     html += '<div style="display:flex;gap:6px;margin-bottom:12px">';
-    html += '<button class="atm-tab' + (m.niveau==='sligro'?' actief':'') + '" onclick="kiesWasteNiveau(\'sligro\')">🛒 Sligro-product</button>';
     html += '<button class="atm-tab' + (m.niveau==='gerecht'?' actief':'') + '" onclick="kiesWasteNiveau(\'gerecht\')">🍽️ Gerecht</button>';
+    html += '<button class="atm-tab' + (m.niveau==='sligro'?' actief':'') + '" onclick="kiesWasteNiveau(\'sligro\')">🛒 Sligro-product</button>';
     html += '</div>';
     html += '<input type="text" placeholder="Zoek op naam of artnr..." value="' + esc(m.zoek||'') + '" oninput="state.modal.zoek=this.value;clearTimeout(window._wzt);window._wzt=setTimeout(zoekWasteProduct,300);" style="width:100%;padding:12px;border:2px solid #D8E8EF;border-radius:8px;font-size:14px;font-family:inherit">';
     html += '<div style="margin-top:12px">';
@@ -4269,8 +4282,8 @@ function renderWasteModal() {
     } else {
       m.resultaten.forEach(function(p) {
         var meta = m.niveau === 'sligro'
-          ? (p.artnr || '') + (p.merk ? ' · ' + p.merk : '') + (p.eenheid ? ' · ' + p.eenheid : '')
-          : (p.eenheid || 'portie');
+          ? (p.artnr || '') + (p.merk ? ' · ' + p.merk : '') + (p.verpakking_hint ? ' · 1 verp = ' + p.verpakking_hint : (p.eenheid ? ' · ' + p.eenheid : ''))
+          : (p.eenheid || 'portie') + (p.prijs ? ' · €' + Number(p.prijs).toFixed(2) + '/' + (p.eenheid||'portie') : '');
         html += '<button class="waste-result" onclick=\'kiesWasteProduct(' + JSON.stringify(p).replace(/\\/g,"\\\\").replace(/\'/g,"\\\'") + ')\'>'
               + '<div style="font-weight:600">' + esc(p.naam) + '</div>'
               + '<div style="font-size:11px;color:#6E8591">' + esc(meta) + '</div></button>';
@@ -4295,9 +4308,42 @@ function renderWasteModal() {
     html += '<div style="background:#F5F8FA;padding:12px;border-radius:8px;margin-bottom:14px"><div style="font-size:11px;color:#6E8591;text-transform:uppercase;font-weight:700">' + (m.niveau==='sligro'?'Sligro':'Gerecht') + '</div><div style="font-weight:700">' + esc(m.gekozen.naam) + '</div></div>';
     html += '<label style="display:block;font-weight:600;margin-bottom:6px">Hoeveelheid</label>';
     html += '<div style="display:flex;gap:8px;align-items:center;margin-bottom:14px">';
-    html += '<input type="number" inputmode="decimal" step="0.1" min="0" value="' + (m.hoeveelheid||'') + '" oninput="state.modal.hoeveelheid=this.value" style="flex:1;padding:12px;border:2px solid #D8E8EF;border-radius:8px;font-size:18px;font-family:inherit">';
-    html += '<div style="font-weight:600;color:#234756">' + esc(m.gekozen.eenheid || (m.niveau==='sligro'?'stuks':'portie')) + '</div>';
+    html += '<input type="number" inputmode="decimal" step="0.1" min="0" value="' + (m.hoeveelheid||'') + '" oninput="state.modal.hoeveelheid=this.value;render();" style="flex:1;padding:12px;border:2px solid #D8E8EF;border-radius:8px;font-size:18px;font-family:inherit">';
     html += '</div>';
+    // Dynamische eenheid-toggle (uit kiosk-waste backend v4: beschikbare_eenheden)
+    var opties = (m.gekozen.beschikbare_eenheden && m.gekozen.beschikbare_eenheden.length) ? m.gekozen.beschikbare_eenheden : [{key:'verpakking',label:'VERPAKKING',sub:''}];
+    html += '<div style="display:grid;grid-template-columns:repeat(' + opties.length + ',1fr);gap:6px;margin-bottom:14px">';
+    opties.forEach(function(o){
+      var sel = m.eenheid_keuze === o.key;
+      var bg = sel ? '#234756' : 'white';
+      var fg = sel ? 'white' : '#234756';
+      var bd = sel ? '#234756' : '#D8E8EF';
+      html += '<button onclick="setWasteEenheid(' + JSON.stringify(o.key) + ')" style="padding:12px 6px;background:' + bg + ';color:' + fg + ';border:2px solid ' + bd + ';border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;text-align:center">' + esc(o.label) + '<div style="font-weight:400;font-size:10px;opacity:.85;margin-top:3px;line-height:1.3">' + esc(o.sub||'') + '</div></button>';
+    });
+    html += '</div>';
+    // Live kosten-preview op basis van gekozen eenheid
+    var preview = (function(){
+      var hv = parseFloat(m.hoeveelheid);
+      if (!hv || hv <= 0 || !m.gekozen.prijs) return '';
+      var pp = Number(m.gekozen.prijs);
+      var key = m.eenheid_keuze;
+      if (m.niveau === 'sligro') {
+        if (key === 'verpakking') return '≈ €' + (pp * hv).toFixed(2);
+        if (key === 'stuks' && m.gekozen.stuks_per_verpakking) return '≈ €' + ((pp / m.gekozen.stuks_per_verpakking) * hv).toFixed(2);
+        if ((key === 'gram' || key === 'g') && m.gekozen.totaal_gewicht_per_verpakking) return '≈ €' + ((pp / m.gekozen.totaal_gewicht_per_verpakking) * hv).toFixed(2);
+        if (key === 'kg' && m.gekozen.totaal_gewicht_per_verpakking) return '≈ €' + ((pp / m.gekozen.totaal_gewicht_per_verpakking) * hv * 1000).toFixed(2);
+      } else if (m.niveau === 'gerecht') {
+        if (key === 'portie' || key === 'stuks') return '≈ €' + (pp * hv).toFixed(2);
+        if (key === 'gram') {
+          var ng = m.gekozen.norm_grammen || 100;
+          return '≈ €' + ((pp / ng) * hv).toFixed(2) + (m.gekozen.norm_grammen ? '' : ' (placeholder)');
+        }
+      }
+      return '';
+    })();
+    if (preview) {
+      html += '<div style="font-size:13px;color:#2E7D32;font-weight:700;margin-top:-8px;margin-bottom:14px;padding:8px 12px;background:#E8F5E9;border-radius:6px;text-align:center">Geschatte kosten: ' + esc(preview) + '</div>';
+    }
     html += '<label style="display:block;font-weight:600;margin-bottom:6px">Foto (optioneel)</label>';
     if (m.foto_base64) {
       html += '<img src="' + m.foto_base64 + '" style="width:100%;max-height:200px;object-fit:cover;border-radius:8px;margin-bottom:8px">';
@@ -4314,7 +4360,7 @@ function renderWasteModal() {
     html += '</div>';
   } else if (stap === 3) {
     // REDEN + VERZEND
-    html += '<div style="background:#F5F8FA;padding:10px;border-radius:8px;margin-bottom:14px;font-size:13px"><b>' + esc(m.gekozen.naam) + '</b> · ' + m.hoeveelheid + ' ' + esc(m.gekozen.eenheid || '') + '</div>';
+    html += '<div style="background:#F5F8FA;padding:10px;border-radius:8px;margin-bottom:14px;font-size:13px"><b>' + esc(m.gekozen.naam) + '</b> · ' + m.hoeveelheid + ' ' + esc(m.eenheid_keuze || m.gekozen.eenheid || '') + '</div>';
     html += '<label style="display:block;font-weight:600;margin-bottom:8px">Reden</label>';
     html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px">';
     (m.redenen || []).forEach(function(r) {
@@ -4332,7 +4378,7 @@ function renderWasteModal() {
     // KLAAR
     html += '<div style="text-align:center;padding:20px"><div style="font-size:64px">✅</div>';
     html += '<h3 style="margin:12px 0 6px">Genoteerd</h3>';
-    html += '<p style="color:#6E8591">' + esc(m.gekozen.naam) + ' · ' + m.hoeveelheid + ' ' + esc(m.gekozen.eenheid || '') + '</p>';
+    html += '<p style="color:#6E8591">' + esc(m.gekozen.naam) + ' · ' + m.hoeveelheid + ' ' + esc(m.eenheid_keuze || m.gekozen.eenheid || '') + '</p>';
     if (m.kosten) html += '<p style="color:#6E8591;font-size:12px">Geschatte kosten: €' + m.kosten.toFixed(2) + '</p>';
     html += '<button onclick="nieuweWasteMelding()" style="background:#234756;color:white;border:none;padding:12px 24px;border-radius:100px;font-weight:600;font-size:14px;cursor:pointer;margin-top:14px">+ Nog een melding</button>';
     html += '<button onclick="state.modal=null;render();" style="display:block;margin:8px auto 0;background:white;color:#6E8591;border:none;padding:8px;font-size:13px;cursor:pointer">Sluiten</button></div>';
