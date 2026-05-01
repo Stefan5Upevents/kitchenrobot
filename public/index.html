@@ -12950,7 +12950,7 @@ function SensorenScreen() {
   if (!user) {
     return /* @__PURE__ */ React.createElement(LoginScreen, { onLogin: handleLogin });
   }
-  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", minHeight: "100vh", background: "#F0F4F7" } }, /* @__PURE__ */ React.createElement(Header, { sc, setSc, user, logout: handleLogout }), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto", overflowX: "hidden" }, className: "mobile-padding" }, /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 1200, margin: "0 auto", padding: "28px 20px 60px" } }, sc === "home" && /* @__PURE__ */ React.createElement(HomeScreen, { setSc }), sc === "boekingen" && /* @__PURE__ */ React.createElement(BoekingenScreen, { setSc, setActieve }), sc === "financieel" && /* @__PURE__ */ React.createElement(FinancieelScreen, { setSc }), sc === "chef" && /* @__PURE__ */ React.createElement(ChefScreen, { setSc, setActieve }), sc === "buffet" && /* @__PURE__ */ React.createElement(BuffetScreen, { actieve, setActieve, setSc }), sc === "opzet" && /* @__PURE__ */ React.createElement(OpzetScreen, null), sc === "tijden" && /* @__PURE__ */ React.createElement(TijdenScreen, null), sc.startsWith("stam:") && (typeof window._krMagScherm !== "function" || window._krMagScherm(sc)) && /* @__PURE__ */ React.createElement(StamScreen, { initTab: sc.split(":")[1] || "pg" }), sc === "fin" && /* @__PURE__ */ React.createElement(FinancieelScreen, null), sc === "adviezen" && /* @__PURE__ */ React.createElement(AdviezenScreen, null), sc === "fin_inst" && /* @__PURE__ */ React.createElement(FinInstellingenScreen, null), sc === "sensoren" && /* @__PURE__ */ React.createElement(SensorenScreen, null), sc === "apikeys" && /* @__PURE__ */ React.createElement(ApiKoppelingenScreen, null), sc === "staffel" && window._OpzetStaffelScreen && /* @__PURE__ */ React.createElement(window._OpzetStaffelScreen, null), sc === "gebruikers" && window._GebruikersScreen && /* @__PURE__ */ React.createElement(window._GebruikersScreen, null), sc === "systeem" && window._SysteemScreen && /* @__PURE__ */ React.createElement(window._SysteemScreen, null), sc === "schermdoc" && window._SchermDocScreen && /* @__PURE__ */ React.createElement(window._SchermDocScreen, null), sc === "stam:fi" && /* @__PURE__ */ React.createElement(FinInstellingenScreen, null), sc === "allergenen" && /* @__PURE__ */ React.createElement(AllergenenScreen, null), sc === "inspiratie" && /* @__PURE__ */ React.createElement(InspiratieScreen, null), sc === "opzetlog" && /* @__PURE__ */ React.createElement(OpzetLogboekScreen, null), sc === "haccp" && /* @__PURE__ */ React.createElement(HACCPScreen, null), sc === "nvwa" && window._NVWAInspectieScreen && /* @__PURE__ */ React.createElement(window._NVWAInspectieScreen, null), sc === "fb" && window._FBAnalyseScreen && /* @__PURE__ */ React.createElement(window._FBAnalyseScreen, null), sc === "berichten" && window._BerichtenChefScreen && /* @__PURE__ */ React.createElement(window._BerichtenChefScreen, null), sc === "waste" && window._WasteAdminScreen && /* @__PURE__ */ React.createElement(window._WasteAdminScreen, null), sc === "notificaties" && window._NotificatiesScreen && /* @__PURE__ */ React.createElement(window._NotificatiesScreen, null), sc === "waste_analytics" && window._WasteAnalyticsScreen && /* @__PURE__ */ React.createElement(window._WasteAnalyticsScreen, null), sc === "notif_predict" && window._NotifPredictScreen && /* @__PURE__ */ React.createElement(window._NotifPredictScreen, null), sc === "haccp_inst" && window._HACCPInstellingenScreen && /* @__PURE__ */ React.createElement(window._HACCPInstellingenScreen, null), sc === "bestelling" && /* @__PURE__ */ React.createElement(SligroBestellingScreen, null))));
+  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", minHeight: "100vh", background: "#F0F4F7" } }, /* @__PURE__ */ React.createElement(Header, { sc, setSc, user, logout: handleLogout }), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto", overflowX: "hidden" }, className: "mobile-padding" }, /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 1200, margin: "0 auto", padding: "28px 20px 60px" } }, sc === "home" && /* @__PURE__ */ React.createElement(HomeScreen, { setSc }), sc === "boekingen" && /* @__PURE__ */ React.createElement(BoekingenScreen, { setSc, setActieve }), sc === "financieel" && /* @__PURE__ */ React.createElement(FinancieelScreen, { setSc }), sc === "chef" && /* @__PURE__ */ React.createElement(ChefScreen, { setSc, setActieve }), sc === "buffet" && /* @__PURE__ */ React.createElement(BuffetScreen, { actieve, setActieve, setSc }), sc === "opzet" && /* @__PURE__ */ React.createElement(OpzetScreen, null), sc === "tijden" && /* @__PURE__ */ React.createElement(TijdenScreen, null), sc.startsWith("stam:") && (typeof window._krMagScherm !== "function" || window._krMagScherm(sc)) && /* @__PURE__ */ React.createElement(StamScreen, { initTab: sc.split(":")[1] || "pg" }), sc === "fin" && /* @__PURE__ */ React.createElement(FinancieelScreen, null), sc === "adviezen" && /* @__PURE__ */ React.createElement(AdviezenScreen, null), sc === "fin_inst" && /* @__PURE__ */ React.createElement(FinInstellingenScreen, null), sc === "sensoren" && /* @__PURE__ */ React.createElement(SensorenScreen, null), sc === "apikeys" && /* @__PURE__ */ React.createElement(ApiKoppelingenScreen, null), sc === "staffel" && window._OpzetStaffelScreen && /* @__PURE__ */ React.createElement(window._OpzetStaffelScreen, null), sc === "gebruikers" && window._GebruikersScreen && /* @__PURE__ */ React.createElement(window._GebruikersScreen, null), sc === "systeem" && window._SysteemScreen && /* @__PURE__ */ React.createElement(window._SysteemScreen, null), sc === "schermdoc" && window._SchermDocScreen && /* @__PURE__ */ React.createElement(window._SchermDocScreen, null), sc === "stam:fi" && /* @__PURE__ */ React.createElement(FinInstellingenScreen, null), sc === "allergenen" && /* @__PURE__ */ React.createElement(AllergenenScreen, null), sc === "inspiratie" && /* @__PURE__ */ React.createElement(InspiratieScreen, null), sc === "opzetlog" && /* @__PURE__ */ React.createElement(OpzetLogboekScreen, null), sc === "haccp" && /* @__PURE__ */ React.createElement(HACCPScreen, null), sc === "nvwa" && window._NVWAInspectieScreen && /* @__PURE__ */ React.createElement(window._NVWAInspectieScreen, null), sc === "fb" && (window._FBAnalyseV2Screen ? /* @__PURE__ */ React.createElement(window._FBAnalyseV2Screen, null) : window._FBAnalyseScreen && /* @__PURE__ */ React.createElement(window._FBAnalyseScreen, null)), sc === "berichten" && window._BerichtenChefScreen && /* @__PURE__ */ React.createElement(window._BerichtenChefScreen, null), sc === "waste" && window._WasteAdminScreen && /* @__PURE__ */ React.createElement(window._WasteAdminScreen, null), sc === "notificaties" && window._NotificatiesScreen && /* @__PURE__ */ React.createElement(window._NotificatiesScreen, null), sc === "waste_analytics" && window._WasteAnalyticsScreen && /* @__PURE__ */ React.createElement(window._WasteAnalyticsScreen, null), sc === "notif_predict" && window._NotifPredictScreen && /* @__PURE__ */ React.createElement(window._NotifPredictScreen, null), sc === "haccp_inst" && window._HACCPInstellingenScreen && /* @__PURE__ */ React.createElement(window._HACCPInstellingenScreen, null), sc === "bestelling" && /* @__PURE__ */ React.createElement(SligroBestellingScreen, null))));
 }
 function InspiratieScreen() {
   var _a, _b;
@@ -24165,5 +24165,722 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
 })();
 </script>
 <!-- KR-RECONCILIATIE-END -->
+
+<!-- KR-FBV2-START v1: Nieuw F&B Analyse scherm — 5 sub-tabs op canonical Recras kosten-data (1 mei 2026) -->
+<script>
+(function(){
+  var React = window.React;
+  if (!React) return;
+
+  var MAANDEN = ['','januari','februari','maart','april','mei','juni','juli','augustus','september','oktober','november','december'];
+  var MAANDEN_KORT = ['','Jan','Feb','Mrt','Apr','Mei','Jun','Jul','Aug','Sep','Okt','Nov','Dec'];
+
+  // Hulpfuncties
+  function fmtEur(n) {
+    if (n === null || n === undefined || n === '') return '–';
+    var num = Number(n);
+    if (isNaN(num)) return '–';
+    return '\u20ac' + Math.round(num).toLocaleString('nl-NL');
+  }
+  function fmtEurK(n) {
+    if (n === null || n === undefined || n === '') return '–';
+    var num = Number(n);
+    if (isNaN(num)) return '–';
+    if (Math.abs(num) >= 1e6) return '\u20ac' + (num/1e6).toFixed(2) + 'M';
+    if (Math.abs(num) >= 1e3) return '\u20ac' + Math.round(num/1e3) + 'K';
+    return '\u20ac' + Math.round(num);
+  }
+  function fmtPct(n, decimals) {
+    if (n === null || n === undefined) return '–';
+    var num = Number(n);
+    if (isNaN(num)) return '–';
+    return (num > 0 ? '+' : '') + num.toFixed(decimals !== undefined ? decimals : 1) + '%';
+  }
+  function eurPct(deel, geheel) {
+    if (!geheel || geheel === 0) return '–';
+    return Math.round(deel / geheel * 100) + '%';
+  }
+
+  // === HOOFDCOMPONENT ===
+  function FBV2Screen() {
+    var supa = window._supa;
+    var C = window._C || { night:'#234756', aqua:'#3FB8C4', hot:'#E8202B', green:'#2E7D32', muted:'#78909C', white:'#fff' };
+
+    var _t = React.useState('overzicht');
+    var tab = _t[0], setTab = _t[1];
+    var _j = React.useState(new Date().getFullYear());
+    var jaar = _j[0], setJaar = _j[1];
+    var _o = React.useState('beide');
+    var outlet = _o[0], setOutlet = _o[1];
+
+    // Data state per tab
+    var _d = React.useState({ laden: true, fout: null, jaar: [], maand: [], forecast: [], pipeline: [], menus: [], reconciliatie: [], syncStatus: null });
+    var data = _d[0], setData = _d[1];
+
+    React.useEffect(function() {
+      if (!supa) { setData({ laden: false, fout: 'Geen supabase client', jaar:[], maand:[], forecast:[], pipeline:[], menus:[], reconciliatie:[], syncStatus:null }); return; }
+      setData(function(s){ return Object.assign({}, s, { laden: true, fout: null }); });
+      Promise.all([
+        supa.from('v_fbv2_jaar').select('*').order('jaar', { ascending: false }),
+        supa.from('v_fbv2_maand').select('*').eq('jaar', jaar).order('maand_nr'),
+        supa.from('v_fbv2_forecast').select('*').order('maand_nr'),
+        supa.from('v_fbv2_pipeline').select('*').gte('dagen_vooruit', 0).order('datum').limit(500),
+        supa.from('v_fbv2_per_menu').select('*').eq('jaar', jaar).limit(200),
+        supa.from('v_reconciliatie_recras').select('*').eq('jaar', jaar).order('maand_nr'),
+        supa.from('recras_boekingen').select('id', { count: 'exact', head: true }).gte('datum', jaar + '-01-01').lte('datum', jaar + '-12-31'),
+        supa.from('recras_boekingen').select('id', { count: 'exact', head: true }).gte('datum', jaar + '-01-01').lte('datum', jaar + '-12-31').not('kosten_synced_at', 'is', null)
+      ]).then(function(rs) {
+        setData({
+          laden: false, fout: null,
+          jaar: rs[0].data || [],
+          maand: rs[1].data || [],
+          forecast: rs[2].data || [],
+          pipeline: rs[3].data || [],
+          menus: rs[4].data || [],
+          reconciliatie: rs[5].data || [],
+          syncStatus: {
+            totaal: rs[6].count || 0,
+            metKosten: rs[7].count || 0,
+            coverage: (rs[6].count > 0) ? Math.round(rs[7].count / rs[6].count * 1000) / 10 : 0
+          }
+        });
+      }).catch(function(e) {
+        setData({ laden: false, fout: e.message, jaar:[], maand:[], forecast:[], pipeline:[], menus:[], reconciliatie:[], syncStatus:null });
+      });
+    }, [jaar]);
+
+    // Header met titel, jaar-selector, outlet-filter
+    function renderHeader() {
+      return React.createElement('div', { style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16,flexWrap:'wrap',gap:10} },
+        React.createElement('div', null,
+          React.createElement('div', { style:{color:C.night,fontWeight:900,fontSize:20} }, '\ud83d\udcca F&B Analyse'),
+          React.createElement('div', { style:{color:C.muted,fontSize:12,marginTop:2} }, 'Recras kosten-API \u00b7 ' + (data.syncStatus ? (data.syncStatus.coverage + '% coverage') : 'laden\u2026'))
+        ),
+        React.createElement('div', { style:{display:'flex',gap:8,alignItems:'center'} },
+          React.createElement('select', {
+            value: jaar, onChange: function(e){ setJaar(Number(e.target.value)); },
+            style:{padding:'6px 10px',border:'1px solid #D0D9E0',borderRadius:6,fontSize:13}
+          }, [2026,2025,2024,2023].map(function(j){ return React.createElement('option', {key:j,value:j}, j); }))
+        )
+      );
+    }
+
+    // Tab-knoppen
+    function renderTabs() {
+      var btn = function(id, label) {
+        return React.createElement('button', {
+          key: id, onClick: function(){ setTab(id); },
+          style: {
+            padding: '8px 14px', border: 'none', borderRadius: 6, cursor: 'pointer',
+            fontSize: 13, fontWeight: 700,
+            background: tab === id ? C.night : 'transparent',
+            color: tab === id ? '#fff' : C.muted
+          }
+        }, label);
+      };
+      return React.createElement('div', { style:{background:'#F0F4F6',borderRadius:8,padding:4,display:'flex',gap:2,marginBottom:16,flexWrap:'wrap'} },
+        btn('overzicht', '\ud83d\udcc8 Overzicht'),
+        btn('forecast', '\ud83d\udd2e Forecast'),
+        btn('pipeline', '\ud83d\udce5 Pipeline'),
+        btn('menus', '\ud83c\udf7d Outlets & menu\u2019s'),
+        btn('reconciliatie', '\u2696\ufe0f Recras-check')
+      );
+    }
+
+    if (data.laden) {
+      return React.createElement('div', null,
+        renderHeader(),
+        React.createElement('div', { style:{background:'#fff',borderRadius:10,padding:40,textAlign:'center',color:C.muted} }, 'Data laden\u2026')
+      );
+    }
+    if (data.fout) {
+      return React.createElement('div', null,
+        renderHeader(),
+        React.createElement('div', { style:{background:'#FFEBEE',borderRadius:10,padding:20,color:C.hot} }, 'Fout: ' + data.fout)
+      );
+    }
+
+    return React.createElement('div', null,
+      renderHeader(),
+      renderTabs(),
+      tab === 'overzicht' && OverzichtTab(data, jaar, C),
+      tab === 'forecast' && ForecastTab(data, jaar, C),
+      tab === 'pipeline' && PipelineTab(data, C),
+      tab === 'menus' && MenusTab(data, jaar, C),
+      tab === 'reconciliatie' && ReconciliatieTab(data, jaar, C)
+    );
+  }
+
+  // === TAB 1: OVERZICHT ===
+  function OverzichtTab(data, jaar, C) {
+    var jdef = data.jaar.find(function(j){ return j.jaar === jaar && j.status === 'definitief'; }) || {};
+    var jopt = data.jaar.find(function(j){ return j.jaar === jaar && j.status === 'optie'; }) || {};
+    var j25def = data.jaar.find(function(j){ return j.jaar === jaar - 1 && j.status === 'definitief'; }) || {};
+    var j24def = data.jaar.find(function(j){ return j.jaar === jaar - 2 && j.status === 'definitief'; }) || {};
+
+    var groei = (j25def.totaal_excl_btw > 0) 
+      ? ((Number(jdef.totaal_excl_btw || 0) - Number(j25def.totaal_excl_btw)) / Number(j25def.totaal_excl_btw) * 100).toFixed(1)
+      : null;
+    var fbGroei = (j25def.fb_excl_btw > 0)
+      ? ((Number(jdef.fb_excl_btw || 0) - Number(j25def.fb_excl_btw)) / Number(j25def.fb_excl_btw) * 100).toFixed(1)
+      : null;
+
+    var card = function(label, val, sub, kleur) {
+      return React.createElement('div', { style:{background:'#fff',borderRadius:10,padding:16} },
+        React.createElement('div', { style:{fontSize:11,color:C.muted,fontWeight:700,letterSpacing:0.5,textTransform:'uppercase',marginBottom:6} }, label),
+        React.createElement('div', { style:{fontSize:22,fontWeight:900,color:kleur || C.night} }, val),
+        sub && React.createElement('div', { style:{fontSize:11,color:C.muted,marginTop:4} }, sub)
+      );
+    };
+
+    return React.createElement('div', null,
+      // KPI strip
+      React.createElement('div', { style:{display:'grid',gap:10,gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',marginBottom:16} },
+        card('Totaal omzet ' + jaar, fmtEurK(jdef.totaal_excl_btw), 
+          groei !== null ? (groei >= 0 ? '+' : '') + groei + '% vs ' + (jaar-1) : '', 
+          groei >= 0 ? '#2E7D32' : '#C62828'),
+        card('F&B omzet', fmtEurK(jdef.fb_excl_btw),
+          fbGroei !== null ? (fbGroei >= 0 ? '+' : '') + fbGroei + '% vs ' + (jaar-1) : '',
+          fbGroei >= 0 ? '#2E7D32' : '#C62828'),
+        card('F&B aandeel', (jdef.fb_aandeel_pct || 0) + '%', 'Doel: 35–55%'),
+        card('Eten', fmtEurK(jdef.eten_excl_btw), eurPct(Number(jdef.eten_excl_btw || 0), Number(jdef.fb_excl_btw || 1)) + ' van F&B'),
+        card('Drinken', fmtEurK(jdef.drinken_excl_btw), eurPct(Number(jdef.drinken_excl_btw || 0), Number(jdef.fb_excl_btw || 1)) + ' van F&B'),
+        card('Pipeline opties', fmtEurK(jopt.totaal_excl_btw), 'als ze allemaal doorgaan')
+      ),
+
+      // Jaar-tabel: 2024 / 2025 / 2026 def naast elkaar
+      React.createElement('div', { style:{background:'#fff',borderRadius:10,padding:16,marginBottom:16} },
+        React.createElement('div', { style:{fontWeight:800,fontSize:14,color:C.night,marginBottom:10} }, 'Jaaroverzicht — definitief'),
+        React.createElement('div', { style:{overflowX:'auto'} },
+          React.createElement('table', { className:'kr-table', style:{width:'100%',borderCollapse:'collapse',fontSize:13} },
+            React.createElement('thead', null,
+              React.createElement('tr', { style:{background:'#F0F4F6'} },
+                ['Categorie','2024','2025',jaar+' YTD','\u0394 25→' + jaar].map(function(h, i) {
+                  return React.createElement('th', { key: i, style:{padding:'10px',textAlign: i === 0 ? 'left' : 'right',fontWeight:700,color:C.muted,fontSize:11,letterSpacing:0.3} }, h);
+                })
+              )
+            ),
+            React.createElement('tbody', null,
+              [
+                ['Totaal omzet', 'totaal_excl_btw'],
+                ['  F&B (eten + drinken)', 'fb_excl_btw'],
+                ['  Eten', 'eten_excl_btw'],
+                ['  Drinken', 'drinken_excl_btw'],
+                ['  Niet-F&B (locaties, activiteiten)', 'niet_fb_excl_btw'],
+                ['West', 'west_excl_btw'],
+                ['Weesp', 'weesp_excl_btw']
+              ].map(function(row) {
+                var lbl = row[0], key = row[1];
+                var v24 = Number(j24def[key] || 0);
+                var v25 = Number(j25def[key] || 0);
+                var v26 = Number(jdef[key] || 0);
+                var d = v25 > 0 ? ((v26 - v25) / v25 * 100).toFixed(1) : null;
+                var dKleur = d === null ? C.muted : Number(d) >= 0 ? '#2E7D32' : '#C62828';
+                var indented = lbl.startsWith('  ');
+                return React.createElement('tr', { key: lbl, style:{borderBottom:'1px solid #F0F4F6'} },
+                  React.createElement('td', { style:{padding:'10px',fontWeight:indented ? 400 : 700,color:indented ? C.muted : C.night,paddingLeft: indented ? 24 : 10} }, lbl.trim()),
+                  React.createElement('td', { style:{padding:'10px',textAlign:'right',fontVariantNumeric:'tabular-nums'} }, fmtEurK(v24)),
+                  React.createElement('td', { style:{padding:'10px',textAlign:'right',fontVariantNumeric:'tabular-nums'} }, fmtEurK(v25)),
+                  React.createElement('td', { style:{padding:'10px',textAlign:'right',fontVariantNumeric:'tabular-nums',fontWeight:700,color:C.night} }, fmtEurK(v26)),
+                  React.createElement('td', { style:{padding:'10px',textAlign:'right',fontVariantNumeric:'tabular-nums',fontWeight:700,color:dKleur} }, d === null ? '–' : (d > 0 ? '+' : '') + d + '%')
+                );
+              })
+            )
+          )
+        )
+      ),
+
+      // F&B aandeel grafiek
+      React.createElement('div', { style:{background:'#fff',borderRadius:10,padding:16} },
+        React.createElement('div', { style:{fontWeight:800,fontSize:14,color:C.night,marginBottom:10} }, 'F&B aandeel per jaar'),
+        React.createElement('div', { style:{display:'flex',alignItems:'flex-end',gap:24,height:140,padding:'10px 0'} },
+          [j24def, j25def, jdef].map(function(j, i) {
+            var jjaar = jaar - (2 - i);
+            var pct = Number(j.fb_aandeel_pct || 0);
+            var h = Math.round(pct * 1.2);
+            return React.createElement('div', { key: jjaar, style:{flex:1,display:'flex',flexDirection:'column',alignItems:'center'} },
+              React.createElement('div', { style:{fontSize:13,fontWeight:700,color:C.night,marginBottom:6} }, pct + '%'),
+              React.createElement('div', { style:{width:'80%',height:h,background:i === 2 ? '#1976D2' : '#90CAF9',borderRadius:'4px 4px 0 0'} }),
+              React.createElement('div', { style:{fontSize:12,color:C.muted,marginTop:8,fontWeight:700} }, jjaar)
+            );
+          })
+        )
+      )
+    );
+  }
+
+  // === TAB 2: FORECAST ===
+  function ForecastTab(data, jaar, C) {
+    var fc = data.forecast || [];
+    if (fc.length === 0) {
+      return React.createElement('div', { style:{background:'#fff',borderRadius:10,padding:20,color:C.muted} }, 'Geen forecast-data');
+    }
+
+    var totCons = fc.reduce(function(s,f){ return s + Number(f.totaal_forecast_cons || 0); }, 0);
+    var totVerw = fc.reduce(function(s,f){ return s + Number(f.totaal_forecast_verw || 0); }, 0);
+    var totOpti = fc.reduce(function(s,f){ return s + Number(f.totaal_forecast_opti || 0); }, 0);
+    var fbCons = fc.reduce(function(s,f){ return s + Number(f.fb_forecast_cons || 0); }, 0);
+    var fbVerw = fc.reduce(function(s,f){ return s + Number(f.fb_forecast_verw || 0); }, 0);
+    var fbOpti = fc.reduce(function(s,f){ return s + Number(f.fb_forecast_opti || 0); }, 0);
+    
+    // Vergelijking met vorig jaar
+    var vorig = data.jaar.find(function(j){ return j.jaar === jaar - 1 && j.status === 'definitief'; }) || {};
+    var vorigTot = Number(vorig.totaal_excl_btw || 0);
+    var vorigFb = Number(vorig.fb_excl_btw || 0);
+    
+    var groei = function(nu, vorig) {
+      if (!vorig) return null;
+      return Math.round((nu - vorig) / vorig * 100);
+    };
+
+    // Factoren info
+    var f0 = fc[0] || {};
+    var factorenUitleg = 'Factoren: definitieve boekingen ' + 
+      Math.round((f0.factor_definitief_conservatief || 0.95) * 100) + '%/' + 
+      Math.round((f0.factor_definitief_verwacht || 1.0) * 100) + '%/' + 
+      Math.round((f0.factor_definitief_optimistisch || 1.05) * 100) + '%, ' +
+      'opties ' +
+      Math.round((f0.factor_optie_conservatief || 0.3) * 100) + '%/' + 
+      Math.round((f0.factor_optie_verwacht || 0.5) * 100) + '%/' + 
+      Math.round((f0.factor_optie_optimistisch || 0.7) * 100) + '%';
+
+    var card = function(label, val, sub, kleur) {
+      return React.createElement('div', { style:{background:'#fff',borderRadius:10,padding:16} },
+        React.createElement('div', { style:{fontSize:11,color:C.muted,fontWeight:700,letterSpacing:0.5,textTransform:'uppercase',marginBottom:6} }, label),
+        React.createElement('div', { style:{fontSize:22,fontWeight:900,color:kleur || C.night} }, val),
+        sub && React.createElement('div', { style:{fontSize:11,color:C.muted,marginTop:4} }, sub)
+      );
+    };
+
+    var bronKleur = function(b) {
+      return ({
+        'gerealiseerd': { bg: '#E8F5E9', fg: '#1B5E20' },
+        'boekingen':    { bg: '#E3F2FD', fg: '#0D47A1' },
+        'historie':     { bg: '#F3E8FF', fg: '#6B21A8' }
+      })[b] || { bg: '#F0F4F6', fg: '#78909C' };
+    };
+
+    return React.createElement('div', null,
+      // KPI-strip: jaarverwachting in 3 scenarios
+      React.createElement('div', { style:{display:'grid',gap:10,gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',marginBottom:16} },
+        card('Conservatief', fmtEurK(totCons), 
+          groei(totCons, vorigTot) !== null ? (groei(totCons, vorigTot) >= 0 ? '+' : '') + groei(totCons, vorigTot) + '% vs ' + (jaar-1) : '',
+          '#C62828'),
+        card('Verwacht', fmtEurK(totVerw), 
+          groei(totVerw, vorigTot) !== null ? (groei(totVerw, vorigTot) >= 0 ? '+' : '') + groei(totVerw, vorigTot) + '% vs ' + (jaar-1) : '',
+          C.night),
+        card('Optimistisch', fmtEurK(totOpti), 
+          groei(totOpti, vorigTot) !== null ? (groei(totOpti, vorigTot) >= 0 ? '+' : '') + groei(totOpti, vorigTot) + '% vs ' + (jaar-1) : '',
+          '#2E7D32'),
+        card('F&B verwacht', fmtEurK(fbVerw), 
+          groei(fbVerw, vorigFb) !== null ? (groei(fbVerw, vorigFb) >= 0 ? '+' : '') + groei(fbVerw, vorigFb) + '% F&B vs ' + (jaar-1) : '',
+          C.night)
+      ),
+
+      // Toelichting + factoren
+      React.createElement('div', { style:{background:'#FFF8E1',border:'1px solid #FFE082',borderRadius:8,padding:'12px 16px',fontSize:12,color:'#5D4037',marginBottom:14} },
+        React.createElement('strong', null, 'Hoe werkt deze forecast?  '),
+        'Per maand neemt KitchenRobot het hoogste van: (a) je actuele boekingen \u00d7 conversie-factoren, of (b) historisch gemiddelde 2024+2025. Verleden maanden zijn altijd de werkelijke def-omzet.',
+        React.createElement('div', { style:{marginTop:6,fontSize:11,color:'#795548'} }, factorenUitleg)
+      ),
+
+      // Hoofdtabel: forecast per maand
+      React.createElement('div', { style:{background:'#fff',borderRadius:10,padding:16,marginBottom:16} },
+        React.createElement('div', { style:{fontWeight:800,fontSize:14,color:C.night,marginBottom:10} }, 'Totaal omzet forecast per maand'),
+        React.createElement('div', { style:{overflowX:'auto'} },
+          React.createElement('table', { className:'kr-table', style:{width:'100%',borderCollapse:'collapse',fontSize:12} },
+            React.createElement('thead', null,
+              React.createElement('tr', { style:{background:'#F0F4F6'} },
+                ['Maand','2024','2025','Def','Opt','Cons.','Verwacht','Opti.','Bron'].map(function(h, i) {
+                  return React.createElement('th', { key: i, style:{padding:'8px',textAlign: i > 0 && i < 8 ? 'right' : 'left',fontWeight:700,color:C.muted,fontSize:11} }, h);
+                })
+              )
+            ),
+            React.createElement('tbody', null,
+              fc.map(function(f) {
+                var bk = bronKleur(f.dominante_bron);
+                return React.createElement('tr', { key: f.maand_nr, style:{borderBottom:'1px solid #F0F4F6'} },
+                  React.createElement('td', { style:{padding:'8px',fontWeight:700,color:C.night,textTransform:'capitalize'} }, MAANDEN[f.maand_nr]),
+                  React.createElement('td', { style:{padding:'8px',textAlign:'right',color:'#9E9E9E',fontVariantNumeric:'tabular-nums'} }, fmtEurK(f.hist_totaal_2024)),
+                  React.createElement('td', { style:{padding:'8px',textAlign:'right',color:'#9E9E9E',fontVariantNumeric:'tabular-nums'} }, fmtEurK(f.hist_totaal_2025)),
+                  React.createElement('td', { style:{padding:'8px',textAlign:'right',fontVariantNumeric:'tabular-nums'} }, fmtEurK(f.totaal_def)),
+                  React.createElement('td', { style:{padding:'8px',textAlign:'right',fontVariantNumeric:'tabular-nums',color:'#1976D2'} }, fmtEurK(f.totaal_opt)),
+                  React.createElement('td', { style:{padding:'8px',textAlign:'right',fontVariantNumeric:'tabular-nums',color:'#C62828'} }, fmtEurK(f.totaal_forecast_cons)),
+                  React.createElement('td', { style:{padding:'8px',textAlign:'right',fontVariantNumeric:'tabular-nums',fontWeight:700,color:C.night} }, fmtEurK(f.totaal_forecast_verw)),
+                  React.createElement('td', { style:{padding:'8px',textAlign:'right',fontVariantNumeric:'tabular-nums',color:'#2E7D32'} }, fmtEurK(f.totaal_forecast_opti)),
+                  React.createElement('td', { style:{padding:'8px'} },
+                    React.createElement('span', { style:{display:'inline-block',padding:'2px 7px',borderRadius:100,fontSize:10,fontWeight:700,background:bk.bg,color:bk.fg} }, f.dominante_bron)
+                  )
+                );
+              }).concat([
+                React.createElement('tr', { key:'tot', style:{background:'#FAFAFA',borderTop:'2px solid #D0D9E0',fontWeight:900} },
+                  React.createElement('td', { style:{padding:'10px',fontWeight:900} }, 'Jaartotaal'),
+                  React.createElement('td', { colSpan: 4 }),
+                  React.createElement('td', { style:{padding:'10px',textAlign:'right',color:'#C62828'} }, fmtEurK(totCons)),
+                  React.createElement('td', { style:{padding:'10px',textAlign:'right',color:C.night,fontSize:13} }, fmtEurK(totVerw)),
+                  React.createElement('td', { style:{padding:'10px',textAlign:'right',color:'#2E7D32'} }, fmtEurK(totOpti)),
+                  React.createElement('td')
+                )
+              ])
+            )
+          )
+        )
+      ),
+
+      // F&B specifieke tabel
+      React.createElement('div', { style:{background:'#fff',borderRadius:10,padding:16,marginBottom:16} },
+        React.createElement('div', { style:{fontWeight:800,fontSize:14,color:C.night,marginBottom:10} }, 'F&B forecast per maand'),
+        React.createElement('div', { style:{overflowX:'auto'} },
+          React.createElement('table', { className:'kr-table', style:{width:'100%',borderCollapse:'collapse',fontSize:12} },
+            React.createElement('thead', null,
+              React.createElement('tr', { style:{background:'#F0F4F6'} },
+                ['Maand','F&B 2024','F&B 2025','F&B def','F&B opt','Cons.','Verwacht','Opti.'].map(function(h, i) {
+                  return React.createElement('th', { key: i, style:{padding:'8px',textAlign: i > 0 ? 'right' : 'left',fontWeight:700,color:C.muted,fontSize:11} }, h);
+                })
+              )
+            ),
+            React.createElement('tbody', null,
+              fc.map(function(f) {
+                return React.createElement('tr', { key: f.maand_nr, style:{borderBottom:'1px solid #F0F4F6'} },
+                  React.createElement('td', { style:{padding:'8px',fontWeight:700,color:C.night,textTransform:'capitalize'} }, MAANDEN[f.maand_nr]),
+                  React.createElement('td', { style:{padding:'8px',textAlign:'right',color:'#9E9E9E',fontVariantNumeric:'tabular-nums'} }, fmtEurK(f.hist_fb_2024)),
+                  React.createElement('td', { style:{padding:'8px',textAlign:'right',color:'#9E9E9E',fontVariantNumeric:'tabular-nums'} }, fmtEurK(f.hist_fb_2025)),
+                  React.createElement('td', { style:{padding:'8px',textAlign:'right',fontVariantNumeric:'tabular-nums'} }, fmtEurK(f.fb_def)),
+                  React.createElement('td', { style:{padding:'8px',textAlign:'right',fontVariantNumeric:'tabular-nums',color:'#1976D2'} }, fmtEurK(f.fb_opt)),
+                  React.createElement('td', { style:{padding:'8px',textAlign:'right',fontVariantNumeric:'tabular-nums',color:'#C62828'} }, fmtEurK(f.fb_forecast_cons)),
+                  React.createElement('td', { style:{padding:'8px',textAlign:'right',fontVariantNumeric:'tabular-nums',fontWeight:700,color:C.night} }, fmtEurK(f.fb_forecast_verw)),
+                  React.createElement('td', { style:{padding:'8px',textAlign:'right',fontVariantNumeric:'tabular-nums',color:'#2E7D32'} }, fmtEurK(f.fb_forecast_opti))
+                );
+              }).concat([
+                React.createElement('tr', { key:'tot', style:{background:'#FAFAFA',borderTop:'2px solid #D0D9E0',fontWeight:900} },
+                  React.createElement('td', { style:{padding:'10px',fontWeight:900} }, 'F&B jaartotaal'),
+                  React.createElement('td', { colSpan: 4 }),
+                  React.createElement('td', { style:{padding:'10px',textAlign:'right',color:'#C62828'} }, fmtEurK(fbCons)),
+                  React.createElement('td', { style:{padding:'10px',textAlign:'right',color:C.night,fontSize:13} }, fmtEurK(fbVerw)),
+                  React.createElement('td', { style:{padding:'10px',textAlign:'right',color:'#2E7D32'} }, fmtEurK(fbOpti))
+                )
+              ])
+            )
+          )
+        )
+      ),
+
+      // Bron-uitleg
+      React.createElement('div', { style:{fontSize:11,color:C.muted} },
+        React.createElement('strong', null, 'Bron: '),
+        React.createElement('span', { style:{display:'inline-block',padding:'1px 6px',borderRadius:100,fontSize:10,background:'#E8F5E9',color:'#1B5E20',marginRight:6} }, 'gerealiseerd'),
+        '= werkelijke def-omzet (verleden) \u00b7 ',
+        React.createElement('span', { style:{display:'inline-block',padding:'1px 6px',borderRadius:100,fontSize:10,background:'#E3F2FD',color:'#0D47A1',margin:'0 6px'} }, 'boekingen'),
+        '= je boekings-pipeline x factor wint (toekomst met veel boekingen) \u00b7 ',
+        React.createElement('span', { style:{display:'inline-block',padding:'1px 6px',borderRadius:100,fontSize:10,background:'#F3E8FF',color:'#6B21A8',marginLeft:6} }, 'historie'),
+        '= 2024+2025 gemiddelde wint (toekomst met weinig boekingen)'
+      )
+    );
+  }
+
+  // === TAB 3: PIPELINE ===
+  function PipelineTab(data, C) {
+    var pl = data.pipeline || [];
+    
+    var bucket = function(b) {
+      return pl.filter(function(p){ return p.periode_bucket === b; });
+    };
+    var som = function(arr, key) {
+      return arr.reduce(function(s, p){ return s + Number(p[key] || 0); }, 0);
+    };
+
+    var b7 = bucket('komende_7d');
+    var b30 = bucket('komende_30d');
+    var b60 = bucket('komende_60d');
+    var b90 = bucket('komende_90d');
+    var bRest = bucket('verder_dan_90d');
+
+    var samenvatting = [
+      { naam: 'Komende 7 dagen', boekingen: b7, kleur: '#C62828' },
+      { naam: '8–30 dagen', boekingen: b30, kleur: '#E65100' },
+      { naam: '31–60 dagen', boekingen: b60, kleur: '#1976D2' },
+      { naam: '61–90 dagen', boekingen: b90, kleur: '#0277BD' },
+      { naam: 'Verder dan 90 dagen', boekingen: bRest, kleur: '#78909C' }
+    ];
+
+    var card = function(label, val, sub, kleur) {
+      return React.createElement('div', { style:{background:'#fff',borderRadius:10,padding:16,borderLeft:'4px solid ' + (kleur || C.aqua)} },
+        React.createElement('div', { style:{fontSize:11,color:C.muted,fontWeight:700,letterSpacing:0.5,textTransform:'uppercase',marginBottom:6} }, label),
+        React.createElement('div', { style:{fontSize:22,fontWeight:900,color:C.night} }, val),
+        sub && React.createElement('div', { style:{fontSize:11,color:C.muted,marginTop:4} }, sub)
+      );
+    };
+
+    return React.createElement('div', null,
+      // KPI per bucket
+      React.createElement('div', { style:{display:'grid',gap:10,gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',marginBottom:16} },
+        samenvatting.map(function(s) {
+          return card(s.naam, fmtEurK(som(s.boekingen, 'totaal_excl_btw')), 
+            s.boekingen.length + ' boekingen \u00b7 F&B ' + fmtEurK(som(s.boekingen, 'fb_excl_btw')), 
+            s.kleur);
+        })
+      ),
+
+      // Detail-tabel: komende 30 dagen
+      React.createElement('div', { style:{background:'#fff',borderRadius:10,padding:16,marginBottom:16} },
+        React.createElement('div', { style:{fontWeight:800,fontSize:14,color:C.night,marginBottom:10} }, 'Komende 30 dagen — boekingen'),
+        b7.length + b30.length === 0
+          ? React.createElement('div', { style:{color:C.muted,padding:20,textAlign:'center'} }, 'Geen boekingen')
+          : React.createElement('div', { style:{overflowX:'auto'} },
+              React.createElement('table', { className:'kr-table', style:{width:'100%',borderCollapse:'collapse',fontSize:12} },
+                React.createElement('thead', null,
+                  React.createElement('tr', { style:{background:'#F0F4F6'} },
+                    ['Datum','Dagen','Naam','Bedrijf','Outlet','Status','Pers.','Totaal €','F&B €'].map(function(h, i) {
+                      return React.createElement('th', { key: i, style:{padding:'8px',textAlign: i > 5 ? 'right' : 'left',fontWeight:700,color:C.muted,fontSize:11} }, h);
+                    })
+                  )
+                ),
+                React.createElement('tbody', null,
+                  b7.concat(b30).slice(0, 50).map(function(p) {
+                    var sBg = p.status === 'definitief' ? '#E8F5E9' : '#FFF3E0';
+                    var sFg = p.status === 'definitief' ? '#1B5E20' : '#E65100';
+                    var dKleur = p.dagen_vooruit < 7 ? '#C62828' : p.dagen_vooruit < 14 ? '#E65100' : C.muted;
+                    return React.createElement('tr', { key: p.boeking_id, style:{borderBottom:'1px solid #F0F4F6'} },
+                      React.createElement('td', { style:{padding:'8px',fontFamily:'monospace',fontSize:11,color:C.night} }, p.datum),
+                      React.createElement('td', { style:{padding:'8px',color:dKleur,fontWeight:700} }, '+' + p.dagen_vooruit + 'd'),
+                      React.createElement('td', { style:{padding:'8px',fontWeight:700,color:C.night,maxWidth:200,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'} }, p.boeking_naam || '–'),
+                      React.createElement('td', { style:{padding:'8px',color:C.muted,maxWidth:140,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'} }, p.bedrijf_naam || '–'),
+                      React.createElement('td', { style:{padding:'8px',color:C.muted,textTransform:'capitalize',fontSize:11} }, p.outlet_code),
+                      React.createElement('td', { style:{padding:'8px'} },
+                        React.createElement('span', { style:{display:'inline-block',padding:'2px 7px',borderRadius:100,fontSize:10,fontWeight:700,background:sBg,color:sFg} }, p.status)
+                      ),
+                      React.createElement('td', { style:{padding:'8px',textAlign:'right',color:C.muted} }, p.personen),
+                      React.createElement('td', { style:{padding:'8px',textAlign:'right',fontVariantNumeric:'tabular-nums',fontWeight:700,color:C.night} }, fmtEurK(p.totaal_excl_btw)),
+                      React.createElement('td', { style:{padding:'8px',textAlign:'right',fontVariantNumeric:'tabular-nums',color:'#1565C0'} }, fmtEurK(p.fb_excl_btw))
+                    );
+                  })
+                )
+              )
+            ),
+        b7.length + b30.length > 50 && React.createElement('div', { style:{fontSize:11,color:C.muted,marginTop:8,textAlign:'right'} }, '… ' + (b7.length + b30.length - 50) + ' meer boekingen')
+      )
+    );
+  }
+
+  // === TAB 4: OUTLETS & MENU'S ===
+  function MenusTab(data, jaar, C) {
+    var menus = (data.menus || []).filter(function(m){ return m.status === 'definitief'; });
+    var jdef = data.jaar.find(function(j){ return j.jaar === jaar && j.status === 'definitief'; }) || {};
+    
+    // Sorteer top 15
+    var top15 = menus.slice().sort(function(a,b){ return Number(b.omzet_excl_btw) - Number(a.omzet_excl_btw); }).slice(0, 15);
+    var totalOmzet = menus.reduce(function(s,m){ return s + Number(m.omzet_excl_btw || 0); }, 0);
+    
+    // Per categorie
+    var perCat = {};
+    menus.forEach(function(m) {
+      var cat = m.productgroep_categorie || 'overig';
+      if (!perCat[cat]) perCat[cat] = { aantal: 0, omzet: 0, west: 0, weesp: 0 };
+      perCat[cat].aantal += Number(m.aantal_regels || 0);
+      perCat[cat].omzet += Number(m.omzet_excl_btw || 0);
+      perCat[cat].west += Number(m.west_excl_btw || 0);
+      perCat[cat].weesp += Number(m.weesp_excl_btw || 0);
+    });
+    var catRows = Object.keys(perCat).map(function(k){ return Object.assign({categorie: k}, perCat[k]); }).sort(function(a,b){ return b.omzet - a.omzet; });
+
+    var west = Number(jdef.west_excl_btw || 0);
+    var weesp = Number(jdef.weesp_excl_btw || 0);
+    var westPct = west + weesp > 0 ? Math.round(west / (west + weesp) * 100) : 50;
+
+    return React.createElement('div', null,
+      // West vs Weesp split
+      React.createElement('div', { style:{background:'#fff',borderRadius:10,padding:16,marginBottom:16} },
+        React.createElement('div', { style:{fontWeight:800,fontSize:14,color:C.night,marginBottom:10} }, 'West vs Weesp ' + jaar),
+        React.createElement('div', { style:{display:'flex',gap:16,alignItems:'center'} },
+          React.createElement('div', { style:{flex:1} },
+            // Visuele balk
+            React.createElement('div', { style:{height:32,background:'#F0F4F6',borderRadius:6,overflow:'hidden',display:'flex'} },
+              React.createElement('div', { style:{width:westPct + '%',background:'#1565C0',display:'flex',alignItems:'center',justifyContent:'center',color:'#fff',fontWeight:700,fontSize:13} }, 'West ' + westPct + '%'),
+              React.createElement('div', { style:{width:(100-westPct) + '%',background:'#0277BD',display:'flex',alignItems:'center',justifyContent:'center',color:'#fff',fontWeight:700,fontSize:13} }, 'Weesp ' + (100-westPct) + '%')
+            ),
+            React.createElement('div', { style:{display:'flex',justifyContent:'space-between',marginTop:8,fontSize:12,color:C.muted} },
+              React.createElement('div', null, fmtEurK(west) + ' \u00b7 West'),
+              React.createElement('div', null, 'Weesp \u00b7 ' + fmtEurK(weesp))
+            )
+          )
+        )
+      ),
+
+      // Per categorie
+      React.createElement('div', { style:{background:'#fff',borderRadius:10,padding:16,marginBottom:16} },
+        React.createElement('div', { style:{fontWeight:800,fontSize:14,color:C.night,marginBottom:10} }, 'Per categorie ' + jaar),
+        React.createElement('div', { style:{overflowX:'auto'} },
+          React.createElement('table', { className:'kr-table', style:{width:'100%',borderCollapse:'collapse',fontSize:13} },
+            React.createElement('thead', null,
+              React.createElement('tr', { style:{background:'#F0F4F6'} },
+                ['Categorie','Regels','Omzet','% van totaal','West','Weesp'].map(function(h, i) {
+                  return React.createElement('th', { key: i, style:{padding:'10px',textAlign: i > 0 ? 'right' : 'left',fontWeight:700,color:C.muted,fontSize:11} }, h);
+                })
+              )
+            ),
+            React.createElement('tbody', null,
+              catRows.map(function(c) {
+                var pct = totalOmzet > 0 ? (c.omzet / totalOmzet * 100).toFixed(1) : '0';
+                var catKleur = ({eten:'#BF360C',drinken:'#0D47A1',overig:C.muted})[c.categorie] || C.muted;
+                return React.createElement('tr', { key: c.categorie, style:{borderBottom:'1px solid #F0F4F6'} },
+                  React.createElement('td', { style:{padding:'10px',fontWeight:700,color:catKleur,textTransform:'capitalize'} }, c.categorie),
+                  React.createElement('td', { style:{padding:'10px',textAlign:'right',color:C.muted} }, c.aantal.toLocaleString('nl-NL')),
+                  React.createElement('td', { style:{padding:'10px',textAlign:'right',fontWeight:700,fontVariantNumeric:'tabular-nums'} }, fmtEurK(c.omzet)),
+                  React.createElement('td', { style:{padding:'10px',textAlign:'right',color:C.muted,fontVariantNumeric:'tabular-nums'} }, pct + '%'),
+                  React.createElement('td', { style:{padding:'10px',textAlign:'right',fontVariantNumeric:'tabular-nums'} }, fmtEurK(c.west)),
+                  React.createElement('td', { style:{padding:'10px',textAlign:'right',fontVariantNumeric:'tabular-nums'} }, fmtEurK(c.weesp))
+                );
+              })
+            )
+          )
+        )
+      ),
+
+      // Top 15 productgroepen
+      React.createElement('div', { style:{background:'#fff',borderRadius:10,padding:16} },
+        React.createElement('div', { style:{fontWeight:800,fontSize:14,color:C.night,marginBottom:10} }, 'Top 15 productgroepen ' + jaar + ' (definitief)'),
+        React.createElement('div', { style:{overflowX:'auto'} },
+          React.createElement('table', { className:'kr-table', style:{width:'100%',borderCollapse:'collapse',fontSize:13} },
+            React.createElement('thead', null,
+              React.createElement('tr', { style:{background:'#F0F4F6'} },
+                ['#','Productgroep','Categorie','Regels','Omzet','% van totaal','West/Weesp'].map(function(h, i) {
+                  return React.createElement('th', { key: i, style:{padding:'10px',textAlign: i > 2 && i < 6 ? 'right' : 'left',fontWeight:700,color:C.muted,fontSize:11} }, h);
+                })
+              )
+            ),
+            React.createElement('tbody', null,
+              top15.map(function(m, i) {
+                var pct = totalOmzet > 0 ? (Number(m.omzet_excl_btw) / totalOmzet * 100).toFixed(1) : '0';
+                var w = Number(m.west_excl_btw || 0), wp = Number(m.weesp_excl_btw || 0);
+                var catKleur = ({eten:'#BF360C',drinken:'#0D47A1'})[m.productgroep_categorie] || C.muted;
+                return React.createElement('tr', { key: m.productgroep_id, style:{borderBottom:'1px solid #F0F4F6'} },
+                  React.createElement('td', { style:{padding:'10px',color:C.muted,fontWeight:700} }, i + 1),
+                  React.createElement('td', { style:{padding:'10px',fontWeight:700,color:C.night} }, m.productgroep_naam),
+                  React.createElement('td', { style:{padding:'10px'} },
+                    React.createElement('span', { style:{display:'inline-block',padding:'2px 7px',borderRadius:100,fontSize:10,fontWeight:700,background:'#F0F4F6',color:catKleur,textTransform:'capitalize'} }, m.productgroep_categorie || 'overig')
+                  ),
+                  React.createElement('td', { style:{padding:'10px',textAlign:'right',color:C.muted} }, m.aantal_regels),
+                  React.createElement('td', { style:{padding:'10px',textAlign:'right',fontWeight:700,fontVariantNumeric:'tabular-nums'} }, fmtEurK(m.omzet_excl_btw)),
+                  React.createElement('td', { style:{padding:'10px',textAlign:'right',color:C.muted,fontVariantNumeric:'tabular-nums'} }, pct + '%'),
+                  React.createElement('td', { style:{padding:'10px',fontSize:11,color:C.muted} }, fmtEurK(w) + ' / ' + fmtEurK(wp))
+                );
+              })
+            )
+          )
+        )
+      )
+    );
+  }
+
+  // === TAB 5: RECRAS-CHECK (RECONCILIATIE) ===
+  function ReconciliatieTab(data, jaar, C) {
+    var rec = data.reconciliatie || [];
+    var recDef = rec.filter(function(r){ return r.scope === 'def'; });
+    var recDefOpt = rec.filter(function(r){ return r.scope === 'def_optie'; });
+
+    if (rec.length === 0) {
+      return React.createElement('div', { style:{background:'#FFF3E0',borderRadius:10,padding:20,color:'#E65100',fontSize:13} },
+        React.createElement('strong', null, 'Geen referentiedata voor ' + jaar + '. '),
+        'Upload een Recras-export (Excel) om reconciliatie te kunnen doen voor dit jaar.'
+      );
+    }
+
+    var totaalKolom = function(rs, key) { return rs.reduce(function(s, r){ return s + Number(r[key] || 0); }, 0); };
+    var totRecDef = totaalKolom(recDef, 'recras_excl_btw');
+    var totKrDef = totaalKolom(recDef, 'kr_excl_btw');
+    var totRecDefOpt = totaalKolom(recDefOpt, 'recras_excl_btw');
+    var totKrDefOpt = totaalKolom(recDefOpt, 'kr_excl_btw');
+    var exactCount = recDef.filter(function(r){ return r.status === 'exact'; }).length;
+
+    var statusKleur = function(s) {
+      return ({
+        'exact':         { bg: '#E8F5E9', fg: '#1B5E20' },
+        'binnen_1pct':   { bg: '#E3F2FD', fg: '#0D47A1' },
+        'binnen_5pct':   { bg: '#FFF8E1', fg: '#E65100' },
+        'afwijkend':     { bg: '#FFEBEE', fg: '#B71C1C' },
+        'geen_referentie': { bg: '#F0F4F6', fg: '#78909C' },
+        'geen_kr_data':  { bg: '#F0F4F6', fg: '#78909C' }
+      })[s] || { bg: '#F0F4F6', fg: '#78909C' };
+    };
+    var statusLabel = function(s) {
+      return ({
+        'exact':'\u2713 exact','binnen_1pct':'binnen 1%','binnen_5pct':'binnen 5%',
+        'afwijkend':'\u26a0 afwijkend','geen_referentie':'geen ref','geen_kr_data':'geen data'
+      })[s] || s;
+    };
+
+    var renderTabel = function(titel, hint, rs, totRec, totKr) {
+      return React.createElement('div', { style:{background:'#fff',borderRadius:10,padding:16,marginBottom:14} },
+        React.createElement('div', { style:{fontWeight:800,fontSize:14,color:C.night,marginBottom:4} }, titel),
+        hint && React.createElement('div', { style:{fontSize:11,color:C.muted,marginBottom:12} }, hint),
+        React.createElement('div', { style:{overflowX:'auto'} },
+          React.createElement('table', { className:'kr-table', style:{width:'100%',borderCollapse:'collapse',fontSize:12} },
+            React.createElement('thead', null,
+              React.createElement('tr', { style:{background:'#F0F4F6'} },
+                ['Maand','Recras','KitchenRobot','Verschil €','Verschil %','Status'].map(function(h, i) {
+                  return React.createElement('th', { key:i, style:{padding:'8px 10px',textAlign: i > 0 && i < 5 ? 'right' : 'left',fontWeight:700,color:C.muted,fontSize:11} }, h);
+                })
+              )
+            ),
+            React.createElement('tbody', null,
+              rs.map(function(r) {
+                var vEur = Number(r.verschil_eur || 0);
+                var vCol = vEur > 0 ? '#2E7D32' : vEur < 0 ? '#C62828' : C.muted;
+                var sk = statusKleur(r.status);
+                return React.createElement('tr', { key: r.maand_nr, style:{borderBottom:'1px solid #F0F4F6'} },
+                  React.createElement('td', { style:{padding:'8px 10px',fontWeight:700,color:C.night,textTransform:'capitalize'} }, MAANDEN[r.maand_nr]),
+                  React.createElement('td', { style:{padding:'8px 10px',textAlign:'right',fontVariantNumeric:'tabular-nums'} }, fmtEurK(r.recras_excl_btw)),
+                  React.createElement('td', { style:{padding:'8px 10px',textAlign:'right',fontVariantNumeric:'tabular-nums'} }, fmtEurK(r.kr_excl_btw)),
+                  React.createElement('td', { style:{padding:'8px 10px',textAlign:'right',fontVariantNumeric:'tabular-nums',color:vCol,fontWeight: vEur ? 700 : 400} }, vEur ? fmtEurK(vEur) : '\u2013'),
+                  React.createElement('td', { style:{padding:'8px 10px',textAlign:'right',fontVariantNumeric:'tabular-nums',color:vCol,fontWeight: vEur ? 700 : 400} }, fmtPct(r.verschil_pct)),
+                  React.createElement('td', { style:{padding:'8px 10px'} },
+                    React.createElement('span', { style:{display:'inline-block',padding:'3px 8px',borderRadius:100,fontSize:11,fontWeight:700,background:sk.bg,color:sk.fg} }, statusLabel(r.status))
+                  )
+                );
+              }).concat([
+                React.createElement('tr', { key:'tot', style:{background:'#FAFAFA',borderTop:'2px solid #D0D9E0',fontWeight:900} },
+                  React.createElement('td', { style:{padding:'10px',fontWeight:900,color:C.night} }, 'Totaal jaar'),
+                  React.createElement('td', { style:{padding:'10px',textAlign:'right',fontVariantNumeric:'tabular-nums'} }, fmtEurK(totRec)),
+                  React.createElement('td', { style:{padding:'10px',textAlign:'right',fontVariantNumeric:'tabular-nums'} }, fmtEurK(totKr)),
+                  React.createElement('td', { style:{padding:'10px',textAlign:'right',fontVariantNumeric:'tabular-nums',color: (totKr-totRec) >= 0 ? '#2E7D32' : '#C62828'} }, fmtEurK(totKr - totRec)),
+                  React.createElement('td', { style:{padding:'10px',textAlign:'right',fontVariantNumeric:'tabular-nums'} }, totRec ? ((totKr-totRec)/totRec*100).toFixed(2) + '%' : '\u2013'),
+                  React.createElement('td')
+                )
+              ])
+            )
+          )
+        )
+      );
+    };
+
+    var card = function(label, val, sub) {
+      return React.createElement('div', { style:{background:'#fff',borderRadius:10,padding:16} },
+        React.createElement('div', { style:{fontSize:11,color:C.muted,fontWeight:700,letterSpacing:0.5,textTransform:'uppercase',marginBottom:6} }, label),
+        React.createElement('div', { style:{fontSize:22,fontWeight:900,color:C.night} }, val),
+        sub && React.createElement('div', { style:{fontSize:11,color:C.muted,marginTop:4} }, sub)
+      );
+    };
+
+    return React.createElement('div', null,
+      React.createElement('div', { style:{display:'grid',gap:10,gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',marginBottom:16} },
+        card('Coverage', (data.syncStatus.coverage || 0) + '%', data.syncStatus.metKosten + '/' + data.syncStatus.totaal + ' boekingen'),
+        card('Recras totaal def', fmtEurK(totRecDef), 'jouw export'),
+        card('KR totaal def', fmtEurK(totKrDef), 'verschil ' + fmtEurK(totKrDef - totRecDef)),
+        card('Match-status', exactCount + '/' + recDef.length, 'maanden exact')
+      ),
+      React.createElement('div', { style:{background:'#E3F2FD',border:'1px solid #BBDEFB',borderRadius:8,padding:'12px 16px',fontSize:12,color:'#0D47A1',marginBottom:14} },
+        React.createElement('strong', null, 'Wat is dit? '),
+        'Vergelijking van de Recras-export met wat KitchenRobot uit de Recras kosten-API haalt. Voor toekomstige maanden moet dit 100% matchen. Voor verleden maanden kan een afwijking zijn doordat boekingen na de export zijn gewijzigd.'
+      ),
+      renderTabel('Definitief', 'Alleen status = definitief', recDef, totRecDef, totKrDef),
+      renderTabel('Definitief + optie', 'Volledig pipeline', recDefOpt, totRecDefOpt, totKrDefOpt)
+    );
+  }
+
+  // Registreer globaal
+  window._FBAnalyseV2Screen = FBV2Screen;
+})();
+</script>
+<!-- KR-FBV2-END -->
 
 </body></html>
