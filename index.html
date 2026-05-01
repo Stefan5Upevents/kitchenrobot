@@ -24199,8 +24199,10 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
       jaar: new Date().getFullYear(),
       modus: 'menu',        // 'menu' (default), 'product', 'pg'
       filter: 'fb',         // 'fb' / 'eten' / 'drinken' / 'alles'
+      outletFilter: 'beide', // 'beide' / 'west' / 'weesp'
+      productsoortFilter: [], // multi-select; leeg = alle
       limit: 25,
-      verberg_losse: false  // bij menu-modus: verberg niet-gekoppelde producten
+      verberg_losse: false
     });
     var s = st[0], setState = st[1];
     var update = function(patch) { setState(function(prev) { return Object.assign({}, prev, patch); }); };
@@ -24208,8 +24210,8 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
     React.useEffect(function() {
       update({ laden: true });
       Promise.all([
-        supa.from('v_fbv2_per_menu_gekoppeld').select('*').eq('jaar', s.jaar).eq('status', 'definitief').limit(300),
-        supa.from('v_fbv2_per_product').select('*').eq('jaar', s.jaar).eq('status', 'definitief').limit(300),
+        supa.from('v_fbv2_per_menu_met_productsoort').select('*').eq('jaar', s.jaar).eq('status', 'definitief').limit(500),
+        supa.from('v_fbv2_per_product').select('*').eq('jaar', s.jaar).eq('status', 'definitief').limit(500),
         supa.from('v_fbv2_per_productgroep').select('*').eq('jaar', s.jaar).eq('status', 'definitief').limit(50)
       ]).then(function(r) {
         update({ laden: false, menuData: r[0].data || [], prodData: r[1].data || [], pgData: r[2].data || [] });
@@ -24224,37 +24226,112 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
       return true;
     }
 
+    // Bedrag dat we tonen voor outlet-filter
+    function getOmzet(rij) {
+      if (s.outletFilter === 'west') return Number(rij.west_excl_btw) || 0;
+      if (s.outletFilter === 'weesp') return Number(rij.weesp_excl_btw) || 0;
+      return Number(rij.omzet_excl_btw) || 0;
+    }
+
+    // Beschikbare productsoorten (alleen in menu-modus)
+    var beschikbareProductsoorten = [];
+    if (s.modus === 'menu') {
+      var seen = {};
+      s.menuData.forEach(function(r) {
+        if (!filterFn(r)) return;
+        var ps = r.productsoort_naam || '__GEEN__';
+        if (!seen[ps]) {
+          seen[ps] = { naam: ps === '__GEEN__' ? '— Geen productsoort' : ps, key: ps, omzet: 0 };
+        }
+        seen[ps].omzet += getOmzet(r);
+      });
+      beschikbareProductsoorten = Object.values(seen).sort(function(a,b){ return b.omzet - a.omzet; });
+    }
+
     var bron = s.modus === 'menu' ? s.menuData : s.modus === 'product' ? s.prodData : s.pgData;
     var rijen = bron.filter(filterFn);
     if (s.modus === 'menu' && s.verberg_losse) {
       rijen = rijen.filter(function(r) { return r.groep_type === 'menu'; });
     }
-    rijen.sort(function(a,b) { return Number(b.omzet_excl_btw) - Number(a.omzet_excl_btw); });
+    if (s.modus === 'menu' && s.productsoortFilter.length > 0) {
+      rijen = rijen.filter(function(r) {
+        var ps = r.productsoort_naam || '__GEEN__';
+        return s.productsoortFilter.indexOf(ps) >= 0;
+      });
+    }
+    // Filter rijen waar outlet-omzet 0 is als we filteren
+    if (s.outletFilter !== 'beide') {
+      rijen = rijen.filter(function(r) { return getOmzet(r) > 0; });
+    }
+    rijen.sort(function(a,b) { return getOmzet(b) - getOmzet(a); });
     var rijenZichtbaar = rijen.slice(0, s.limit);
-    var totaal = rijen.reduce(function(t, x) { return t + Number(x.omzet_excl_btw); }, 0);
+    var totaal = rijen.reduce(function(t, x) { return t + getOmzet(x); }, 0);
 
-    // Stats voor menu-modus: hoeveel staat er nog ongekoppeld
+    // KPI-tegels: bedragen op huidige modus + filter (zonder outlet-filter zelf, dus altijd West/Weesp/Totaal)
+    var rijenVoorKpi = bron.filter(filterFn);
+    if (s.modus === 'menu' && s.verberg_losse) rijenVoorKpi = rijenVoorKpi.filter(function(r) { return r.groep_type === 'menu'; });
+    if (s.modus === 'menu' && s.productsoortFilter.length > 0) {
+      rijenVoorKpi = rijenVoorKpi.filter(function(r) {
+        var ps = r.productsoort_naam || '__GEEN__';
+        return s.productsoortFilter.indexOf(ps) >= 0;
+      });
+    }
+    var omzetWest = rijenVoorKpi.reduce(function(t, r) { return t + (Number(r.west_excl_btw) || 0); }, 0);
+    var omzetWeesp = rijenVoorKpi.reduce(function(t, r) { return t + (Number(r.weesp_excl_btw) || 0); }, 0);
+    var omzetTotaal = omzetWest + omzetWeesp;
+
+    function toggleProductsoort(key) {
+      var nu = s.productsoortFilter.slice();
+      var i = nu.indexOf(key);
+      if (i >= 0) nu.splice(i, 1); else nu.push(key);
+      update({ productsoortFilter: nu });
+    }
+
+    // KPI-tegel
+    function kpiTegel(label, bedrag, kleur, isActief, onClick) {
+      return React.createElement('button', {
+        onClick: onClick,
+        style: {
+          flex: 1, padding: '14px 18px',
+          background: isActief ? kleur : '#fff',
+          border: '2px solid ' + (isActief ? kleur : '#E0E7EB'),
+          borderRadius: 10, cursor: 'pointer', textAlign: 'left', minWidth: 140,
+          transition: 'all 0.15s'
+        }
+      },
+        React.createElement('div', { style: { fontSize: 11, color: isActief ? '#fff' : C.muted, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 4 } }, label),
+        React.createElement('div', { style: { fontSize: 22, fontWeight: 800, color: isActief ? '#fff' : C.night, lineHeight: 1.1 } }, fmtEur(bedrag))
+      );
+    }
+
+    // Niet-gekoppeld stat (alleen menu-modus)
     var nietGekoppeldStat = null;
     if (s.modus === 'menu') {
       var fbBron = s.menuData.filter(function(r) { return r.is_fb_productgroep; });
       var nietGekoppeldOmzet = fbBron.filter(function(r) { return r.groep_type === 'losse'; })
         .reduce(function(t, r) { return t + Number(r.omzet_excl_btw); }, 0);
       var totaalOmzet = fbBron.reduce(function(t, r) { return t + Number(r.omzet_excl_btw); }, 0);
-      nietGekoppeldStat = { 
-        bedrag: nietGekoppeldOmzet, 
-        totaal: totaalOmzet,
-        pct: totaalOmzet > 0 ? (nietGekoppeldOmzet / totaalOmzet * 100) : 0
-      };
+      nietGekoppeldStat = { bedrag: nietGekoppeldOmzet, totaal: totaalOmzet, pct: totaalOmzet > 0 ? (nietGekoppeldOmzet / totaalOmzet * 100) : 0 };
     }
 
     return React.createElement('div', null,
-      // Filter bar
-      React.createElement('div', { style: { display: 'flex', gap: 14, marginBottom: 14, alignItems: 'center', flexWrap: 'wrap' } },
+      // 3 KPI-tegels — outlet-filter is impliciet (klikken = filteren)
+      React.createElement('div', { style: { display: 'flex', gap: 10, marginBottom: 14, flexWrap: 'wrap' } },
+        kpiTegel('Omzet West',   omzetWest,   '#1976D2', s.outletFilter === 'west',  function() { update({ outletFilter: s.outletFilter === 'west' ? 'beide' : 'west' }); }),
+        kpiTegel('Omzet Weesp',  omzetWeesp,  '#388E3C', s.outletFilter === 'weesp', function() { update({ outletFilter: s.outletFilter === 'weesp' ? 'beide' : 'weesp' }); }),
+        kpiTegel('Omzet totaal', omzetTotaal, '#234756', s.outletFilter === 'beide', function() { update({ outletFilter: 'beide' }); })
+      ),
+      React.createElement('div', { style: { fontSize: 11, color: C.muted, marginBottom: 10, marginTop: -4 } },
+        s.outletFilter === 'beide' ? 'Klik een tegel om alleen West of alleen Weesp te tonen.' : 'Filter actief: alleen ' + (s.outletFilter === 'west' ? 'West' : 'Weesp') + '. Klik tegel "Omzet totaal" om filter weg te halen.'
+      ),
+
+      // Filter bar (modus + filter + jaar + verberg-losse)
+      React.createElement('div', { style: { display: 'flex', gap: 14, marginBottom: 10, alignItems: 'center', flexWrap: 'wrap' } },
         React.createElement('div', { style: { display: 'flex', gap: 6, alignItems: 'center' } },
           React.createElement('div', { style: { fontSize: 12, color: C.muted, fontWeight: 700 } }, 'Niveau:'),
-          React.createElement('button', { onClick: function() { update({ modus: 'menu' }); }, style: stijl.subTabBtn(s.modus === 'menu') }, '\ud83d\udcd6 Per menu'),
-          React.createElement('button', { onClick: function() { update({ modus: 'product' }); }, style: stijl.subTabBtn(s.modus === 'product') }, '\ud83c\udf7d Per product'),
-          React.createElement('button', { onClick: function() { update({ modus: 'pg' }); }, style: stijl.subTabBtn(s.modus === 'pg') }, '\ud83d\udcca Per productgroep')
+          React.createElement('button', { onClick: function() { update({ modus: 'menu', productsoortFilter: [] }); }, style: stijl.subTabBtn(s.modus === 'menu') }, '📖 Per menu'),
+          React.createElement('button', { onClick: function() { update({ modus: 'product', productsoortFilter: [] }); }, style: stijl.subTabBtn(s.modus === 'product') }, '🍽 Per product'),
+          React.createElement('button', { onClick: function() { update({ modus: 'pg', productsoortFilter: [] }); }, style: stijl.subTabBtn(s.modus === 'pg') }, '📊 Per productgroep')
         ),
         React.createElement('div', { style: { display: 'flex', gap: 6, alignItems: 'center' } },
           React.createElement('div', { style: { fontSize: 12, color: C.muted, fontWeight: 700 } }, 'Filter:'),
@@ -24278,81 +24355,111 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
         )
       ),
 
-      // Niet-gekoppeld waarschuwing in menu-modus
-      s.modus === 'menu' && nietGekoppeldStat && nietGekoppeldStat.bedrag > 0 && React.createElement('div', { 
-        style: { padding: '10px 14px', background: '#FFF8E1', borderLeft: '3px solid #F57C00', borderRadius: 6, marginBottom: 14, fontSize: 12, color: '#5D4037', lineHeight: 1.5 } 
+      // Productsoort-filter (alleen menu-modus, alleen tonen als er > 1 zijn)
+      s.modus === 'menu' && beschikbareProductsoorten.length > 1 && React.createElement('div', {
+        style: { display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap', alignItems: 'center', padding: '10px 12px', background: '#F5F8FA', borderRadius: 8, border: '1px solid #E0E7EB' }
       },
-        React.createElement('strong', null, '\u26a0\ufe0f ' + fmtEur(nietGekoppeldStat.bedrag) + ' (' + nietGekoppeldStat.pct.toFixed(1) + '%) niet gekoppeld aan een menu.'),
+        React.createElement('div', { style: { fontSize: 12, color: C.muted, fontWeight: 700, marginRight: 4 } }, 'Productsoort:'),
+        React.createElement('button', {
+          onClick: function() { update({ productsoortFilter: [] }); },
+          style: {
+            padding: '5px 11px', borderRadius: 100,
+            background: s.productsoortFilter.length === 0 ? C.aqua : '#fff',
+            color: s.productsoortFilter.length === 0 ? '#fff' : C.night,
+            border: '1px solid ' + (s.productsoortFilter.length === 0 ? C.aqua : '#E0E7EB'),
+            fontSize: 11, fontWeight: 700, cursor: 'pointer'
+          }
+        }, 'Alle'),
+        beschikbareProductsoorten.map(function(ps) {
+          var aan = s.productsoortFilter.indexOf(ps.key) >= 0;
+          return React.createElement('button', {
+            key: ps.key, onClick: function() { toggleProductsoort(ps.key); },
+            style: {
+              padding: '5px 11px', borderRadius: 100,
+              background: aan ? C.night : '#fff',
+              color: aan ? '#fff' : C.night,
+              border: '1px solid ' + (aan ? C.night : '#E0E7EB'),
+              fontSize: 11, fontWeight: 600, cursor: 'pointer'
+            }
+          }, ps.naam + ' · ' + fmtEur(ps.omzet));
+        }),
+        s.productsoortFilter.length > 0 && React.createElement('span', { style: { fontSize: 11, color: C.muted, marginLeft: 6 } }, '(' + s.productsoortFilter.length + ' geselecteerd)')
+      ),
+
+      // Niet-gekoppeld waarschuwing
+      s.modus === 'menu' && nietGekoppeldStat && nietGekoppeldStat.bedrag > 0 && React.createElement('div', {
+        style: { padding: '10px 14px', background: '#FFF8E1', borderLeft: '3px solid #F57C00', borderRadius: 6, marginBottom: 14, fontSize: 12, color: '#5D4037', lineHeight: 1.5 }
+      },
+        React.createElement('strong', null, '⚠️ ' + fmtEur(nietGekoppeldStat.bedrag) + ' (' + nietGekoppeldStat.pct.toFixed(1) + '%) niet gekoppeld aan een menu.'),
         ' Deze Recras-producten verschijnen los in het overzicht. Koppel ze in ',
-        React.createElement('strong', null, 'Stamgegevens \u2192 Recras-koppelingen'),
+        React.createElement('strong', null, 'Stamgegevens → Recras-koppelingen'),
         ' om ze te groeperen onder een menu.'
       ),
 
-      s.laden ? React.createElement('div', { style: stijl.card }, 'Laden\u2026') :
+      s.laden ? React.createElement('div', { style: stijl.card }, 'Laden…') :
       React.createElement('div', { style: stijl.card },
-        React.createElement('div', { style: stijl.cardHead }, 
-          'Top ' + (s.modus === 'menu' ? 'menu\u2019s' : s.modus === 'product' ? 'producten' : 'productgroepen') + 
-          ' \u2014 ' + s.jaar + ' (definitief, ' + rijen.length + ' rijen)'
+        React.createElement('div', { style: stijl.cardHead },
+          'Top ' + (s.modus === 'menu' ? 'menu’s' : s.modus === 'product' ? 'producten' : 'productgroepen') +
+          ' — ' + s.jaar + ' (definitief, ' + rijen.length + ' rijen' +
+          (s.outletFilter !== 'beide' ? ', alleen ' + (s.outletFilter === 'west' ? 'West' : 'Weesp') : '') +
+          ')'
         ),
-        React.createElement('div', { style: stijl.cardHint }, 
-          s.modus === 'menu' 
-            ? 'Gegroepeerd via stamgegevens-koppeling. \ud83d\udcd6 = menu, \u26a0\ufe0f = los Recras-product (niet gekoppeld).'
-            : 'Sortering: omzet hoog \u2192 laag. Toont top ' + s.limit + ' van ' + rijen.length + '.'
+        React.createElement('div', { style: stijl.cardHint },
+          s.modus === 'menu'
+            ? 'Gegroepeerd via stamgegevens-koppeling. 📖 = menu, ⚠️ = los Recras-product (niet gekoppeld).'
+            : 'Sortering: omzet hoog → laag. Toont top ' + s.limit + ' van ' + rijen.length + '.'
         ),
         React.createElement('div', { style: { overflowX: 'auto' } },
           React.createElement('table', { style: { width: '100%', borderCollapse: 'collapse', fontSize: 12 } },
             React.createElement('thead', null,
               React.createElement('tr', null,
                 React.createElement('th', { style: stijl.th }, '#'),
-                React.createElement('th', { style: stijl.th }, 
-                  s.modus === 'menu' ? 'Menu / Product' : s.modus === 'product' ? 'Product' : 'Productgroep'
-                ),
+                React.createElement('th', { style: stijl.th }, s.modus === 'menu' ? 'Menu / Product' : s.modus === 'product' ? 'Product' : 'Productgroep'),
                 s.modus === 'product' && React.createElement('th', { style: stijl.th }, 'Productgroep'),
-                s.modus === 'menu' && React.createElement('th', { style: stijl.th }, 'Productgroep'),
+                s.modus === 'menu' && React.createElement('th', { style: stijl.th }, 'Productsoort'),
                 React.createElement('th', { style: stijl.th }, 'Cat.'),
-                s.modus === 'menu' && React.createElement('th', { style: stijl.thR }, 'SKU\u2019s'),
+                s.modus === 'menu' && React.createElement('th', { style: stijl.thR }, 'SKU’s'),
                 React.createElement('th', { style: stijl.thR }, 'Regels'),
                 s.modus === 'menu' && React.createElement('th', { style: stijl.thR }, 'Verkocht'),
                 s.modus === 'product' && React.createElement('th', { style: stijl.thR }, 'Verkocht'),
                 s.modus === 'product' && React.createElement('th', { style: stijl.thR }, 'Gem. prijs'),
-                React.createElement('th', { style: stijl.thR }, 'West'),
-                React.createElement('th', { style: stijl.thR }, 'Weesp'),
-                React.createElement('th', { style: stijl.thR }, 'Totaal'),
+                s.outletFilter === 'beide' && React.createElement('th', { style: stijl.thR }, 'West'),
+                s.outletFilter === 'beide' && React.createElement('th', { style: stijl.thR }, 'Weesp'),
+                React.createElement('th', { style: stijl.thR }, s.outletFilter === 'beide' ? 'Totaal' : (s.outletFilter === 'west' ? 'West' : 'Weesp')),
                 React.createElement('th', { style: stijl.thR }, '%')
               )
             ),
             React.createElement('tbody', null,
               rijenZichtbaar.map(function(p, i) {
-                var pct = totaal > 0 ? (Number(p.omzet_excl_btw) / totaal * 100) : 0;
+                var bedrag = getOmzet(p);
+                var pct = totaal > 0 ? (bedrag / totaal * 100) : 0;
                 var catKleur = p.productgroep_categorie === 'eten' ? '#BF360C' : p.productgroep_categorie === 'drinken' ? '#0D47A1' : C.muted;
                 var rowKey = s.modus === 'menu' ? (p.groep_id + '-' + p.productgroep_naam) :
-                             s.modus === 'product' ? (p.product_id + '-' + p.productgroep_id) : 
+                             s.modus === 'product' ? (p.product_id + '-' + p.productgroep_id) :
                              (p.productgroep_id || i);
-                var displayNaam = s.modus === 'menu' ? p.groep_naam : 
-                                  s.modus === 'product' ? p.product_naam : 
-                                  p.productgroep_naam;
+                var displayNaam = s.modus === 'menu' ? p.groep_naam : s.modus === 'product' ? p.product_naam : p.productgroep_naam;
                 var isLosse = s.modus === 'menu' && p.groep_type === 'losse';
-                
+
                 return React.createElement('tr', { key: rowKey, style: isLosse ? { background: '#FFFBF0' } : null },
                   React.createElement('td', { style: Object.assign({}, stijl.td, { color: C.muted, fontSize: 11 }) }, i + 1),
-                  React.createElement('td', { style: Object.assign({}, stijl.tdM, { maxWidth: 320, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }), title: displayNaam }, 
-                    s.modus === 'menu' && (p.groep_type === 'menu' 
-                      ? React.createElement('span', { style: { fontSize: 10, marginRight: 6 }, title: 'Gekoppeld aan menu in stamgegevens' }, '\ud83d\udcd6')
-                      : React.createElement('span', { style: { fontSize: 10, marginRight: 6, color: '#F57C00' }, title: 'Niet gekoppeld aan een menu' }, '\u26a0\ufe0f')
+                  React.createElement('td', { style: Object.assign({}, stijl.tdM, { maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }), title: displayNaam },
+                    s.modus === 'menu' && (p.groep_type === 'menu'
+                      ? React.createElement('span', { style: { fontSize: 10, marginRight: 6 }, title: 'Gekoppeld aan menu in stamgegevens' }, '📖')
+                      : React.createElement('span', { style: { fontSize: 10, marginRight: 6, color: '#F57C00' }, title: 'Niet gekoppeld aan een menu' }, '⚠️')
                     ),
                     displayNaam
                   ),
                   s.modus === 'product' && React.createElement('td', { style: Object.assign({}, stijl.td, { color: C.muted, fontSize: 11 }) }, p.productgroep_naam),
-                  s.modus === 'menu' && React.createElement('td', { style: Object.assign({}, stijl.td, { color: C.muted, fontSize: 11 }) }, p.productgroep_naam),
-                  React.createElement('td', { style: Object.assign({}, stijl.td, { color: catKleur, fontSize: 11, fontWeight: 700 }) }, p.productgroep_categorie || '\u2013'),
+                  s.modus === 'menu' && React.createElement('td', { style: Object.assign({}, stijl.td, { color: C.muted, fontSize: 11 }) }, p.productsoort_naam || (p.groep_type === 'losse' ? '—' : '?')),
+                  React.createElement('td', { style: Object.assign({}, stijl.td, { color: catKleur, fontSize: 11, fontWeight: 700 }) }, p.productgroep_categorie || '–'),
                   s.modus === 'menu' && React.createElement('td', { style: Object.assign({}, stijl.tdR, { color: C.muted, fontSize: 11 }) }, p.aantal_skus),
                   React.createElement('td', { style: Object.assign({}, stijl.tdR, { color: C.muted }) }, p.aantal_regels),
-                  s.modus === 'menu' && React.createElement('td', { style: Object.assign({}, stijl.tdR, { color: C.muted }) }, p.totaal_aantal_verkocht || '\u2013'),
-                  s.modus === 'product' && React.createElement('td', { style: Object.assign({}, stijl.tdR, { color: C.muted }) }, p.totaal_aantal_verkocht || '\u2013'),
-                  s.modus === 'product' && React.createElement('td', { style: Object.assign({}, stijl.tdR, { color: C.muted }) }, p.gem_prijs_incl_btw ? '\u20ac' + Number(p.gem_prijs_incl_btw).toFixed(2) : '\u2013'),
-                  React.createElement('td', { style: stijl.tdR }, fmtEur(p.west_excl_btw)),
-                  React.createElement('td', { style: stijl.tdR }, fmtEur(p.weesp_excl_btw)),
-                  React.createElement('td', { style: Object.assign({}, stijl.tdR, { fontWeight: 700, color: C.night }) }, fmtEur(p.omzet_excl_btw)),
+                  s.modus === 'menu' && React.createElement('td', { style: Object.assign({}, stijl.tdR, { color: C.muted }) }, p.totaal_aantal_verkocht || '–'),
+                  s.modus === 'product' && React.createElement('td', { style: Object.assign({}, stijl.tdR, { color: C.muted }) }, p.totaal_aantal_verkocht || '–'),
+                  s.modus === 'product' && React.createElement('td', { style: Object.assign({}, stijl.tdR, { color: C.muted }) }, p.gem_prijs_incl_btw ? '€' + Number(p.gem_prijs_incl_btw).toFixed(2) : '–'),
+                  s.outletFilter === 'beide' && React.createElement('td', { style: stijl.tdR }, fmtEur(p.west_excl_btw)),
+                  s.outletFilter === 'beide' && React.createElement('td', { style: stijl.tdR }, fmtEur(p.weesp_excl_btw)),
+                  React.createElement('td', { style: Object.assign({}, stijl.tdR, { fontWeight: 700, color: C.night }) }, fmtEur(bedrag)),
                   React.createElement('td', { style: Object.assign({}, stijl.tdR, { color: C.muted, fontSize: 11 }) }, pct.toFixed(1) + '%')
                 );
               })
