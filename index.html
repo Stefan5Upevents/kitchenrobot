@@ -7937,13 +7937,13 @@ function AllergenenOverzichtTab({ gerechten, sligro, productgroepen }) {
   function passFilter(bevatLijst, mogelijkLijst) {
     if (heeftBevatFilter) {
       var heeftAlle = geselecteerdBevat.every(function(k) {
-        return bevatLijst.includes(k) || mogelijkLijst.includes(k);
+        return bevatLijst.includes(k);
       });
       if (!heeftAlle) return false;
     }
     if (heeftBevatGeenFilter) {
       var heeftGeen = geselecteerdBevatGeen.every(function(k) {
-        return !bevatLijst.includes(k) && !mogelijkLijst.includes(k);
+        return !bevatLijst.includes(k);
       });
       if (!heeftGeen) return false;
     }
