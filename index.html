@@ -790,12 +790,13 @@ function Header({ sc, setSc, user, logout }) {
     { label: "Dagelijks", items: [
       ["inbox", "📥", "Inbox"],
       ["boekingen", "📋", "Boekingen"],
-      ["buffet", "🍽", "Buffetformulieren"],
+      ["tijden", "⏰", "Tijden"],
       ["opzet", "📊", "Opzetoverzicht"],
-      ["tijden", "\u23F0", "Tijden"],
-      ["chef", "\uD83D\uDC68\u200D\uD83C\uDF73", "Chef Review"],
-      ["inspiratie", "\u2728", "Inspiratie"],
-      ["berichten", "\uD83D\uDCE8", "Kiosk berichten"],
+      ["buffet", "🍽", "Buffetformulieren"],
+      ["chef", "👨‍🍳", "Chef Review"],
+      ["bestelling", "🛒", "Sligro Bestelling"],
+      ["inspiratie", "✨", "Inspiratie"],
+      ["berichten", "📨", "Kiosk berichten"],
       ["waste", "🗑️", "Waste-meldingen"]
     ] },
     { label: "Analyse", items: [
@@ -803,11 +804,10 @@ function Header({ sc, setSc, user, logout }) {
       ["haccp", "🌡", "HACCP"],
       ["nvwa", "📋", "NVWA Inspectie"],
       ["fb", "📊", "F&B Analyse"],
-      ["bestelling", "🛒", "Sligro Bestelling"],
-      ["opzetlog", "\u2705", "Opzet Logboek"],
+      ["opzetlog", "✅", "Opzet Logboek"],
       ["waste_analytics", "📊", "Waste Analytics"]
     ] },
-    { label: "Beheer", items: [
+    { label: "Stamgegevens", items: [
       ["stam:pg", "🏗", "Productgroepen"],
       ["stam:gr", "🍽", "Gerechten"],
       ["stam:mn", "📋", "Menus"],
@@ -816,15 +816,19 @@ function Header({ sc, setSc, user, logout }) {
       ["stam:al", "🏷", "Allergenen Stam"],
       ["stam:ki", "📱", "Kiosk Instellingen"],
       ["stam:dr", "📖", "Draaiboek-links"],
-      ["staffel", "📊", "Opzet-staffel"],
-      ["gebruikers", "👤", "Gebruikers"],
-      ["systeem", "🩺", "Systeem-gezondheid"],
-      ["schermdoc", "📚", "Schermdocumentatie"],
-      ["notif_predict", "🔔", "Notificaties + voorspel"],
+      ["staffel", "📊", "Opzet-staffel"]
+    ] },
+    { label: "Instellingen", items: [
       ["fin_inst", "💸", "Financiële instellingen"],
       ["haccp_inst", "🏥", "HACCP Bedrijfsgegevens"],
+      ["notif_predict", "🔔", "Notificaties + voorspel"]
+    ] },
+    { label: "Systeem", items: [
+      ["gebruikers", "👤", "Gebruikers"],
       ["sensoren", "🌡️", "Sensoren"],
-      ["apikeys", "🔐", "API-koppelingen"]
+      ["apikeys", "🔐", "API-koppelingen"],
+      ["systeem", "🩺", "Systeem-gezondheid"],
+      ["schermdoc", "📚", "Schermdocumentatie"]
     ] }
   ];
   var huidigLabel = "KitchenRobot";
