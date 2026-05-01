@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reconciliatie · KitchenRobot</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0 }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", sans-serif;
+         background: #f5f7fa; color: #1f2937; line-height: 1.5; padding: 16px; }
+  .wrap { max-width: 1280px; margin: 0 auto; }
+  header { display: flex; align-items: center; justify-content: space-between;
+           padding: 16px 20px; background: #fff; border-radius: 12px;
+           box-shadow: 0 1px 3px rgba(0,0,0,.08); margin-bottom: 16px; }
+  h1 { font-size: 20px; font-weight: 700; color: #0f172a; }
+  h1 .lead { color: #64748b; font-weight: 500; font-size: 14px; }
+  .subtitle { color: #64748b; font-size: 13px; margin-top: 2px; }
+  .controls { display: flex; gap: 8px; align-items: center; }
+  select, button { font-family: inherit; font-size: 14px; padding: 8px 12px;
+                    border: 1px solid #d1d5db; border-radius: 8px; background: #fff;
+                    cursor: pointer; }
+  button.primary { background: #2563eb; color: #fff; border-color: #2563eb; }
+  button.primary:hover { background: #1d4ed8 }
+  button:hover { background: #f9fafb }
+  .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit,minmax(240px,1fr));
+          margin-bottom: 16px; }
+  .card { background: #fff; padding: 16px; border-radius: 12px;
+          box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  .card .lbl { font-size: 12px; color: #64748b; text-transform: uppercase;
+                font-weight: 600; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .card .val { font-size: 22px; font-weight: 700; color: #0f172a; }
+  .card .sub { font-size: 12px; color: #64748b; margin-top: 4px; }
+  section { background: #fff; border-radius: 12px; padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,.08); margin-bottom: 16px; }
+  section h2 { font-size: 16px; margin-bottom: 12px; color: #0f172a;
+                display: flex; align-items: center; gap: 8px; }
+  section h2 .hint { font-size: 12px; color: #64748b; font-weight: 400; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 10px 8px; background: #f9fafb;
+       font-weight: 600; color: #374151; border-bottom: 2px solid #e5e7eb;
+       font-size: 12px; text-transform: uppercase; letter-spacing: 0.3px; }
+  td { padding: 10px 8px; border-bottom: 1px solid #f3f4f6; }
+  td.r { text-align: right; font-variant-numeric: tabular-nums; }
+  tr:hover td { background: #fafafa; }
+  .badge { display: inline-block; padding: 3px 8px; border-radius: 12px;
+            font-size: 11px; font-weight: 600; }
+  .b-ok { background: #d1fae5; color: #065f46 }
+  .b-bijna { background: #dbeafe; color: #1e40af }
+  .b-warn { background: #fef3c7; color: #92400e }
+  .b-fout { background: #fee2e2; color: #991b1b }
+  .b-leeg { background: #f3f4f6; color: #6b7280 }
+  .b-bron { padding: 2px 7px; font-size: 10px; }
+  .b-gerealiseerd { background: #d1fae5; color: #065f46 }
+  .b-boekingen { background: #dbeafe; color: #1e40af }
+  .b-historie { background: #f3e8ff; color: #6b21a8 }
+  .toelichting { background: #f0f9ff; border: 1px solid #bae6fd;
+                  padding: 12px 16px; border-radius: 8px; margin-bottom: 16px;
+                  font-size: 13px; color: #0c4a6e; }
+  .pos { color: #059669 } .neg { color: #dc2626 }
+  .loading, .error { padding: 48px 24px; text-align: center; color: #6b7280; }
+  .error { background: #fee2e2; color: #991b1b; border-radius: 8px; }
+  td.maand { font-weight: 600; min-width: 100px; }
+  .mono { font-variant-numeric: tabular-nums; }
+  .scrollx { overflow-x: auto; }
+  @media (max-width: 768px) {
+    body { padding: 8px; }
+    h1 { font-size: 18px }
+    h1 .lead { display: none }
+    .card .val { font-size: 18px }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div>
+    <h1>Reconciliatie <span class="lead">· Recras-export ↔ KitchenRobot</span></h1>
+    <div class="subtitle" id="subtitle">Vergelijking van geboekte omzet per maand</div>
+  </div>
+  <div class="controls">
+    <select id="jaarSel">
+      <option value="2026" selected>2026</option>
+      <option value="2025">2025</option>
+      <option value="2024">2024</option>
+    </select>
+    <button class="primary" onclick="laden()">↻ Vernieuwen</button>
+  </div>
+</header>
+
+<div id="content"></div>
+
+</div>
+
+<script>
+const SUPA_URL = 'https://aezatnwsrhlwtykpixsq.supabase.co';
+const SUPA_KEY = 'sb_publishable_qkQzUEM5fvJPSsfScEzNCg_Eug8-d4t';
+const MAANDEN = ['','januari','februari','maart','april','mei','juni','juli','augustus','september','oktober','november','december'];
+
+function fmt(n) {
+  if (n === null || n === undefined) return '–';
+  const num = Number(n);
+  if (isNaN(num)) return '–';
+  return '€' + num.toLocaleString('nl-NL', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+function fmtPct(n) {
+  if (n === null || n === undefined) return '–';
+  const num = Number(n);
+  if (isNaN(num)) return '–';
+  const sign = num > 0 ? '+' : '';
+  return sign + num.toFixed(1) + '%';
+}
+function statusBadge(status) {
+  const cls = {
+    'exact': 'b-ok', 'binnen_1pct': 'b-bijna', 'binnen_5pct': 'b-warn',
+    'afwijkend': 'b-fout', 'geen_referentie': 'b-leeg', 'geen_kr_data': 'b-leeg'
+  }[status] || 'b-leeg';
+  const label = {
+    'exact': '✓ exact', 'binnen_1pct': 'binnen 1%', 'binnen_5pct': 'binnen 5%',
+    'afwijkend': '⚠ afwijkend', 'geen_referentie': '–', 'geen_kr_data': 'geen data'
+  }[status] || status;
+  return `<span class="badge ${cls}">${label}</span>`;
+}
+
+async function laden() {
+  const jaar = document.getElementById('jaarSel').value;
+  const c = document.getElementById('content');
+  c.innerHTML = '<div class="loading">Laden…</div>';
+  try {
+    const r = await fetch(`${SUPA_URL}/functions/v1/reconciliatie-data?jaar=${jaar}`, {
+      headers: { 'Authorization': 'Bearer ' + SUPA_KEY, 'apikey': SUPA_KEY }
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    if (!data.ok) throw new Error(data.error || 'onbekende fout');
+    render(data, jaar);
+  } catch (e) {
+    c.innerHTML = '<div class="error">Fout bij laden: ' + e.message + '</div>';
+  }
+}
+
+function render(data, jaar) {
+  const ss = data.sync_status;
+  const recDef = data.reconciliatie.filter(r => r.scope === 'def');
+  const recDefOpt = data.reconciliatie.filter(r => r.scope === 'def_optie');
+  
+  // Totalen
+  const totRecrasDef = recDef.reduce((s, r) => s + Number(r.recras_excl_btw || 0), 0);
+  const totKrDef = recDef.reduce((s, r) => s + Number(r.kr_excl_btw || 0), 0);
+  const totRecrasDefOpt = recDefOpt.reduce((s, r) => s + Number(r.recras_excl_btw || 0), 0);
+  const totKrDefOpt = recDefOpt.reduce((s, r) => s + Number(r.kr_excl_btw || 0), 0);
+  
+  const exactDef = recDef.filter(r => r.status === 'exact').length;
+  const totaalDef = recDef.length;
+  
+  document.getElementById('subtitle').textContent = 
+    `Gegenereerd ${new Date(data.gegenereerd_op).toLocaleString('nl-NL')} · jaar ${jaar}`;
+  
+  let html = '';
+  
+  // KPI cards
+  html += `<div class="grid">
+    <div class="card">
+      <div class="lbl">Coverage</div>
+      <div class="val">${ss.coverage_pct}%</div>
+      <div class="sub">${ss.boekingen_met_kosten}/${ss.totaal_boekingen} boekingen ${jaar}</div>
+    </div>
+    <div class="card">
+      <div class="lbl">Boekingen</div>
+      <div class="val">${ss.totaal_boekingen}</div>
+      <div class="sub">${ss.definitief} def · ${ss.optie} optie</div>
+    </div>
+    <div class="card">
+      <div class="lbl">Recras totaal def</div>
+      <div class="val">${fmt(totRecrasDef)}</div>
+      <div class="sub">heel jaar ${jaar} excl btw</div>
+    </div>
+    <div class="card">
+      <div class="lbl">KR totaal def</div>
+      <div class="val">${fmt(totKrDef)}</div>
+      <div class="sub">verschil ${fmt(totKrDef - totRecrasDef)} (${((totKrDef-totRecrasDef)/totRecrasDef*100).toFixed(1)}%)</div>
+    </div>
+    <div class="card">
+      <div class="lbl">Status</div>
+      <div class="val">${exactDef}/${totaalDef}</div>
+      <div class="sub">maanden exact match</div>
+    </div>
+  </div>`;
+  
+  // Toelichting
+  html += `<div class="toelichting">
+    <strong>Hoe dit werkt:</strong> Recras-export wordt vergeleken met de werkelijke 
+    boekings-totalen in KitchenRobot (uit Recras kosten-API). Voor toekomstige maanden 
+    moet dit 100% matchen. Voor verleden maanden kan er een afwijking zijn doordat 
+    boekingen na het maken van de Excel zijn gewijzigd of geannuleerd.
+  </div>`;
+  
+  // Reconciliatie def
+  html += `<section>
+    <h2>Reconciliatie definitief <span class="hint">(alleen status = definitief)</span></h2>
+    <div class="scrollx"><table>
+      <thead><tr>
+        <th>Maand</th>
+        <th class="r">Recras (€)</th>
+        <th class="r">KitchenRobot (€)</th>
+        <th class="r">Verschil (€)</th>
+        <th class="r">Verschil (%)</th>
+        <th>Status</th>
+      </tr></thead>
+      <tbody>`;
+  for (const r of recDef) {
+    const v = Number(r.verschil_eur || 0);
+    const vCls = v > 0 ? 'pos' : v < 0 ? 'neg' : '';
+    html += `<tr>
+      <td class="maand">${MAANDEN[r.maand_nr]}</td>
+      <td class="r mono">${fmt(r.recras_excl_btw)}</td>
+      <td class="r mono">${fmt(r.kr_excl_btw)}</td>
+      <td class="r mono ${vCls}">${v ? fmt(v) : '–'}</td>
+      <td class="r mono ${vCls}">${fmtPct(r.verschil_pct)}</td>
+      <td>${statusBadge(r.status)}</td>
+    </tr>`;
+  }
+  html += `<tr style="font-weight:700; background:#f9fafb">
+    <td>Totaal jaar</td>
+    <td class="r mono">${fmt(totRecrasDef)}</td>
+    <td class="r mono">${fmt(totKrDef)}</td>
+    <td class="r mono ${(totKrDef-totRecrasDef)>0?'pos':'neg'}">${fmt(totKrDef-totRecrasDef)}</td>
+    <td class="r mono">${((totKrDef-totRecrasDef)/totRecrasDef*100).toFixed(2)}%</td>
+    <td></td>
+  </tr>`;
+  html += `</tbody></table></div></section>`;
+  
+  // Reconciliatie def + optie
+  html += `<section>
+    <h2>Reconciliatie definitief + optie <span class="hint">(volledig pipeline)</span></h2>
+    <div class="scrollx"><table>
+      <thead><tr>
+        <th>Maand</th>
+        <th class="r">Recras (€)</th>
+        <th class="r">KitchenRobot (€)</th>
+        <th class="r">Verschil (€)</th>
+        <th class="r">Verschil (%)</th>
+        <th>Status</th>
+      </tr></thead>
+      <tbody>`;
+  for (const r of recDefOpt) {
+    const v = Number(r.verschil_eur || 0);
+    const vCls = v > 0 ? 'pos' : v < 0 ? 'neg' : '';
+    html += `<tr>
+      <td class="maand">${MAANDEN[r.maand_nr]}</td>
+      <td class="r mono">${fmt(r.recras_excl_btw)}</td>
+      <td class="r mono">${fmt(r.kr_excl_btw)}</td>
+      <td class="r mono ${vCls}">${v ? fmt(v) : '–'}</td>
+      <td class="r mono ${vCls}">${fmtPct(r.verschil_pct)}</td>
+      <td>${statusBadge(r.status)}</td>
+    </tr>`;
+  }
+  html += `<tr style="font-weight:700; background:#f9fafb">
+    <td>Totaal jaar</td>
+    <td class="r mono">${fmt(totRecrasDefOpt)}</td>
+    <td class="r mono">${fmt(totKrDefOpt)}</td>
+    <td class="r mono ${(totKrDefOpt-totRecrasDefOpt)>0?'pos':'neg'}">${fmt(totKrDefOpt-totRecrasDefOpt)}</td>
+    <td class="r mono">${totRecrasDefOpt ? ((totKrDefOpt-totRecrasDefOpt)/totRecrasDefOpt*100).toFixed(2)+'%' : '–'}</td>
+    <td></td>
+  </tr>`;
+  html += `</tbody></table></div></section>`;
+  
+  // F&B forecast (alleen 2026)
+  if (data.forecast && data.forecast.length > 0 && jaar === '2026') {
+    html += `<section>
+      <h2>F&B Forecast ${jaar} <span class="hint">(boekingswaarde, 3 scenarios)</span></h2>
+      <div class="scrollx"><table>
+        <thead><tr>
+          <th>Maand</th>
+          <th class="r">2024</th>
+          <th class="r">2025</th>
+          <th class="r">def 2026</th>
+          <th class="r">opt 2026</th>
+          <th class="r">conservatief</th>
+          <th class="r">verwacht</th>
+          <th class="r">optimistisch</th>
+          <th>Bron</th>
+        </tr></thead>
+        <tbody>`;
+    let totVerw = 0;
+    for (const f of data.forecast) {
+      totVerw += Number(f.forecast_verwacht || 0);
+      html += `<tr>
+        <td class="maand">${MAANDEN[f.maand_nr]}</td>
+        <td class="r mono" style="color:#94a3b8">${fmt(f.hist_fb_2024)}</td>
+        <td class="r mono" style="color:#94a3b8">${fmt(f.hist_fb_2025)}</td>
+        <td class="r mono">${fmt(f.fb_definitief)}</td>
+        <td class="r mono">${fmt(f.fb_optie)}</td>
+        <td class="r mono">${fmt(f.forecast_conservatief)}</td>
+        <td class="r mono" style="font-weight:600">${fmt(f.forecast_verwacht)}</td>
+        <td class="r mono">${fmt(f.forecast_optimistisch)}</td>
+        <td><span class="badge b-bron b-${f.dominante_bron}">${f.dominante_bron}</span></td>
+      </tr>`;
+    }
+    html += `<tr style="font-weight:700; background:#f9fafb">
+      <td>Jaar verwacht</td>
+      <td colspan="6"></td>
+      <td class="r mono">${fmt(totVerw)}</td>
+      <td></td>
+    </tr>`;
+    html += `</tbody></table></div>
+      <div style="font-size:12px; color:#64748b; margin-top:12px">
+        <strong>Bron-uitleg:</strong>
+        <span class="badge b-bron b-gerealiseerd">gerealiseerd</span> = werkelijke def-omzet (verleden) ·
+        <span class="badge b-bron b-boekingen">boekingen</span> = boekings-pipeline × factor (toekomst) ·
+        <span class="badge b-bron b-historie">historie</span> = avg/min/max 2024+2025 (fallback voor schrale boekingen)
+      </div>
+    </section>`;
+  }
+  
+  document.getElementById('content').innerHTML = html;
+}
+
+document.getElementById('jaarSel').addEventListener('change', laden);
+laden();
+</script>
+</body>
+</html>
