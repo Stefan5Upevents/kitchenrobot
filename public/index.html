@@ -8499,13 +8499,14 @@ function KioskBeheerTab() {
       toon("PIN moet exact 4 cijfers zijn", true);
       return;
     }
-    var pinHash = "pin_" + btoa(nieuwPin + "_kr_salt");
-    window._supa.from("kiosk_medewerkers").insert({
-      naam: nieuwNaam.trim(),
-      pin_hash: pinHash,
-      outlet_id: nieuwOutlet,
-      rol: nieuwRol
-    }).select("*, kiosk_outlets(naam,code)").then(function(r) {
+    var sess = (await window._supa.auth.getSession()).data.session;
+    var resp = await fetch(window._supa.functionsUrl + "/kiosk-medewerker-beheer", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + (sess && sess.access_token), "apikey": window._supa.supabaseKey },
+      body: JSON.stringify({ actie: "medewerker_aanmaken", naam: nieuwNaam.trim(), outlet_id: nieuwOutlet, rol: nieuwRol, pincode: nieuwPin })
+    });
+    var rJson = await resp.json();
+    Promise.resolve({ data: rJson.ok ? [{ id: rJson.id, naam: rJson.naam }] : null, error: rJson.error ? { message: rJson.error } : null }).then(function(r) {
       if (r.error) {
         toon("Fout: " + r.error.message, true);
         return;
@@ -8802,7 +8803,7 @@ function KioskBeheerTab() {
       {
         style: { ...btnSG, fontSize: 10 },
         title: "PIN resetten",
-        onClick: function() {
+        onClick: async function() {
           var nieuwePinRaw = window.prompt("Nieuwe PIN voor " + m.naam + " (4 cijfers):");
           if (!nieuwePinRaw) return;
           nieuwePinRaw = nieuwePinRaw.replace(/\D/g, "");
@@ -8810,8 +8811,14 @@ function KioskBeheerTab() {
             alert("PIN moet exact 4 cijfers zijn");
             return;
           }
-          var pinHash = "pin_" + btoa(nieuwePinRaw + "_kr_salt");
-          window._supa.from("kiosk_medewerkers").update({ pin_hash: pinHash }).eq("id", m.id).then(function(r) {
+          var sessR = await window._supa.auth.getSession();
+          var respR = await fetch(window._supa.functionsUrl + "/kiosk-medewerker-beheer", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": "Bearer " + (sessR.data.session && sessR.data.session.access_token), "apikey": window._supa.supabaseKey },
+            body: JSON.stringify({ actie: "medewerker_pin_resetten", medewerker_id: m.id, pincode: nieuwePinRaw })
+          });
+          var rPinJson = await respR.json();
+          Promise.resolve({ error: rPinJson.error ? { message: rPinJson.error } : null }).then(function(r) {
             if (r.error) {
               toon("Fout: " + r.error.message, true);
             } else {
@@ -8821,6 +8828,25 @@ function KioskBeheerTab() {
         }
       },
       "🔑 PIN"
+    ), /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        style: { ...btnSG, fontSize: 10 },
+        title: "PIN naar 0000",
+        onClick: async function() {
+          if (!confirm("PIN van " + m.naam + " terugzetten naar 0000?")) return;
+          var sessZ = await window._supa.auth.getSession();
+          var respZ = await fetch(window._supa.functionsUrl + "/kiosk-medewerker-beheer", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": "Bearer " + (sessZ.data.session && sessZ.data.session.access_token), "apikey": window._supa.supabaseKey },
+            body: JSON.stringify({ actie: "medewerker_pin_naar_0000", medewerker_id: m.id })
+          });
+          var rZJson = await respZ.json();
+          if (rZJson.error) { toon("Fout: " + rZJson.error, true); }
+          else { toon("✓ PIN van " + m.naam + " is nu 0000"); }
+        }
+      },
+      "↺ 0000"
     ), /* @__PURE__ */ React.createElement(
       "button",
       {
