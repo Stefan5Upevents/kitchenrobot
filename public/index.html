@@ -24632,20 +24632,23 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
 </script>
 <!-- KR-FBV2-END -->
 
-<script id="kr-keuken-filter-v2">
+<script id="kr-pers-filter-v2">
 (function(){
-if(window._krFilterV2)return;window._krFilterV2=true;
-var KEUKEN_IDS=new Set([1992, 1995, 2001, 2003, 2033, 2036, 2037, 2048, 2049, 2052, 2055, 2057, 2194, 2195, 2207, 2231, 3012, 3301, 3303, 3305, 3307, 3309, 3310, 3313, 3316, 3319, 3322, 3327, 3328, 3332, 3335, 3336, 3337, 3338, 3340, 3342, 3478, 3483, 3659, 3695, 3698, 3799, 3814, 3932, 3933, 3936, 3937, 3939, 3940, 3976, 3978, 3980, 3981, 3983, 3989, 3992, 3995, 4259, 4261, 4528, 4530, 4533, 4536, 4539, 4541, 4543, 4546, 4553, 4554, 4556, 4558, 4584, 4650, 4651, 4654, 4657, 4664, 4666, 4758, 4760, 4761, 4764, 4767, 4770, 4777, 4785, 4789, 4791, 4809, 4812, 4814, 4820, 4822, 4824, 4827, 5176, 5178, 5180, 5182, 5183, 5184, 5186, 5187, 5189, 5190, 5193, 5196, 5197, 5200, 5203, 5206, 5209, 5212, 5213, 5216, 5219, 5225, 5233, 5243, 5245, 5249, 5251, 5254, 5257, 5260, 5263, 5266, 5269, 5271, 5273, 5276, 5279, 5282, 5285, 5288, 5290, 5291, 5294, 5296, 5297, 5298, 5301, 5304, 5305, 5306, 5308, 5309, 5311, 5325, 5328, 5330, 5331, 5336, 5339, 5342, 5343, 5346, 5348, 5349, 5350, 5351, 5358, 5361, 5363, 5364, 5366, 5368, 5369, 5374, 5377, 5389, 5390, 5393, 5394, 5396, 5399, 5401, 5404, 5405, 5406, 5409, 5410, 5413, 5415, 5417, 5420, 5421, 5428, 5431, 5434, 5438, 5441, 5442, 5443, 5444, 5447, 5448, 5451, 5453, 5454, 5458, 5467, 5476, 5479, 5480, 5483, 5486, 5489, 5492, 5494, 5495, 5496, 5497, 5504, 5507, 5508, 5509, 5510, 5512, 5569, 5570, 5574, 5577, 5578, 5580, 6123, 6124, 6127, 6128, 6154, 6250, 6251, 6262, 6264, 6271, 6289, 6534, 7059, 7062, 7065, 7068, 7347, 7350, 7353, 7356, 7795, 7798, 7801, 7804, 7807, 7810, 7813, 7816, 7819, 7822, 7825, 7828, 7831, 7834, 7837, 7840, 7843, 7846, 7849, 7852, 7855, 7858, 7861, 7864, 7867, 7870, 7873, 7876, 7885, 7888, 7891, 7894, 7897, 7900, 7903, 7906, 7909]);
-function heeftKeuken(b){if(!b||!Array.isArray(b.kosten_regels))return false;for(var i=0;i<b.kosten_regels.length;i++){var r=b.kosten_regels[i];if(r&&KEUKEN_IDS.has(r.product_id))return true;}return false;}
-window._krBoekingHeeftKeuken=heeftKeuken;
-function pasFilterToe(){if(!Array.isArray(window._recrasBoekingen))return;window._recrasBoekingen=window._recrasBoekingen.filter(heeftKeuken);}
-function wrapLaad(){var orig=window._laadBoekingenUitDB;if(!orig||orig._krWrapped)return;window._laadBoekingenUitDB=async function(){var r=await orig.apply(this,arguments);pasFilterToe();return r;};window._laadBoekingenUitDB._krWrapped=true;}
-var pog=0;var iv=setInterval(function(){if(window._laadBoekingenUitDB&&!window._laadBoekingenUitDB._krWrapped){wrapLaad();clearInterval(iv);}else if(++pog>100){clearInterval(iv);}},100);
-function cleanupLegeDagen(){var tabellen=document.querySelectorAll("table");for(var i=0;i<tabellen.length;i++){var tbl=tabellen[i];var rijen=tbl.querySelectorAll("tbody tr");var huidige=null;var hb=false;for(var j=0;j<rijen.length;j++){var rij=rijen[j];var isDag=rij.querySelector("td[colspan]")!==null;if(isDag){if(huidige&&!hb)huidige.style.display="none";huidige=rij;hb=false;rij.style.display="";}else{if(rij.style.display!=="none"&&rij.offsetHeight>0)hb=true;}}if(huidige&&!hb)huidige.style.display="none";}}
-var deb=null;function plan(){if(deb)clearTimeout(deb);deb=setTimeout(cleanupLegeDagen,300);}
-function start(){cleanupLegeDagen();if(document.body){var obs=new MutationObserver(plan);obs.observe(document.body,{childList:true,subtree:true});}}
-if(document.body){start();}else{document.addEventListener("DOMContentLoaded",start);}
-setInterval(cleanupLegeDagen,3000);
+if(window._krPersFilterActief)return;window._krPersFilterActief=true;
+function isLeegOfNul(t){if(!t)return true;var s=String(t).trim().replace(/\u00A0/g,"");return s===""||s==="0"||s==="0,00"||s==="0.00"||s==="\u2014"||s==="-";}
+function vindPersIdx(table){var ths=table.querySelectorAll("thead th");for(var i=0;i<ths.length;i++){var t=(ths[i].textContent||"").trim().toUpperCase();if(t==="PERS."||t==="PERS"||t==="PERSONEN")return i;}return -1;}
+function isBoekingenTabel(table){var ths=table.querySelectorAll("thead th");var hasRecras=false,hasPers=false;for(var i=0;i<ths.length;i++){var t=(ths[i].textContent||"").trim().toUpperCase();if(t.indexOf("RECRAS")>=0)hasRecras=true;if(t==="PERS."||t==="PERS")hasPers=true;}return hasRecras&&hasPers;}
+function isDagHeaderRij(tr){var tds=tr.children;if(!tds||tds.length===0)return false;for(var i=0;i<tds.length;i++){if(tds[i].hasAttribute&&tds[i].hasAttribute("colspan"))return true;}return false;}
+function pasFilterToe(){var tabellen=document.querySelectorAll("table");for(var i=0;i<tabellen.length;i++){var tbl=tabellen[i];if(!isBoekingenTabel(tbl))continue;var idx=vindPersIdx(tbl);if(idx<0)continue;var rijen=tbl.querySelectorAll("tbody tr");
+/* Stap 1: verberg boekingrijen met PERS=0 */
+for(var j=0;j<rijen.length;j++){var rij=rijen[j];if(isDagHeaderRij(rij))continue;var cellen=rij.children;if(!cellen||cellen.length<=idx)continue;if(isLeegOfNul(cellen[idx].textContent)){if(rij.style.display!=="none")rij.style.display="none";}else{if(rij.style.display==="none")rij.style.display="";}}
+/* Stap 2: verberg dag-headers zonder zichtbare boekingen erna (tot volgende dag-header) */
+var laatsteHeader=null;var headerHeeftBoeking=false;for(var k=0;k<rijen.length;k++){var rij=rijen[k];if(isDagHeaderRij(rij)){if(laatsteHeader&&!headerHeeftBoeking){laatsteHeader.style.display="none";}else if(laatsteHeader){laatsteHeader.style.display="";}laatsteHeader=rij;headerHeeftBoeking=false;}else{if(rij.style.display!=="none")headerHeeftBoeking=true;}}if(laatsteHeader){if(!headerHeeftBoeking)laatsteHeader.style.display="none";else laatsteHeader.style.display="";}
+}}
+var deb=null;function plan(){if(deb)clearTimeout(deb);deb=setTimeout(pasFilterToe,150);}
+function start(){pasFilterToe();var obs=new MutationObserver(plan);if(document.body)obs.observe(document.body,{childList:true,subtree:true,characterData:true});}
+if(document.body)start();else document.addEventListener("DOMContentLoaded",start);
+setInterval(pasFilterToe,2000);
 })();
 </script>
 </body></html>
