@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KitchenRobot — Boekingen (mockup v11)</title>
+<title>KitchenRobot — Boekingen (mockup v12)</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -60,31 +60,31 @@ body {
 .main { flex: 1; padding: 24px; background: #FFFFFF; min-width: 0; }
 .page-title { font-size: 22px; font-weight: 700; color: #0B2841; margin-bottom: 4px; }
 .page-sub { color: #5A6B7D; font-size: 13px; margin-bottom: 18px; }
-.info-banner { background: #F5F9FC; border: 1px solid #DCE7EE; color: #0B2841;
+.info-banner { background: #EEF4FB; border: 1px solid #C9DCEC; color: #0B2841;
   padding: 10px 14px; border-radius: 8px; font-size: 12.5px; margin-bottom: 14px;
   display: flex; align-items: center; gap: 8px; }
 
-.filter-card { background: white; border: 1px solid #E4ECF2; border-radius: 12px;
+.filter-card { background: white; border: 1px solid #DDE7F0; border-radius: 12px;
   padding: 16px; margin-bottom: 16px;
   box-shadow: 0 2px 10px rgba(11,40,65,0.04); }
 .filter-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .filter-label { font-size: 11px; font-weight: 700; text-transform: uppercase;
   letter-spacing: 0.5px; color: #94A8B7; margin-right: 8px; }
 
-.pill { padding: 7px 14px; border-radius: 20px; border: 1.5px solid #E4ECF2;
+.pill { padding: 7px 14px; border-radius: 20px; border: 1.5px solid #DDE7F0;
   background: white; color: #5A6B7D; font-size: 13px; font-weight: 500;
   cursor: pointer; transition: all 0.15s; }
 .pill:hover { border-color: #FF424D; color: #FF424D; }
 .pill.active { background: #FF424D; border-color: #FF424D; color: white;
   box-shadow: 0 2px 6px rgba(255,66,77,0.3); }
 
-.divider { width: 1px; height: 24px; background: #E4ECF2; margin: 0 4px; }
-.date-input { padding: 7px 12px; border: 1.5px solid #E4ECF2; border-radius: 8px;
+.divider { width: 1px; height: 24px; background: #DDE7F0; margin: 0 4px; }
+.date-input { padding: 7px 12px; border: 1.5px solid #DDE7F0; border-radius: 8px;
   font-size: 13px; color: #0B2841; background: white; }
 
-.table-card { background: white; border: 1px solid #E4ECF2; border-radius: 12px;
+.table-card { background: white; border: 1px solid #DDE7F0; border-radius: 12px;
   overflow: hidden; box-shadow: 0 2px 10px rgba(11,40,65,0.04); }
-.table-header { background: white; padding: 14px 16px; border-bottom: 1px solid #E4ECF2;
+.table-header { background: white; padding: 14px 16px; border-bottom: 1px solid #DDE7F0;
   display: flex; align-items: center; justify-content: space-between; }
 .table-title { font-weight: 700; font-size: 15px; color: #0B2841; }
 .table-count { font-size: 12px; color: #5A6B7D; margin-left: 8px; font-weight: 400; }
@@ -108,14 +108,15 @@ thead {
 thead th { padding: 12px 14px; text-align: left; font-size: 11px; font-weight: 700;
   text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
 
-/* TABEL-INHOUD = HEEL ZACHT lichtblauw (bijna wit) */
-tbody { background: #F5F9FC; }
+/* TABEL-INHOUD = subtiele blauwtint */
+tbody { background: #EEF4FB; }
 
-tbody tr.day-row { background: #E8EFF5; }
-tbody tr.day-row td { padding: 10px 14px; font-weight: 700; color: #FF424D;
-  font-size: 13px; border-top: 1px solid #DCE7EE; }
+/* DAG-KOPPEN — donkernavy tekst (geen rood meer) */
+tbody tr.day-row { background: #DDE7F2; }
+tbody tr.day-row td { padding: 10px 14px; font-weight: 700; color: #0B2841;
+  font-size: 13px; border-top: 1px solid #C9DCEC; }
 
-tbody tr.boeking { border-top: 1px solid rgba(11,40,65,0.04); cursor: pointer; transition: background 0.1s; }
+tbody tr.boeking { border-top: 1px solid rgba(11,40,65,0.05); cursor: pointer; transition: background 0.1s; }
 tbody tr.boeking:hover { background: white; }
 tbody tr.boeking td { padding: 12px 14px; font-size: 13.5px; }
 .id-cell { color: #94A8B7; font-family: monospace; font-size: 12px; }
@@ -128,14 +129,14 @@ tbody tr.boeking td { padding: 12px 14px; font-size: 13.5px; }
 
 .outlet-tag { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px;
   border-radius: 12px; background: white; font-size: 12px; color: #0B2841; font-weight: 500;
-  border: 1px solid #E4ECF2; }
+  border: 1px solid #DDE7F0; }
 .outlet-dot { width: 7px; height: 7px; border-radius: 50%; }
 .outlet-west .outlet-dot { background: #002D41; }
 .outlet-weesp .outlet-dot { background: #FF424D; }
 .outlet-extern .outlet-dot { background: #94A8B7; }
 
 .personen-cell { text-align: right; font-weight: 600; color: #0B2841; }
-.action-btn { background: white; border: 1.5px solid #E4ECF2; width: 32px; height: 32px;
+.action-btn { background: white; border: 1.5px solid #DDE7F0; width: 32px; height: 32px;
   border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center;
   justify-content: center; color: #5A6B7D; }
 .action-btn:hover { border-color: #FF424D; color: #FF424D; background: #FFF1F2; }
@@ -162,7 +163,7 @@ tbody tr.boeking td { padding: 12px 14px; font-size: 13.5px; }
   <div class="status-item"><span class="status-dot"></span> Sensoren: 12/12</div>
   <div class="status-item"><span class="status-dot warn"></span> HACCP: 3 alarmen</div>
   <div class="status-item"><span class="status-dot"></span> Crons: 24/24</div>
-  <div class="status-item" style="margin-left:auto;color:rgba(255,255,255,0.5)">v11 · subtiel lichtblauw</div>
+  <div class="status-item" style="margin-left:auto;color:rgba(255,255,255,0.5)">v12 · subtiel blauwer + navy dag-koppen</div>
 </div>
 <div class="layout">
   <aside class="sidebar">
@@ -194,7 +195,7 @@ tbody tr.boeking td { padding: 12px 14px; font-size: 13.5px; }
   <main class="main">
     <h1 class="page-title">Boekingen</h1>
     <p class="page-sub">14 boekingen · 2.105 personen · 1 t/m 6 september 2026</p>
-    <div class="info-banner">💡 <strong>Mockup v11</strong> · Heel zacht lichtblauw (#F5F9FC) — net iets meer dan wit, als achtergrondtint.</div>
+    <div class="info-banner">💡 <strong>Mockup v12</strong> · Iets meer blauwtint in tabel + dag-koppen nu donkernavy ipv rood.</div>
     <div class="filter-card">
       <div class="filter-row" style="margin-bottom:10px">
         <span class="filter-label">Outlet</span>
