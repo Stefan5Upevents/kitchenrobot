@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KitchenRobot — Boekingen (mockup)</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #FAFAFA; color: #111827; font-size: 14px; line-height: 1.5;
+}
+.topbar {
+  background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);
+  color: white; padding: 14px 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  position: sticky; top: 0; z-index: 100;
+}
+.logo { font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+.logo-icon { background: white; color: #DC2626; width: 28px; height: 28px; border-radius: 7px;
+  display: flex; align-items: center; justify-content: center; font-size: 16px; }
+.user-pill { background: rgba(255,255,255,0.18); padding: 6px 12px; border-radius: 20px;
+  font-size: 12px; display: flex; align-items: center; gap: 6px; }
+.user-dot { width: 8px; height: 8px; background: #34D399; border-radius: 50%; }
+.status-strip { background: #FFF; border-bottom: 1px solid #E5E7EB; padding: 8px 20px;
+  display: flex; gap: 16px; font-size: 12px; overflow-x: auto; white-space: nowrap; }
+.status-item { display: flex; align-items: center; gap: 6px; color: #6B7280; }
+.status-dot { width: 7px; height: 7px; border-radius: 50%; background: #10B981; }
+.status-dot.warn { background: #F59E0B; }
+.layout { display: flex; min-height: calc(100vh - 84px); }
+.sidebar { width: 220px; background: white; border-right: 1px solid #E5E7EB;
+  padding: 16px 0; flex-shrink: 0; }
+.nav-group { margin-bottom: 16px; }
+.nav-label { font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 1px; color: #9CA3AF; padding: 8px 20px; }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 20px;
+  color: #374151; text-decoration: none; font-size: 13.5px;
+  border-left: 3px solid transparent; transition: all 0.15s; cursor: pointer; }
+.nav-item:hover { background: #FEF2F2; }
+.nav-item.active { background: #FEF2F2; border-left-color: #DC2626; color: #DC2626; font-weight: 600; }
+.nav-icon { width: 18px; text-align: center; }
+.main { flex: 1; padding: 20px; background: #FAFAFA; min-width: 0; }
+.page-title { font-size: 22px; font-weight: 700; color: #111827; margin-bottom: 4px; }
+.page-sub { color: #6B7280; font-size: 13px; margin-bottom: 16px; }
+.info-banner { background: #FEF3C7; border: 1px solid #FDE68A; color: #92400E;
+  padding: 10px 14px; border-radius: 8px; font-size: 12.5px; margin-bottom: 14px;
+  display: flex; align-items: center; gap: 8px; }
+.filter-card { background: white; border: 1px solid #E5E7EB; border-radius: 12px;
+  padding: 16px; margin-bottom: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
+.filter-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.filter-label { font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.5px; color: #9CA3AF; margin-right: 8px; }
+.pill { padding: 7px 14px; border-radius: 20px; border: 1.5px solid #E5E7EB;
+  background: white; color: #6B7280; font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: all 0.15s; }
+.pill:hover { border-color: #DC2626; color: #DC2626; }
+.pill.active { background: #DC2626; border-color: #DC2626; color: white; }
+.divider { width: 1px; height: 24px; background: #E5E7EB; margin: 0 4px; }
+.date-input { padding: 7px 12px; border: 1.5px solid #E5E7EB; border-radius: 8px;
+  font-size: 13px; color: #111827; background: white; }
+.table-card { background: white; border: 1px solid #E5E7EB; border-radius: 12px;
+  overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
+.table-header { background: white; padding: 14px 16px; border-bottom: 1px solid #E5E7EB;
+  display: flex; align-items: center; justify-content: space-between; }
+.table-title { font-weight: 700; font-size: 15px; color: #111827; }
+.table-count { font-size: 12px; color: #6B7280; margin-left: 8px; font-weight: 400; }
+.btn-primary { background: #DC2626; color: white; border: none; padding: 8px 16px;
+  border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px; }
+.btn-primary:hover { background: #B91C1C; }
+.btn-secondary { background: white; color: #6B7280; border: 1.5px solid #E5E7EB;
+  padding: 7px 14px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; }
+table { width: 100%; border-collapse: collapse; }
+thead { background: linear-gradient(180deg, #DC2626 0%, #B91C1C 100%); color: white; }
+thead th { padding: 12px 14px; text-align: left; font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
+tbody tr.day-row { background: #FAFAFA; }
+tbody tr.day-row td { padding: 10px 14px; font-weight: 700; color: #DC2626;
+  font-size: 13px; border-top: 1px solid #E5E7EB; }
+tbody tr.boeking { border-top: 1px solid #F3F4F6; cursor: pointer; transition: background 0.1s; }
+tbody tr.boeking:hover { background: #FEF2F2; }
+tbody tr.boeking td { padding: 12px 14px; font-size: 13.5px; }
+.id-cell { color: #9CA3AF; font-family: monospace; font-size: 12px; }
+.naam-cell { font-weight: 600; color: #111827; }
+.badge { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 12px;
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+.badge-def { background: #D1FAE5; color: #065F46; }
+.badge-optie { background: #FEF3C7; color: #92400E; }
+.outlet-tag { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px;
+  border-radius: 12px; background: #F3F4F6; font-size: 12px; color: #374151; font-weight: 500; }
+.outlet-dot { width: 7px; height: 7px; border-radius: 50%; }
+.outlet-west .outlet-dot { background: #3B82F6; }
+.outlet-weesp .outlet-dot { background: #8B5CF6; }
+.outlet-extern .outlet-dot { background: #6B7280; }
+.personen-cell { text-align: right; font-weight: 600; color: #111827; }
+.action-btn { background: transparent; border: 1.5px solid #E5E7EB; width: 32px; height: 32px;
+  border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center;
+  justify-content: center; color: #6B7280; }
+.action-btn:hover { border-color: #DC2626; color: #DC2626; background: #FEF2F2; }
+@media (max-width: 768px) {
+  .sidebar { display: none; }
+  .main { padding: 12px; }
+  .page-title { font-size: 18px; }
+  thead th { padding: 10px 8px; font-size: 10px; }
+  tbody tr.boeking td { padding: 10px 8px; font-size: 12.5px; }
+  .id-cell { display: none; }
+  .filter-card { padding: 12px; }
+  .pill { padding: 6px 12px; font-size: 12px; }
+}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="logo"><div class="logo-icon">K</div><span>KitchenRobot</span></div>
+  <div class="user-pill"><span class="user-dot"></span>Stefan · beheerder</div>
+</div>
+<div class="status-strip">
+  <div class="status-item"><span class="status-dot"></span> Recras: synced 07:00</div>
+  <div class="status-item"><span class="status-dot"></span> Sensoren: 12/12</div>
+  <div class="status-item"><span class="status-dot warn"></span> HACCP: 3 alarmen</div>
+  <div class="status-item"><span class="status-dot"></span> Crons: 24/24 ok</div>
+  <div class="status-item" style="margin-left:auto"><span style="color:#9CA3AF">v2026.05.03 mockup</span></div>
+</div>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="nav-group">
+      <div class="nav-label">Dagelijks</div>
+      <a class="nav-item"><span class="nav-icon">📥</span> Inbox</a>
+      <a class="nav-item active"><span class="nav-icon">📅</span> Boekingen</a>
+      <a class="nav-item"><span class="nav-icon">⏱️</span> Tijden</a>
+      <a class="nav-item"><span class="nav-icon">📋</span> Opzet</a>
+      <a class="nav-item"><span class="nav-icon">🍽️</span> Buffet</a>
+      <a class="nav-item"><span class="nav-icon">👨‍🍳</span> Chef Review</a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-label">Analyse</div>
+      <a class="nav-item"><span class="nav-icon">💰</span> Financieel</a>
+      <a class="nav-item"><span class="nav-icon">📊</span> F&amp;B</a>
+      <a class="nav-item"><span class="nav-icon">🌡️</span> HACCP</a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-label">Beheer</div>
+      <a class="nav-item"><span class="nav-icon">⚙️</span> Systeem</a>
+      <a class="nav-item"><span class="nav-icon">👥</span> Gebruikers</a>
+    </div>
+  </aside>
+  <main class="main">
+    <h1 class="page-title">Boekingen</h1>
+    <p class="page-sub">14 boekingen · 2.105 personen · 1 t/m 6 september 2026</p>
+    <div class="info-banner">💡 <strong>Mockup-versie</strong> · Voorbeeld van witte achtergrond + rode accenten in SwitchBot-stijl. Niet aangesloten op live data.</div>
+    <div class="filter-card">
+      <div class="filter-row" style="margin-bottom:10px">
+        <span class="filter-label">Outlet</span>
+        <button class="pill active">Alle</button>
+        <button class="pill">West</button>
+        <button class="pill">Weesp</button>
+        <button class="pill">Extern</button>
+      </div>
+      <div class="filter-row">
+        <span class="filter-label">Periode</span>
+        <input type="date" class="date-input" value="2026-09-01">
+        <span style="color:#9CA3AF">→</span>
+        <input type="date" class="date-input" value="2026-09-06">
+        <div class="divider"></div>
+        <button class="pill">Vandaag</button>
+        <button class="pill">Week</button>
+        <button class="pill">Maand</button>
+      </div>
+    </div>
+    <div class="table-card">
+      <div class="table-header">
+        <div><span class="table-title">Boekingsoverzicht</span><span class="table-count">14 resultaten</span></div>
+        <button class="btn-primary"><span>+</span> Nieuwe</button>
+      </div>
+      <div style="overflow-x:auto"><table>
+        <thead><tr><th>ID</th><th>Groepsnaam</th><th>Status</th><th>Outlet</th><th style="text-align:right">Personen</th><th></th></tr></thead>
+        <tbody>
+          <tr class="day-row"><td colspan="6">📅 Dinsdag 1 september · 3 boekingen · 415 personen</td></tr>
+          <tr class="boeking"><td class="id-cell">174952</td><td class="naam-cell">Driestar introdag!</td><td><span class="badge badge-def">Definitief</span></td><td><span class="outlet-tag outlet-west"><span class="outlet-dot"></span>West</span></td><td class="personen-cell">140</td><td><button class="action-btn">→</button></td></tr>
+          <tr class="boeking"><td class="id-cell">178804</td><td class="naam-cell">Introductiedag Inholland</td><td><span class="badge badge-def">Definitief</span></td><td><span class="outlet-tag outlet-extern"><span class="outlet-dot"></span>Extern</span></td><td class="personen-cell">90</td><td><button class="action-btn">→</button></td></tr>
+          <tr class="boeking"><td class="id-cell">182028</td><td class="naam-cell">P&amp;O CZSK afdelingsdag</td><td><span class="badge badge-def">Definitief</span></td><td><span class="outlet-tag outlet-west"><span class="outlet-dot"></span>West</span></td><td class="personen-cell">185</td><td><button class="action-btn">→</button></td></tr>
+          <tr class="day-row"><td colspan="6">📅 Woensdag 2 september · 2 boekingen · 210 personen</td></tr>
+          <tr class="boeking"><td class="id-cell">183558</td><td class="naam-cell">KPN Retail &amp; Customer Service</td><td><span class="badge badge-optie">Optie</span></td><td><span class="outlet-tag outlet-weesp"><span class="outlet-dot"></span>Weesp</span></td><td class="personen-cell">175</td><td><button class="action-btn">→</button></td></tr>
+          <tr class="boeking"><td class="id-cell">183024</td><td class="naam-cell">Team Outing Athora</td><td><span class="badge badge-def">Definitief</span></td><td><span class="outlet-tag outlet-west"><span class="outlet-dot"></span>West</span></td><td class="personen-cell">35</td><td><button class="action-btn">→</button></td></tr>
+          <tr class="day-row"><td colspan="6">📅 Donderdag 3 september · 3 boekingen · 510 personen</td></tr>
+          <tr class="boeking"><td class="id-cell">177310</td><td class="naam-cell">Landelijke HR Dag - Marechaussee</td><td><span class="badge badge-def">Definitief</span></td><td><span class="outlet-tag outlet-west"><span class="outlet-dot"></span>West</span></td><td class="personen-cell">230</td><td><button class="action-btn">→</button></td></tr>
+          <tr class="boeking"><td class="id-cell">182277</td><td class="naam-cell">Sandoz Jubileum Event 2026</td><td><span class="badge badge-def">Definitief</span></td><td><span class="outlet-tag outlet-west"><span class="outlet-dot"></span>West</span></td><td class="personen-cell">80</td><td><button class="action-btn">→</button></td></tr>
+          <tr class="boeking"><td class="id-cell">187857</td><td class="naam-cell">Zomer BBQ</td><td><span class="badge badge-optie">Optie</span></td><td><span class="outlet-tag outlet-west"><span class="outlet-dot"></span>West</span></td><td class="personen-cell">200</td><td><button class="action-btn">→</button></td></tr>
+          <tr class="day-row"><td colspan="6">📅 Vrijdag 4 september · 2 boekingen · 800 personen</td></tr>
+          <tr class="boeking"><td class="id-cell">178903</td><td class="naam-cell">Chipsoft Family BBQ 2026</td><td><span class="badge badge-optie">Optie</span></td><td><span class="outlet-tag outlet-extern"><span class="outlet-dot"></span>Extern</span></td><td class="personen-cell">700</td><td><button class="action-btn">→</button></td></tr>
+          <tr class="boeking"><td class="id-cell">184308</td><td class="naam-cell">UWV Onboardingsdag</td><td><span class="badge badge-optie">Optie</span></td><td><span class="outlet-tag outlet-extern"><span class="outlet-dot"></span>Extern</span></td><td class="personen-cell">100</td><td><button class="action-btn">→</button></td></tr>
+          <tr class="day-row"><td colspan="6">📅 Zaterdag 5 september · 1 boeking · 70 personen</td></tr>
+          <tr class="boeking"><td class="id-cell">185844</td><td class="naam-cell">Markus en Markus Stroopwafels</td><td><span class="badge badge-def">Definitief</span></td><td><span class="outlet-tag outlet-west"><span class="outlet-dot"></span>West</span></td><td class="personen-cell">70</td><td><button class="action-btn">→</button></td></tr>
+          <tr class="day-row"><td colspan="6">📅 Zondag 6 september · 2 boekingen · 190 personen</td></tr>
+          <tr class="boeking"><td class="id-cell">188034</td><td class="naam-cell">Altan 5 jaar!</td><td><span class="badge badge-optie">Optie</span></td><td><span class="outlet-tag outlet-west"><span class="outlet-dot"></span>West</span></td><td class="personen-cell">40</td><td><button class="action-btn">→</button></td></tr>
+          <tr class="boeking"><td class="id-cell">188016</td><td class="naam-cell">Rekindle 2026</td><td><span class="badge badge-optie">Optie</span></td><td><span class="outlet-tag outlet-west"><span class="outlet-dot"></span>West</span></td><td class="personen-cell">150</td><td><button class="action-btn">→</button></td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </main>
+</div>
+<script>
+document.querySelectorAll('.filter-row').forEach((row, idx) => {
+  row.querySelectorAll('.pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      if (idx === 0) row.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+      pill.classList.toggle('active');
+    });
+  });
+});
+document.querySelectorAll('tr.boeking').forEach(row => {
+  row.addEventListener('click', () => {
+    alert('Boeking openen: ' + row.querySelector('.naam-cell').textContent);
+  });
+});
+</script>
+</body>
+</html>
