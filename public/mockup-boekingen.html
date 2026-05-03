@@ -3,111 +3,140 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KitchenRobot — Boekingen (mockup v3)</title>
+<title>KitchenRobot — Boekingen (mockup v4)</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: #EEF4F9; color: #1A2B3C; font-size: 14px; line-height: 1.5;
+  background: #EEF4F9; color: #0F2438; font-size: 14px; line-height: 1.5;
 }
+
+/* TOPBAR — donkerblauw zoals huidige site */
 .topbar {
-  background: linear-gradient(135deg, #1E5FB8 0%, #2B6CB0 50%, #3182CE 100%);
+  background: linear-gradient(180deg, #002D41 0%, #003B54 100%);
   color: white; padding: 14px 20px;
   display: flex; align-items: center; justify-content: space-between;
-  box-shadow: 0 3px 14px rgba(30,95,184,0.25);
+  box-shadow: 0 2px 10px rgba(0,45,65,0.25);
   position: sticky; top: 0; z-index: 100;
 }
 .logo { font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 10px; letter-spacing: -0.3px; }
-.logo-icon {
-  background: white; color: #2B6CB0;
-  width: 30px; height: 30px; border-radius: 8px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 14px; font-weight: 800;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-}
-.user-pill { background: rgba(255,255,255,0.18); padding: 6px 12px; border-radius: 20px;
+.brand-red { color: #FF424D; }
+.user-pill { background: rgba(255,255,255,0.12); padding: 6px 12px; border-radius: 20px;
   font-size: 12px; display: flex; align-items: center; gap: 6px;
-  border: 1px solid rgba(255,255,255,0.25); }
-.user-dot { width: 8px; height: 8px; background: #34D399; border-radius: 50%; box-shadow: 0 0 8px #34D399; }
-.status-strip { background: #FFF; border-bottom: 1px solid #DCE7F0; padding: 8px 20px;
-  display: flex; gap: 16px; font-size: 12px; overflow-x: auto; white-space: nowrap; }
-.status-item { display: flex; align-items: center; gap: 6px; color: #5A6B7D; }
+  border: 1px solid rgba(255,255,255,0.2); }
+.user-dot { width: 8px; height: 8px; background: #34D399; border-radius: 50%; box-shadow: 0 0 6px #34D399; }
+
+/* STATUS-STRIP donkerblauw zoals nu */
+.status-strip {
+  background: #002D41; border-top: 1px solid rgba(255,255,255,0.08);
+  padding: 8px 20px; display: flex; gap: 16px;
+  font-size: 12px; overflow-x: auto; white-space: nowrap; color: rgba(255,255,255,0.85);
+}
+.status-item { display: flex; align-items: center; gap: 6px; }
 .status-dot { width: 7px; height: 7px; border-radius: 50%; background: #10B981; }
 .status-dot.warn { background: #F59E0B; }
+
 .layout { display: flex; min-height: calc(100vh - 84px); }
-.sidebar { width: 220px; background: white; border-right: 1px solid #DCE7F0;
+
+/* SIDEBAR donkerblauw zoals huidige site */
+.sidebar { width: 220px; background: #002D41; color: white;
   padding: 16px 0; flex-shrink: 0; }
+.sidebar-header {
+  padding: 12px 20px 16px; border-bottom: 1px solid rgba(255,255,255,0.08);
+  margin-bottom: 12px;
+}
+.sidebar-title { font-weight: 800; font-size: 15px; color: #FF424D; letter-spacing: 0.5px; }
+.sidebar-sub { font-size: 10px; color: rgba(255,255,255,0.5); margin-top: 2px; letter-spacing: 1.5px; }
 .nav-group { margin-bottom: 16px; }
 .nav-label { font-size: 10px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 1px; color: #93A4B5; padding: 8px 20px; }
+  letter-spacing: 1px; color: rgba(255,255,255,0.45); padding: 8px 20px; }
 .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 20px;
-  color: #2D4055; text-decoration: none; font-size: 13.5px;
+  color: rgba(255,255,255,0.85); text-decoration: none; font-size: 13.5px;
   border-left: 3px solid transparent; transition: all 0.15s; cursor: pointer; }
-.nav-item:hover { background: #EEF4F9; color: #1E5FB8; }
-.nav-item.active { background: #FFF1F2; border-left-color: #FF424D; color: #FF424D; font-weight: 600; }
+.nav-item:hover { background: rgba(255,255,255,0.06); color: white; }
+.nav-item.active {
+  background: linear-gradient(90deg, rgba(255,66,77,0.2) 0%, rgba(255,66,77,0.05) 100%);
+  border-left-color: #FF424D; color: white; font-weight: 600;
+}
 .nav-icon { width: 18px; text-align: center; }
+
+/* MAIN — lichte achtergrond als contrast met sidebar */
 .main { flex: 1; padding: 24px; background: #EEF4F9; min-width: 0; }
-.page-title { font-size: 22px; font-weight: 700; color: #1A2B3C; margin-bottom: 4px; }
+.page-title { font-size: 22px; font-weight: 700; color: #0F2438; margin-bottom: 4px; }
 .page-sub { color: #5A6B7D; font-size: 13px; margin-bottom: 18px; }
-.info-banner { background: #DBEAFE; border: 1px solid #93C5FD; color: #1E40AF;
+.info-banner { background: #FFF1F2; border: 1px solid #FECACA; color: #991B1B;
   padding: 10px 14px; border-radius: 8px; font-size: 12.5px; margin-bottom: 14px;
   display: flex; align-items: center; gap: 8px; }
+
 .filter-card { background: white; border: 1px solid #DCE7F0; border-radius: 12px;
   padding: 16px; margin-bottom: 16px;
-  box-shadow: 0 2px 10px rgba(30,95,184,0.06); }
+  box-shadow: 0 2px 10px rgba(0,45,65,0.06); }
 .filter-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .filter-label { font-size: 11px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.5px; color: #93A4B5; margin-right: 8px; }
+  letter-spacing: 0.5px; color: #94A8B7; margin-right: 8px; }
+
+/* PILLS — actieve state in UP-rood */
 .pill { padding: 7px 14px; border-radius: 20px; border: 1.5px solid #DCE7F0;
   background: white; color: #5A6B7D; font-size: 13px; font-weight: 500;
   cursor: pointer; transition: all 0.15s; }
-.pill:hover { border-color: #2B6CB0; color: #2B6CB0; }
-.pill.active { background: #2B6CB0; border-color: #2B6CB0; color: white;
-  box-shadow: 0 2px 6px rgba(43,108,176,0.25); }
+.pill:hover { border-color: #FF424D; color: #FF424D; }
+.pill.active { background: #FF424D; border-color: #FF424D; color: white;
+  box-shadow: 0 2px 6px rgba(255,66,77,0.3); }
+
 .divider { width: 1px; height: 24px; background: #DCE7F0; margin: 0 4px; }
 .date-input { padding: 7px 12px; border: 1.5px solid #DCE7F0; border-radius: 8px;
-  font-size: 13px; color: #1A2B3C; background: white; }
+  font-size: 13px; color: #0F2438; background: white; }
+
 .table-card { background: white; border: 1px solid #DCE7F0; border-radius: 12px;
-  overflow: hidden; box-shadow: 0 2px 10px rgba(30,95,184,0.06); }
+  overflow: hidden; box-shadow: 0 2px 10px rgba(0,45,65,0.06); }
 .table-header { background: white; padding: 14px 16px; border-bottom: 1px solid #DCE7F0;
   display: flex; align-items: center; justify-content: space-between; }
-.table-title { font-weight: 700; font-size: 15px; color: #1A2B3C; }
+.table-title { font-weight: 700; font-size: 15px; color: #0F2438; }
 .table-count { font-size: 12px; color: #5A6B7D; margin-left: 8px; font-weight: 400; }
+
+/* CTA-knop = UP-rood */
 .btn-primary { background: #FF424D; color: white; border: none; padding: 8px 16px;
   border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;
   display: inline-flex; align-items: center; gap: 6px;
   box-shadow: 0 2px 8px rgba(255,66,77,0.3); transition: all 0.15s; }
 .btn-primary:hover { background: #E03540; box-shadow: 0 4px 12px rgba(255,66,77,0.4); transform: translateY(-1px); }
-.btn-secondary { background: white; color: #5A6B7D; border: 1.5px solid #DCE7F0;
-  padding: 7px 14px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; }
-.btn-secondary:hover { border-color: #2B6CB0; color: #2B6CB0; }
+
 table { width: 100%; border-collapse: collapse; }
-thead { background: linear-gradient(180deg, #1E5FB8 0%, #2B6CB0 100%); color: white; }
+
+/* TABELKOP — UP-rood */
+thead { background: linear-gradient(180deg, #FF424D 0%, #E03540 100%); color: white; }
 thead th { padding: 12px 14px; text-align: left; font-size: 11px; font-weight: 700;
   text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
-tbody tr.day-row { background: #EEF4F9; }
-tbody tr.day-row td { padding: 10px 14px; font-weight: 700; color: #2B6CB0;
-  font-size: 13px; border-top: 1px solid #DCE7F0; }
+
+/* DAG-koppen — UP-rood */
+tbody tr.day-row { background: #FFF5F5; }
+tbody tr.day-row td { padding: 10px 14px; font-weight: 700; color: #FF424D;
+  font-size: 13px; border-top: 1px solid #FECACA; }
+
 tbody tr.boeking { border-top: 1px solid #F0F5F9; cursor: pointer; transition: background 0.1s; }
 tbody tr.boeking:hover { background: #F5F9FC; }
 tbody tr.boeking td { padding: 12px 14px; font-size: 13.5px; }
-.id-cell { color: #93A4B5; font-family: monospace; font-size: 12px; }
-.naam-cell { font-weight: 600; color: #1A2B3C; }
+.id-cell { color: #94A8B7; font-family: monospace; font-size: 12px; }
+.naam-cell { font-weight: 600; color: #0F2438; }
+
 .badge { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 12px;
   font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
 .badge-def { background: #D1FAE5; color: #065F46; }
 .badge-optie { background: #FEF3C7; color: #92400E; }
+
 .outlet-tag { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px;
   border-radius: 12px; background: #EEF4F9; font-size: 12px; color: #2D4055; font-weight: 500; }
 .outlet-dot { width: 7px; height: 7px; border-radius: 50%; }
-.outlet-west .outlet-dot { background: #2B6CB0; }
+.outlet-west .outlet-dot { background: #002D41; }
 .outlet-weesp .outlet-dot { background: #FF424D; }
-.outlet-extern .outlet-dot { background: #93A4B5; }
-.personen-cell { text-align: right; font-weight: 600; color: #1A2B3C; }
+.outlet-extern .outlet-dot { background: #94A8B7; }
+
+.personen-cell { text-align: right; font-weight: 600; color: #0F2438; }
 .action-btn { background: transparent; border: 1.5px solid #DCE7F0; width: 32px; height: 32px;
   border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center;
   justify-content: center; color: #5A6B7D; }
 .action-btn:hover { border-color: #FF424D; color: #FF424D; background: #FFF1F2; }
+
 @media (max-width: 768px) {
   .sidebar { display: none; }
   .main { padding: 14px; }
@@ -122,18 +151,22 @@ tbody tr.boeking td { padding: 12px 14px; font-size: 13.5px; }
 </head>
 <body>
 <div class="topbar">
-  <div class="logo"><div class="logo-icon">UP</div><span>KitchenRobot</span></div>
+  <div class="logo"><span>Kitchen<span class="brand-red">Robot</span></span></div>
   <div class="user-pill"><span class="user-dot"></span>Stefan · beheerder</div>
 </div>
 <div class="status-strip">
-  <div class="status-item"><span class="status-dot"></span> Recras: synced 07:00</div>
+  <div class="status-item"><span class="status-dot"></span> Recras: 07:00</div>
   <div class="status-item"><span class="status-dot"></span> Sensoren: 12/12</div>
   <div class="status-item"><span class="status-dot warn"></span> HACCP: 3 alarmen</div>
-  <div class="status-item"><span class="status-dot"></span> Crons: 24/24 ok</div>
-  <div class="status-item" style="margin-left:auto"><span style="color:#93A4B5">v3 · UP-blauw</span></div>
+  <div class="status-item"><span class="status-dot"></span> Crons: 24/24</div>
+  <div class="status-item" style="margin-left:auto;color:rgba(255,255,255,0.5)">v4 · UP-rood accenten</div>
 </div>
 <div class="layout">
   <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">KitchenRobot</div>
+      <div class="sidebar-sub">UP EVENTS · BACKOFFICE</div>
+    </div>
     <div class="nav-group">
       <div class="nav-label">Dagelijks</div>
       <a class="nav-item"><span class="nav-icon">📥</span> Inbox</a>
@@ -158,7 +191,7 @@ tbody tr.boeking td { padding: 12px 14px; font-size: 13.5px; }
   <main class="main">
     <h1 class="page-title">Boekingen</h1>
     <p class="page-sub">14 boekingen · 2.105 personen · 1 t/m 6 september 2026</p>
-    <div class="info-banner">💡 <strong>Mockup v3</strong> · UP-blauwe nav, blauwe tabelkop, koraal CTA-knoppen, zachte blauw-grijze achtergrond.</div>
+    <div class="info-banner">💡 <strong>Mockup v4</strong> · Donkerblauwe nav (zoals huidige site) + UP-rode tabelkoppen, knoppen en accenten.</div>
     <div class="filter-card">
       <div class="filter-row" style="margin-bottom:10px">
         <span class="filter-label">Outlet</span>
@@ -170,7 +203,7 @@ tbody tr.boeking td { padding: 12px 14px; font-size: 13.5px; }
       <div class="filter-row">
         <span class="filter-label">Periode</span>
         <input type="date" class="date-input" value="2026-09-01">
-        <span style="color:#93A4B5">→</span>
+        <span style="color:#94A8B7">→</span>
         <input type="date" class="date-input" value="2026-09-06">
         <div class="divider"></div>
         <button class="pill">Vandaag</button>
