@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<title>KitchenRobot Filter Debug</title>
+<style>
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;margin:0;background:#0f172a;color:#e2e8f0;line-height:1.5}
+  .wrap{max-width:900px;margin:0 auto;padding:20px}
+  h1{margin:0 0 4px 0;color:#fff;font-size:22px}
+  .sub{color:#94a3b8;font-size:13px;margin-bottom:20px}
+  .card{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:16px;margin-bottom:14px}
+  label{display:block;font-size:12px;color:#94a3b8;margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em}
+  input{width:100%;box-sizing:border-box;padding:12px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#fff;font-size:15px;margin-bottom:12px}
+  input:focus{outline:none;border-color:#3b82f6}
+  button{display:block;width:100%;padding:14px;background:#3b82f6;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;margin-bottom:8px;text-align:left}
+  button:hover{background:#2563eb}
+  button.secondary{background:#475569}
+  button.secondary:hover{background:#334155}
+  button:disabled{background:#475569;cursor:not-allowed;opacity:0.5}
+  .out{background:#0f172a;border:1px solid #334155;border-radius:8px;padding:12px;font-family:'SF Mono','Monaco',Consolas,monospace;font-size:12px;white-space:pre-wrap;word-break:break-all;max-height:400px;overflow-y:auto;margin-top:8px}
+  .ok{color:#4ade80}
+  .err{color:#f87171}
+  .warn{color:#fbbf24}
+  .info{color:#60a5fa}
+  .userbar{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#0f172a;border-radius:8px;border:1px solid #334155;margin-bottom:14px;font-size:13px}
+  .badge{padding:3px 8px;background:#3b82f6;border-radius:4px;font-size:11px;font-weight:600}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+  @media (max-width:600px){.row{grid-template-columns:1fr}}
+  hr{border:none;border-top:1px solid #334155;margin:12px 0}
+  .timing{display:inline-block;padding:2px 6px;background:#334155;border-radius:4px;font-size:11px;color:#94a3b8;margin-left:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🔬 KitchenRobot Filter Debug</h1>
+  <div class="sub">Diagnose-pagina voor de keuken-filter. Geen impact op hoofdsite.</div>
+
+  <div id="login-card" class="card">
+    <label>E-mail</label>
+    <input id="email" type="email" placeholder="stefan@upevents.nl" autocomplete="email" />
+    <label>Wachtwoord</label>
+    <input id="password" type="password" autocomplete="current-password" />
+    <button id="login-btn">Inloggen</button>
+    <div id="login-out" class="out" style="display:none"></div>
+  </div>
+
+  <div id="tests-card" class="card" style="display:none">
+    <div class="userbar">
+      <div>Ingelogd als <span id="who"></span> <span class="badge" id="role">?</span></div>
+      <button class="secondary" id="logout-btn" style="width:auto;padding:6px 12px;margin:0">Uitloggen</button>
+    </div>
+
+    <button id="t-all">▶️ Run alle tests</button>
+    <hr/>
+    <button id="t1" class="secondary">Test 1: Lees view v_keuken_boeking_ids</button>
+    <button id="t2" class="secondary">Test 2: Lees recras_boekingen (zoals admin)</button>
+    <button id="t3" class="secondary">Test 3: Match test (combineer 1 + 2)</button>
+    <button id="t4" class="secondary">Test 4: ID-typen en sample data</button>
+    <button id="t5" class="secondary">Test 5: Timing van alles</button>
+    <hr/>
+    <button id="copy-btn" class="secondary">📋 Kopieer resultaten</button>
+    <div id="out" class="out"></div>
+  </div>
+
+  <div class="card" style="font-size:12px;color:#94a3b8">
+    <b>Wat doet deze pagina?</b><br/>
+    Voert exact dezelfde queries uit als de filter zou doen, in jouw browser, met jouw login. Resultaten verschijnen hieronder. Geen wijzigingen aan database of hoofdsite.
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+(function(){
+  const URL_SUPA='https://aezatnwsrhlwtykpixsq.supabase.co';
+  const KEY_ANON='sb_publishable_qkQzUEM5fvJPSsfScEzNCg_Eug8-d4t';
+  const supa=window.supabase.createClient(URL_SUPA,KEY_ANON,{auth:{persistSession:true,storageKey:'kr-debug-auth'}});
+  const $=id=>document.getElementById(id);
+  const out=$('out');
+  const loginOut=$('login-out');
+
+  function log(html,cls){
+    const time=new Date().toLocaleTimeString('nl-NL');
+    const span=document.createElement('div');
+    span.innerHTML=`<span class="info">[${time}]</span> `+(cls?`<span class="${cls}">${html}</span>`:html);
+    out.appendChild(span);
+    out.scrollTop=out.scrollHeight;
+  }
+  function clear(){out.innerHTML='';}
+
+  async function checkLogin(){
+    const {data}=await supa.auth.getSession();
+    if(data&&data.session){
+      $('login-card').style.display='none';
+      $('tests-card').style.display='block';
+      $('who').textContent=data.session.user.email;
+      // Profiel ophalen voor rol
+      const {data:p}=await supa.from('gebruikers_profielen').select('rol,outlet_voorkeur').eq('id',data.session.user.id).maybeSingle();
+      $('role').textContent=p?(p.rol+(p.outlet_voorkeur?' / '+p.outlet_voorkeur:'')):'onbekend';
+      return true;
+    }
+    return false;
+  }
+
+  $('login-btn').addEventListener('click',async()=>{
+    loginOut.style.display='block';
+    loginOut.innerHTML='<span class="info">Bezig met inloggen…</span>';
+    const email=$('email').value.trim();
+    const password=$('password').value;
+    if(!email||!password){
+      loginOut.innerHTML='<span class="err">Vul e-mail en wachtwoord in.</span>';
+      return;
+    }
+    try{
+      const {data,error}=await supa.auth.signInWithPassword({email,password});
+      if(error){
+        loginOut.innerHTML='<span class="err">Fout: '+error.message+'</span>';
+        return;
+      }
+      loginOut.innerHTML='<span class="ok">Ingelogd!</span>';
+      await checkLogin();
+    }catch(e){
+      loginOut.innerHTML='<span class="err">Exception: '+(e&&e.message)+'</span>';
+    }
+  });
+
+  $('logout-btn').addEventListener('click',async()=>{
+    await supa.auth.signOut();
+    location.reload();
+  });
+
+  // === TESTS ===
+
+  async function test1(){
+    log('<b>TEST 1: Lees view v_keuken_boeking_ids</b>','info');
+    const t0=performance.now();
+    try{
+      const {data,error,count}=await supa.from('v_keuken_boeking_ids').select('id',{count:'exact'}).limit(10000);
+      const t1=performance.now();
+      const dur=Math.round(t1-t0);
+      if(error){
+        log('❌ Error: '+error.message+' (code '+error.code+')','err');
+        log('Details: '+JSON.stringify(error),'err');
+        return null;
+      }
+      const n=(data||[]).length;
+      log('✅ '+n+' rijen ontvangen <span class="timing">'+dur+'ms</span>','ok');
+      log('Total count via header: '+(count!=null?count:'(niet ontvangen)'));
+      if(n>0){
+        log('Type van id[0]: <b>'+typeof data[0].id+'</b> (waarde: '+JSON.stringify(data[0].id)+')');
+        log('Eerste 5 ids: '+data.slice(0,5).map(b=>JSON.stringify(b.id)).join(', '));
+      }
+      return data;
+    }catch(e){
+      log('❌ Exception: '+(e&&e.message),'err');
+      return null;
+    }
+  }
+
+  async function test2(){
+    log('<b>TEST 2: Lees recras_boekingen (zelfde query als admin _laadBoekingenUitDB)</b>','info');
+    const t0=performance.now();
+    try{
+      const van=new Date();van.setDate(van.getDate()-60);
+      const tot=new Date();tot.setFullYear(tot.getFullYear()+2);
+      const vanS=van.toISOString().split('T')[0];
+      const totS=tot.toISOString().split('T')[0];
+      log('Periode: '+vanS+' tot '+totS);
+      const {data,error}=await supa.from('recras_boekingen').select('id,naam,datum,outlet_code').gte('datum',vanS).lte('datum',totS).limit(2000);
+      const t1=performance.now();
+      const dur=Math.round(t1-t0);
+      if(error){
+        log('❌ Error: '+error.message,'err');
+        return null;
+      }
+      const n=(data||[]).length;
+      log('✅ '+n+' boekingen <span class="timing">'+dur+'ms</span>','ok');
+      if(n>0){
+        log('Type van id[0]: <b>'+typeof data[0].id+'</b> (waarde: '+JSON.stringify(data[0].id)+')');
+        log('Eerste 5 ids: '+data.slice(0,5).map(b=>JSON.stringify(b.id)).join(', '));
+      }
+      return data;
+    }catch(e){
+      log('❌ Exception: '+(e&&e.message),'err');
+      return null;
+    }
+  }
+
+  async function test3(){
+    log('<b>TEST 3: MATCH-TEST (combineer view + boekingen)</b>','info');
+    const keukenData=await test1();
+    if(!keukenData){log('Stop: test 1 faalde','err');return;}
+    const boekData=await test2();
+    if(!boekData){log('Stop: test 2 faalde','err');return;}
+
+    // Bouw set met String() (zoals filter-overlay doet)
+    const t0=performance.now();
+    const s=new Set();
+    keukenData.forEach(b=>s.add(String(b.id)));
+    log('Set-grootte (String(b.id)): <b>'+s.size+'</b>');
+
+    // Sample matches
+    let matches=0;
+    let nonmatches=0;
+    const sampleMatch=[];
+    const sampleNonMatch=[];
+    boekData.forEach(b=>{
+      const k=String(b.id);
+      if(s.has(k)){
+        matches++;
+        if(sampleMatch.length<3)sampleMatch.push({id:b.id,naam:b.naam,datum:b.datum});
+      }else{
+        nonmatches++;
+        if(sampleNonMatch.length<3)sampleNonMatch.push({id:b.id,naam:b.naam,datum:b.datum});
+      }
+    });
+    const t1=performance.now();
+    log('<b>Matches: '+matches+'</b> · Niet-matches: '+nonmatches+' <span class="timing">'+Math.round(t1-t0)+'ms</span>',matches>0?'ok':'err');
+    log('Sample MATCH: '+JSON.stringify(sampleMatch));
+    log('Sample NIET-match: '+JSON.stringify(sampleNonMatch));
+
+    // Extra check: zonder String()
+    const s2=new Set();
+    keukenData.forEach(b=>s2.add(b.id));
+    let m2=0;
+    boekData.forEach(b=>{if(s2.has(b.id))m2++;});
+    log('Match ZONDER String() wrapper: '+m2,m2===matches?'ok':'warn');
+
+    // Check eerste keuken-id type vs eerste boeking-id type
+    if(keukenData.length>0&&boekData.length>0){
+      const tk=typeof keukenData[0].id;
+      const tb=typeof boekData[0].id;
+      log('Type vergelijking: keuken-view id = <b>'+tk+'</b>, boeking id = <b>'+tb+'</b>',tk===tb?'ok':'warn');
+      log('Voorbeeld concrete waarden: keuken='+JSON.stringify(keukenData[0].id)+' boeking='+JSON.stringify(boekData[0].id));
+    }
+    return {matches,nonmatches};
+  }
+
+  async function test4(){
+    log('<b>TEST 4: Sample data + ID structuren</b>','info');
+    try{
+      // 5 boekingen waarvan we WETEN dat ze keuken zijn (uit eerdere DB-test)
+      const {data:bs}=await supa.from('recras_boekingen').select('id,naam,datum').in('id',['184074','182346','176563','187872','187680']);
+      log('5 specifieke ID-lookup: '+(bs?bs.length:'?')+' gevonden');
+      if(bs)log(JSON.stringify(bs,null,2));
+
+      // Zelfde IDs in view check
+      const {data:vs}=await supa.from('v_keuken_boeking_ids').select('id').in('id',['184074','182346','176563','187872','187680']);
+      log('Zelfde 5 IDs in view: '+(vs?vs.length:'?')+' gevonden');
+      if(vs)log(JSON.stringify(vs,null,2));
+    }catch(e){
+      log('❌ Exception: '+e.message,'err');
+    }
+  }
+
+  async function test5(){
+    log('<b>TEST 5: Volledige timing</b>','info');
+    const T={};
+    const t0=performance.now();
+    const r1=await supa.from('v_keuken_boeking_ids').select('id').limit(10000);
+    T.view=Math.round(performance.now()-t0);
+    const t1=performance.now();
+    const van=new Date();van.setDate(van.getDate()-60);
+    const tot=new Date();tot.setFullYear(tot.getFullYear()+2);
+    const r2=await supa.from('recras_boekingen').select('id,naam,datum').gte('datum',van.toISOString().split('T')[0]).lte('datum',tot.toISOString().split('T')[0]).limit(2000);
+    T.boekingen=Math.round(performance.now()-t1);
+    log('View query: '+T.view+'ms ('+(r1.data?r1.data.length:0)+' rijen)','ok');
+    log('Boekingen query: '+T.boekingen+'ms ('+(r2.data?r2.data.length:0)+' rijen)','ok');
+    log('Totaal: '+(T.view+T.boekingen)+'ms');
+  }
+
+  $('t-all').addEventListener('click',async()=>{
+    clear();
+    log('<b>--- ALLE TESTS ---</b>','info');
+    await test4();
+    log('---');
+    await test3();
+    log('---');
+    await test5();
+    log('<b>Klaar.</b> Stuur schermafbeelding of klik "Kopieer resultaten".','ok');
+  });
+  $('t1').addEventListener('click',async()=>{clear();await test1();});
+  $('t2').addEventListener('click',async()=>{clear();await test2();});
+  $('t3').addEventListener('click',async()=>{clear();await test3();});
+  $('t4').addEventListener('click',async()=>{clear();await test4();});
+  $('t5').addEventListener('click',async()=>{clear();await test5();});
+
+  $('copy-btn').addEventListener('click',()=>{
+    const txt=out.innerText;
+    navigator.clipboard.writeText(txt).then(()=>{
+      $('copy-btn').textContent='✅ Gekopieerd';
+      setTimeout(()=>{$('copy-btn').textContent='📋 Kopieer resultaten';},2000);
+    });
+  });
+
+  checkLogin();
+})();
+</script>
+</body>
+</html>
