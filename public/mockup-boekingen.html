@@ -3,56 +3,43 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KitchenRobot — Boekingen (mockup v8 · UP huisstijl)</title>
+<title>KitchenRobot — Boekingen (mockup v9)</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: #DAEBF2; color: #0B2841; font-size: 14px; line-height: 1.5;
+  background: #FFFFFF; color: #0B2841; font-size: 14px; line-height: 1.5;
 }
 
-/* TOPBAR — wit met UP-logo */
+/* TOPBAR — donkernavy zoals huidige site */
 .topbar {
-  background: white; border-bottom: 1px solid #C5DBE5;
-  padding: 12px 20px;
+  background: linear-gradient(180deg, #002D41 0%, #003B54 100%);
+  color: white; padding: 14px 20px;
   display: flex; align-items: center; justify-content: space-between;
-  box-shadow: 0 2px 8px rgba(11,40,65,0.08);
+  box-shadow: 0 2px 10px rgba(0,45,65,0.25);
   position: sticky; top: 0; z-index: 100;
 }
-.logo { font-size: 17px; font-weight: 800; display: flex; align-items: center; gap: 10px; letter-spacing: -0.3px; color: #0B2841; }
-.up-mark {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 32px; height: 32px;
-  background: white; border-radius: 8px;
-  position: relative;
-}
-.up-mark::before {
-  content: '↑'; color: #FF424D; font-weight: 900; font-size: 18px; line-height: 1;
-}
-.up-mark::after {
-  content: 'UP'; position: absolute; bottom: 4px; right: 3px;
-  color: #FF424D; font-size: 9px; font-weight: 900; letter-spacing: -0.5px;
-}
+.logo { font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 10px; letter-spacing: -0.3px; }
 .brand-red { color: #FF424D; }
-.user-pill { background: #F0F8FB; padding: 6px 12px; border-radius: 20px;
+.user-pill { background: rgba(255,255,255,0.12); padding: 6px 12px; border-radius: 20px;
   font-size: 12px; display: flex; align-items: center; gap: 6px;
-  border: 1px solid #C5DBE5; color: #0B2841; }
+  border: 1px solid rgba(255,255,255,0.2); }
 .user-dot { width: 8px; height: 8px; background: #34D399; border-radius: 50%; box-shadow: 0 0 6px #34D399; }
 
-/* STATUS-STRIP — teal accent */
+/* STATUS-STRIP */
 .status-strip {
-  background: #1AA5B7; color: white;
+  background: #002D41; border-top: 1px solid rgba(255,255,255,0.08);
   padding: 8px 20px; display: flex; gap: 16px;
-  font-size: 12px; overflow-x: auto; white-space: nowrap;
+  font-size: 12px; overflow-x: auto; white-space: nowrap; color: rgba(255,255,255,0.85);
 }
-.status-item { display: flex; align-items: center; gap: 6px; color: rgba(255,255,255,0.95); }
-.status-dot { width: 7px; height: 7px; border-radius: 50%; background: #BFFFA8; }
-.status-dot.warn { background: #FFD166; }
+.status-item { display: flex; align-items: center; gap: 6px; }
+.status-dot { width: 7px; height: 7px; border-radius: 50%; background: #10B981; }
+.status-dot.warn { background: #F59E0B; }
 
 .layout { display: flex; min-height: calc(100vh - 84px); }
 
-/* SIDEBAR — donkernavy zoals UP knop "Direct offerte" */
-.sidebar { width: 220px; background: #0B2841; color: white;
+/* SIDEBAR — donkernavy zoals huidige site */
+.sidebar { width: 220px; background: #002D41; color: white;
   padding: 16px 0; flex-shrink: 0; }
 .sidebar-header {
   padding: 12px 20px 16px; border-bottom: 1px solid rgba(255,255,255,0.08);
@@ -66,48 +53,46 @@ body {
 .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 20px;
   color: rgba(255,255,255,0.85); text-decoration: none; font-size: 13.5px;
   border-left: 3px solid transparent; transition: all 0.15s; cursor: pointer; }
-.nav-item:hover { background: rgba(26,165,183,0.15); color: white; }
+.nav-item:hover { background: rgba(255,255,255,0.06); color: white; }
 .nav-item.active {
   background: linear-gradient(90deg, rgba(255,66,77,0.25) 0%, rgba(255,66,77,0.05) 100%);
   border-left-color: #FF424D; color: white; font-weight: 600;
 }
 .nav-icon { width: 18px; text-align: center; }
 
-/* MAIN — UP lichtblauwe achtergrond */
-.main { flex: 1; padding: 24px; background: #DAEBF2; min-width: 0; }
+/* MAIN — WIT */
+.main { flex: 1; padding: 24px; background: #FFFFFF; min-width: 0; }
 .page-title { font-size: 22px; font-weight: 700; color: #0B2841; margin-bottom: 4px; }
-.page-sub { color: #4A6577; font-size: 13px; margin-bottom: 18px; }
-.info-banner { background: #1AA5B7; color: white;
-  padding: 10px 14px; border-radius: 10px; font-size: 12.5px; margin-bottom: 14px;
-  display: flex; align-items: center; gap: 8px;
-  box-shadow: 0 2px 8px rgba(26,165,183,0.25); }
-.info-banner strong { color: white; }
+.page-sub { color: #5A6B7D; font-size: 13px; margin-bottom: 18px; }
+.info-banner { background: #DAEBF2; border: 1px solid #1AA5B7; color: #0B2841;
+  padding: 10px 14px; border-radius: 8px; font-size: 12.5px; margin-bottom: 14px;
+  display: flex; align-items: center; gap: 8px; }
 
-.filter-card { background: white; border: 1px solid #C5DBE5; border-radius: 12px;
+.filter-card { background: white; border: 1px solid #DAEBF2; border-radius: 12px;
   padding: 16px; margin-bottom: 16px;
-  box-shadow: 0 2px 10px rgba(11,40,65,0.06); }
+  box-shadow: 0 2px 10px rgba(11,40,65,0.04); }
 .filter-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .filter-label { font-size: 11px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.5px; color: #7A93A3; margin-right: 8px; }
+  letter-spacing: 0.5px; color: #94A8B7; margin-right: 8px; }
 
-/* PILLS — actief = teal (UP huiskleur) */
-.pill { padding: 7px 14px; border-radius: 20px; border: 1.5px solid #C5DBE5;
-  background: white; color: #4A6577; font-size: 13px; font-weight: 500;
+/* PILLS — UP-rood actief */
+.pill { padding: 7px 14px; border-radius: 20px; border: 1.5px solid #DAEBF2;
+  background: white; color: #5A6B7D; font-size: 13px; font-weight: 500;
   cursor: pointer; transition: all 0.15s; }
-.pill:hover { border-color: #1AA5B7; color: #1AA5B7; }
-.pill.active { background: #1AA5B7; border-color: #1AA5B7; color: white;
-  box-shadow: 0 2px 6px rgba(26,165,183,0.35); }
+.pill:hover { border-color: #FF424D; color: #FF424D; }
+.pill.active { background: #FF424D; border-color: #FF424D; color: white;
+  box-shadow: 0 2px 6px rgba(255,66,77,0.3); }
 
-.divider { width: 1px; height: 24px; background: #C5DBE5; margin: 0 4px; }
-.date-input { padding: 7px 12px; border: 1.5px solid #C5DBE5; border-radius: 8px;
+.divider { width: 1px; height: 24px; background: #DAEBF2; margin: 0 4px; }
+.date-input { padding: 7px 12px; border: 1.5px solid #DAEBF2; border-radius: 8px;
   font-size: 13px; color: #0B2841; background: white; }
 
-.table-card { background: white; border: 1px solid #C5DBE5; border-radius: 12px;
-  overflow: hidden; box-shadow: 0 2px 10px rgba(11,40,65,0.06); }
-.table-header { background: white; padding: 14px 16px; border-bottom: 1px solid #C5DBE5;
+.table-card { background: white; border: 1px solid #DAEBF2; border-radius: 12px;
+  overflow: hidden; box-shadow: 0 2px 10px rgba(11,40,65,0.04); }
+.table-header { background: white; padding: 14px 16px; border-bottom: 1px solid #DAEBF2;
   display: flex; align-items: center; justify-content: space-between; }
 .table-title { font-weight: 700; font-size: 15px; color: #0B2841; }
-.table-count { font-size: 12px; color: #4A6577; margin-left: 8px; font-weight: 400; }
+.table-count { font-size: 12px; color: #5A6B7D; margin-left: 8px; font-weight: 400; }
 
 /* CTA-knop = UP-rood */
 .btn-primary {
@@ -115,30 +100,33 @@ body {
   color: white; border: none; padding: 9px 18px;
   border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer;
   display: inline-flex; align-items: center; gap: 6px;
-  box-shadow: 0 2px 8px rgba(255,66,77,0.35); transition: all 0.15s;
+  box-shadow: 0 2px 8px rgba(255,66,77,0.3); transition: all 0.15s;
 }
 .btn-primary:hover { background: #E8333E;
-  box-shadow: 0 4px 14px rgba(255,66,77,0.45); transform: translateY(-1px); }
+  box-shadow: 0 4px 12px rgba(255,66,77,0.4); transform: translateY(-1px); }
 
 table { width: 100%; border-collapse: collapse; }
 
-/* TABELKOP — teal/aqua zoals UP hero-vlak */
+/* TABELKOP — UP-rood */
 thead {
-  background: #1AA5B7;
+  background: linear-gradient(180deg, #FF424D 0%, #E8333E 100%);
   color: white;
 }
 thead th { padding: 12px 14px; text-align: left; font-size: 11px; font-weight: 700;
   text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
 
-/* DAG-koppen — donkernavy */
-tbody tr.day-row { background: #DAEBF2; }
-tbody tr.day-row td { padding: 10px 14px; font-weight: 700; color: #0B2841;
-  font-size: 13px; border-top: 1px solid #C5DBE5; }
+/* TABEL-INHOUD = UP lichtblauw */
+tbody { background: #DAEBF2; }
 
-tbody tr.boeking { border-top: 1px solid #EDF4F8; cursor: pointer; transition: background 0.1s; }
-tbody tr.boeking:hover { background: #F0F8FB; }
+/* DAG-koppen — iets donkerder lichtblauw + rode tekst */
+tbody tr.day-row { background: #C5DEEA; }
+tbody tr.day-row td { padding: 10px 14px; font-weight: 700; color: #FF424D;
+  font-size: 13px; border-top: 1px solid #A8CADC; }
+
+tbody tr.boeking { border-top: 1px solid rgba(11,40,65,0.06); cursor: pointer; transition: background 0.1s; }
+tbody tr.boeking:hover { background: #E8F2F7; }
 tbody tr.boeking td { padding: 12px 14px; font-size: 13.5px; }
-.id-cell { color: #7A93A3; font-family: monospace; font-size: 12px; }
+.id-cell { color: #5A7A8A; font-family: monospace; font-size: 12px; }
 .naam-cell { font-weight: 600; color: #0B2841; }
 
 .badge { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 12px;
@@ -147,16 +135,16 @@ tbody tr.boeking td { padding: 12px 14px; font-size: 13.5px; }
 .badge-optie { background: #FEF3C7; color: #92400E; }
 
 .outlet-tag { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px;
-  border-radius: 12px; background: #DAEBF2; font-size: 12px; color: #0B2841; font-weight: 500; }
+  border-radius: 12px; background: white; font-size: 12px; color: #0B2841; font-weight: 500; }
 .outlet-dot { width: 7px; height: 7px; border-radius: 50%; }
-.outlet-west .outlet-dot { background: #1AA5B7; }
+.outlet-west .outlet-dot { background: #002D41; }
 .outlet-weesp .outlet-dot { background: #FF424D; }
-.outlet-extern .outlet-dot { background: #7A93A3; }
+.outlet-extern .outlet-dot { background: #94A8B7; }
 
 .personen-cell { text-align: right; font-weight: 600; color: #0B2841; }
-.action-btn { background: transparent; border: 1.5px solid #C5DBE5; width: 32px; height: 32px;
+.action-btn { background: white; border: 1.5px solid #C5DBE5; width: 32px; height: 32px;
   border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center;
-  justify-content: center; color: #4A6577; }
+  justify-content: center; color: #5A6B7D; }
 .action-btn:hover { border-color: #FF424D; color: #FF424D; background: #FFF1F2; }
 
 @media (max-width: 768px) {
@@ -173,10 +161,7 @@ tbody tr.boeking td { padding: 12px 14px; font-size: 13.5px; }
 </head>
 <body>
 <div class="topbar">
-  <div class="logo">
-    <span class="up-mark"></span>
-    <span>Kitchen<span class="brand-red">Robot</span></span>
-  </div>
+  <div class="logo"><span>Kitchen<span class="brand-red">Robot</span></span></div>
   <div class="user-pill"><span class="user-dot"></span>Stefan · beheerder</div>
 </div>
 <div class="status-strip">
@@ -184,7 +169,7 @@ tbody tr.boeking td { padding: 12px 14px; font-size: 13.5px; }
   <div class="status-item"><span class="status-dot"></span> Sensoren: 12/12</div>
   <div class="status-item"><span class="status-dot warn"></span> HACCP: 3 alarmen</div>
   <div class="status-item"><span class="status-dot"></span> Crons: 24/24</div>
-  <div class="status-item" style="margin-left:auto;color:rgba(255,255,255,0.7)">v8 · UP huisstijl</div>
+  <div class="status-item" style="margin-left:auto;color:rgba(255,255,255,0.5)">v9 · navy + rood + lichtblauw</div>
 </div>
 <div class="layout">
   <aside class="sidebar">
@@ -216,7 +201,7 @@ tbody tr.boeking td { padding: 12px 14px; font-size: 13.5px; }
   <main class="main">
     <h1 class="page-title">Boekingen</h1>
     <p class="page-sub">14 boekingen · 2.105 personen · 1 t/m 6 september 2026</p>
-    <div class="info-banner">💡 <strong>Mockup v8 · UP huisstijl</strong> · Aqua tabelkoppen, navy sidebar, rode CTA-knoppen, lichtblauwe achtergrond — overgenomen van upevents.nl.</div>
+    <div class="info-banner">💡 <strong>Mockup v9</strong> · Witte achtergrond, donkernavy nav, UP-rode koppen/knoppen, UP-lichtblauwe tabel-inhoud.</div>
     <div class="filter-card">
       <div class="filter-row" style="margin-bottom:10px">
         <span class="filter-label">Outlet</span>
@@ -228,7 +213,7 @@ tbody tr.boeking td { padding: 12px 14px; font-size: 13.5px; }
       <div class="filter-row">
         <span class="filter-label">Periode</span>
         <input type="date" class="date-input" value="2026-09-01">
-        <span style="color:#7A93A3">→</span>
+        <span style="color:#94A8B7">→</span>
         <input type="date" class="date-input" value="2026-09-06">
         <div class="divider"></div>
         <button class="pill">Vandaag</button>
