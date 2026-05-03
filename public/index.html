@@ -24632,4 +24632,14 @@ body.kr-rol-sous_chef .kr-outlet-pinned-badge {
 </script>
 <!-- KR-FBV2-END -->
 
+<script id="kr-keuken-filter-v5">
+(function(){
+if(window._krFilterActief)return;window._krFilterActief=true;
+window._krFilterStatus="init";
+async function getKeukenSet(){if(!window._supa){window._krFilterStatus="geen_supa";return null;}try{var r=await window._supa.from("v_keuken_boeking_ids").select("id").limit(10000);if(!r){window._krFilterStatus="geen_response";return null;}if(r.error){window._krFilterStatus="error:"+r.error.message;console.warn("KR-FILTER error:",r.error);return null;}if(!Array.isArray(r.data)){window._krFilterStatus="geen_data";return null;}var s=new Set();r.data.forEach(function(b){s.add(String(b.id));});window._krFilterStatus="set_grootte:"+s.size;return s;}catch(e){window._krFilterStatus="exception:"+(e&&e.message);console.warn("KR-FILTER exception:",e);return null;}}
+async function filterArray(){var s=await getKeukenSet();if(!s){console.log("KR-FILTER: geen set, niks doen");return;}if(s.size===0){console.log("KR-FILTER: lege set, niks doen");return;}if(!Array.isArray(window._recrasBoekingen)){console.log("KR-FILTER: geen _recrasBoekingen array");return;}var voor=window._recrasBoekingen.length;window._recrasBoekingen=window._recrasBoekingen.filter(function(b){return s.has(String(b.id));});var na=window._recrasBoekingen.length;console.log("KR-FILTER: "+voor+" -> "+na);window._krFilterLast={voor:voor,na:na,setSize:s.size};try{window.dispatchEvent(new CustomEvent("recras-boekingen-geladen",{detail:{aantal:na}}));}catch(e){}}
+function wrap(){var orig=window._laadBoekingenUitDB;if(!orig||orig._krWrapped)return;window._laadBoekingenUitDB=async function(){var r=await orig.apply(this,arguments);await filterArray();return r;};window._laadBoekingenUitDB._krWrapped=true;console.log("KR-FILTER: gewrapped");}
+var pog=0;var iv=setInterval(function(){if(window._laadBoekingenUitDB&&!window._laadBoekingenUitDB._krWrapped){wrap();clearInterval(iv);if(Array.isArray(window._recrasBoekingen)&&window._recrasBoekingen.length>0)filterArray();}else if(++pog>200){clearInterval(iv);console.log("KR-FILTER: timeout, laad-functie niet gevonden");}},100);
+})();
+</script>
 </body></html>
