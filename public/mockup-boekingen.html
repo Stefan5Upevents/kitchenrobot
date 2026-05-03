@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KitchenRobot — Boekingen (mockup v12)</title>
+<title>KitchenRobot — Boekingen (mockup v13)</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -71,6 +71,7 @@ body {
 .filter-label { font-size: 11px; font-weight: 700; text-transform: uppercase;
   letter-spacing: 0.5px; color: #94A8B7; margin-right: 8px; }
 
+/* PILLS — pure FF424D */
 .pill { padding: 7px 14px; border-radius: 20px; border: 1.5px solid #DDE7F0;
   background: white; color: #5A6B7D; font-size: 13px; font-weight: 500;
   cursor: pointer; transition: all 0.15s; }
@@ -89,6 +90,7 @@ body {
 .table-title { font-weight: 700; font-size: 15px; color: #0B2841; }
 .table-count { font-size: 12px; color: #5A6B7D; margin-left: 8px; font-weight: 400; }
 
+/* CTA = pure FF424D, geen gradient */
 .btn-primary {
   background: #FF424D;
   color: white; border: none; padding: 9px 18px;
@@ -96,22 +98,21 @@ body {
   display: inline-flex; align-items: center; gap: 6px;
   box-shadow: 0 2px 8px rgba(255,66,77,0.3); transition: all 0.15s;
 }
-.btn-primary:hover { background: #E8333E;
+.btn-primary:hover { background: #FF5760;
   box-shadow: 0 4px 12px rgba(255,66,77,0.4); transform: translateY(-1px); }
 
 table { width: 100%; border-collapse: collapse; }
 
+/* TABELKOP = pure FF424D, geen gradient */
 thead {
-  background: linear-gradient(180deg, #FF424D 0%, #E8333E 100%);
+  background: #FF424D;
   color: white;
 }
 thead th { padding: 12px 14px; text-align: left; font-size: 11px; font-weight: 700;
   text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
 
-/* TABEL-INHOUD = subtiele blauwtint */
 tbody { background: #EEF4FB; }
 
-/* DAG-KOPPEN — donkernavy tekst (geen rood meer) */
 tbody tr.day-row { background: #DDE7F2; }
 tbody tr.day-row td { padding: 10px 14px; font-weight: 700; color: #0B2841;
   font-size: 13px; border-top: 1px solid #C9DCEC; }
@@ -163,7 +164,7 @@ tbody tr.boeking td { padding: 12px 14px; font-size: 13.5px; }
   <div class="status-item"><span class="status-dot"></span> Sensoren: 12/12</div>
   <div class="status-item"><span class="status-dot warn"></span> HACCP: 3 alarmen</div>
   <div class="status-item"><span class="status-dot"></span> Crons: 24/24</div>
-  <div class="status-item" style="margin-left:auto;color:rgba(255,255,255,0.5)">v12 · subtiel blauwer + navy dag-koppen</div>
+  <div class="status-item" style="margin-left:auto;color:rgba(255,255,255,0.5)">v13 · uniform UP-rood #FF424D</div>
 </div>
 <div class="layout">
   <aside class="sidebar">
@@ -195,7 +196,7 @@ tbody tr.boeking td { padding: 12px 14px; font-size: 13.5px; }
   <main class="main">
     <h1 class="page-title">Boekingen</h1>
     <p class="page-sub">14 boekingen · 2.105 personen · 1 t/m 6 september 2026</p>
-    <div class="info-banner">💡 <strong>Mockup v12</strong> · Iets meer blauwtint in tabel + dag-koppen nu donkernavy ipv rood.</div>
+    <div class="info-banner">💡 <strong>Mockup v13</strong> · Alle rood overal exact #FF424D (zelfde als logo "Robot"). Geen gradients meer.</div>
     <div class="filter-card">
       <div class="filter-row" style="margin-bottom:10px">
         <span class="filter-label">Outlet</span>
