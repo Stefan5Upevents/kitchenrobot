@@ -284,6 +284,98 @@ table.kr-table tbody tr.kr-leeg td, .kr-wrap table tbody tr.kr-leeg td {
 }
 </style>
 
+
+<!-- KR-HUISSTIJL-V13 — UP Events huisstijl overlay. 4 mei 2026 -->
+<style id="kr-huisstijl-v13-css">
+:root {
+  --kr-primary:        #FF424D !important;
+  --kr-primary-dark:   #E5333D !important;
+  --kr-primary-light:  #FFE5E7 !important;
+  --kr-aqua:           #FF424D !important;
+  --kr-info:           #FF424D !important;
+  --kr-night:          #002D41 !important;
+  --kr-text:           #0B2841 !important;
+  --kr-text-strong:    #002D41 !important;
+  --kr-text-muted:     #5A6B7D !important;
+  --kr-bg-soft:        #EEF4FB !important;
+  --kr-bg-softer:      #F5F8FA !important;
+  --kr-border:         #DDE7F0 !important;
+  --kr-border-soft:    #EEF4FB !important;
+}
+table thead, table thead tr {
+  background: #FF424D !important;
+  background-image: none !important;
+}
+table thead th {
+  color: #FFFFFF !important;
+  background: #FF424D !important;
+  background-image: none !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.5px;
+  border-bottom: none !important;
+}
+table tbody tr { background: #EEF4FB; }
+table tbody tr:hover { background: #FFFFFF !important; }
+table tbody tr.day-row,
+table tbody tr.dag-row,
+table tbody tr.boekingen-dag-rij,
+table tbody tr[data-dag-rij="true"] {
+  background: #DDE7F2 !important;
+}
+[style*="#1976D2"] { color: #FF424D !important; }
+[style*="background-color:#1976D2"],
+[style*="background-color: #1976D2"],
+[style*="background:#1976D2"],
+[style*="background: #1976D2"] {
+  background-color: #FF424D !important;
+  background: #FF424D !important;
+}
+[style*="#3FB8C4"] { color: #FF424D !important; }
+[style*="background-color:#3FB8C4"],
+[style*="background-color: #3FB8C4"] {
+  background-color: #FF424D !important;
+}
+[style*="border-color:#1976D2"],
+[style*="border-color: #1976D2"] { border-color: #FF424D !important; }
+[style*="border-color:#3FB8C4"],
+[style*="border-color: #3FB8C4"] { border-color: #FF424D !important; }
+button[class*="primary"]:not([class*="secondary"]):not([class*="outline"]),
+.btn-primary,
+.kr-btn-primary,
+button.primary {
+  background: #FF424D !important;
+  background-image: none !important;
+  border-color: #FF424D !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 2px 6px rgba(255,66,77,0.25) !important;
+}
+button[class*="primary"]:hover,
+.btn-primary:hover,
+.kr-btn-primary:hover {
+  background: #FF5760 !important;
+  background-image: none !important;
+}
+.tab.active,
+.pill.active,
+[class*="active"][class*="pill"],
+[class*="active"][class*="tab"],
+[aria-current="true"][class*="pill"] {
+  background: #FF424D !important;
+  border-color: #FF424D !important;
+  color: #FFFFFF !important;
+}
+.outlet-west [class*="dot"],
+[data-outlet="west"] [class*="dot"] {
+  background: #002D41 !important;
+}
+.outlet-weesp [class*="dot"],
+[data-outlet="weesp"] [class*="dot"] {
+  background: #FF424D !important;
+}
+*:focus-visible { outline-color: #FF424D !important; }
+::selection { background: #FF424D !important; color: #FFFFFF !important; }
+</style>
+<!-- /KR-HUISSTIJL-V13 -->
 </head><body><div id='root'></div>
 <script src='https://unpkg.com/react@18/umd/react.production.min.js'></script>
 <script src='https://unpkg.com/react-dom@18/umd/react-dom.production.min.js'></script>
@@ -4626,99 +4718,7 @@ function TijdenScreen() {
       "table{width:100%;border-collapse:collapse}"+
       "th{background:#002D41;color:#fff;padding:5px 8px;text-align:left;font-size:8pt;text-transform:uppercase;letter-spacing:.5px}"+
       "td{padding:4px 8px;border-bottom:1px solid #eee;font-size:9pt;vertical-align:top}"+
-      "@page{size:A4 landscape;margin:10mm}</style>
-<!-- KR-HUISSTIJL-V13 — UP Events huisstijl overlay. 4 mei 2026 -->
-<style id="kr-huisstijl-v13-css">
-:root {
-  --kr-primary:        #FF424D !important;
-  --kr-primary-dark:   #E5333D !important;
-  --kr-primary-light:  #FFE5E7 !important;
-  --kr-aqua:           #FF424D !important;
-  --kr-info:           #FF424D !important;
-  --kr-night:          #002D41 !important;
-  --kr-text:           #0B2841 !important;
-  --kr-text-strong:    #002D41 !important;
-  --kr-text-muted:     #5A6B7D !important;
-  --kr-bg-soft:        #EEF4FB !important;
-  --kr-bg-softer:      #F5F8FA !important;
-  --kr-border:         #DDE7F0 !important;
-  --kr-border-soft:    #EEF4FB !important;
-}
-table thead, table thead tr {
-  background: #FF424D !important;
-  background-image: none !important;
-}
-table thead th {
-  color: #FFFFFF !important;
-  background: #FF424D !important;
-  background-image: none !important;
-  font-weight: 700 !important;
-  letter-spacing: 0.5px;
-  border-bottom: none !important;
-}
-table tbody tr { background: #EEF4FB; }
-table tbody tr:hover { background: #FFFFFF !important; }
-table tbody tr.day-row,
-table tbody tr.dag-row,
-table tbody tr.boekingen-dag-rij,
-table tbody tr[data-dag-rij="true"] {
-  background: #DDE7F2 !important;
-}
-[style*="#1976D2"] { color: #FF424D !important; }
-[style*="background-color:#1976D2"],
-[style*="background-color: #1976D2"],
-[style*="background:#1976D2"],
-[style*="background: #1976D2"] {
-  background-color: #FF424D !important;
-  background: #FF424D !important;
-}
-[style*="#3FB8C4"] { color: #FF424D !important; }
-[style*="background-color:#3FB8C4"],
-[style*="background-color: #3FB8C4"] {
-  background-color: #FF424D !important;
-}
-[style*="border-color:#1976D2"],
-[style*="border-color: #1976D2"] { border-color: #FF424D !important; }
-[style*="border-color:#3FB8C4"],
-[style*="border-color: #3FB8C4"] { border-color: #FF424D !important; }
-button[class*="primary"]:not([class*="secondary"]):not([class*="outline"]),
-.btn-primary,
-.kr-btn-primary,
-button.primary {
-  background: #FF424D !important;
-  background-image: none !important;
-  border-color: #FF424D !important;
-  color: #FFFFFF !important;
-  box-shadow: 0 2px 6px rgba(255,66,77,0.25) !important;
-}
-button[class*="primary"]:hover,
-.btn-primary:hover,
-.kr-btn-primary:hover {
-  background: #FF5760 !important;
-  background-image: none !important;
-}
-.tab.active,
-.pill.active,
-[class*="active"][class*="pill"],
-[class*="active"][class*="tab"],
-[aria-current="true"][class*="pill"] {
-  background: #FF424D !important;
-  border-color: #FF424D !important;
-  color: #FFFFFF !important;
-}
-.outlet-west [class*="dot"],
-[data-outlet="west"] [class*="dot"] {
-  background: #002D41 !important;
-}
-.outlet-weesp [class*="dot"],
-[data-outlet="weesp"] [class*="dot"] {
-  background: #FF424D !important;
-}
-*:focus-visible { outline-color: #FF424D !important; }
-::selection { background: #FF424D !important; color: #FFFFFF !important; }
-</style>
-<!-- /KR-HUISSTIJL-V13 -->
-</head><body>"+
+      "@page{size:A4 landscape;margin:10mm}</style></head><body>"+
       "<h1>"+dagNm+" \u00b7 "+outletNm+"</h1>"+
       "<h2>Tijdenoverzicht</h2>"+
       "<table><thead><tr>"+
