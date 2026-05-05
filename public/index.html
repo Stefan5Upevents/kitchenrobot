@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang='nl'><head>
+  <script src="modules/stam-screen.js" defer></script>
 <!-- KR-CACHEBUSTER — auto-version-check (zie kr-install-cachebuster) -->
 <meta name="kr-deploy" content="793dfd27f4266def6eef822517aac2871e4b7242">
 <script>
@@ -2716,115 +2717,7 @@ function BuffetScreen({ actieve, setActieve, setSc }) {
 }
 /* window._OpzetScreen verplaatst naar modules/opzet-screen.js */
 /* window._TijdenScreen verplaatst naar modules/tijden-screen.js */
-function StamScreen({ initTab }) {
-  var [tab, setTab] = useState(initTab || "pg");
-  // NIEUW: luister naar initTab-verandering bij nav-klik
-  useEffect(function() {
-    if (initTab && initTab !== tab) {
-      setTab(initTab);
-      setPendingTab(null);
-    }
-  }, [initTab]);
-  var [heeftWijzigingen, setHeeftWijzigingen] = useState(false);
-  var [pendingTab, setPendingTab] = useState(null);
-  var [opslaanBezig, setOpslaanBezig] = useState(false);
-  var [opslaanMelding, setOpslaanMelding] = useState("");
-  var [productgroepen, setProductgroepen] = useState(PRODUCTGROEPEN);
-  var [gerechten, setGerechten] = useState(GERECHTEN_INIT);
-  var [menus, setMenus] = useState(MENUS_INIT);
-  var [sligro, setSligro] = useState(SLIGRO_INIT);
-  var [laden, setLaden] = useState(true);
-  useEffect(function() {
-    setLaden(true);
-    Promise.all([
-      window._supa.from("productgroepen").select("*, productsoorten(*)").order("volgorde"),
-      window._supa.from("gerechten").select("*, ingredienten(*), presentatievormen(*), gerecht_gn_formaten(*, standaard_gn_formaten(*)), gerecht_schaal_formaten(*, standaard_schaal_formaten(*)), gerecht_productsoort_koppelingen(productsoort_id)").order("naam"),
-      window._supa.from("menus").select("*, menu_gerechten(*, gerechten(*))").order("code"),
-      window._supa.from("sligro_producten").select("*, sligro_productgroep_koppelingen(productgroep_id)").order("naam")
-    ]).then(function(results) {
-      var pgData = results[0].data || [];
-      if (pgData.length > 0) {
-        setProductgroepen(pgData.map(function(pg) {
-          return Object.assign({}, pg, { id: pg.id, soorten: (pg.productsoorten || []).map(function(ps) {
-            return { id: ps.id, code: ps.code, naam: ps.naam };
-          }) });
-        }));
-      }
-      if (results[1].data && results[1].data.length > 0) setGerechten(results[1].data);
-      if (results[2].data && results[2].data.length > 0) setMenus(results[2].data);
-      if (results[3].data && results[3].data.length > 0) setSligro(results[3].data.map(function(p) {
-        var koppelingen = (p.sligro_productgroep_koppelingen || []).map(function(k) {
-          return k.productgroep_id;
-        });
-        return Object.assign({}, p, {
-          artnr: p.artnr,
-          naam: p.naam,
-          merk: p.merk || "",
-          pgIds: koppelingen.length ? koppelingen : p.productgroep_id ? [p.productgroep_id] : [],
-          hoev: p.hoeveelheid,
-          eenh: p.eenheid,
-          prijs: p.prijs_excl,
-          ok: p.ingesteld
-        });
-      }));
-      setLaden(false);
-      window._stamProductgroepen = (results[0].data || []).map(function(pg) { return Object.assign({}, pg, { soorten: pg.productsoorten || [] }); });
-      window._stamGerechten = results[1].data || [];
-      window._stamMenus = results[2].data || [];
-      window._stamSligro = (results[3].data || []).map(function(p) {
-        var kops = (p.sligro_productgroep_koppelingen || []).map(function(k) {
-          return k.productgroep_id;
-        });
-        return Object.assign({}, p, { pgIds: kops.length ? kops : p.productgroep_id ? [p.productgroep_id] : [], hoev: p.hoeveelheid, eenh: p.eenheid, prijs: p.prijs_excl });
-      });
-      window._supa.from("recras_koppelingen").select("*").then(function(r) {
-        window._stamKoppelingen = r.data || [];
-      });
-      window._supa.from("opzet_instellingen").select("*").then(function(r) {
-        window._stamTijdenInst = (r.data || []).map(function(row) {
-          try {
-            return JSON.parse(row.instellingen_json || "{}");
-          } catch (e) {
-            return {};
-          }
-        });
-      });
-    }).catch(function(e) {
-      console.warn("Supabase laden mislukt:", e);
-      setLaden(false);
-    });
-  }, []);
-  var tabs = [["pg", "Productgroepen"], ["sl", "Sligro Import"], ["gr", "Gerechten"], ["ti", "Buffet / Tijden"], ["mn", "Menus"], ["re", "Recras Import"], ["al", "🏷 Allergenen"], ["ki", "📱 Kiosk"], ["ins", "📄 Instructies"], ["dr", "📖 Draaiboek-links"]];
-  function switchTab(newTab) {
-    if (heeftWijzigingen) {
-      setPendingTab(newTab);
-    } else {
-      setTab(newTab);
-    }
-  }
-  function markeerGewijzigd() {
-    setHeeftWijzigingen(true);
-  }
-  function markeerOpgeslagen() {
-    setHeeftWijzigingen(false);
-    setOpslaanMelding("Opgeslagen!");
-    setTimeout(function() {
-      setOpslaanMelding("");
-    }, 2e3);
-  }
-  function bevestigWisselen() {
-    setTab(pendingTab);
-    setPendingTab(null);
-    setHeeftWijzigingen(false);
-  }
-  function annuleerWisselen() {
-    setPendingTab(null);
-  }
-  if (laden) {
-    return React.createElement("div", { style: { padding: 40, textAlign: "center", color: C.muted } }, "Stamgegevens laden...");
-  }
-  return /* @__PURE__ */ React.createElement("div", null, pendingTab && /* @__PURE__ */ React.createElement("div", { style: { position: "fixed", inset: 0, background: "rgba(35,71,86,.65)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center" } }, /* @__PURE__ */ React.createElement("div", { style: { background: C.white, borderRadius: 14, padding: 28, width: 420, boxShadow: "0 8px 28px rgba(0,0,0,.3)" } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 900, fontSize: 18, color: C.night, marginBottom: 8 } }, "Niet-opgeslagen wijzigingen"), /* @__PURE__ */ React.createElement("p", { style: { fontSize: 13, color: C.muted, margin: "0 0 20px" } }, "Je hebt wijzigingen die nog niet zijn opgeslagen. Wil je doorgaan zonder opslaan?"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, justifyContent: "flex-end" } }, /* @__PURE__ */ React.createElement("button", { style: btnSG, onClick: annuleerWisselen }, "Terug — ik ga opslaan"), /* @__PURE__ */ React.createElement("button", { style: { ...btnSP, background: C.orange }, onClick: bevestigWisselen }, "Toch doorgaan")))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 } }, /* @__PURE__ */ React.createElement("div", { style: SS.pT }, "Stamgegevens"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10 } }, heeftWijzigingen && /* @__PURE__ */ React.createElement("span", { style: { ...tg(C.orange), fontSize: 11, padding: "4px 10px" } }, "Niet-opgeslagen wijzigingen"), opslaanMelding && /* @__PURE__ */ React.createElement("span", { style: { ...tg(C.green), fontSize: 11, padding: "4px 10px" } }, opslaanMelding), /* @__PURE__ */ React.createElement("button", { style: { ...btnP, opacity: heeftWijzigingen ? 1 : 0.45 }, onClick: markeerOpgeslagen }, "Opslaan"))), tab === "pg" && /* @__PURE__ */ React.createElement(PGTab, { productgroepen, setProductgroepen, onChange: markeerGewijzigd, onSave: markeerOpgeslagen }), tab === "sl" && /* @__PURE__ */ React.createElement(SligroTab, { sligro, setSligro, productgroepen, onChange: markeerGewijzigd, onSave: markeerOpgeslagen }), tab === "gr" && /* @__PURE__ */ React.createElement(GerechtenTab, { gerechten, setGerechten, productgroepen, sligro, onChange: markeerGewijzigd, onSave: markeerOpgeslagen }), tab === "ti" && /* @__PURE__ */ React.createElement(window._TijdenTab, { productgroepen, onChange: markeerGewijzigd, onSave: markeerOpgeslagen }), tab === "mn" && /* @__PURE__ */ React.createElement(MenusTab, { menus, setMenus, gerechten, productgroepen, onChange: markeerGewijzigd, onSave: markeerOpgeslagen }), tab === "re" && /* @__PURE__ */ React.createElement(RecrasTab, { menus, onChange: markeerGewijzigd, onSave: markeerOpgeslagen }), tab === "al" && /* @__PURE__ */ React.createElement(AllergenenOverzichtTab, { gerechten, sligro, productgroepen }), tab === "ki" && /* @__PURE__ */ React.createElement(window._KioskBeheerTab, null), tab === "ins" && /* @__PURE__ */ React.createElement(window._InstructiesTab, null), tab === "dr" && /* @__PURE__ */ React.createElement(window._DraaiboekLinksTab, null));
-}
+/* StamScreen verplaatst naar modules/stam-screen.js */
 
 /* DraaiboekLinksTab verplaatst naar modules/draaiboek-links-tab.js */
 
@@ -6146,7 +6039,7 @@ function AdviezenBadge({ onClick }) {
   if (!user) {
     return /* @__PURE__ */ React.createElement(LoginScreen, { onLogin: handleLogin });
   }
-  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", minHeight: "100vh", background: "#F0F4F7" } }, /* @__PURE__ */ React.createElement(Header, { sc, setSc, user, logout: handleLogout }), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto", overflowX: "hidden" }, className: "mobile-padding" }, /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 1200, margin: "0 auto", padding: "28px 20px 60px" } }, sc === "home" && /* @__PURE__ */ React.createElement(window._HomeScreen, { setSc }), sc === "boekingen" && /* @__PURE__ */ React.createElement(window._BoekingenScreen, { setSc, setActieve }), sc === "financieel" && /* @__PURE__ */ React.createElement(window._FinancieelScreen, { setSc }), sc === "chef" && /* @__PURE__ */ React.createElement(window._ChefScreen, { setSc, setActieve }), sc === "buffet" && /* @__PURE__ */ React.createElement(BuffetScreen, { actieve, setActieve, setSc }), sc === "opzet" && /* @__PURE__ */ React.createElement(window._OpzetScreen, null), sc === "tijden" && /* @__PURE__ */ React.createElement(window._TijdenScreen, null), sc.startsWith("stam:") && (typeof window._krMagScherm !== "function" || window._krMagScherm(sc)) && /* @__PURE__ */ React.createElement(StamScreen, { initTab: sc.split(":")[1] || "pg" }), sc === "fin" && /* @__PURE__ */ React.createElement(window._FinancieelScreen, null), sc === "inbox" && window._InboxScreen && /* @__PURE__ */ React.createElement(window._InboxScreen, null), sc === "adviezen" && /* @__PURE__ */ React.createElement(window._AdviezenScreen, null), sc === "fin_inst" && /* @__PURE__ */ React.createElement(window._FinInstellingenScreen, null), sc === "sensoren" && /* @__PURE__ */ React.createElement(window._SensorenScreen, null), sc === "apikeys" && /* @__PURE__ */ React.createElement(window._ApiKoppelingenScreen, null), sc === "staffel" && window._OpzetStaffelScreen && /* @__PURE__ */ React.createElement(window._OpzetStaffelScreen, null), sc === "gebruikers" && window._GebruikersScreen && /* @__PURE__ */ React.createElement(window._GebruikersScreen, null), sc === "systeem" && window._SysteemScreen && /* @__PURE__ */ React.createElement(window._SysteemScreen, null), sc === "schermdoc" && window._SchermDocScreen && /* @__PURE__ */ React.createElement(window._SchermDocScreen, null), sc === "stam:fi" && /* @__PURE__ */ React.createElement(window._FinInstellingenScreen, null), sc === "allergenen" && /* @__PURE__ */ React.createElement(window._AllergenenScreen, null), sc === "inspiratie" && /* @__PURE__ */ React.createElement(window._InspiratieScreen, null), sc === "opzetlog" && /* @__PURE__ */ React.createElement(window._OpzetLogboekScreen, null), sc === "haccp" && /* @__PURE__ */ React.createElement(window._HACCPScreen, null), sc === "nvwa" && window._NVWAInspectieScreen && /* @__PURE__ */ React.createElement(window._NVWAInspectieScreen, null), sc === "fb" && (window._FBAnalyseV2Screen ? /* @__PURE__ */ React.createElement(window._FBAnalyseV2Screen, null) : window._FBAnalyseScreen && /* @__PURE__ */ React.createElement(window._FBAnalyseScreen, null)), sc === "berichten" && window._BerichtenChefScreen && /* @__PURE__ */ React.createElement(window._BerichtenChefScreen, null), sc === "waste" && window._WasteAdminScreen && /* @__PURE__ */ React.createElement(window._WasteAdminScreen, null), sc === "notificaties" && window._NotificatiesScreen && /* @__PURE__ */ React.createElement(window._NotificatiesScreen, null), sc === "waste_analytics" && window._WasteAnalyticsScreen && /* @__PURE__ */ React.createElement(window._WasteAnalyticsScreen, null), sc === "notif_predict" && window._NotifPredictScreen && /* @__PURE__ */ React.createElement(window._NotifPredictScreen, null), sc === "haccp_inst" && window._HACCPInstellingenScreen && /* @__PURE__ */ React.createElement(window._HACCPInstellingenScreen, null), sc === "bestelling" && /* @__PURE__ */ React.createElement(window._SligroBestellingScreen, null))));
+  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", minHeight: "100vh", background: "#F0F4F7" } }, /* @__PURE__ */ React.createElement(Header, { sc, setSc, user, logout: handleLogout }), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto", overflowX: "hidden" }, className: "mobile-padding" }, /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 1200, margin: "0 auto", padding: "28px 20px 60px" } }, sc === "home" && /* @__PURE__ */ React.createElement(window._HomeScreen, { setSc }), sc === "boekingen" && /* @__PURE__ */ React.createElement(window._BoekingenScreen, { setSc, setActieve }), sc === "financieel" && /* @__PURE__ */ React.createElement(window._FinancieelScreen, { setSc }), sc === "chef" && /* @__PURE__ */ React.createElement(window._ChefScreen, { setSc, setActieve }), sc === "buffet" && /* @__PURE__ */ React.createElement(BuffetScreen, { actieve, setActieve, setSc }), sc === "opzet" && /* @__PURE__ */ React.createElement(window._OpzetScreen, null), sc === "tijden" && /* @__PURE__ */ React.createElement(window._TijdenScreen, null), sc.startsWith("stam:") && (typeof window._krMagScherm !== "function" || window._krMagScherm(sc)) && /* @__PURE__ */ React.createElement(window._StamScreen, { initTab: sc.split(":")[1] || "pg" }), sc === "fin" && /* @__PURE__ */ React.createElement(window._FinancieelScreen, null), sc === "inbox" && window._InboxScreen && /* @__PURE__ */ React.createElement(window._InboxScreen, null), sc === "adviezen" && /* @__PURE__ */ React.createElement(window._AdviezenScreen, null), sc === "fin_inst" && /* @__PURE__ */ React.createElement(window._FinInstellingenScreen, null), sc === "sensoren" && /* @__PURE__ */ React.createElement(window._SensorenScreen, null), sc === "apikeys" && /* @__PURE__ */ React.createElement(window._ApiKoppelingenScreen, null), sc === "staffel" && window._OpzetStaffelScreen && /* @__PURE__ */ React.createElement(window._OpzetStaffelScreen, null), sc === "gebruikers" && window._GebruikersScreen && /* @__PURE__ */ React.createElement(window._GebruikersScreen, null), sc === "systeem" && window._SysteemScreen && /* @__PURE__ */ React.createElement(window._SysteemScreen, null), sc === "schermdoc" && window._SchermDocScreen && /* @__PURE__ */ React.createElement(window._SchermDocScreen, null), sc === "stam:fi" && /* @__PURE__ */ React.createElement(window._FinInstellingenScreen, null), sc === "allergenen" && /* @__PURE__ */ React.createElement(window._AllergenenScreen, null), sc === "inspiratie" && /* @__PURE__ */ React.createElement(window._InspiratieScreen, null), sc === "opzetlog" && /* @__PURE__ */ React.createElement(window._OpzetLogboekScreen, null), sc === "haccp" && /* @__PURE__ */ React.createElement(window._HACCPScreen, null), sc === "nvwa" && window._NVWAInspectieScreen && /* @__PURE__ */ React.createElement(window._NVWAInspectieScreen, null), sc === "fb" && (window._FBAnalyseV2Screen ? /* @__PURE__ */ React.createElement(window._FBAnalyseV2Screen, null) : window._FBAnalyseScreen && /* @__PURE__ */ React.createElement(window._FBAnalyseScreen, null)), sc === "berichten" && window._BerichtenChefScreen && /* @__PURE__ */ React.createElement(window._BerichtenChefScreen, null), sc === "waste" && window._WasteAdminScreen && /* @__PURE__ */ React.createElement(window._WasteAdminScreen, null), sc === "notificaties" && window._NotificatiesScreen && /* @__PURE__ */ React.createElement(window._NotificatiesScreen, null), sc === "waste_analytics" && window._WasteAnalyticsScreen && /* @__PURE__ */ React.createElement(window._WasteAnalyticsScreen, null), sc === "notif_predict" && window._NotifPredictScreen && /* @__PURE__ */ React.createElement(window._NotifPredictScreen, null), sc === "haccp_inst" && window._HACCPInstellingenScreen && /* @__PURE__ */ React.createElement(window._HACCPInstellingenScreen, null), sc === "bestelling" && /* @__PURE__ */ React.createElement(window._SligroBestellingScreen, null))));
 }
 /* window._InspiratieScreen verplaatst naar modules/inspiratie.js */
 function AppWrapper(){
@@ -6166,7 +6059,7 @@ function AppWrapper(){
 }
 
 /* KR-26 EXPOSE-ALL: 75 top-level namen via window._X (sessie 4 mei 2026) */
-window._ALLERGENEN_14=ALLERGENEN_14;window._AllergenenBadge=AllergenenBadge;window._AllergenenKaart=AllergenenKaart;window._AllergenenOverzichtTab=AllergenenOverzichtTab;window._App=App;window._AppErrorBoundary=AppErrorBoundary;window._AppWrapper=AppWrapper;window._BOEKINGEN=BOEKINGEN;window._BuffetScreen=BuffetScreen;window._C=C;window._FinancieelGeboektTab=FinancieelGeboektTab;window._GERECHTEN_INIT=GERECHTEN_INIT;window._GeboekteProductenTab=GeboekteProductenTab;window._GebruikersTab=GebruikersTab;window._GerechtenTab=GerechtenTab;window._Header=Header;window._IGOR=IGOR;window._IngTab=IngTab;window._InputRauw=InputRauw;window._LoginScreen=LoginScreen;window._MENUS_INIT=MENUS_INIT;window._MenusTab=MenusTab;window._PGTab=PGTab;window._PRODUCTGROEPEN=PRODUCTGROEPEN;window._PrijsHistorieChart=PrijsHistorieChart;window._RecrasTab=RecrasTab;window._SLIGRO_INIT=SLIGRO_INIT;window._SS=SS;window._SligroDetailPanel=SligroDetailPanel;window._SligroTab=SligroTab;window._Splash=Splash;window._StamScreen=StamScreen;window._aantalBuf=aantalBuf;window._alertI=alertI;window._alertS=alertS;window._alertW=alertW;window._berekenBuffetLayout=berekenBuffetLayout;window._berekenSligroBestelling=berekenSligroBestelling;window._berekenVerpakkingen=berekenVerpakkingen;window._btnA=btnA;window._btnG=btnG;window._btnP=btnP;window._btnSA=btnSA;window._btnSG=btnSG;window._btnSP=btnSP;window._calcGerecht=calcGerecht;window._fDatum=fDatum;window._genereerCSV=genereerCSV;window._genereerOpzetEmailHTML=genereerOpzetEmailHTML;window._opzetPct=opzetPct;window._shortNaam=shortNaam;window._tabStyle=tabStyle;window._tg=tg;window._totPers=totPers;window._totPersPs=totPersPs;
+window._ALLERGENEN_14=ALLERGENEN_14;window._AllergenenBadge=AllergenenBadge;window._AllergenenKaart=AllergenenKaart;window._AllergenenOverzichtTab=AllergenenOverzichtTab;window._App=App;window._AppErrorBoundary=AppErrorBoundary;window._AppWrapper=AppWrapper;window._BOEKINGEN=BOEKINGEN;window._BuffetScreen=BuffetScreen;window._C=C;window._FinancieelGeboektTab=FinancieelGeboektTab;window._GERECHTEN_INIT=GERECHTEN_INIT;window._GeboekteProductenTab=GeboekteProductenTab;window._GebruikersTab=GebruikersTab;window._GerechtenTab=GerechtenTab;window._Header=Header;window._IGOR=IGOR;window._IngTab=IngTab;window._InputRauw=InputRauw;window._LoginScreen=LoginScreen;window._MENUS_INIT=MENUS_INIT;window._MenusTab=MenusTab;window._PGTab=PGTab;window._PRODUCTGROEPEN=PRODUCTGROEPEN;window._PrijsHistorieChart=PrijsHistorieChart;window._RecrasTab=RecrasTab;window._SLIGRO_INIT=SLIGRO_INIT;window._SS=SS;window._SligroDetailPanel=SligroDetailPanel;window._SligroTab=SligroTab;window._Splash=Splash;window._aantalBuf=aantalBuf;window._alertI=alertI;window._alertS=alertS;window._alertW=alertW;window._berekenBuffetLayout=berekenBuffetLayout;window._berekenSligroBestelling=berekenSligroBestelling;window._berekenVerpakkingen=berekenVerpakkingen;window._btnA=btnA;window._btnG=btnG;window._btnP=btnP;window._btnSA=btnSA;window._btnSG=btnSG;window._btnSP=btnSP;window._calcGerecht=calcGerecht;window._fDatum=fDatum;window._genereerCSV=genereerCSV;window._genereerOpzetEmailHTML=genereerOpzetEmailHTML;window._opzetPct=opzetPct;window._shortNaam=shortNaam;window._tabStyle=tabStyle;window._tg=tg;window._totPers=totPers;window._totPersPs=totPersPs;
 window._BerichtenChefScreen=BerichtenChefScreen;window._NVWAInspectieScreen=NVWAInspectieScreen;window._FBAnalyseV2Screen=FBAnalyseV2Screen;window._HACCPInstellingenScreen=HACCPInstellingenScreen;window._stijl=stijl;/* /KR-26 EXPOSE-ALL */
 ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(AppErrorBoundary,null,React.createElement(AppWrapper)));
 
