@@ -1,5 +1,5 @@
 // KitchenRobot module: boekingen-screen.js
-// Geextraheerd uit index.html op 2026-05-05T06:52:53.643Z
+// Geextraheerd uit index.html op 2026-05-05T08:08:26.550Z
 // Bevat: BoekingenScreen
 // Externe refs (via window._): btnSA
 (function() {
