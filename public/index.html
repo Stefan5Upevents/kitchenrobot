@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang='nl'><head>
+  <script src="modules/voorraad-checker-tab.js" defer></script>
   <script src="modules/inspiratie.js" defer></script><meta charset='UTF-8'/>
 <meta name='viewport' content='width=device-width,initial-scale=1.0,maximum-scale=5.0'/>
    <meta name='theme-color' content='#1976D2'/>
@@ -10984,144 +10985,7 @@ function GeboekteProductenTab({ standalone }) {
     })), /* @__PURE__ */ React.createElement("tfoot", null, /* @__PURE__ */ React.createElement("tr", { style: { background: C.light } }, /* @__PURE__ */ React.createElement("td", { colSpan: 5, style: { ...SS.td, fontWeight: 700, textAlign: "right" } }, "Totaal excl. BTW"), /* @__PURE__ */ React.createElement("td", { style: { ...SS.td, fontWeight: 900, color: C.night, textAlign: "right" } }, "€", (rec.totaal_excl || 0).toFixed(2))))))));
   }));
 }
-function VoorraadCheckerTab() {
-  var [voorraad, setVoorraad] = useState([]);
-  var [laden, setLaden] = useState(false);
-  var [zoek, setZoek] = useState("");
-  var [nieuwNaam, setNieuwNaam] = useState("");
-  var [nieuwAantal, setNieuwAantal] = useState("");
-  var [nieuwEenheid, setNieuwEenheid] = useState("st");
-
-  function laad() {
-    if (!window._supa) return;
-    setLaden(true);
-    window._supa.from("voorraad_checker").select("*").order("naam").then(function(r) {
-      setVoorraad(r.data || []);
-      setLaden(false);
-    });
-  }
-  useEffect(function() { laad(); }, []);
-
-  function voegToe() {
-    if (!nieuwNaam.trim() || !window._supa) return;
-    window._supa.from("voorraad_checker").upsert(
-      { naam: nieuwNaam.trim(), hoeveelheid: parseFloat(nieuwAantal)||0, eenheid: nieuwEenheid, bijgewerkt_op: new Date().toISOString() },
-      { onConflict: "naam" }
-    ).then(function(r) { if (!r.error) { setNieuwNaam(""); setNieuwAantal(""); laad(); } });
-  }
-
-  function updateVoorraad(naam, hoeveelheid) {
-    if (!window._supa) return;
-    window._supa.from("voorraad_checker").update({ hoeveelheid: parseFloat(hoeveelheid)||0, bijgewerkt_op: new Date().toISOString() }).eq("naam", naam).then(function() { laad(); });
-  }
-
-  // Bereken benodigd per product vanuit geladen boekingen + stamdata
-  var benodigdMap = {};
-  (window._recrasBoekingen||[]).forEach(function(b) {
-    (b.regels||[]).forEach(function(r) {
-      if ((r.menuNaam||"").toLowerCase().includes("add up")) return;
-      var kp = (window._stamKoppelingen||[]).find(function(k){ return (k.recras_naam||"").trim()===(r.menuNaam||"").trim(); });
-      var m = kp ? (window._stamMenus||[]).find(function(mm){ return mm.id===kp.menu_id; }) : null;
-      if (!m) return;
-      (m.menu_gerechten||[]).forEach(function(mg){
-        var g = (window._stamGerechten||[]).find(function(x){ return x.id===mg.gerecht_id; });
-        if (!g) return;
-        var pEff = r.aantal*(mg.porties_per_persoon||1);
-        (g.ingredienten||[]).forEach(function(ing){
-          if (ing.zichtbaar==="nee"||ing.zichtbaar==="nooit") return;
-          var sp = (window._stamSligro||[]).find(function(p){ return p.id===ing.sligro_id; });
-          if (!sp) return;
-          var gebruikt = pEff*(parseFloat(ing.gebruik_per_portie)||0);
-          var vp = parseFloat(sp.hoeveelheid||sp.hoev||1)||1;
-          if (!benodigdMap[sp.naam]) benodigdMap[sp.naam] = 0;
-          benodigdMap[sp.naam] += Math.ceil(gebruikt/vp);
-        });
-      });
-    });
-  });
-
-  var gefilterd = voorraad.filter(function(v){ return v.naam.toLowerCase().includes(zoek.toLowerCase()); });
-
-  return React.createElement("div", null,
-    React.createElement("div", {style:{background:"#EFF9FB",border:"1.5px solid #3FB8C4",borderRadius:9,padding:"10px 14px",fontSize:12,fontWeight:700,color:"#234756",marginBottom:14,display:"flex",gap:8}},
-      "ℹ️  Voer hier je huidige voorraad in. Per product zie je hoeveel er nodig is voor de geladen boekingen. De WhatsApp-assistent kan dit lezen om bestelvoorstellen te doen."
-    ),
-    // Nieuw product invoeren
-    React.createElement("div", {style:{background:"#fff",borderRadius:12,padding:18,border:"1.5px solid #D8E8EF",marginBottom:14}},
-      React.createElement("div",{style:{fontWeight:900,fontSize:14,color:"#234756",marginBottom:12}},"Voorraad bijwerken"),
-      React.createElement("div",{style:{display:"flex",gap:8,flexWrap:"wrap",alignItems:"flex-end"}},
-        React.createElement("div",{style:{flex:2,minWidth:150}},
-          React.createElement("label",{style:{fontWeight:700,fontSize:11,color:"#234756",marginBottom:4,display:"block"}},"Product"),
-          React.createElement("input",{style:{border:"1.5px solid #D8E8EF",borderRadius:8,padding:"9px 12px",fontFamily:"inherit",fontSize:12,color:"#234756",width:"100%",outline:"none",boxSizing:"border-box"},
-            placeholder:"Naam (bijv. Kipsaté 200g)",value:nieuwNaam,onChange:function(e){setNieuwNaam(e.target.value);}})
-        ),
-        React.createElement("div",{style:{flex:1,minWidth:80}},
-          React.createElement("label",{style:{fontWeight:700,fontSize:11,color:"#234756",marginBottom:4,display:"block"}},"Hoeveelheid"),
-          React.createElement("input",{style:{border:"1.5px solid #D8E8EF",borderRadius:8,padding:"9px 12px",fontFamily:"inherit",fontSize:12,color:"#234756",width:"100%",outline:"none",boxSizing:"border-box"},
-            type:"number",placeholder:"0",value:nieuwAantal,onChange:function(e){setNieuwAantal(e.target.value);}})
-        ),
-        React.createElement("div",{style:{flex:1,minWidth:80}},
-          React.createElement("label",{style:{fontWeight:700,fontSize:11,color:"#234756",marginBottom:4,display:"block"}},"Eenheid"),
-          React.createElement("select",{style:{border:"1.5px solid #D8E8EF",borderRadius:8,padding:"9px 12px",fontFamily:"inherit",fontSize:12,color:"#234756",width:"100%",outline:"none",boxSizing:"border-box"},
-            value:nieuwEenheid,onChange:function(e){setNieuwEenheid(e.target.value);}},
-            ["st","kg","g","l","ml","zak","doos","rol","pak"].map(function(u){ return React.createElement("option",{key:u,value:u},u); })
-          )
-        ),
-        React.createElement("button",{style:{background:"#E8202B",color:"#fff",border:"none",borderRadius:8,padding:"9px 18px",fontFamily:"inherit",fontWeight:700,fontSize:12,cursor:"pointer"},
-          onClick:voegToe},"+ Opslaan")
-      )
-    ),
-    React.createElement("input",{style:{border:"1.5px solid #D8E8EF",borderRadius:8,padding:"9px 12px",fontFamily:"inherit",fontSize:12,color:"#234756",width:"100%",outline:"none",boxSizing:"border-box",marginBottom:12},
-      placeholder:"Zoek product...",value:zoek,onChange:function(e){setZoek(e.target.value);}}),
-    laden ? React.createElement("div",{style:{textAlign:"center",padding:20,color:"#6B8A9A"}},"Laden...") :
-    React.createElement("div",{style:{overflowX:"auto"}},
-      React.createElement("table",{className:"kr-table",style:{width:"100%",borderCollapse:"collapse",fontSize:12}},
-        React.createElement("thead",null,
-          React.createElement("tr",null,
-            ["Product","Op voorraad","Eenheid","Bijgewerkt","Benodigd","Status"].map(function(h){
-              return React.createElement("th",{key:h,style:{background:"#234756",color:"#F1F7F9",padding:"10px 12px",textAlign:"left",fontWeight:700,fontSize:10,letterSpacing:1.5,textTransform:"uppercase"}},h);
-            })
-          )
-        ),
-        React.createElement("tbody",null,
-          gefilterd.length===0 && React.createElement("tr",null,
-            React.createElement("td",{colSpan:6,style:{padding:"20px",textAlign:"center",color:"#6B8A9A",fontStyle:"italic"}},
-              "Nog geen voorraad. Voeg producten toe hierboven."
-            )
-          ),
-          gefilterd.map(function(item,i){
-            var benodigd = benodigdMap[item.naam]||0;
-            var hv = parseFloat(item.hoeveelheid)||0;
-            var status = benodigd===0?"ok":hv>=benodigd*1.5?"ok":hv>=benodigd?"laag":"kritiek";
-            var skl = {ok:"#10B981",laag:"#F59E0B",kritiek:"#E8202B"}[status];
-            var slabel = {ok:"✓ Voldoende",laag:"⚠ Krap",kritiek:"⛔ Te weinig"}[status];
-            return React.createElement("tr",{key:i,style:{background:status==="kritiek"?"#FFF0F0":status==="laag"?"#FFFBEB":i%2===0?"#fff":"#F8FAFC"}},
-              React.createElement("td",{style:{padding:"10px 12px",fontWeight:700,color:"#234756"}},item.naam),
-              React.createElement("td",{style:{padding:"10px 12px"}},
-                React.createElement("input",{
-                  type:"number",
-                  style:{border:"1.5px solid #D8E8EF",borderRadius:100,padding:"4px 8px",width:70,fontFamily:"inherit",fontSize:12,background:status==="kritiek"?"#FFF0F0":"#fff"},
-                  defaultValue:item.hoeveelheid,
-                  onBlur:function(e){ updateVoorraad(item.naam, e.target.value); }
-                })
-              ),
-              React.createElement("td",{style:{padding:"10px 12px",color:"#6B8A9A"}},item.eenheid||""),
-              React.createElement("td",{style:{padding:"10px 12px",fontSize:10,color:"#6B8A9A"}},
-                item.bijgewerkt_op?new Date(item.bijgewerkt_op).toLocaleDateString("nl-NL",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}):"—"
-              ),
-              React.createElement("td",{style:{padding:"10px 12px",fontWeight:700,color:benodigd>0?"#234756":"#6B8A9A"}},
-                benodigd>0?benodigd+"×":"—"
-              ),
-              React.createElement("td",{style:{padding:"10px 12px"}},
-                React.createElement("span",{style:{background:skl+"18",color:skl,border:"1px solid "+skl+"44",borderRadius:5,padding:"3px 9px",fontSize:10,fontWeight:700}},slabel)
-              )
-            );
-          })
-        )
-      )
-    )
-  );
-}
+/* window._VoorraadCheckerTab verplaatst naar modules/voorraad-checker-tab.js */
 
 function SligroBestellingScreen() {
   var [sligroTab, setSligroTab] = useState("bestelling");
@@ -11375,7 +11239,7 @@ function SligroBestellingScreen() {
         return React.createElement("button",{key:t[0],style:{padding:"9px 16px",fontFamily:"inherit",fontWeight:700,fontSize:12,border:"none",background:act?"rgba(232,32,43,.05)":"transparent",cursor:"pointer",color:act?"#E8202B":"#6B8A9A",borderBottom:act?"2px solid #E8202B":"2px solid transparent",marginBottom:-2},onClick:function(){setSligroTab(t[0]);}},t[1]);
       })
     ),
-    sligroTab==="voorraad" && React.createElement(VoorraadCheckerTab, null),
+    sligroTab==="voorraad" && React.createElement(window._VoorraadCheckerTab, null),
     sligroTab==="bestelling" && /* @__PURE__ */ React.createElement("div", { style: { background: "linear-gradient(135deg,#234756,#003D56)", borderRadius: 18, padding: 20, marginBottom: 20, color: "#fff" } }, /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 900, fontSize: 14, color: C.aqua, marginBottom: 10 } }, "📋 Hoe kom je aan een bestelling?"), /* @__PURE__ */ React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12 } }, [
     ["1", "📅", "Kies periode", "Selecteer outlet en datum van-tot en klik ✨ Laad"],
     ["2", "🧮", "Berekening", "KitchenRobot berekent per gerecht hoeveel Sligro-producten nodig zijn"],
@@ -12998,7 +12862,7 @@ function AppWrapper(){
 }
 
 /* KR-26 EXPOSE-ALL: 75 top-level namen via window._X (sessie 4 mei 2026) */
-window._ALLERGENEN_14=ALLERGENEN_14;window._AlgemeenTab=AlgemeenTab;window._AllergenenBadge=AllergenenBadge;window._AllergenenKaart=AllergenenKaart;window._AllergenenOverzichtTab=AllergenenOverzichtTab;window._AllergenenScreen=AllergenenScreen;window._App=App;window._AppErrorBoundary=AppErrorBoundary;window._AppWrapper=AppWrapper;window._BOEKINGEN=BOEKINGEN;window._BoekingenScreen=BoekingenScreen;window._BuffetScreen=BuffetScreen;window._C=C;window._ChefScreen=ChefScreen;window._DraaiboekLinksTab=DraaiboekLinksTab;window._FinancieelGeboektTab=FinancieelGeboektTab;window._FinancieelScreen=FinancieelScreen;window._GERECHTEN_INIT=GERECHTEN_INIT;window._GeboekteProductenScreen=GeboekteProductenScreen;window._GeboekteProductenTab=GeboekteProductenTab;window._GebruikersTab=GebruikersTab;window._GerechtenTab=GerechtenTab;window._HACCPScreen=HACCPScreen;window._Header=Header;window._HomeScreen=HomeScreen;window._IGOR=IGOR;window._IngTab=IngTab;window._InputRauw=InputRauw;window._InstructiesTab=InstructiesTab;window._KioskBeheerTab=KioskBeheerTab;window._LiveDashboardBlok=LiveDashboardBlok;window._LoginScreen=LoginScreen;window._MENUS_INIT=MENUS_INIT;window._MenusTab=MenusTab;window._OpzetLogboekScreen=OpzetLogboekScreen;window._OpzetScreen=OpzetScreen;window._PGTab=PGTab;window._PRODUCTGROEPEN=PRODUCTGROEPEN;window._PresTab=PresTab;window._PrijsHistorieChart=PrijsHistorieChart;window._RecrasTab=RecrasTab;window._SLIGRO_INIT=SLIGRO_INIT;window._SS=SS;window._SligroBestellingScreen=SligroBestellingScreen;window._SligroDetailPanel=SligroDetailPanel;window._SligroTab=SligroTab;window._Splash=Splash;window._StamScreen=StamScreen;window._TijdenScreen=TijdenScreen;window._TijdenTab=TijdenTab;window._VoorraadCheckerTab=VoorraadCheckerTab;window._aantalBuf=aantalBuf;window._alertI=alertI;window._alertS=alertS;window._alertW=alertW;window._berekenBuffetLayout=berekenBuffetLayout;window._berekenSligroBestelling=berekenSligroBestelling;window._berekenVerpakkingen=berekenVerpakkingen;window._btnA=btnA;window._btnG=btnG;window._btnP=btnP;window._btnSA=btnSA;window._btnSG=btnSG;window._btnSP=btnSP;window._calcGerecht=calcGerecht;window._fDatum=fDatum;window._genereerCSV=genereerCSV;window._genereerOpzetEmailHTML=genereerOpzetEmailHTML;window._opzetPct=opzetPct;window._shortNaam=shortNaam;window._tabStyle=tabStyle;window._tg=tg;window._totPers=totPers;window._totPersPs=totPersPs;
+window._ALLERGENEN_14=ALLERGENEN_14;window._AlgemeenTab=AlgemeenTab;window._AllergenenBadge=AllergenenBadge;window._AllergenenKaart=AllergenenKaart;window._AllergenenOverzichtTab=AllergenenOverzichtTab;window._AllergenenScreen=AllergenenScreen;window._App=App;window._AppErrorBoundary=AppErrorBoundary;window._AppWrapper=AppWrapper;window._BOEKINGEN=BOEKINGEN;window._BoekingenScreen=BoekingenScreen;window._BuffetScreen=BuffetScreen;window._C=C;window._ChefScreen=ChefScreen;window._DraaiboekLinksTab=DraaiboekLinksTab;window._FinancieelGeboektTab=FinancieelGeboektTab;window._FinancieelScreen=FinancieelScreen;window._GERECHTEN_INIT=GERECHTEN_INIT;window._GeboekteProductenScreen=GeboekteProductenScreen;window._GeboekteProductenTab=GeboekteProductenTab;window._GebruikersTab=GebruikersTab;window._GerechtenTab=GerechtenTab;window._HACCPScreen=HACCPScreen;window._Header=Header;window._HomeScreen=HomeScreen;window._IGOR=IGOR;window._IngTab=IngTab;window._InputRauw=InputRauw;window._InstructiesTab=InstructiesTab;window._KioskBeheerTab=KioskBeheerTab;window._LiveDashboardBlok=LiveDashboardBlok;window._LoginScreen=LoginScreen;window._MENUS_INIT=MENUS_INIT;window._MenusTab=MenusTab;window._OpzetLogboekScreen=OpzetLogboekScreen;window._OpzetScreen=OpzetScreen;window._PGTab=PGTab;window._PRODUCTGROEPEN=PRODUCTGROEPEN;window._PresTab=PresTab;window._PrijsHistorieChart=PrijsHistorieChart;window._RecrasTab=RecrasTab;window._SLIGRO_INIT=SLIGRO_INIT;window._SS=SS;window._SligroBestellingScreen=SligroBestellingScreen;window._SligroDetailPanel=SligroDetailPanel;window._SligroTab=SligroTab;window._Splash=Splash;window._StamScreen=StamScreen;window._TijdenScreen=TijdenScreen;window._TijdenTab=TijdenTab;window._aantalBuf=aantalBuf;window._alertI=alertI;window._alertS=alertS;window._alertW=alertW;window._berekenBuffetLayout=berekenBuffetLayout;window._berekenSligroBestelling=berekenSligroBestelling;window._berekenVerpakkingen=berekenVerpakkingen;window._btnA=btnA;window._btnG=btnG;window._btnP=btnP;window._btnSA=btnSA;window._btnSG=btnSG;window._btnSP=btnSP;window._calcGerecht=calcGerecht;window._fDatum=fDatum;window._genereerCSV=genereerCSV;window._genereerOpzetEmailHTML=genereerOpzetEmailHTML;window._opzetPct=opzetPct;window._shortNaam=shortNaam;window._tabStyle=tabStyle;window._tg=tg;window._totPers=totPers;window._totPersPs=totPersPs;
 /* /KR-26 EXPOSE-ALL */
 ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(AppErrorBoundary,null,React.createElement(AppWrapper)));
 
