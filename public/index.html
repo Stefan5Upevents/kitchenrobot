@@ -5890,6 +5890,9 @@ function GeboekteProductenTab({ standalone }) {
 /* window._OpzetLogboekScreen verplaatst naar modules/opzet-logboek-screen.js */
 /* window._HACCPScreen verplaatst naar modules/haccp-screen.js */
 function App({ supabaseInloggen, supabaseUitloggen, supabaseSessie, supabaseProfiel, deepBoekingId, deepPsId }) {
+  /* kr-26: globale exposure van supabaseProfiel voor module-componenten */
+  if (typeof window !== 'undefined') { window._supabaseProfiel = supabaseProfiel; }
+
   var [appProductgroepen, setAppProductgroepen] = useState(PRODUCTGROEPEN);
   var [appGerechten, setAppGerechten] = useState(GERECHTEN_INIT);
   var [appMenus, setAppMenus] = useState(MENUS_INIT);
