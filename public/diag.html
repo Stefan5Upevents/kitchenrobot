@@ -1,202 +1,51 @@
 <!DOCTYPE html>
-<html lang="nl">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>KR Diagnose</title>
-  <style>
-    * { box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; margin: 0; padding: 16px; background: #f5f8fa; }
-    h1 { color: #002D41; font-size: 18px; margin: 0 0 4px 0; }
-    .sub { color: #6e8591; font-size: 13px; margin-bottom: 16px; }
-    .row { background: #fff; padding: 12px 14px; border-radius: 8px; margin-bottom: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); font-size: 14px; }
-    .row .lbl { font-weight: 600; color: #002D41; }
-    .row .val { color: #234756; margin-top: 2px; word-break: break-word; font-family: ui-monospace, monospace; font-size: 12px; }
-    .ok { border-left: 4px solid #2e7d32; }
-    .fail { border-left: 4px solid #c62828; background: #fff5f5; }
-    .pending { border-left: 4px solid #f59e0b; }
-    button { background: #FF424D; color: white; border: 0; padding: 14px 24px; border-radius: 8px; font-size: 16px; font-weight: 600; width: 100%; margin: 8px 0; }
-    button:disabled { background: #ccc; }
-    .conclusie { background: #002D41; color: white; padding: 16px; border-radius: 8px; margin: 16px 0; font-size: 15px; }
-    .conclusie.ok { background: #2e7d32; }
-    .conclusie.fail { background: #c62828; }
-  </style>
-</head>
-<body>
-  <h1>KitchenRobot Diagnose</h1>
-  <div class="sub">Test op jouw telefoon — vindt waarom de site blanco is.</div>
-
-  <button id="start" onclick="startDiag()">Start diagnose</button>
-  <div id="out"></div>
-  <div id="conclusie"></div>
-
-  <script>
-  function add(label, val, kind) {
-    var d = document.createElement('div');
-    d.className = 'row ' + (kind || 'pending');
-    d.innerHTML = '<div class="lbl">' + label + '</div><div class="val">' + val + '</div>';
-    document.getElementById('out').appendChild(d);
-    return d;
-  }
-  function setConclusie(text, kind) {
-    var c = document.getElementById('conclusie');
-    c.className = 'conclusie ' + (kind || '');
-    c.textContent = text;
-  }
-
-  async function startDiag() {
-    document.getElementById('start').disabled = true;
-    document.getElementById('out').innerHTML = '';
-    document.getElementById('conclusie').innerHTML = '';
-    var startTijd = Date.now();
-
-    // STAP 1: HTML ophalen
-    var html;
-    try {
-      var r = await fetch('/?diag=' + Date.now(), { cache: 'no-store' });
-      html = await r.text();
-      add('Stap 1: index.html', 'HTTP ' + r.status + ', ' + Math.round(html.length/1024) + ' KB', 'ok');
-    } catch(e) {
-      add('Stap 1: index.html', 'FOUT: ' + e.message, 'fail');
-      setConclusie('De website is nu zelf niet bereikbaar. Probeer over 1 min opnieuw.', 'fail');
-      document.getElementById('start').disabled = false;
-      return;
-    }
-
-    // STAP 2: Welke modules worden geladen?
-    var modulePaths = [];
-    var re = /<script[^>]*src="(modules\/[^"]+)"/g;
-    var m;
-    while ((m = re.exec(html)) !== null) modulePaths.push(m[1]);
-    add('Stap 2: Modules in HTML', 'Totaal ' + modulePaths.length + ' modules', modulePaths.length > 0 ? 'ok' : 'pending');
-    if (modulePaths.length === 0) {
-      setConclusie('Geen modules in HTML. Site is in baseline-modus en zou moeten werken.', 'ok');
-      document.getElementById('start').disabled = false;
-      return;
-    }
-
-    // STAP 3: Test elke module: HTTP status
-    var statusFails = [];
-    for (var i = 0; i < modulePaths.length; i++) {
-      var path = modulePaths[i];
-      try {
-        var r2 = await fetch('/' + path + '?diag=' + Date.now(), { cache: 'no-store' });
-        if (r2.status !== 200) {
-          statusFails.push({ path: path, status: r2.status });
-        }
-      } catch(e) { statusFails.push({ path: path, err: e.message }); }
-    }
-    if (statusFails.length === 0) {
-      add('Stap 3: HTTP-status modules', 'Alle ' + modulePaths.length + ' modules: 200 OK', 'ok');
-    } else {
-      add('Stap 3: HTTP-status modules', statusFails.length + ' fouten: ' + JSON.stringify(statusFails).slice(0, 200), 'fail');
-      setConclusie('Modules geven HTTP-fouten. ' + statusFails.length + ' modules niet bereikbaar.', 'fail');
-      document.getElementById('start').disabled = false;
-      return;
-    }
-
-    // STAP 4: Laad modules één voor één in deze pagina, kijk welke crasht
-    // Eerst React/CDN scripts uit index.html laden zodat modules React kunnen vinden
-    var headScripts = html.match(/<script[^>]*src="https?:\/\/[^"]+"[^>]*><\/script>/g) || [];
-    add('Stap 4: CDN scripts laden', 'Aantal CDN: ' + headScripts.length + ' (React, ReactDOM, etc)', 'pending');
-    for (var i = 0; i < headScripts.length; i++) {
-      var srcMatch = headScripts[i].match(/src="([^"]+)"/);
-      if (!srcMatch) continue;
-      try {
-        await new Promise(function(resolve, reject) {
-          var s = document.createElement('script');
-          s.src = srcMatch[1];
-          s.onload = resolve;
-          s.onerror = function() { reject(new Error('script load failed: ' + srcMatch[1])); };
-          document.head.appendChild(s);
-        });
-      } catch(e) { /* sommige falen, dat is OK */ }
-    }
-    add('Stap 4: CDN scripts klaar', 'window.React = ' + (typeof window.React) + ', ReactDOM = ' + (typeof window.ReactDOM), 
-        (typeof window.React === 'object') ? 'ok' : 'fail');
-
-    // STAP 5: Voor de modules één voor één laden
-    var moduleErrors = [];
-    var moduleSucces = 0;
-    for (var i = 0; i < modulePaths.length; i++) {
-      var path = modulePaths[i];
-      try {
-        await new Promise(function(resolve, reject) {
-          var s = document.createElement('script');
-          s.src = '/' + path + '?diag2=' + Date.now();
-          // Vang errors op via onerror EN window.onerror
-          var done = false;
-          var origErr = window.onerror;
-          window.onerror = function(msg, url, line, col, err) {
-            if (done) return;
-            done = true;
-            window.onerror = origErr;
-            reject(new Error(msg + ' (regel ' + line + ', kolom ' + col + ')'));
-            return true;
-          };
-          s.onload = function() {
-            if (done) return;
-            done = true;
-            window.onerror = origErr;
-            resolve();
-          };
-          s.onerror = function() {
-            if (done) return;
-            done = true;
-            window.onerror = origErr;
-            reject(new Error('script load error'));
-          };
-          document.head.appendChild(s);
-          setTimeout(function() {
-            if (done) return;
-            done = true;
-            window.onerror = origErr;
-            resolve();
-          }, 8000);
-        });
-        moduleSucces++;
-      } catch(e) {
-        moduleErrors.push({ path: path, fout: e.message });
-      }
-    }
-    if (moduleErrors.length === 0) {
-      add('Stap 5: Modules geladen', 'Alle ' + moduleSucces + ' modules zonder fout in DEZE browser', 'ok');
-    } else {
-      add('Stap 5: Modules geladen', moduleSucces + ' OK, ' + moduleErrors.length + ' MET FOUT', 'fail');
-      for (var i = 0; i < Math.min(moduleErrors.length, 5); i++) {
-        add('  ⚠ ' + moduleErrors[i].path, moduleErrors[i].fout, 'fail');
-      }
-      setConclusie('GEVONDEN! ' + moduleErrors.length + ' module(s) crashen in jouw browser. De eerste fout: ' + moduleErrors[0].path + ' — ' + moduleErrors[0].fout, 'fail');
-      document.getElementById('start').disabled = false;
-      return;
-    }
-
-    // STAP 6: Check of window._XYZ is gezet voor elke module
-    var ontbreekt = [];
-    for (var i = 0; i < modulePaths.length; i++) {
-      var path = modulePaths[i];
-      // module-naam afleiden: 'modules/inspiratie.js' -> InspiratieScreen
-      var base = path.split('/').pop().replace('.js', '');
-      // Convert kebab-case naar PascalCase
-      var pascalish = base.split('-').map(function(p) { return p.charAt(0).toUpperCase() + p.slice(1); }).join('');
-      // Try multiple naming patterns
-      var kandidaten = [pascalish, pascalish.replace(/Tab$/,'Tab'), pascalish.replace(/Screen$/,'Screen')];
-      var found = kandidaten.some(function(n) { return typeof window['_' + n] !== 'undefined'; });
-      if (!found) ontbreekt.push({ path: path, kandidaat: pascalish });
-    }
-    if (ontbreekt.length === 0) {
-      add('Stap 6: window._XYZ check', 'Alle modules registreren correct', 'ok');
-    } else {
-      add('Stap 6: window._XYZ check', ontbreekt.length + ' modules registreren niet als window._XYZ', 'pending');
-      // Niet kritiek — misschien afwijkende naam
-    }
-
-    // KLAAR
-    var dur = Math.round((Date.now() - startTijd) / 1000);
-    add('Test klaar', 'Duur: ' + dur + ' seconden', 'ok');
-    setConclusie('Geen module-fouten gevonden in jouw browser. Probleem moet ergens anders zitten. Mogelijk een race-conditie tijdens render.', 'ok');
-    document.getElementById('start').disabled = false;
-  }
-  </script>
-</body>
-</html>
+<html lang="nl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>KitchenRobot Diagnose</title>
+<style>
+*{box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;margin:0;padding:16px;background:#f4f6f8;color:#234756}
+h1{color:#002D41;margin:0 0 4px}h2{font-size:18px;margin:24px 0 8px}
+.card{background:#fff;border-radius:8px;padding:16px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.ok{color:#2E7D32;font-weight:600}.fail{color:#C62828;font-weight:600}.warn{color:#E65100;font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:4px}
+.row{display:flex;align-items:center;padding:6px 8px;border-radius:4px;font-size:14px}
+.row.ok{background:#E8F5E9}.row.fail{background:#FFEBEE}.row.warn{background:#FFF3E0}
+.badge{min-width:18px;text-align:center;margin-right:8px}
+.errbox{background:#FFEBEE;border:2px solid #C62828;padding:12px;border-radius:6px;margin:8px 0;font-family:monospace;font-size:12px;white-space:pre-wrap;word-break:break-all;max-height:240px;overflow-y:auto}
+.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.stat{background:#fff;padding:12px;border-radius:8px;text-align:center}
+.stat .num{font-size:28px;font-weight:700}.stat .label{font-size:11px;color:#6E8591;text-transform:uppercase}
+.hr{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+</style></head><body>
+<h1>KitchenRobot Diagnose</h1><p style="margin:0 0 16px;color:#6E8591">Test of kr-bundle.js correct laadt en welke componenten errors geven.</p>
+<div class="summary"><div class="stat"><div class="num" id="t">…</div><div class="label">Totaal</div></div><div class="stat"><div class="num ok" id="o">…</div><div class="label">Geladen</div></div><div class="stat"><div class="num fail" id="m">…</div><div class="label">Ontbreken</div></div><div class="stat"><div class="num warn" id="r">…</div><div class="label">Render-error</div></div></div>
+<div class="card"><h2>1. Bundle-laden</h2><div id="bs">Bezig…</div><div id="we"></div></div>
+<div class="card"><h2>2. window._X aanwezig?</h2><div class="grid" id="eg"></div></div>
+<div class="card"><h2>3. Render-test met dummy props</h2><div id="rl"></div></div>
+<div class="card"><h2>4. Globale errors gevangen</h2><div id="ge">Nog niets…</div></div>
+<div class="hr" id="hr"></div>
+<script>window.__de=[];addEventListener("error",e=>__de.push({t:"err",m:e.message||"?",s:(e.filename||"")+":"+(e.lineno||"?"),k:e.error&&e.error.stack||""}));addEventListener("unhandledrejection",e=>__de.push({t:"rej",m:String(e.reason),s:"",k:e.reason&&e.reason.stack||""}));</script>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>try{window._supa=supabase.createClient("https://aezatnwsrhlwtykpixsq.supabase.co","eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFlemF0bndzcmhsd3R5a3BpeHNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQzNzg4MzAsImV4cCI6MjA1OTk1NDgzMH0.0YzzFOM6yQ6Zoqe0Hez2nSKnnmIvWFrRpTaAnq_9ekg")}catch(e){__de.push({t:"si",m:String(e),s:"il"})}</script>
+<script src="modules/kr-bundle.js"></script>
+<script>
+(function(){
+var C=["AdviezenScreen","AlgemeenTab","AllergenenScreen","ApiKoppelingenScreen","BerichtenChefScreen","BoekingenScreen","BuffetScreen","ChefScreen","DraaiboekLinksTab","FinInstellingenScreen","FinancieelScreen","GeboekteProductenScreen","HACCPInstellingenScreen","HACCPScreen","HomeScreen","InspiratieScreen","InstructiesTab","KioskBeheerTab","LiveDashboardBlok","NVWAInspectieScreen","OpzetLogboekScreen","OpzetScreen","PresTab","SensorenScreen","SligroBestellingScreen","StamScreen","TijdenScreen","TijdenTab","VoorraadCheckerTab"];
+var bs=document.getElementById("bs");
+var bnd=(typeof window._BoekingenScreen!=="undefined");
+bs.innerHTML=bnd?'<span class="ok">Bundle geladen</span> — window._BoekingenScreen aanwezig':'<span class="fail">Bundle laadt NIET</span> — window._BoekingenScreen ontbreekt';
+var g=document.getElementById("eg"),tk={o:0,m:0};
+C.forEach(function(n){var k="_"+n,b=(typeof window[k]!=="undefined"),tp=typeof window[k];var d=document.createElement("div");d.className="row "+(b?"ok":"fail");d.innerHTML='<span class="badge">'+(b?"OK":"X")+'</span><strong>'+n+'</strong>'+(b?' <small>('+tp+')</small>':'');g.appendChild(d);if(b)tk.o++;else tk.m++;});
+document.getElementById("t").textContent=C.length;document.getElementById("o").textContent=tk.o;document.getElementById("m").textContent=tk.m;
+var rl=document.getElementById("rl"),hr=document.getElementById("hr"),rf=0,R=window.React,RD=window.ReactDOM;
+if(!R||!RD){rl.innerHTML='<div class="fail">React of ReactDOM ontbreekt</div>';document.getElementById("r").textContent="?";}else{
+var dp={setSc:function(){},setActieve:function(){},sc:"home",actieve:null,supabaseProfiel:{id:"diag",naam:"Diag",rol:"beheerder",outlet:"beide"},profiel:{id:"diag",naam:"Diag",rol:"beheerder",outlet:"beide"}};
+window._supabaseProfiel=dp.supabaseProfiel;
+window._C={night:"#234756",aqua:"#3FB8C4",hot:"#E8202B",green:"#2E7D32",muted:"#789"};
+C.forEach(function(n,i){var k="_"+n,Cp=window[k];var d=document.createElement("div");d.className="row";var s=document.createElement("span");s.className="badge";s.textContent="…";d.appendChild(s);var ne=document.createElement("strong");ne.textContent=n;d.appendChild(ne);var re=document.createElement("span");re.style.marginLeft="8px";d.appendChild(re);rl.appendChild(d);
+if(typeof Cp!=="function"){d.className="row fail";s.textContent="X";re.innerHTML="<small>geen function</small>";rf++;return;}
+try{var c=document.createElement("div");hr.appendChild(c);var rt=RD.createRoot(c);rt.render(R.createElement(Cp,dp));setTimeout(function(){var ne=__de.filter(function(e){return(e.k||"").indexOf(n)!==-1||(e.m||"").indexOf(n)!==-1;});if(ne.length>0){d.className="row fail";s.textContent="!";re.innerHTML='<small style="color:#C62828">'+ne[0].m.substring(0,140)+'</small>';rf++;}else{d.className="row ok";s.textContent="OK";re.innerHTML='<small style="color:#6E8591">render OK</small>';}document.getElementById("r").textContent=rf;},80+i*30);}catch(e){d.className="row fail";s.textContent="!";re.innerHTML='<small style="color:#C62828">'+String(e.message||e).substring(0,140)+'</small>';rf++;document.getElementById("r").textContent=rf;}});
+}
+setTimeout(function(){var eb=document.getElementById("ge");if(__de.length===0){eb.innerHTML='<span class="ok">Geen JS-errors gevangen</span>';}else{eb.innerHTML='<strong class="fail">'+__de.length+' error(s):</strong>';__de.forEach(function(er,i){var bx=document.createElement("div");bx.className="errbox";bx.textContent="#"+(i+1)+" ["+er.t+"] "+er.m+"\n@ "+er.s+(er.k?"\n\nStack:\n"+er.k:"");eb.appendChild(bx);});}var be=__de.filter(function(e){return(e.s||"").indexOf("kr-bundle")!==-1;});if(be.length>0){var bx=document.getElementById("we");bx.innerHTML='<div class="errbox">Bundle errors:\n'+be.map(function(e){return"- "+e.m+" @ "+e.s;}).join("\n")+'</div>';}},2500);
+})();
+</script></body></html>
