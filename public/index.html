@@ -1,39 +1,5 @@
 <!DOCTYPE html>
-<html lang='nl'><head>
-<!-- KR-CACHEBUSTER — auto-version-check (zie kr-install-cachebuster) -->
-<meta name="kr-deploy" content="59a6f50762ca76f9e003354c3d0383d26a60dfd5">
-<script>
-(function(){
-  var KR_DEPLOY = "59a6f50762ca76f9e003354c3d0383d26a60dfd5";
-  try {
-    var stored = localStorage.getItem('kr_last_deploy');
-    if (stored && stored !== KR_DEPLOY) {
-      localStorage.setItem('kr_last_deploy', KR_DEPLOY);
-    } else if (!stored) {
-      localStorage.setItem('kr_last_deploy', KR_DEPLOY);
-    }
-  } catch(e) {}
-  function checkVersie() {
-    fetch('/?_kr_cb=' + Date.now(), { cache: 'no-store', credentials: 'omit' })
-      .then(function(r){ return r.text(); })
-      .then(function(html){
-        var m = html.match(/<meta\s+name="kr-deploy"\s+content="([^"]+)"/);
-        if (m && m[1] && m[1] !== KR_DEPLOY) {
-          console.log('[KR] Nieuwe versie ' + m[1].slice(0,7) + ' beschikbaar (huidig ' + KR_DEPLOY.slice(0,7) + ') — reload…');
-          try { localStorage.setItem('kr_last_deploy', m[1]); } catch(e) {}
-          window.location.reload();
-        }
-      })
-      .catch(function(){});
-  }
-  setInterval(checkVersie, 3 * 60 * 1000);
-  document.addEventListener('visibilitychange', function(){
-    if (document.visibilityState === 'visible') checkVersie();
-  });
-})();
-</script>
-<!-- /KR-CACHEBUSTER -->
-<meta charset='UTF-8'/>
+<html lang='nl'><head><meta charset='UTF-8'/>
 <meta name='viewport' content='width=device-width,initial-scale=1.0,maximum-scale=5.0'/>
    <meta name='theme-color' content='#1976D2'/>
 <title>KitchenRobot</title>
