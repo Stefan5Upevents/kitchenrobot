@@ -1,5 +1,7 @@
 <!DOCTYPE html>
 <html lang='nl'><head>
+  <script src="modules/api-koppelingen-screen.js" defer></script>
+  <script src="modules/geboekte-producten-screen.js" defer></script>
   <script src="modules/berichten-chef-screen.js" defer></script>
   <script src="modules/allergenen-screen.js" defer></script>
 <!-- KR-CACHEBUSTER — auto-version-check (zie kr-install-cachebuster) -->
@@ -7608,9 +7610,7 @@ function FinancieelGeboektTab() {
     })))))));
   }), !laden && Object.keys(progressie).length === 0 && /* @__PURE__ */ React.createElement("div", { style: { ...SS.card, textAlign: "center", padding: 40, color: C.muted } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 32, marginBottom: 10 } }, "📊"), /* @__PURE__ */ React.createElement("div", { style: { fontWeight: 700, marginBottom: 6 } }, "Nog geen financieel overzicht ge\xEFmporteerd"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12 } }, "Importeer een Excel-bestand met menu's, events, personen en omzet. Cowork houdt dit wekelijks bij.")));
 }
-function GeboekteProductenScreen() {
-  return /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 20 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 22, fontWeight: 800, color: C.night, marginBottom: 4 } }, "🛒 Geboekte producten"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: C.muted } }, "Automatisch berekende Sligro-benodigdheden op basis van ge\xEFmporteerde boekingen per keuken.")), /* @__PURE__ */ React.createElement(GeboekteProductenTab, { standalone: true }));
-}
+/* GeboekteProductenScreen verplaatst naar modules/geboekte-producten-screen.js */
 function GeboekteProductenTab({ standalone }) {
   var [records, setRecords] = useState([]);
   var [laden, setLaden] = useState(true);
@@ -8587,283 +8587,7 @@ function FinInstellingenScreen() {
 }
 
 
-function ApiKoppelingenScreen() {
-  var C = window._C || { night:'#234756', aqua:'#3FB8C4', hot:'#E8202B', green:'#2E7D32', muted:'#78909C', white:'#fff', orange:'#FF9800' };
-  var SS = window._SS || { pT: { fontSize:22, fontWeight:900, color:'#234756', marginBottom:4 }, pD: { fontSize:12, color:'#78909C', marginBottom:16 } };
-  var FN_URL = 'https://aezatnwsrhlwtykpixsq.supabase.co/functions/v1/api-koppelingen';
-  // Helper: bouw fetch options met auth-headers (vereist door v2)
-  async function authHeaders() {
-    var s = await window._supa.auth.getSession();
-    var jwt = s && s.data && s.data.session && s.data.session.access_token;
-    return {
-      'Authorization': 'Bearer ' + jwt,
-      'apikey': window._supa.supabaseKey,
-      'Content-Type': 'application/json'
-    };
-  }
-  function fetchAuth(url, opts) {
-    return authHeaders().then(function(h) {
-      var o = opts || {};
-      o.headers = Object.assign({}, h, o.headers || {});
-      return fetch(url, o);
-    });
-  }
-
-  // Voorgedefinieerde koppelingen met hun velden-schema
-  var VOORGEDEFINIEERD = [
-    { naam: 'recras', titel: 'Recras Boekingen',
-      beschrijving: 'Boekingen, menus en arrangementen read-only uit Recras. Alleen boekingsnamen/bedrijfsnamen, geen contactinfo (AVG).',
-      url_default: 'https://upevents.recras.nl', url_label: 'Recras URL',
-      velden: [ { naam:'token', label:'API Token', type:'password',
-        hint:'Genereer via: Menu → Nieuw Personeel "KitchenRobot" → tab Gebruiker → rol "Info voor planning kosten" → Nieuwe API-sleutel.' } ] },
-    { naam: 'switchbot', titel: 'SwitchBot Sensoren',
-      beschrijving: 'Koel- en vriesapparatuur temperatuursensoren via SwitchBot Cloud API.',
-      url_default: 'https://api.switch-bot.com', url_label: 'API URL (standaard: SwitchBot Cloud)',
-      velden: [
-        { naam:'token', label:'Token', type:'password', hint:'SwitchBot app: Profile → Preference → tik 10x op App Version → Developer Options → Get Token.' },
-        { naam:'secret', label:'Secret', type:'password', hint:'Zelfde Developer Options scherm, onder de token.' }
-      ] },
-    { naam: 'sligro', titel: 'Sligro B2B',
-      beschrijving: 'Productprijzen en voorraad uit Sligro B2B portaal. Nog niet actief (wacht op Sligro API-toegang).',
-      url_default: 'https://api.sligro.nl', url_label: 'API URL',
-      velden: [ { naam:'api_key', label:'API Key', type:'password', hint:'Van Sligro account manager.' } ] }
-  ];
-
-  var [koppelingen, setKoppelingen] = React.useState([]);
-  var [log, setLog] = React.useState([]);
-  var [laden, setLaden] = React.useState(true);
-  var [melding, setMelding] = React.useState(null);
-  var [modal, setModal] = React.useState(null); // { voorgedefinieerd, bestaand }
-  var [modalWaarden, setModalWaarden] = React.useState({});
-  var [modalBezig, setModalBezig] = React.useState(false);
-  var [testBezig, setTestBezig] = React.useState({});
-  var [testResult, setTestResult] = React.useState({});
-  var [logFilter, setLogFilter] = React.useState('');
-
-  function toon(t, ok) {
-    setMelding({ tekst: t, ok: ok !== false });
-    setTimeout(function(){ setMelding(null); }, 4000);
-  }
-
-  function laad() {
-    setLaden(true);
-    Promise.all([
-      fetchAuth(FN_URL + '?actie=lijst').then(function(r){ return r.json(); }),
-      fetchAuth(FN_URL + '?actie=log').then(function(r){ return r.json(); })
-    ]).then(function(res) {
-      setKoppelingen((res[0] && res[0].koppelingen) || []);
-      setLog((res[1] && res[1].log) || []);
-      setLaden(false);
-    }).catch(function(e) { setLaden(false); toon('Laden mislukt: ' + e.message, false); });
-  }
-  React.useEffect(laad, []);
-
-  function openModal(voorged, bestaand) {
-    var init = {};
-    (voorged.velden || []).forEach(function(v){ init[v.naam] = ''; });
-    setModalWaarden(init);
-    setModal({ voorgedefinieerd: voorged, bestaand: bestaand || null, url: (bestaand && bestaand.url) || voorged.url_default });
-  }
-
-  function slaOp() {
-    if (!modal) return;
-    var v = modal.voorgedefinieerd;
-    var ontbrekend = (v.velden||[]).filter(function(f){ return !modalWaarden[f.naam] || !modalWaarden[f.naam].trim(); });
-    if (ontbrekend.length > 0) { toon('Alle velden invullen: ' + ontbrekend.map(function(x){ return x.label; }).join(', '), false); return; }
-    setModalBezig(true);
-    var payload = {
-      koppeling_naam: v.naam, titel: v.titel, beschrijving: v.beschrijving,
-      url: modal.url || v.url_default,
-      credentials: modalWaarden,
-      velden_schema: v.velden
-    };
-    fetchAuth(FN_URL + '?actie=opslaan', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) })
-      .then(function(r){ return r.json(); })
-      .then(function(d) {
-        setModalBezig(false);
-        if (d.ok) { toon('✓ ' + v.titel + ' opgeslagen (versleuteld)'); setModal(null); laad(); }
-        else toon('Fout: ' + (d.error || 'onbekend'), false);
-      }).catch(function(e){ setModalBezig(false); toon('Fout: ' + e.message, false); });
-  }
-
-  function testKoppeling(naam) {
-    setTestBezig(function(p){ var n={}; Object.keys(p).forEach(function(k){n[k]=p[k];}); n[naam]=true; return n; });
-    setTestResult(function(p){ var n={}; Object.keys(p).forEach(function(k){n[k]=p[k];}); n[naam]=null; return n; });
-    fetchAuth(FN_URL + '?actie=test', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ koppeling_naam: naam }) })
-      .then(function(r){ return r.json(); })
-      .then(function(d) {
-        setTestBezig(function(p){ var n={}; Object.keys(p).forEach(function(k){n[k]=p[k];}); n[naam]=false; return n; });
-        setTestResult(function(p){ var n={}; Object.keys(p).forEach(function(k){n[k]=p[k];}); n[naam]=d; return n; });
-        laad();
-      }).catch(function(e){
-        setTestBezig(function(p){ var n={}; Object.keys(p).forEach(function(k){n[k]=p[k];}); n[naam]=false; return n; });
-        setTestResult(function(p){ var n={}; Object.keys(p).forEach(function(k){n[k]=p[k];}); n[naam]={ ok:false, fout:e.message }; return n; });
-      });
-  }
-
-  function zetActief(naam, actief) {
-    fetchAuth(FN_URL + '?actie=zet_actief', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ koppeling_naam: naam, actief: actief }) })
-      .then(function(r){ return r.json(); }).then(function(d){ if (d.ok) { toon(actief ? '▶ Geactiveerd' : '⏸ Gepauzeerd'); laad(); } else toon('Fout: ' + (d.error || ''), false); });
-  }
-
-  function verwijderKopp(naam) {
-    if (!confirm('Weet je zeker dat je koppeling "' + naam + '" wilt verwijderen?\nDe API-key wordt uit de versleutelde opslag verwijderd. Dit kan niet ongedaan.')) return;
-    fetchAuth(FN_URL + '?actie=verwijder', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ koppeling_naam: naam }) })
-      .then(function(r){ return r.json(); }).then(function(d){ if (d.ok) { toon('🗑 Verwijderd'); laad(); } else toon('Fout: ' + (d.error || ''), false); });
-  }
-
-  function tijdKort(ts) {
-    if (!ts) return '—';
-    var d = new Date(ts);
-    var nu = new Date();
-    var verschil = Math.floor((nu - d) / 1000);
-    if (verschil < 60) return verschil + 's geleden';
-    if (verschil < 3600) return Math.floor(verschil/60) + 'm geleden';
-    if (verschil < 86400) return Math.floor(verschil/3600) + 'u geleden';
-    return d.toLocaleDateString('nl-NL', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
-  }
-
-  // Combineer voorgedefinieerd met actuele DB-status
-  var items = VOORGEDEFINIEERD.map(function(v) {
-    var bestaand = koppelingen.find(function(k){ return k.koppeling_naam === v.naam; });
-    return { voorgedefinieerd: v, bestaand: bestaand };
-  });
-
-  var btnP = { background:C.aqua, color:C.white, border:'none', borderRadius:8, padding:'8px 14px', fontSize:12, fontWeight:700, cursor:'pointer' };
-  var btnSG = { background:'#F5F5F5', color:C.night, border:'1px solid #DDD', borderRadius:8, padding:'6px 12px', fontSize:11, fontWeight:700, cursor:'pointer' };
-  var btnDanger = Object.assign({}, btnSG, { color:C.hot, border:'1px solid ' + C.hot + '44' });
-  var card = { background:C.white, borderRadius:14, padding:18, marginBottom:14, boxShadow:'0 2px 8px rgba(0,0,0,0.04)' };
-
-  return React.createElement('div', null,
-    React.createElement('div', { style: SS.pT }, '🔐 API-koppelingen'),
-    React.createElement('div', { style: SS.pD }, 'Beheer van versleutelde API-sleutels voor externe systemen. Sleutels zijn versleuteld opgeslagen (Supabase Vault) en niet leesbaar vanuit deze UI — alleen vervangbaar.'),
-
-    melding && React.createElement('div', { style: { padding:'10px 14px', borderRadius:10, marginBottom:14, background: melding.ok ? '#E8F5E9' : '#FFEBEE', color: melding.ok ? C.green : C.hot, fontWeight:700, fontSize:12 } }, melding.tekst),
-
-    // Security-uitleg
-    React.createElement('div', { style: { background:'#E3F2FD', border:'1px solid #90CAF9', borderRadius:12, padding:'12px 16px', marginBottom:18, fontSize:12, color:'#0D47A1', lineHeight:1.5 } },
-      React.createElement('div', { style: { fontWeight:800, marginBottom:4 } }, '🛡️ Dubbele beveiliging'),
-      React.createElement('div', null, 'Sleutels worden versleuteld opgeslagen met Supabase Vault (pgsodium AES-GCM). De versleutelingssleutel staat buiten de database. Alleen server-side edge functions kunnen ontsleutelen — de browser en deze UI zien nooit de ruwe waarde.')
-    ),
-
-    // Lijst
-    laden ? React.createElement('div', { style: { padding:40, textAlign:'center', color:C.muted } }, 'Laden...')
-    : items.map(function(it) {
-      var v = it.voorgedefinieerd, b = it.bestaand;
-      var actief = b && b.actief;
-      var testSt = b && b.laatste_test_status || 'nooit';
-      var tr = testResult[v.naam];
-      return React.createElement('div', { key: v.naam, style: card },
-        // Header
-        React.createElement('div', { style: { display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:12, marginBottom:8 } },
-          React.createElement('div', { style: { flex:1 } },
-            React.createElement('div', { style: { display:'flex', alignItems:'center', gap:8, marginBottom:2 } },
-              React.createElement('div', { style: { fontSize:16, fontWeight:900, color:C.night } }, v.titel),
-              b && React.createElement('span', { style: { background: actief ? '#E8F5E9' : '#FFF3E0', color: actief ? C.green : C.orange, fontSize:10, fontWeight:800, padding:'2px 8px', borderRadius:6, border:'1px solid ' + (actief ? C.green : C.orange) + '44' } }, actief ? '▶ Actief' : '⏸ Gepauzeerd'),
-              b && testSt !== 'nooit' && React.createElement('span', { style: { background: testSt === 'ok' ? '#E8F5E9' : '#FFEBEE', color: testSt === 'ok' ? C.green : C.hot, fontSize:10, fontWeight:800, padding:'2px 8px', borderRadius:6 } }, 'Laatste test: ' + (testSt === 'ok' ? '✓' : '✗') + ' ' + tijdKort(b.laatste_test_op))
-            ),
-            React.createElement('div', { style: { fontSize:12, color:C.muted, marginBottom:4 } }, v.beschrijving),
-            b && b.url && React.createElement('div', { style: { fontSize:11, color:C.aqua, fontFamily:'monospace' } }, b.url)
-          ),
-          !b
-            ? React.createElement('button', { style: btnP, onClick: function(){ openModal(v); } }, '+ Instellen')
-            : React.createElement('div', { style: { display:'flex', gap:6, flexWrap:'wrap' } },
-                React.createElement('button', { style: btnSG, onClick: function(){ testKoppeling(v.naam); }, disabled: !!testBezig[v.naam] },
-                  testBezig[v.naam] ? '⏳ Test...' : '🔌 Test'),
-                React.createElement('button', { style: btnSG, onClick: function(){ zetActief(v.naam, !actief); } }, actief ? '⏸ Pauzeer' : '▶ Activeer'),
-                React.createElement('button', { style: btnSG, onClick: function(){ openModal(v, b); } }, '✏️ Wijzig'),
-                React.createElement('button', { style: btnDanger, onClick: function(){ verwijderKopp(v.naam); } }, '🗑')
-              )
-        ),
-        // Test-resultaat
-        tr && React.createElement('div', { style: { marginTop:10, padding:'10px 12px', borderRadius:8, background: tr.ok ? '#E8F5E9' : '#FFEBEE', fontSize:12, color: tr.ok ? C.green : C.hot } },
-          tr.ok ? ('✓ Verbinding werkt. ' + JSON.stringify(tr.info)) : ('✗ ' + (tr.fout || JSON.stringify(tr.info || {})))),
-        // Fout-detail
-        b && b.laatste_test_fout && React.createElement('div', { style: { marginTop:6, fontSize:11, color:C.hot, background:'#FFF3F3', padding:'6px 10px', borderRadius:6 } }, 'Laatste fout: ' + b.laatste_test_fout),
-        // Status details onderaan
-        b && React.createElement('div', { style: { display:'flex', gap:14, marginTop:10, paddingTop:10, borderTop:'1px solid #EEE', fontSize:11, color:C.muted } },
-          React.createElement('div', null, 'Laatste sync: ', React.createElement('b', { style: { color: C.night } }, tijdKort(b.laatste_sync_op))),
-          React.createElement('div', null, 'Ingesteld: ', React.createElement('b', { style: { color: C.night } }, tijdKort(b.ingesteld_op))),
-          React.createElement('div', null, 'Bijgewerkt: ', React.createElement('b', { style: { color: C.night } }, tijdKort(b.bijgewerkt_op)))
-        )
-      );
-    }),
-
-    // Log viewer
-    React.createElement('div', { style: Object.assign({}, card, { marginTop:24 }) },
-      React.createElement('div', { style: { display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 } },
-        React.createElement('div', { style: { fontSize:14, fontWeight:800, color:C.night } }, '📋 Audit log (laatste 50)'),
-        React.createElement('div', { style: { display:'flex', gap:8, alignItems:'center' } },
-          React.createElement('select', { value: logFilter, onChange: function(e){ setLogFilter(e.target.value); }, style: { padding:'4px 8px', borderRadius:6, border:'1px solid #DDD', fontSize:11 } },
-            React.createElement('option', { value:'' }, 'Alle koppelingen'),
-            VOORGEDEFINIEERD.map(function(v){ return React.createElement('option', { key: v.naam, value: v.naam }, v.titel); })
-          ),
-          React.createElement('button', { style: btnSG, onClick: laad }, '↻ Herlaad')
-        )
-      ),
-      React.createElement('div', { style: { maxHeight: 400, overflowY: 'auto' } },
-        React.createElement('table', { className:'kr-table', style: { width:'100%', borderCollapse:'collapse', fontSize:11 } },
-          React.createElement('thead', null,
-            React.createElement('tr', null,
-              ['Tijdstip','Koppeling','Actie','Status','Details'].map(function(h){ return React.createElement('th', { key: h, style: { background:C.night, color:C.white, padding:'8px 10px', textAlign:'left', fontWeight:700, position:'sticky', top:0 } }, h); })
-            )
-          ),
-          React.createElement('tbody', null,
-            log.filter(function(l){ return !logFilter || l.koppeling_naam === logFilter; }).map(function(l){
-              return React.createElement('tr', { key: l.id, style: { borderBottom:'1px solid #EEE' } },
-                React.createElement('td', { style: { padding:'6px 10px', fontFamily:'monospace' } }, tijdKort(l.aangemaakt_op)),
-                React.createElement('td', { style: { padding:'6px 10px', fontWeight:700 } }, l.koppeling_naam),
-                React.createElement('td', { style: { padding:'6px 10px' } }, l.actie),
-                React.createElement('td', { style: { padding:'6px 10px', color: l.succes ? C.green : C.hot, fontWeight:700 } }, l.succes ? '✓' : '✗'),
-                React.createElement('td', { style: { padding:'6px 10px', color:C.muted, fontSize:10, maxWidth:400, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' } }, l.details ? JSON.stringify(l.details) : '—')
-              );
-            }),
-            log.length === 0 && React.createElement('tr', null, React.createElement('td', { colSpan:5, style: { padding:20, textAlign:'center', color:C.muted } }, 'Geen log-entries'))
-          )
-        )
-      )
-    ),
-
-    // Modal
-    modal && React.createElement('div', { style: { position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000 }, onClick: function(){ if (!modalBezig) setModal(null); } },
-      React.createElement('div', { style: { background:C.white, borderRadius:14, padding:24, width:'90%', maxWidth:560, boxShadow:'0 12px 48px rgba(0,0,0,.3)' }, onClick: function(e){ e.stopPropagation(); } },
-        React.createElement('div', { style: { fontSize:18, fontWeight:900, color:C.night, marginBottom:4 } }, (modal.bestaand ? '✏️ Wijzig ' : '+ Instellen ') + modal.voorgedefinieerd.titel),
-        React.createElement('div', { style: { fontSize:12, color:C.muted, marginBottom:18 } }, modal.voorgedefinieerd.beschrijving),
-
-        modal.bestaand && React.createElement('div', { style: { background:'#FFF3E0', border:'1px solid #FFB74D', borderRadius:8, padding:'8px 12px', fontSize:12, color:'#E65100', marginBottom:12 } },
-          '⚠️ Je overschrijft de bestaande sleutel. De oude is daarna definitief weg.'),
-
-        // URL veld
-        React.createElement('div', { style: { marginBottom: 14 } },
-          React.createElement('label', { style: { fontSize:11, fontWeight:700, color:C.night, display:'block', marginBottom:4 } }, modal.voorgedefinieerd.url_label),
-          React.createElement('input', { type:'text', value: modal.url || '', onChange: function(e){ setModal(Object.assign({}, modal, { url: e.target.value })); },
-            style: { width:'100%', padding:'8px 12px', border:'1px solid #DDD', borderRadius:8, fontSize:13, fontFamily:'monospace', boxSizing:'border-box' } })
-        ),
-
-        // Credential velden
-        modal.voorgedefinieerd.velden.map(function(f) {
-          return React.createElement('div', { key: f.naam, style: { marginBottom: 14 } },
-            React.createElement('label', { style: { fontSize:11, fontWeight:700, color:C.night, display:'block', marginBottom:4 } }, f.label),
-            React.createElement('input', {
-              type: f.type || 'text',
-              autoComplete: 'off',
-              value: modalWaarden[f.naam] || '',
-              onChange: function(e){ var nw = {}; Object.keys(modalWaarden).forEach(function(k){ nw[k] = modalWaarden[k]; }); nw[f.naam] = e.target.value; setModalWaarden(nw); },
-              style: { width:'100%', padding:'8px 12px', border:'1px solid #DDD', borderRadius:8, fontSize:13, fontFamily:'monospace', boxSizing:'border-box' }
-            }),
-            f.hint && React.createElement('div', { style: { fontSize:10, color:C.muted, marginTop:4, lineHeight:1.4 } }, f.hint)
-          );
-        }),
-
-        React.createElement('div', { style: { display:'flex', gap:8, justifyContent:'flex-end', marginTop:8 } },
-          React.createElement('button', { style: btnSG, onClick: function(){ setModal(null); }, disabled: modalBezig }, 'Annuleer'),
-          React.createElement('button', { style: Object.assign({}, btnP, { opacity: modalBezig ? 0.6 : 1 }), onClick: slaOp, disabled: modalBezig },
-            modalBezig ? '⏳ Versleutelen...' : '🔒 Versleuteld opslaan')
-        )
-      )
-    )
-  );
-}
+/* ApiKoppelingenScreen verplaatst naar modules/api-koppelingen-screen.js */
 
 function SensorenScreen() {
   var C = window._C || { night:'#234756', aqua:'#3FB8C4', hot:'#E8202B', green:'#2E7D32', muted:'#78909C', white:'#fff', orange:'#FF9800' };
@@ -9119,7 +8843,7 @@ function SensorenScreen() {
   if (!user) {
     return /* @__PURE__ */ React.createElement(LoginScreen, { onLogin: handleLogin });
   }
-  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", minHeight: "100vh", background: "#F0F4F7" } }, /* @__PURE__ */ React.createElement(Header, { sc, setSc, user, logout: handleLogout }), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto", overflowX: "hidden" }, className: "mobile-padding" }, /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 1200, margin: "0 auto", padding: "28px 20px 60px" } }, sc === "home" && /* @__PURE__ */ React.createElement(window._HomeScreen, { setSc }), sc === "boekingen" && /* @__PURE__ */ React.createElement(window._BoekingenScreen, { setSc, setActieve }), sc === "financieel" && /* @__PURE__ */ React.createElement(window._FinancieelScreen, { setSc }), sc === "chef" && /* @__PURE__ */ React.createElement(ChefScreen, { setSc, setActieve }), sc === "buffet" && /* @__PURE__ */ React.createElement(BuffetScreen, { actieve, setActieve, setSc }), sc === "opzet" && /* @__PURE__ */ React.createElement(window._OpzetScreen, null), sc === "tijden" && /* @__PURE__ */ React.createElement(window._TijdenScreen, null), sc.startsWith("stam:") && (typeof window._krMagScherm !== "function" || window._krMagScherm(sc)) && /* @__PURE__ */ React.createElement(StamScreen, { initTab: sc.split(":")[1] || "pg" }), sc === "fin" && /* @__PURE__ */ React.createElement(window._FinancieelScreen, null), sc === "inbox" && window._InboxScreen && /* @__PURE__ */ React.createElement(window._InboxScreen, null), sc === "adviezen" && /* @__PURE__ */ React.createElement(window._AdviezenScreen, null), sc === "fin_inst" && /* @__PURE__ */ React.createElement(FinInstellingenScreen, null), sc === "sensoren" && /* @__PURE__ */ React.createElement(SensorenScreen, null), sc === "apikeys" && /* @__PURE__ */ React.createElement(ApiKoppelingenScreen, null), sc === "staffel" && window._OpzetStaffelScreen && /* @__PURE__ */ React.createElement(window._OpzetStaffelScreen, null), sc === "gebruikers" && window._GebruikersScreen && /* @__PURE__ */ React.createElement(window._GebruikersScreen, null), sc === "systeem" && window._SysteemScreen && /* @__PURE__ */ React.createElement(window._SysteemScreen, null), sc === "schermdoc" && window._SchermDocScreen && /* @__PURE__ */ React.createElement(window._SchermDocScreen, null), sc === "stam:fi" && /* @__PURE__ */ React.createElement(FinInstellingenScreen, null), sc === "allergenen" && /* @__PURE__ */ React.createElement(window._AllergenenScreen, null), sc === "inspiratie" && /* @__PURE__ */ React.createElement(window._InspiratieScreen, null), sc === "opzetlog" && /* @__PURE__ */ React.createElement(window._OpzetLogboekScreen, null), sc === "haccp" && /* @__PURE__ */ React.createElement(window._HACCPScreen, null), sc === "nvwa" && window._NVWAInspectieScreen && /* @__PURE__ */ React.createElement(window._NVWAInspectieScreen, null), sc === "fb" && (window._FBAnalyseV2Screen ? /* @__PURE__ */ React.createElement(window._FBAnalyseV2Screen, null) : window._FBAnalyseScreen && /* @__PURE__ */ React.createElement(window._FBAnalyseScreen, null)), sc === "berichten" && window._BerichtenChefScreen && /* @__PURE__ */ React.createElement(window._BerichtenChefScreen, null), sc === "waste" && window._WasteAdminScreen && /* @__PURE__ */ React.createElement(window._WasteAdminScreen, null), sc === "notificaties" && window._NotificatiesScreen && /* @__PURE__ */ React.createElement(window._NotificatiesScreen, null), sc === "waste_analytics" && window._WasteAnalyticsScreen && /* @__PURE__ */ React.createElement(window._WasteAnalyticsScreen, null), sc === "notif_predict" && window._NotifPredictScreen && /* @__PURE__ */ React.createElement(window._NotifPredictScreen, null), sc === "haccp_inst" && window._HACCPInstellingenScreen && /* @__PURE__ */ React.createElement(window._HACCPInstellingenScreen, null), sc === "bestelling" && /* @__PURE__ */ React.createElement(SligroBestellingScreen, null))));
+  return /* @__PURE__ */ React.createElement("div", { style: { display: "flex", minHeight: "100vh", background: "#F0F4F7" } }, /* @__PURE__ */ React.createElement(Header, { sc, setSc, user, logout: handleLogout }), /* @__PURE__ */ React.createElement("div", { style: { flex: 1, overflowY: "auto", overflowX: "hidden" }, className: "mobile-padding" }, /* @__PURE__ */ React.createElement("div", { style: { maxWidth: 1200, margin: "0 auto", padding: "28px 20px 60px" } }, sc === "home" && /* @__PURE__ */ React.createElement(window._HomeScreen, { setSc }), sc === "boekingen" && /* @__PURE__ */ React.createElement(window._BoekingenScreen, { setSc, setActieve }), sc === "financieel" && /* @__PURE__ */ React.createElement(window._FinancieelScreen, { setSc }), sc === "chef" && /* @__PURE__ */ React.createElement(ChefScreen, { setSc, setActieve }), sc === "buffet" && /* @__PURE__ */ React.createElement(BuffetScreen, { actieve, setActieve, setSc }), sc === "opzet" && /* @__PURE__ */ React.createElement(window._OpzetScreen, null), sc === "tijden" && /* @__PURE__ */ React.createElement(window._TijdenScreen, null), sc.startsWith("stam:") && (typeof window._krMagScherm !== "function" || window._krMagScherm(sc)) && /* @__PURE__ */ React.createElement(StamScreen, { initTab: sc.split(":")[1] || "pg" }), sc === "fin" && /* @__PURE__ */ React.createElement(window._FinancieelScreen, null), sc === "inbox" && window._InboxScreen && /* @__PURE__ */ React.createElement(window._InboxScreen, null), sc === "adviezen" && /* @__PURE__ */ React.createElement(window._AdviezenScreen, null), sc === "fin_inst" && /* @__PURE__ */ React.createElement(FinInstellingenScreen, null), sc === "sensoren" && /* @__PURE__ */ React.createElement(SensorenScreen, null), sc === "apikeys" && /* @__PURE__ */ React.createElement(window._ApiKoppelingenScreen, null), sc === "staffel" && window._OpzetStaffelScreen && /* @__PURE__ */ React.createElement(window._OpzetStaffelScreen, null), sc === "gebruikers" && window._GebruikersScreen && /* @__PURE__ */ React.createElement(window._GebruikersScreen, null), sc === "systeem" && window._SysteemScreen && /* @__PURE__ */ React.createElement(window._SysteemScreen, null), sc === "schermdoc" && window._SchermDocScreen && /* @__PURE__ */ React.createElement(window._SchermDocScreen, null), sc === "stam:fi" && /* @__PURE__ */ React.createElement(FinInstellingenScreen, null), sc === "allergenen" && /* @__PURE__ */ React.createElement(window._AllergenenScreen, null), sc === "inspiratie" && /* @__PURE__ */ React.createElement(window._InspiratieScreen, null), sc === "opzetlog" && /* @__PURE__ */ React.createElement(window._OpzetLogboekScreen, null), sc === "haccp" && /* @__PURE__ */ React.createElement(window._HACCPScreen, null), sc === "nvwa" && window._NVWAInspectieScreen && /* @__PURE__ */ React.createElement(window._NVWAInspectieScreen, null), sc === "fb" && (window._FBAnalyseV2Screen ? /* @__PURE__ */ React.createElement(window._FBAnalyseV2Screen, null) : window._FBAnalyseScreen && /* @__PURE__ */ React.createElement(window._FBAnalyseScreen, null)), sc === "berichten" && window._BerichtenChefScreen && /* @__PURE__ */ React.createElement(window._BerichtenChefScreen, null), sc === "waste" && window._WasteAdminScreen && /* @__PURE__ */ React.createElement(window._WasteAdminScreen, null), sc === "notificaties" && window._NotificatiesScreen && /* @__PURE__ */ React.createElement(window._NotificatiesScreen, null), sc === "waste_analytics" && window._WasteAnalyticsScreen && /* @__PURE__ */ React.createElement(window._WasteAnalyticsScreen, null), sc === "notif_predict" && window._NotifPredictScreen && /* @__PURE__ */ React.createElement(window._NotifPredictScreen, null), sc === "haccp_inst" && window._HACCPInstellingenScreen && /* @__PURE__ */ React.createElement(window._HACCPInstellingenScreen, null), sc === "bestelling" && /* @__PURE__ */ React.createElement(SligroBestellingScreen, null))));
 }
 /* window._InspiratieScreen verplaatst naar modules/inspiratie.js */
 function AppWrapper(){
@@ -9139,8 +8863,8 @@ function AppWrapper(){
 }
 
 /* KR-26 EXPOSE-ALL: 75 top-level namen via window._X (sessie 4 mei 2026) */
-window._ALLERGENEN_14=ALLERGENEN_14;window._AlgemeenTab=AlgemeenTab;window._AllergenenBadge=AllergenenBadge;window._AllergenenKaart=AllergenenKaart;window._AllergenenOverzichtTab=AllergenenOverzichtTab;window._App=App;window._AppErrorBoundary=AppErrorBoundary;window._AppWrapper=AppWrapper;window._BOEKINGEN=BOEKINGEN;window._BuffetScreen=BuffetScreen;window._C=C;window._ChefScreen=ChefScreen;window._DraaiboekLinksTab=DraaiboekLinksTab;window._FinancieelGeboektTab=FinancieelGeboektTab;window._GERECHTEN_INIT=GERECHTEN_INIT;window._GeboekteProductenScreen=GeboekteProductenScreen;window._GeboekteProductenTab=GeboekteProductenTab;window._GebruikersTab=GebruikersTab;window._GerechtenTab=GerechtenTab;window._Header=Header;window._IGOR=IGOR;window._IngTab=IngTab;window._InputRauw=InputRauw;window._InstructiesTab=InstructiesTab;window._KioskBeheerTab=KioskBeheerTab;window._LoginScreen=LoginScreen;window._MENUS_INIT=MENUS_INIT;window._MenusTab=MenusTab;window._PGTab=PGTab;window._PRODUCTGROEPEN=PRODUCTGROEPEN;window._PresTab=PresTab;window._PrijsHistorieChart=PrijsHistorieChart;window._RecrasTab=RecrasTab;window._SLIGRO_INIT=SLIGRO_INIT;window._SS=SS;window._SligroBestellingScreen=SligroBestellingScreen;window._SligroDetailPanel=SligroDetailPanel;window._SligroTab=SligroTab;window._Splash=Splash;window._StamScreen=StamScreen;window._TijdenTab=TijdenTab;window._aantalBuf=aantalBuf;window._alertI=alertI;window._alertS=alertS;window._alertW=alertW;window._berekenBuffetLayout=berekenBuffetLayout;window._berekenSligroBestelling=berekenSligroBestelling;window._berekenVerpakkingen=berekenVerpakkingen;window._btnA=btnA;window._btnG=btnG;window._btnP=btnP;window._btnSA=btnSA;window._btnSG=btnSG;window._btnSP=btnSP;window._calcGerecht=calcGerecht;window._fDatum=fDatum;window._genereerCSV=genereerCSV;window._genereerOpzetEmailHTML=genereerOpzetEmailHTML;window._opzetPct=opzetPct;window._shortNaam=shortNaam;window._tabStyle=tabStyle;window._tg=tg;window._totPers=totPers;window._totPersPs=totPersPs;
-window._BerichtenChefScreen=BerichtenChefScreen;window._FinInstellingenScreen=FinInstellingenScreen;window._ApiKoppelingenScreen=ApiKoppelingenScreen;window._NVWAInspectieScreen=NVWAInspectieScreen;window._FBAnalyseV2Screen=FBAnalyseV2Screen;window._HACCPInstellingenScreen=HACCPInstellingenScreen;/* /KR-26 EXPOSE-ALL */
+window._ALLERGENEN_14=ALLERGENEN_14;window._AlgemeenTab=AlgemeenTab;window._AllergenenBadge=AllergenenBadge;window._AllergenenKaart=AllergenenKaart;window._AllergenenOverzichtTab=AllergenenOverzichtTab;window._App=App;window._AppErrorBoundary=AppErrorBoundary;window._AppWrapper=AppWrapper;window._BOEKINGEN=BOEKINGEN;window._BuffetScreen=BuffetScreen;window._C=C;window._ChefScreen=ChefScreen;window._DraaiboekLinksTab=DraaiboekLinksTab;window._FinancieelGeboektTab=FinancieelGeboektTab;window._GERECHTEN_INIT=GERECHTEN_INIT;window._GeboekteProductenTab=GeboekteProductenTab;window._GebruikersTab=GebruikersTab;window._GerechtenTab=GerechtenTab;window._Header=Header;window._IGOR=IGOR;window._IngTab=IngTab;window._InputRauw=InputRauw;window._InstructiesTab=InstructiesTab;window._KioskBeheerTab=KioskBeheerTab;window._LoginScreen=LoginScreen;window._MENUS_INIT=MENUS_INIT;window._MenusTab=MenusTab;window._PGTab=PGTab;window._PRODUCTGROEPEN=PRODUCTGROEPEN;window._PresTab=PresTab;window._PrijsHistorieChart=PrijsHistorieChart;window._RecrasTab=RecrasTab;window._SLIGRO_INIT=SLIGRO_INIT;window._SS=SS;window._SligroBestellingScreen=SligroBestellingScreen;window._SligroDetailPanel=SligroDetailPanel;window._SligroTab=SligroTab;window._Splash=Splash;window._StamScreen=StamScreen;window._TijdenTab=TijdenTab;window._aantalBuf=aantalBuf;window._alertI=alertI;window._alertS=alertS;window._alertW=alertW;window._berekenBuffetLayout=berekenBuffetLayout;window._berekenSligroBestelling=berekenSligroBestelling;window._berekenVerpakkingen=berekenVerpakkingen;window._btnA=btnA;window._btnG=btnG;window._btnP=btnP;window._btnSA=btnSA;window._btnSG=btnSG;window._btnSP=btnSP;window._calcGerecht=calcGerecht;window._fDatum=fDatum;window._genereerCSV=genereerCSV;window._genereerOpzetEmailHTML=genereerOpzetEmailHTML;window._opzetPct=opzetPct;window._shortNaam=shortNaam;window._tabStyle=tabStyle;window._tg=tg;window._totPers=totPers;window._totPersPs=totPersPs;
+window._BerichtenChefScreen=BerichtenChefScreen;window._FinInstellingenScreen=FinInstellingenScreen;window._NVWAInspectieScreen=NVWAInspectieScreen;window._FBAnalyseV2Screen=FBAnalyseV2Screen;window._HACCPInstellingenScreen=HACCPInstellingenScreen;/* /KR-26 EXPOSE-ALL */
 ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(AppErrorBoundary,null,React.createElement(AppWrapper)));
 
 // ──── BBQ ANALYSE POPUP (vanilla DOM) ────────────────────────────────────────
