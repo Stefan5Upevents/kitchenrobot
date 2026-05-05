@@ -1,5 +1,5 @@
 // KitchenRobot module: opzet-logboek-screen.js
-// Geextraheerd uit index.html op 2026-05-05T04:55:43.078Z
+// Geextraheerd uit index.html op 2026-05-05T04:59:22.623Z
 // Bevat: OpzetLogboekScreen
 // Externe refs (via window._): (geen)
 (function() {
