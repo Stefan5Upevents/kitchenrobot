@@ -1,21 +1,18 @@
 <!DOCTYPE html>
 <html lang='nl'><head>
-  <script src="modules/opzet-logboek-screen.js" defer></script>
 <!-- KR-CACHEBUSTER — auto-version-check (zie kr-install-cachebuster) -->
-<meta name="kr-deploy" content="3c96b6de8bf5fba2a8ed66752edab7e8cdb2903d">
+<meta name="kr-deploy" content="b44726c06f9bf681394e2b693d263f4c92f50ce5">
 <script>
 (function(){
-  var KR_DEPLOY = "3c96b6de8bf5fba2a8ed66752edab7e8cdb2903d";
+  var KR_DEPLOY = "b44726c06f9bf681394e2b693d263f4c92f50ce5";
   try {
     var stored = localStorage.getItem('kr_last_deploy');
     if (stored && stored !== KR_DEPLOY) {
-      // Nieuwe versie geladen — update marker, geen reload nodig
       localStorage.setItem('kr_last_deploy', KR_DEPLOY);
     } else if (!stored) {
       localStorage.setItem('kr_last_deploy', KR_DEPLOY);
     }
   } catch(e) {}
-  // Check elke 3 minuten of er een nieuwere deploy is
   function checkVersie() {
     fetch('/?_kr_cb=' + Date.now(), { cache: 'no-store', credentials: 'omit' })
       .then(function(r){ return r.text(); })
@@ -27,10 +24,9 @@
           window.location.reload();
         }
       })
-      .catch(function(){ /* offline of foutje, opnieuw proberen */ });
+      .catch(function(){});
   }
   setInterval(checkVersie, 3 * 60 * 1000);
-  // Check ook bij focus (tab terug naar voorgrond)
   document.addEventListener('visibilitychange', function(){
     if (document.visibilityState === 'visible') checkVersie();
   });
@@ -38,6 +34,7 @@
 </script>
 <!-- /KR-CACHEBUSTER -->
 
+  <script src="modules/opzet-logboek-screen.js" defer></script>
 <script src="modules/voorraad-checker-tab.js" defer></script>
   <script src="modules/inspiratie.js" defer></script><meta charset='UTF-8'/>
 <meta name='viewport' content='width=device-width,initial-scale=1.0,maximum-scale=5.0'/>
