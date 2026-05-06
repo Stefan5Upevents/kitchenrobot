@@ -289,25 +289,28 @@ table.kr-table tbody tr.kr-leeg td, .kr-wrap table tbody tr.kr-leeg td {
 
 
 
-<!-- KR-MOBILE-V3 — hamburger + status-knop op mobiel (6 mei 2026) -->
-<script id="kr-mobile-v3-script">
+
+
+<!-- KR-MOBILE-V4 — hamburger + status-knop + toewijzen-icoontje (6 mei 2026) -->
+<script id="kr-mobile-v4-script">
 (function() {
   var aan = false;
   try {
     var url = new URL(window.location.href);
     var p = url.searchParams.get('mobile');
-    if (p === '0') { try { localStorage.removeItem('kr_mobile_v3'); } catch(e) {} return; }
-    if (p === '1') { try { localStorage.setItem('kr_mobile_v3', '1'); } catch(e) {} aan = true; }
-    else { try { aan = localStorage.getItem('kr_mobile_v3') === '1'; } catch(e) {} }
+    if (p === '0') { try { localStorage.removeItem('kr_mobile_v4'); } catch(e) {} return; }
+    if (p === '1') { try { localStorage.setItem('kr_mobile_v4', '1'); } catch(e) {} aan = true; }
+    else { try { aan = localStorage.getItem('kr_mobile_v4') === '1'; } catch(e) {} }
   } catch(e) {}
   if (!aan) return;
 
-  // CSS: hamburger-fix + health-bar verbergen op mobile
+  // CSS
   var css = "";
   css += "@media (max-width: 768px) {";
   css += "  #kr-health-bar { display: none !important; }";
   css += "  body.kr-has-health-bar { padding-top: 52px !important; }";
   css += "  .sidebar-mobile { z-index: 99997 !important; top: 0 !important; }";
+  // Status-knop in sidebar
   css += "  .kr-mobile-status-btn {";
   css += "    position: fixed; top: 8px; right: 56px; z-index: 99998;";
   css += "    width: 36px; height: 36px; border-radius: 18px;";
@@ -316,6 +319,7 @@ table.kr-table tbody tr.kr-leeg td, .kr-wrap table tbody tr.kr-leeg td {
   css += "    font-size: 18px; padding: 0;";
   css += "  }";
   css += "  .kr-mobile-status-btn:active { background: rgba(255,255,255,0.3); }";
+  // Status-popup
   css += "  .kr-mobile-status-popup {";
   css += "    position: fixed; top: 56px; right: 12px; z-index: 99998;";
   css += "    background: #002D41; color: #FFF;";
@@ -336,17 +340,44 @@ table.kr-table tbody tr.kr-leeg td, .kr-wrap table tbody tr.kr-leeg td {
   css += "  .kr-mobile-status-popup .dot {";
   css += "    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;";
   css += "  }";
+  // V4 NIEUW: Toewijzen-select smaller (alleen icoontje zichtbaar)
+  css += "  select.kr-mobile-toewijzen {";
+  css += "    max-width: 50px !important;";
+  css += "    width: 50px !important;";
+  css += "    min-width: 50px !important;";
+  css += "    padding-left: 6px !important;";
+  css += "    padding-right: 16px !important;";
+  css += "    font-size: 14px !important;";
+  css += "    text-overflow: ellipsis !important;";
+  css += "    overflow: hidden !important;";
+  css += "  }";
   css += "}";
   css += "@media (min-width: 769px) {";
   css += "  .kr-mobile-status-btn, .kr-mobile-status-popup { display: none !important; }";
+  // Op desktop: toewijzen-select normaal (geen kr-mobile-toewijzen styling)
   css += "}";
 
   var styleEl = document.createElement('style');
-  styleEl.id = 'kr-mobile-v3-stylesheet';
+  styleEl.id = 'kr-mobile-v4-stylesheet';
   styleEl.textContent = css;
   (document.head || document.documentElement).appendChild(styleEl);
 
-  // JS: Knop maken + popup logica
+  // Tag selects met "Toewijzen" optie
+  function tagToewijzenSelects() {
+    var selects = document.querySelectorAll('select');
+    selects.forEach(function(s) {
+      if (s.classList.contains('kr-mobile-toewijzen')) return; // al getagd
+      var opts = s.querySelectorAll('option');
+      for (var i = 0; i < opts.length; i++) {
+        if (opts[i].textContent && opts[i].textContent.indexOf('Toewijzen') !== -1) {
+          s.classList.add('kr-mobile-toewijzen');
+          break;
+        }
+      }
+    });
+  }
+
+  // Status-knop maker
   function maakStatusKnop() {
     if (document.querySelector('.kr-mobile-status-btn')) return;
     var btn = document.createElement('button');
@@ -359,11 +390,7 @@ table.kr-table tbody tr.kr-leeg td, .kr-wrap table tbody tr.kr-leeg td {
     btn.onclick = function(e) {
       e.stopPropagation();
       var bestaande = document.querySelector('.kr-mobile-status-popup');
-      if (bestaande) {
-        bestaande.remove();
-        return;
-      }
-      // Lees pills/links uit health-bar
+      if (bestaande) { bestaande.remove(); return; }
       var pills = document.querySelectorAll('#kr-health-bar .kr-health-pill, #kr-health-bar .kr-health-link');
       var popup = document.createElement('div');
       popup.className = 'kr-mobile-status-popup';
@@ -385,8 +412,6 @@ table.kr-table tbody tr.kr-leeg td, .kr-wrap table tbody tr.kr-leeg td {
       }
       popup.innerHTML = html;
       document.body.appendChild(popup);
-
-      // Tap buiten = sluit
       setTimeout(function() {
         document.addEventListener('click', function sluit(ev) {
           if (!popup.contains(ev.target) && ev.target !== btn) {
@@ -399,27 +424,29 @@ table.kr-table tbody tr.kr-leeg td, .kr-wrap table tbody tr.kr-leeg td {
   }
 
   function addIndicator() {
-    if (document.getElementById('kr-mobile-v3-indicator')) return;
+    if (document.getElementById('kr-mobile-v4-indicator')) return;
     var div = document.createElement('div');
-    div.id = 'kr-mobile-v3-indicator';
-    div.textContent = 'mobile v3';
+    div.id = 'kr-mobile-v4-indicator';
+    div.textContent = 'mobile v4';
     div.style.cssText = 'position:fixed;bottom:4px;left:4px;background:rgba(0,0,0,0.6);color:#FFF;font-size:9px;padding:2px 6px;border-radius:4px;z-index:99999;pointer-events:none;font-family:sans-serif';
     document.body.appendChild(div);
   }
 
   function init() {
-    // Alleen op smal scherm de knop tonen
     if (window.innerWidth <= 768) {
       maakStatusKnop();
     }
     addIndicator();
+    tagToewijzenSelects();
+    // Re-scan elke 2 sec voor nieuwe selects (React re-renders)
+    setInterval(tagToewijzenSelects, 2000);
   }
 
   if (document.body) init();
   else document.addEventListener('DOMContentLoaded', init);
 })();
 </script>
-<!-- /KR-MOBILE-V3 -->
+<!-- /KR-MOBILE-V4 -->
 </head><body><div id='root'></div>
 <script src='https://unpkg.com/react@18/umd/react.production.min.js'></script>
 <script src='https://unpkg.com/react-dom@18/umd/react-dom.production.min.js'></script>
