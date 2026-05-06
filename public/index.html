@@ -285,43 +285,104 @@ table.kr-table tbody tr.kr-leeg td, .kr-wrap table tbody tr.kr-leeg td {
 </style>
 
 
-<!-- KR-MOBILE-V2 — hamburger zichtbaar op mobiel (6 mei 2026) -->
-<script id="kr-mobile-v2-script">
+
+
+<!-- KR-MOBILE-V3 — hamburger + health-toggle (6 mei 2026) -->
+<script id="kr-mobile-v3-script">
 (function() {
   var aan = false;
   try {
     var url = new URL(window.location.href);
     var p = url.searchParams.get('mobile');
-    if (p === '0') { try { localStorage.removeItem('kr_mobile_v2'); } catch(e) {} return; }
-    if (p === '1') { try { localStorage.setItem('kr_mobile_v2', '1'); } catch(e) {} aan = true; }
-    else { try { aan = localStorage.getItem('kr_mobile_v2') === '1'; } catch(e) {} }
+    if (p === '0') {
+      try { localStorage.removeItem('kr_mobile_v3'); } catch(e) {}
+      try { localStorage.removeItem('kr_mobile_v2'); } catch(e) {}
+      return;
+    }
+    if (p === '1') { try { localStorage.setItem('kr_mobile_v3', '1'); } catch(e) {} aan = true; }
+    else { try { aan = localStorage.getItem('kr_mobile_v3') === '1' || localStorage.getItem('kr_mobile_v2') === '1'; } catch(e) {} }
   } catch(e) {}
   if (!aan) return;
 
+  // CSS overlay: hamburger + health-balk toggle
   var css = "";
   css += "@media (max-width: 768px) {";
-  css += "  .sidebar-mobile { z-index: 99997 !important; top: 32px !important; }";
-  css += "  body.kr-has-health-bar { padding-top: 84px !important; }";
+  // Hamburger zichtbaar onder de health-balk plek (zoals v2)
+  css += "  .sidebar-mobile { z-index: 99997 !important; top: 0 !important; }";
+  // Body padding: alleen ruimte voor hamburger (52px), geen health-balk default
+  css += "  body.kr-has-health-bar { padding-top: 52px !important; }";
+  // Health-balk standaard VERSTOPT op mobiel
+  css += "  #kr-health-bar { display: none !important; }";
+  // Maar als body class .kr-mob-health-aan heeft: TOON health-balk onder de hamburger
+  css += "  body.kr-mob-health-aan #kr-health-bar {";
+  css += "    display: flex !important;";
+  css += "    top: 52px !important;";
+  css += "    z-index: 99998 !important;";
+  css += "    overflow-x: auto !important;";
+  css += "    -webkit-overflow-scrolling: touch !important;";
+  css += "    height: 36px !important;";
+  css += "  }";
+  css += "  body.kr-mob-health-aan { padding-top: 88px !important; }";
+  // De toggle-knop zelf
+  css += "  #kr-mob-health-toggle {";
+  css += "    display: flex !important;";
+  css += "    align-items: center;";
+  css += "    justify-content: center;";
+  css += "    position: fixed !important;";
+  css += "    top: 10px !important;";
+  css += "    right: 8px !important;";
+  css += "    width: 36px !important;";
+  css += "    height: 36px !important;";
+  css += "    z-index: 99999 !important;";
+  css += "    background: rgba(255,255,255,0.18) !important;";
+  css += "    color: #fff !important;";
+  css += "    border: 1px solid rgba(255,255,255,0.3) !important;";
+  css += "    border-radius: 8px !important;";
+  css += "    font-size: 16px !important;";
+  css += "    cursor: pointer !important;";
+  css += "    padding: 0 !important;";
+  css += "    user-select: none !important;";
+  css += "  }";
+  css += "  body.kr-mob-health-aan #kr-mob-health-toggle {";
+  css += "    background: rgba(255,255,255,0.4) !important;";
+  css += "  }";
+  css += "}";
+  // Op desktop: knop verbergen
+  css += "@media (min-width: 769px) {";
+  css += "  #kr-mob-health-toggle { display: none !important; }";
   css += "}";
 
   var styleEl = document.createElement('style');
-  styleEl.id = 'kr-mobile-v2-stylesheet';
+  styleEl.id = 'kr-mobile-v3-stylesheet';
   styleEl.textContent = css;
   (document.head || document.documentElement).appendChild(styleEl);
 
-  function addIndicator() {
-    if (document.getElementById('kr-mobile-v2-indicator')) return;
-    var div = document.createElement('div');
-    div.id = 'kr-mobile-v2-indicator';
-    div.textContent = 'mobile v2';
-    div.style.cssText = 'position:fixed;bottom:4px;left:4px;background:rgba(0,0,0,0.6);color:#FFF;font-size:9px;padding:2px 6px;border-radius:4px;z-index:99999;pointer-events:none;font-family:sans-serif';
-    document.body.appendChild(div);
+  // Toggle-knop + indicator toevoegen
+  function addUI() {
+    if (document.getElementById('kr-mob-health-toggle')) return;
+
+    var btn = document.createElement('button');
+    btn.id = 'kr-mob-health-toggle';
+    btn.type = 'button';
+    btn.setAttribute('aria-label', 'Toon/verberg systeemstatus');
+    btn.textContent = '🛡️'; // 🛡️ schild
+    btn.addEventListener('click', function(ev) {
+      ev.stopPropagation();
+      document.body.classList.toggle('kr-mob-health-aan');
+    });
+    document.body.appendChild(btn);
+
+    var ind = document.createElement('div');
+    ind.id = 'kr-mobile-v3-indicator';
+    ind.textContent = 'mobile v3';
+    ind.style.cssText = 'position:fixed;bottom:4px;left:4px;background:rgba(0,0,0,0.6);color:#FFF;font-size:9px;padding:2px 6px;border-radius:4px;z-index:99999;pointer-events:none;font-family:sans-serif';
+    document.body.appendChild(ind);
   }
-  if (document.body) addIndicator();
-  else document.addEventListener('DOMContentLoaded', addIndicator);
+  if (document.body) addUI();
+  else document.addEventListener('DOMContentLoaded', addUI);
 })();
 </script>
-<!-- /KR-MOBILE-V2 -->
+<!-- /KR-MOBILE-V3 -->
 </head><body><div id='root'></div>
 <script src='https://unpkg.com/react@18/umd/react.production.min.js'></script>
 <script src='https://unpkg.com/react-dom@18/umd/react-dom.production.min.js'></script>
