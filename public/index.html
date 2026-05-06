@@ -284,6 +284,44 @@ table.kr-table tbody tr.kr-leeg td, .kr-wrap table tbody tr.kr-leeg td {
 }
 </style>
 
+
+<!-- KR-MOBILE-V2 — hamburger zichtbaar op mobiel (6 mei 2026) -->
+<script id="kr-mobile-v2-script">
+(function() {
+  var aan = false;
+  try {
+    var url = new URL(window.location.href);
+    var p = url.searchParams.get('mobile');
+    if (p === '0') { try { localStorage.removeItem('kr_mobile_v2'); } catch(e) {} return; }
+    if (p === '1') { try { localStorage.setItem('kr_mobile_v2', '1'); } catch(e) {} aan = true; }
+    else { try { aan = localStorage.getItem('kr_mobile_v2') === '1'; } catch(e) {} }
+  } catch(e) {}
+  if (!aan) return;
+
+  var css = "";
+  css += "@media (max-width: 768px) {";
+  css += "  .sidebar-mobile { z-index: 99997 !important; top: 32px !important; }";
+  css += "  body.kr-has-health-bar { padding-top: 84px !important; }";
+  css += "}";
+
+  var styleEl = document.createElement('style');
+  styleEl.id = 'kr-mobile-v2-stylesheet';
+  styleEl.textContent = css;
+  (document.head || document.documentElement).appendChild(styleEl);
+
+  function addIndicator() {
+    if (document.getElementById('kr-mobile-v2-indicator')) return;
+    var div = document.createElement('div');
+    div.id = 'kr-mobile-v2-indicator';
+    div.textContent = 'mobile v2';
+    div.style.cssText = 'position:fixed;bottom:4px;left:4px;background:rgba(0,0,0,0.6);color:#FFF;font-size:9px;padding:2px 6px;border-radius:4px;z-index:99999;pointer-events:none;font-family:sans-serif';
+    document.body.appendChild(div);
+  }
+  if (document.body) addIndicator();
+  else document.addEventListener('DOMContentLoaded', addIndicator);
+})();
+</script>
+<!-- /KR-MOBILE-V2 -->
 </head><body><div id='root'></div>
 <script src='https://unpkg.com/react@18/umd/react.production.min.js'></script>
 <script src='https://unpkg.com/react-dom@18/umd/react-dom.production.min.js'></script>
