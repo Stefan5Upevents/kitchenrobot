@@ -4626,7 +4626,170 @@ function TijdenScreen() {
       "table{width:100%;border-collapse:collapse}"+
       "th{background:#002D41;color:#fff;padding:5px 8px;text-align:left;font-size:8pt;text-transform:uppercase;letter-spacing:.5px}"+
       "td{padding:4px 8px;border-bottom:1px solid #eee;font-size:9pt;vertical-align:top}"+
-      "@page{size:A4 landscape;margin:10mm}</style></head><body>"+
+      "@page{size:A4 landscape;margin:10mm}</style>
+<!-- KR-MOBILE-V1 — mobile fixes overlay (6 mei 2026) -->
+<script id="kr-mobile-v1-script">
+(function() {
+  // 1. Feature-flag check
+  let aan = false;
+  try {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('mobile') === '0') {
+      try { localStorage.removeItem('kr_mobile_v1'); } catch(e) {}
+      return;
+    }
+    if (url.searchParams.get('mobile') === '1') {
+      try { localStorage.setItem('kr_mobile_v1', '1'); } catch(e) {}
+      aan = true;
+    } else {
+      try { aan = localStorage.getItem('kr_mobile_v1') === '1'; } catch(e) {}
+    }
+  } catch(e) {}
+  if (!aan) return;
+
+  // 2. Inject CSS overlay
+  const css = `
+    /* === KR MOBILE OVERLAY V1 === */
+
+    /* PROBLEEM 1: Hamburger zichtbaar boven health-balk */
+    @media (max-width: 768px) {
+      .sidebar-mobile {
+        z-index: 99997 !important; /* hoger dan kr-health-bar (99996) */
+      }
+      /* Reserveer ruimte voor zowel health-bar (32px) als sidebar-mobile-balk (52px) */
+      body.kr-has-health-bar {
+        padding-top: 84px !important;
+      }
+      /* Mobile-sidebar onder de health-balk plaatsen */
+      .sidebar-mobile {
+        top: 32px !important;
+      }
+      /* Het uitgevouwen menu volgt onder de hamburger-balk */
+      .sidebar-mobile[style*="top: 52"],
+      .sidebar-mobile[style*="top:52"] {
+        top: 84px !important;
+      }
+    }
+
+    /* PROBLEEM 2: Health-balk compact op smal scherm */
+    @media (max-width: 768px) {
+      #kr-health-bar {
+        font-size: 10px !important;
+        gap: 6px !important;
+        padding: 0 6px !important;
+        height: 32px !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        white-space: nowrap !important;
+      }
+      /* Verberg pill-labels, toon alleen dots */
+      #kr-health-bar .kr-health-link-label,
+      #kr-health-bar .kr-health-pill-label {
+        display: none !important;
+      }
+      /* Compactere pills */
+      #kr-health-bar .kr-health-pill,
+      #kr-health-bar .kr-health-link {
+        padding: 1px 4px !important;
+        flex-shrink: 0 !important;
+      }
+      /* Verberg profielnaam, alleen avatar */
+      #kr-profiel-info { display: none !important; }
+      #kr-profiel-badge { padding: 2px 8px 2px 2px !important; }
+      #kr-profiel-avatar { width: 22px !important; height: 22px !important; font-size: 10px !important; }
+    }
+
+    /* PROBLEEM 3: Tabellen scrollbaar met minimum breedte */
+    @media (max-width: 768px) {
+      table.kr-table,
+      .kr-wrap table,
+      .boekingsoverzicht table,
+      table {
+        min-width: 600px !important;
+      }
+      /* Wrapper rondom moet horizontaal scrollen */
+      .kr-wrap,
+      .boekingsoverzicht,
+      .table-wrap {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+      }
+    }
+
+    /* PROBLEEM 4: Chef-emoji bal kleiner en lager z-index op mobiel */
+    @media (max-width: 768px) {
+      [class*="sjef"][class*="knop"],
+      [class*="sjef"][class*="fab"],
+      [class*="sjef-floating"],
+      .kr-sjef-fab,
+      #kr-sjef-fab,
+      .sjef-knop {
+        width: 44px !important;
+        height: 44px !important;
+        font-size: 22px !important;
+        bottom: 12px !important;
+        right: 12px !important;
+        z-index: 100 !important; /* lager dan health-bar en sidebar */
+      }
+    }
+
+    /* PROBLEEM 5: Touch-targets minimaal 44x44px (Apple/Google guideline) */
+    @media (max-width: 768px) {
+      button,
+      a.btn,
+      input[type="button"],
+      input[type="submit"],
+      .kr-btn,
+      [role="button"] {
+        min-height: 44px !important;
+      }
+      /* Pills en kleinere knoppen mogen kleiner blijven — touch is daar minder kritiek */
+      .kr-health-pill,
+      .kr-health-link,
+      .pill {
+        min-height: 0 !important;
+      }
+    }
+
+    /* Bonus: voorkom dat horizontale scroll op body de hele site verschuift */
+    @media (max-width: 768px) {
+      html, body {
+        overflow-x: hidden !important;
+      }
+    }
+
+    /* Bonus: dunne scroll-indicator-strepen op horizontaal scrollende elementen */
+    @media (max-width: 768px) {
+      .kr-wrap::-webkit-scrollbar,
+      .boekingsoverzicht::-webkit-scrollbar {
+        height: 3px;
+      }
+      .kr-wrap::-webkit-scrollbar-thumb,
+      .boekingsoverzicht::-webkit-scrollbar-thumb {
+        background: rgba(0,0,0,0.3);
+      }
+    }
+  `;
+  const styleEl = document.createElement('style');
+  styleEl.id = 'kr-mobile-v1-stylesheet';
+  styleEl.textContent = css;
+  (document.head || document.documentElement).appendChild(styleEl);
+
+  // 3. Voeg een visuele indicator toe (klein, rechts onderin) zodat Stefan weet dat de overlay actief is
+  function addIndicator() {
+    if (document.getElementById('kr-mobile-v1-indicator')) return;
+    const div = document.createElement('div');
+    div.id = 'kr-mobile-v1-indicator';
+    div.textContent = 'mobile v1';
+    div.style.cssText = 'position:fixed;bottom:4px;left:4px;background:rgba(0,0,0,0.6);color:#FFF;font-size:9px;padding:2px 6px;border-radius:4px;z-index:99999;pointer-events:none;font-family:sans-serif';
+    document.body.appendChild(div);
+  }
+  if (document.body) addIndicator();
+  else document.addEventListener('DOMContentLoaded', addIndicator);
+})();
+</script>
+<!-- /KR-MOBILE-V1 -->
+</head><body>"+
       "<h1>"+dagNm+" \u00b7 "+outletNm+"</h1>"+
       "<h2>Tijdenoverzicht</h2>"+
       "<table><thead><tr>"+
