@@ -291,26 +291,28 @@ table.kr-table tbody tr.kr-leeg td, .kr-wrap table tbody tr.kr-leeg td {
 
 
 
-<!-- KR-MOBILE-V4 — hamburger + status-knop + toewijzen-icoontje (6 mei 2026) -->
-<script id="kr-mobile-v4-script">
+
+
+<!-- KR-MOBILE-V5 — wrap + word-break (6 mei 2026) -->
+<script id="kr-mobile-v5-script">
 (function() {
   var aan = false;
   try {
     var url = new URL(window.location.href);
     var p = url.searchParams.get('mobile');
-    if (p === '0') { try { localStorage.removeItem('kr_mobile_v4'); } catch(e) {} return; }
-    if (p === '1') { try { localStorage.setItem('kr_mobile_v4', '1'); } catch(e) {} aan = true; }
-    else { try { aan = localStorage.getItem('kr_mobile_v4') === '1'; } catch(e) {} }
+    if (p === '0') { try { localStorage.removeItem('kr_mobile_v5'); } catch(e) {} return; }
+    if (p === '1') { try { localStorage.setItem('kr_mobile_v5', '1'); } catch(e) {} aan = true; }
+    else { try { aan = localStorage.getItem('kr_mobile_v5') === '1'; } catch(e) {} }
   } catch(e) {}
   if (!aan) return;
 
-  // CSS
   var css = "";
   css += "@media (max-width: 768px) {";
+  // V2: hamburger zichtbaar
   css += "  #kr-health-bar { display: none !important; }";
   css += "  body.kr-has-health-bar { padding-top: 52px !important; }";
   css += "  .sidebar-mobile { z-index: 99997 !important; top: 0 !important; }";
-  // Status-knop in sidebar
+  // V3: status-knop
   css += "  .kr-mobile-status-btn {";
   css += "    position: fixed; top: 8px; right: 56px; z-index: 99998;";
   css += "    width: 36px; height: 36px; border-radius: 18px;";
@@ -319,7 +321,7 @@ table.kr-table tbody tr.kr-leeg td, .kr-wrap table tbody tr.kr-leeg td {
   css += "    font-size: 18px; padding: 0;";
   css += "  }";
   css += "  .kr-mobile-status-btn:active { background: rgba(255,255,255,0.3); }";
-  // Status-popup
+  // V3: status-popup
   css += "  .kr-mobile-status-popup {";
   css += "    position: fixed; top: 56px; right: 12px; z-index: 99998;";
   css += "    background: #002D41; color: #FFF;";
@@ -328,45 +330,44 @@ table.kr-table tbody tr.kr-leeg td, .kr-wrap table tbody tr.kr-leeg td {
   css += "    box-shadow: 0 4px 12px rgba(0,0,0,0.3);";
   css += "    font-size: 13px; line-height: 1.6;";
   css += "  }";
-  css += "  .kr-mobile-status-popup h4 {";
-  css += "    margin: 0 0 8px 0; font-size: 12px; opacity: 0.7;";
-  css += "    text-transform: uppercase; letter-spacing: 0.5px;";
-  css += "  }";
-  css += "  .kr-mobile-status-popup .status-rij {";
-  css += "    display: flex; align-items: center; gap: 8px;";
-  css += "    padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.1);";
-  css += "  }";
+  css += "  .kr-mobile-status-popup h4 { margin: 0 0 8px 0; font-size: 12px; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.5px; }";
+  css += "  .kr-mobile-status-popup .status-rij { display: flex; align-items: center; gap: 8px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }";
   css += "  .kr-mobile-status-popup .status-rij:last-child { border-bottom: none; }";
-  css += "  .kr-mobile-status-popup .dot {";
-  css += "    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;";
+  css += "  .kr-mobile-status-popup .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }";
+  // V4: toewijzen-icoon
+  css += "  select.kr-mobile-toewijzen { max-width: 50px !important; width: 50px !important; min-width: 50px !important; padding-left: 6px !important; padding-right: 16px !important; font-size: 14px !important; }";
+  // V5 NIEUW: forceer flex-rows te wrappen op mobile
+  css += "  div[style*='space-between'][style*='flex'],";
+  css += "  div[style*='display: flex'],";
+  css += "  div[style*='display:flex'] {";
+  css += "    flex-wrap: wrap !important;";
   css += "  }";
-  // V4 NIEUW: Toewijzen-select smaller (alleen icoontje zichtbaar)
-  css += "  select.kr-mobile-toewijzen {";
-  css += "    max-width: 50px !important;";
-  css += "    width: 50px !important;";
-  css += "    min-width: 50px !important;";
-  css += "    padding-left: 6px !important;";
-  css += "    padding-right: 16px !important;";
-  css += "    font-size: 14px !important;";
-  css += "    text-overflow: ellipsis !important;";
-  css += "    overflow: hidden !important;";
+  // V5 NIEUW: voorkom verticale letterstack — forceer normale woordbreking
+  css += "  body, body * {";
+  css += "    word-break: normal !important;";
+  css += "    overflow-wrap: break-word !important;";
+  css += "  }";
+  // V5 NIEUW: min-width: 0 op flex-children zodat ze kunnen wrappen ipv knijpen
+  css += "  div[style*='flex'] > * { min-width: 0; }";
+  // V5 NIEUW: voorkom afgekapte titels in cards
+  css += "  h1, h2, h3, h4, h5 {";
+  css += "    white-space: normal !important;";
+  css += "    text-overflow: clip !important;";
+  css += "    overflow: visible !important;";
   css += "  }";
   css += "}";
   css += "@media (min-width: 769px) {";
   css += "  .kr-mobile-status-btn, .kr-mobile-status-popup { display: none !important; }";
-  // Op desktop: toewijzen-select normaal (geen kr-mobile-toewijzen styling)
   css += "}";
 
   var styleEl = document.createElement('style');
-  styleEl.id = 'kr-mobile-v4-stylesheet';
+  styleEl.id = 'kr-mobile-v5-stylesheet';
   styleEl.textContent = css;
   (document.head || document.documentElement).appendChild(styleEl);
 
-  // Tag selects met "Toewijzen" optie
   function tagToewijzenSelects() {
-    var selects = document.querySelectorAll('select');
-    selects.forEach(function(s) {
-      if (s.classList.contains('kr-mobile-toewijzen')) return; // al getagd
+    document.querySelectorAll('select').forEach(function(s) {
+      if (s.classList.contains('kr-mobile-toewijzen')) return;
       var opts = s.querySelectorAll('option');
       for (var i = 0; i < opts.length; i++) {
         if (opts[i].textContent && opts[i].textContent.indexOf('Toewijzen') !== -1) {
@@ -377,7 +378,6 @@ table.kr-table tbody tr.kr-leeg td, .kr-wrap table tbody tr.kr-leeg td {
     });
   }
 
-  // Status-knop maker
   function maakStatusKnop() {
     if (document.querySelector('.kr-mobile-status-btn')) return;
     var btn = document.createElement('button');
@@ -386,7 +386,6 @@ table.kr-table tbody tr.kr-leeg td, .kr-wrap table tbody tr.kr-leeg td {
     btn.textContent = '🚦';
     btn.setAttribute('aria-label', 'Toon status');
     document.body.appendChild(btn);
-
     btn.onclick = function(e) {
       e.stopPropagation();
       var bestaande = document.querySelector('.kr-mobile-status-popup');
@@ -395,50 +394,40 @@ table.kr-table tbody tr.kr-leeg td, .kr-wrap table tbody tr.kr-leeg td {
       var popup = document.createElement('div');
       popup.className = 'kr-mobile-status-popup';
       var html = '<h4>Status</h4>';
-      if (pills.length === 0) {
-        html += '<div style="opacity:0.6">Geen status-info beschikbaar</div>';
-      } else {
-        pills.forEach(function(p) {
-          var dot = p.querySelector('.kr-health-dot');
-          var dotKleur = '#10B981';
-          if (dot) {
-            var st = dot.getAttribute('data-status');
-            if (st === 'warn') dotKleur = '#F59E0B';
-            else if (st === 'error' || st === 'fout') dotKleur = '#EF4444';
-          }
-          var tekst = p.textContent.trim().replace(/\s+/g, ' ');
-          html += '<div class="status-rij"><span class="dot" style="background:' + dotKleur + '"></span><span>' + tekst + '</span></div>';
-        });
-      }
+      if (pills.length === 0) html += '<div style="opacity:0.6">Geen status-info</div>';
+      else pills.forEach(function(p) {
+        var dot = p.querySelector('.kr-health-dot');
+        var dotKleur = '#10B981';
+        if (dot) {
+          var st = dot.getAttribute('data-status');
+          if (st === 'warn') dotKleur = '#F59E0B';
+          else if (st === 'error' || st === 'fout') dotKleur = '#EF4444';
+        }
+        html += '<div class="status-rij"><span class="dot" style="background:' + dotKleur + '"></span><span>' + p.textContent.trim().replace(/\s+/g, ' ') + '</span></div>';
+      });
       popup.innerHTML = html;
       document.body.appendChild(popup);
       setTimeout(function() {
         document.addEventListener('click', function sluit(ev) {
-          if (!popup.contains(ev.target) && ev.target !== btn) {
-            popup.remove();
-            document.removeEventListener('click', sluit);
-          }
+          if (!popup.contains(ev.target) && ev.target !== btn) { popup.remove(); document.removeEventListener('click', sluit); }
         });
       }, 50);
     };
   }
 
   function addIndicator() {
-    if (document.getElementById('kr-mobile-v4-indicator')) return;
+    if (document.getElementById('kr-mobile-v5-indicator')) return;
     var div = document.createElement('div');
-    div.id = 'kr-mobile-v4-indicator';
-    div.textContent = 'mobile v4';
+    div.id = 'kr-mobile-v5-indicator';
+    div.textContent = 'mobile v5';
     div.style.cssText = 'position:fixed;bottom:4px;left:4px;background:rgba(0,0,0,0.6);color:#FFF;font-size:9px;padding:2px 6px;border-radius:4px;z-index:99999;pointer-events:none;font-family:sans-serif';
     document.body.appendChild(div);
   }
 
   function init() {
-    if (window.innerWidth <= 768) {
-      maakStatusKnop();
-    }
+    if (window.innerWidth <= 768) maakStatusKnop();
     addIndicator();
     tagToewijzenSelects();
-    // Re-scan elke 2 sec voor nieuwe selects (React re-renders)
     setInterval(tagToewijzenSelects, 2000);
   }
 
@@ -446,7 +435,7 @@ table.kr-table tbody tr.kr-leeg td, .kr-wrap table tbody tr.kr-leeg td {
   else document.addEventListener('DOMContentLoaded', init);
 })();
 </script>
-<!-- /KR-MOBILE-V4 -->
+<!-- /KR-MOBILE-V5 -->
 </head><body><div id='root'></div>
 <script src='https://unpkg.com/react@18/umd/react.production.min.js'></script>
 <script src='https://unpkg.com/react-dom@18/umd/react-dom.production.min.js'></script>
