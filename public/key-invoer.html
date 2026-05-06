@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="nl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Resend API-Key Invoeren — KitchenRobot</title>
+<style>
+*{box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;margin:0;padding:0;background:#f4f6f8;min-height:100vh;display:flex;align-items:center;justify-content:center;color:#234756}
+.card{background:#fff;border-radius:12px;padding:32px;width:90%;max-width:480px;box-shadow:0 4px 24px rgba(0,0,0,.08)}
+h1{margin:0 0 8px;color:#002D41;font-size:22px}
+.sub{color:#6E8591;font-size:14px;margin-bottom:24px}
+label{display:block;font-size:12px;font-weight:600;color:#5A6B7D;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;margin-top:14px}
+input{width:100%;padding:12px 14px;border:1.5px solid #DDE7F0;border-radius:8px;font-size:14px;font-family:inherit}
+input:focus{outline:0;border-color:#1976D2}
+button{width:100%;padding:12px;background:#1976D2;color:#fff;border:0;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;margin-top:18px}
+button:hover{background:#1565C0}
+button:disabled{background:#94A8B7;cursor:not-allowed}
+.ok{background:#E8F5E9;color:#2E7D32;padding:14px;border-radius:8px;margin-top:16px;font-size:14px}
+.fail{background:#FFEBEE;color:#C62828;padding:14px;border-radius:8px;margin-top:16px;font-size:14px}
+.hint{font-size:12px;color:#6E8591;margin-top:6px;line-height:1.4}
+.hidden{display:none}
+</style></head><body>
+<div class="card">
+  <h1>🔑 Resend API-Key</h1>
+  <p class="sub">Plak je Resend API-key veilig in Vault. Eenmalige actie.</p>
+  <div id="login-section">
+    <label>E-mail</label>
+    <input id="email" type="email" autocomplete="email" placeholder="stefan@upevents.nl">
+    <label>Wachtwoord</label>
+    <input id="password" type="password" autocomplete="current-password">
+    <button id="login-btn">Inloggen</button>
+    <div id="login-result"></div>
+  </div>
+  <div id="form-section" class="hidden">
+    <p style="background:#EEF4FB;padding:12px;border-radius:8px;font-size:13px;margin:0 0 18px">✓ Ingelogd als <strong id="who"></strong></p>
+    <label>Resend API-Key</label>
+    <input id="api-key" type="password" placeholder="re_..." autocomplete="off">
+    <p class="hint">Begint met <code>re_</code> · Wordt versleuteld opgeslagen in Supabase Vault · Niet meer leesbaar daarna</p>
+    <button id="save-btn">Opslaan in Vault</button>
+    <div id="save-result"></div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = 'https://aezatnwsrhlwtykpixsq.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFlemF0bndzcmhsd3R5a3BpeHNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQzNzg4MzAsImV4cCI6MjA1OTk1NDgzMH0.0YzzFOM6yQ6Zoqe0Hez2nSKnnmIvWFrRpTaAnq_9ekg';
+const supa = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+async function checkSes(){const{data}=await supa.auth.getSession();if(data.session)toon(data.session.user.email);}
+checkSes();
+document.getElementById('login-btn').onclick=async()=>{const b=document.getElementById('login-btn');const r=document.getElementById('login-result');b.disabled=true;b.textContent='Bezig...';r.innerHTML='';const{data,error}=await supa.auth.signInWithPassword({email:document.getElementById('email').value.trim(),password:document.getElementById('password').value});b.disabled=false;b.textContent='Inloggen';if(error){r.innerHTML='<div class="fail">❌ '+error.message+'</div>';return;}toon(data.user.email);};
+function toon(email){document.getElementById('login-section').classList.add('hidden');document.getElementById('form-section').classList.remove('hidden');document.getElementById('who').textContent=email;}
+document.getElementById('save-btn').onclick=async()=>{const b=document.getElementById('save-btn');const r=document.getElementById('save-result');const key=document.getElementById('api-key').value.trim();if(!key){r.innerHTML='<div class="fail">❌ Vul een API-key in</div>';return;}if(!key.startsWith('re_')){r.innerHTML='<div class="fail">⚠️ Resend-key begint normaal met "re_". Check of je de juiste key hebt geplakt.</div>';return;}b.disabled=true;b.textContent='Bezig...';r.innerHTML='';const{data:sess}=await supa.auth.getSession();if(!sess.session){r.innerHTML='<div class="fail">❌ Sessie verlopen, herlaad de pagina</div>';b.disabled=false;b.textContent='Opslaan in Vault';return;}try{const resp=await fetch(SUPABASE_URL+'/functions/v1/api-koppelingen?actie=opslaan',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+sess.session.access_token,'apikey':SUPABASE_ANON},body:JSON.stringify({koppeling_naam:'resend',titel:'Resend Mail',beschrijving:'Verstuurt systeem-mails (HACCP-alarmen, cron-fouten, kritieke meldingen) namens alerts@upkitchenrobot.nl.',url:'https://resend.com',credentials:{api_key:key},velden_schema:[{naam:'api_key',type:'password',label:'API Key',hint:'Begint met re_'}]})});const data=await resp.json();b.disabled=false;b.textContent='Opslaan in Vault';if(data.ok){r.innerHTML='<div class="ok">✅ <strong>API-key opgeslagen in Vault!</strong><br>Je kan dit tabblad nu sluiten. Claude verzorgt de rest.</div>';document.getElementById('api-key').value='';}else{r.innerHTML='<div class="fail">❌ Fout: '+(data.error||'onbekend')+'</div>';}}catch(e){b.disabled=false;b.textContent='Opslaan in Vault';r.innerHTML='<div class="fail">❌ Netwerkfout: '+e.message+'</div>';}};
+</script></body></html>
